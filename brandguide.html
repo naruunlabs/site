@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+
+<script>
+(function () {
+  var KEY = 'naruunlabs_ga_optout';
+  try {
+    var q = new URLSearchParams(location.search);
+    if (q.get('me') === '1') { localStorage.setItem(KEY, '1'); }
+    if (q.get('me') === '0') { localStorage.removeItem(KEY); }
+    if (localStorage.getItem(KEY) === '1') { return; }
+  } catch (e) {}
+  var h = location.hostname;
+  if (h === 'localhost' || h === '127.0.0.1' || h === '' || h.endsWith('.local')) { return; }
+  var s = document.createElement('script');
+  s.async = true;
+  s.src = 'https://www.googletagmanager.com/gtag/js?id=G-8SN72HTTK4';
+  document.head.appendChild(s);
+  window.dataLayer = window.dataLayer || [];
+  function gtag() { dataLayer.push(arguments); }
+  window.gtag = gtag;
+  gtag('js', new Date());
+  gtag('config', 'G-8SN72HTTK4');
+})();
+</script>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>나른랩스 브랜드 가이드 | NARUUN LABS Brand Guide v1.0</title>
+
+<link rel="canonical" href="https://naruunlabs.kr/brandguide">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="NARUUN LABS">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:url" content="https://naruunlabs.kr/brandguide">
+<meta property="og:title" content="브랜드 가이드 | NARUUN LABS">
+<meta property="og:description" content="NARUUN LABS 브랜드 로고와 색상 사용 기준입니다.">
+<meta property="og:image" content="https://naruunlabs.kr/og-naruunlabs.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="브랜드 가이드 | NARUUN LABS">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="브랜드 가이드 | NARUUN LABS">
+<meta name="twitter:description" content="NARUUN LABS 브랜드 로고와 색상 사용 기준입니다.">
+<meta name="twitter:image" content="https://naruunlabs.kr/og-naruunlabs.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+
+:root{
+  --brand-primary:#0757D8;
+  --brand-secondary:#1288F8;
+  --brand-deep:#071C49;
+  --brand-light:#EAF4FF;
+  --surface:#FFFFFF;
+  --surface-soft:#F7FAFE;
+  --text:#1D2939;
+  --muted:#667085;
+  --line:#E3EAF3;
+  --line-strong:#C8D4E3;
+
+  --kick-primary:#E3172E;
+  --kick-primary-dark:#B91426;
+  --kick-secondary:#FF6A1A;
+  --kick-accent:#FF8C42;
+  --kick-dark:#0B0B0D;
+
+  --jump-primary:#14B8A6;
+  --jump-primary-dark:#0D9488;
+  --jump-secondary:#A3E635;
+  --jump-accent:#5EEAD4;
+  --jump-dark:#0A1628;
+
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px;
+  --s6:32px; --s7:48px; --s8:64px; --s9:96px;
+  --r-sm:4px; --r-md:6px; --r-lg:8px; --r-pill:999px;
+
+  --font-kr:'Pretendard','Noto Sans KR',system-ui,sans-serif;
+  --font-data:'Space Grotesk',system-ui,sans-serif;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;background:#fff}
+body{
+  color:var(--text);background:#fff;font-family:var(--font-kr);
+  line-height:1.65;-webkit-font-smoothing:antialiased;
+}
+a{color:inherit}
+::selection{background:var(--brand-primary);color:#fff}
+a:focus-visible,button:focus-visible,[tabindex]:focus-visible{
+  outline:2px solid var(--brand-primary);outline-offset:3px;border-radius:2px;
+}
+@media(prefers-reduced-motion:reduce){
+  *{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
+}
+
+.shell{display:grid;grid-template-columns:240px minmax(0,1fr);min-height:100vh}
+.toc{
+  position:sticky;top:0;height:100vh;padding:32px 22px;background:rgba(255,255,255,.97);
+  border-right:1px solid var(--line);overflow-y:auto;
+}
+.toc-brand{font-family:var(--font-data);font-size:14px;font-weight:700;letter-spacing:.04em;color:var(--brand-primary);margin-bottom:28px}
+.toc-list{list-style:none;display:flex;flex-direction:column;gap:2px}
+.toc-list a{display:block;padding:8px 10px;border-radius:4px;font-size:13px;color:var(--muted);text-decoration:none}
+.toc-list a:hover,.toc-list a.active{background:var(--brand-light);color:var(--brand-deep)}
+
+main{min-width:0}
+.hero{
+  position:relative;overflow:hidden;padding:96px 48px 72px;
+  background:linear-gradient(135deg,#fff 0%,#F7FBFF 56%,#EAF4FF 100%);
+  border-bottom:1px solid var(--line);
+}
+.hero::before,.hero::after{content:"";position:absolute;width:52vw;height:52vw;border-radius:50%;filter:blur(90px);opacity:.11}
+.hero::before{left:-18%;bottom:-38%;background:radial-gradient(circle,var(--kick-primary),var(--kick-secondary) 60%,transparent 76%)}
+.hero::after{right:-18%;bottom:-38%;background:radial-gradient(circle,var(--jump-primary),var(--jump-secondary) 60%,transparent 76%)}
+.hero-inner{position:relative;z-index:1;max-width:780px}
+.hero-eyebrow,.sec-eyebrow{
+  font-family:var(--font-data);font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--brand-primary)
+}
+.hero h1{font-size:clamp(42px,7vw,76px);line-height:.98;letter-spacing:-.045em;color:var(--brand-deep);margin:14px 0 10px}
+.hero .slogan{font-family:var(--font-data);font-size:clamp(16px,2vw,20px);color:var(--brand-deep);margin-bottom:26px}
+.hero .desc{color:var(--muted);font-size:15px;max-width:650px}
+.hero-tags,.font-tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:28px}
+.tag{
+  display:inline-flex;align-items:center;min-height:30px;padding:0 11px;border:1px solid var(--line-strong);
+  border-radius:999px;background:rgba(255,255,255,.78);color:var(--brand-deep);
+  font-family:var(--font-data);font-size:11.5px;font-weight:600;
+}
+
+section{padding:64px 48px;border-bottom:1px solid var(--line);background:#fff}
+.sec-head{max-width:760px;margin-bottom:30px}
+.sec-head h2{font-size:clamp(26px,3.6vw,40px);line-height:1.1;color:var(--brand-deep);margin:8px 0 10px}
+.sec-head p,.palette-concept,.sub-head{color:var(--muted);font-size:14px}
+.sub-head{font-family:var(--font-data);font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin:30px 0 14px}
+
+.values-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.value-card{padding:24px 18px;text-align:center;border-right:1px solid var(--line)}
+.value-card:last-child{border-right:0}
+.value-card .icon{font-size:24px;display:block;margin-bottom:10px}
+.value-card .en{font-family:var(--font-data);font-size:11px;color:var(--brand-primary);letter-spacing:.05em;display:block}
+.value-card .kr{font-size:14px;font-weight:700;color:var(--brand-deep)}
+
+.logo-wordmark{
+  display:flex;align-items:center;justify-content:center;min-height:180px;padding:40px;
+  border:1px solid var(--line);border-radius:8px;background:var(--surface-soft);margin-bottom:18px;
+}
+.logo-wordmark .mark{font-family:var(--font-data);font-weight:700;font-size:clamp(30px,5vw,48px);letter-spacing:.01em;color:var(--brand-deep)}
+.logo-wordmark .n2{color:var(--brand-primary)}
+.logo-rules{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.rule-card{border:1px solid var(--line);border-radius:6px;padding:22px;background:#fff}
+.rule-card.do{border-top:3px solid var(--jump-primary)}
+.rule-card.dont{border-top:3px solid var(--kick-primary)}
+.rule-card .label{display:inline-block;font-family:var(--font-data);font-size:11px;font-weight:700;letter-spacing:.08em;margin-bottom:12px}
+.rule-card.do .label{color:var(--jump-primary-dark)}
+.rule-card.dont .label{color:var(--kick-primary)}
+.rule-card ul{list-style:none;display:flex;flex-direction:column;gap:8px;font-size:13.5px;color:var(--text)}
+.rule-card li{position:relative;padding-left:16px}
+.rule-card li::before{content:"—";position:absolute;left:0;color:var(--muted)}
+.note-box{
+  margin-top:18px;padding:15px 18px;border:1px solid var(--line);
+  border-left:3px solid var(--brand-primary);border-radius:4px;background:var(--surface-soft);
+  color:var(--brand-deep);font-size:13px;
+}
+
+.palette-block{margin-bottom:38px}
+.palette-title{margin-bottom:4px}
+.palette-title h3{font-size:18px;color:var(--brand-deep)}
+.palette-concept{margin-bottom:14px}
+.swatch-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.swatch{border:1px solid var(--line);border-radius:6px;overflow:hidden;background:#fff;cursor:pointer;transition:.15s}
+.swatch:hover{transform:translateY(-2px);border-color:var(--line-strong)}
+.swatch-color{height:76px;background:var(--c)}
+.swatch-meta{padding:12px 14px}
+.swatch-meta .name{display:block;font-size:13px;font-weight:700;color:var(--brand-deep)}
+.swatch-meta .hex{display:block;font-family:var(--font-data);font-size:12px;color:var(--muted);margin:2px 0 5px}
+.swatch-meta .usage{display:block;font-size:11.5px;color:var(--muted);line-height:1.45}
+.copied-toast{
+  position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(18px);
+  opacity:0;pointer-events:none;z-index:100;background:var(--brand-deep);color:#fff;
+  padding:9px 16px;border-radius:4px;font-size:12px;font-weight:700;transition:.2s;
+}
+.copied-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+.type-row{display:grid;grid-template-columns:150px 1fr;gap:24px;padding:20px 0;border-bottom:1px solid var(--line);align-items:baseline}
+.type-label{font-family:var(--font-data);font-size:11.5px;color:var(--muted)}
+.type-sample.h1{font-size:clamp(30px,4vw,44px);font-weight:900;color:var(--brand-deep)}
+.type-sample.h2{font-size:28px;font-weight:700;color:var(--brand-deep)}
+.type-sample.h3{font-size:20px;font-weight:700;color:var(--brand-deep)}
+.type-sample.body{font-size:15px;color:var(--text);max-width:600px}
+.type-sample.caption{font-size:12.5px;color:var(--muted)}
+.type-sample.data{font-family:var(--font-data);font-size:22px;font-weight:600}
+
+.theme-block{margin-bottom:18px;padding:24px;border:1px solid var(--line);border-radius:6px;background:#fff}
+.theme-block.kick{border-top:3px solid var(--kick-primary)}
+.theme-block.jump{border-top:3px solid var(--jump-primary)}
+.theme-label{font-family:var(--font-data);font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--muted);margin-bottom:14px;text-transform:uppercase}
+.btn-row{display:flex;flex-wrap:wrap;gap:18px;align-items:center}
+.btn{
+  min-height:42px;padding:8px 0;border:0;border-bottom:2px solid currentColor;border-radius:0;background:transparent;
+  font-family:var(--font-kr);font-size:14px;font-weight:800;cursor:pointer;transition:.16s;
+}
+.btn:hover{transform:none;opacity:.72}
+.btn.core-primary,.btn.core-secondary,.btn.core-ghost{color:var(--brand-primary)}
+.btn.kick-primary,.btn.kick-secondary{color:var(--kick-primary)}
+.btn.jump-primary,.btn.jump-secondary{color:var(--jump-primary-dark)}
+.btn.disabled{color:#98A2B3;cursor:not-allowed;opacity:.55}
+.btn.disabled:hover{opacity:.55}
+.theme-block .btn:first-of-type{
+  padding:0 18px;border:0;border-radius:4px;color:#fff;
+}
+.theme-block.core .btn:first-of-type{background:linear-gradient(135deg,var(--brand-primary),var(--brand-secondary))}
+.theme-block.kick .btn:first-of-type{background:linear-gradient(135deg,var(--kick-primary),var(--kick-secondary))}
+.theme-block.jump .btn:first-of-type{background:linear-gradient(135deg,var(--jump-primary),var(--jump-secondary));color:#063B35}
+
+.card-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.demo-card{position:relative;overflow:hidden;border:1px solid var(--line);border-radius:6px;padding:22px;background:#fff}
+.demo-card.standard{border-top:3px solid var(--brand-primary)}
+.demo-card.glass{
+  color:#fff;background:rgba(10,22,40,.88);border-color:rgba(94,234,212,.28);
+  backdrop-filter:blur(12px);box-shadow:none;
+}
+.demo-card.stat{background:var(--jump-dark);color:#fff;border-color:rgba(20,184,166,.35)}
+.demo-card .card-tag{font-family:var(--font-data);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+.demo-card h4{font-size:17px;margin-bottom:6px}
+.demo-card p{font-size:13px;color:var(--muted)}
+.demo-card.glass p,.demo-card.stat p{color:#B8C7D9}
+.demo-card .stat-num{font-family:var(--font-data);font-size:38px;font-weight:700;color:var(--jump-secondary);margin:4px 0}
+
+.icon-scale{display:flex;gap:32px;align-items:flex-end;flex-wrap:wrap;margin-bottom:22px}
+.icon-item{text-align:center}
+.icon-item .box{display:flex;align-items:center;justify-content:center;margin:0 auto 6px;border:1.75px solid var(--brand-deep);border-radius:4px}
+.icon-item .box.sm{width:16px;height:16px}.icon-item .box.md{width:24px;height:24px}.icon-item .box.lg{width:32px;height:32px}
+.icon-item .lbl{font-family:var(--font-data);font-size:11px;color:var(--muted)}
+.emoji-row{display:flex;gap:12px;font-size:23px}
+
+.token-table{width:100%;border-collapse:collapse;font-size:13px}
+.token-table th{text-align:left;font-family:var(--font-data);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:8px 12px;border-bottom:1px solid var(--line-strong)}
+.token-table td{padding:12px;border-bottom:1px solid var(--line)}
+.token-vis{background:var(--brand-primary);border-radius:2px}
+.radius-vis{width:44px;height:44px;background:var(--brand-light);border:1px solid var(--line-strong)}
+
+.sitemap{border:1px solid var(--line);border-radius:6px;padding:24px;background:var(--surface-soft);font-family:var(--font-data);font-size:13px}
+.sitemap .root{font-weight:700;color:var(--brand-primary);font-size:15px;margin-bottom:12px}
+.sitemap ul{list-style:none;padding-left:24px;border-left:1px dashed var(--line-strong)}
+.sitemap li{padding:7px 0;color:var(--brand-deep)}
+.sitemap li::before{content:"└─";color:var(--muted);margin-right:8px}
+.sitemap .future{color:var(--muted)}
+.sitemap .redirect{margin-top:18px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted)}
+.sitemap .from{color:var(--kick-secondary);font-weight:700}.sitemap .to{color:var(--jump-primary-dark);font-weight:700}
+
+.roadmap{display:flex;flex-direction:column;gap:1px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.phase-row{display:grid;grid-template-columns:64px 1fr;gap:16px;padding:13px 14px;border-bottom:1px solid var(--line)}
+.phase-row:last-child{border-bottom:0}
+.phase-num{font-family:var(--font-data);font-weight:700;color:var(--brand-primary)}
+.phase-txt{font-size:13.5px}
+.active-tag,.done-tag{font-family:var(--font-data);font-size:10px;padding:2px 7px;border-radius:999px;margin-left:7px}
+.active-tag{background:rgba(255,106,26,.14);color:var(--kick-secondary)}
+.done-tag{background:rgba(20,184,166,.14);color:var(--jump-primary-dark)}
+
+footer{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:28px 48px;background:var(--surface-soft);color:var(--muted);font-family:var(--font-data);font-size:12px}
+
+@media(max-width:900px){
+  .shell{grid-template-columns:1fr}
+  .toc{position:static;height:auto;display:flex;gap:14px;overflow-x:auto;padding:14px 18px;border-right:0;border-bottom:1px solid var(--line)}
+  .toc-brand{display:none}.toc-list{flex-direction:row;white-space:nowrap}
+  .hero,section{padding-left:28px;padding-right:28px}
+  .values-grid{grid-template-columns:repeat(2,1fr)}
+  .value-card{border-bottom:1px solid var(--line)}
+  .swatch-grid{grid-template-columns:repeat(2,1fr)}
+  .card-grid{grid-template-columns:1fr}
+}
+@media(max-width:620px){
+  .hero{padding:72px 20px 56px}
+  section{padding:48px 20px}
+  .values-grid{display:block}.value-card{border-right:0}
+  .logo-rules{grid-template-columns:1fr}
+  .swatch-grid{grid-template-columns:1fr}
+  .type-row{grid-template-columns:1fr;gap:6px}
+  footer{padding:24px 20px}
+}
+
+.toc-company-logo{display:block;width:210px;height:56px;object-fit:contain;object-position:left center}
+.hero-company-logo{display:block;width:min(620px,84vw);height:200px;object-fit:contain;object-position:left center;margin:8px 0 10px}
+.logo-wordmark img{display:block;max-width:820px;width:90%;height:240px;object-fit:contain}
+.product-logo-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:18px 0}
+.product-logo-card{border:1px solid var(--line);border-radius:8px;background:var(--surface-soft);padding:22px;display:grid;place-items:center;min-height:250px}
+.product-logo-card img{width:94%;height:200px;object-fit:contain}
+@media(max-width:760px){.product-logo-grid{grid-template-columns:1fr}.hero-company-logo{height:150px}.toc-company-logo{width:175px}}
+
+</style>
+</head>
+<body>
+<div class="copied-toast" id="toast">HEX 복사됨</div>
+
+<div class="shell">
+  <nav class="toc">
+    <img class="toc-company-logo" src="NARUUN_LABS_logo2.svg" alt="NARUUN LABS">
+    <ul class="toc-list">
+      <li><a href="#top">Top</a></li>
+      <li><a href="#overview">브랜드 개요</a></li>
+      <li><a href="#logo">로고</a></li>
+      <li><a href="#color">컬러 시스템</a></li>
+      <li><a href="#type">타이포그래피</a></li>
+      <li><a href="#buttons">버튼</a></li>
+      <li><a href="#cards">카드 스타일</a></li>
+      <li><a href="#icons">아이콘</a></li>
+      <li><a href="#tokens">여백 · radius</a></li>
+      <li><a href="#domain">도메인 구조</a></li>
+      <li><a href="#roadmap">프로젝트 로드맵</a></li>
+    </ul>
+  </nav>
+
+  <main>
+    <header class="hero" id="top">
+      <div class="hero-inner">
+        <div class="hero-eyebrow">Brand Guide · v1.0</div>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+<img class="hero-company-logo" src="NARUUN_LABS_logo2.svg" alt="NARUUN LABS Symbol">
+<img class="hero-company-logo" style="height:120px" src="naruunlabs_logo.svg" alt="NARUUN LABS Wordmark">
+</div>
+        <div class="slogan">"Learn with Joy. Grow with AI."</div>
+        <p class="desc">스포츠 교육 현장의 전문성과 AI 기술을 결합해, 배우는 즐거움과 성장의 경험을 만드는 나른랩스의 통합 브랜드 가이드입니다. 앞으로 진행되는 홈페이지 및 AI KICK MASTER · AI JUMP MASTER 리뉴얼은 이 문서의 기준을 따릅니다.</p>
+        <div class="hero-tags">
+          <span class="tag">Modern</span>
+          <span class="tag">Premium</span>
+          <span class="tag">AI</span>
+          <span class="tag">Fun</span>
+        </div>
+      </div>
+    </header>
+
+    <section id="overview">
+      <div class="sec-head">
+        <div class="sec-eyebrow">Overview</div>
+        <h2>브랜드 개요</h2>
+        <p>나른랩스가 만드는 모든 제품이 공유하는 핵심 가치입니다. 문구 · UI 톤 · 마케팅 카피를 만들 때 이 5가지 중 무엇을 말하고 있는지 항상 점검하세요.</p>
+      </div>
+      <div class="values-grid">
+        <div class="value-card"><span class="en">ENJOYMENT</span><span class="kr">즐거움</span></div>
+        <div class="value-card"><span class="en">GROWTH</span><span class="kr">성장</span></div>
+        <div class="value-card"><span class="en">INNOVATION</span><span class="kr">AI 기술</span></div>
+        <div class="value-card"><span class="en">RELIABILITY</span><span class="kr">신뢰성</span></div>
+        <div class="value-card"><span class="en">PROFESSIONALISM</span><span class="kr">전문성</span></div>
+      </div>
+    </section>
+
+    <section id="logo">
+      <div class="sec-head">
+        <div class="sec-eyebrow">Logo</div>
+        <h2>로고 사용 규칙</h2>
+        <p>현재 확정된 N 심벌과 NARUUN LABS 워드마크를 공식 로고 체계로 사용합니다. 가로형·세로형·심벌 단독형은 동일한 비율과 색상 규칙을 유지합니다.</p>
+      </div>
+      <div class="logo-wordmark" style="display:flex;flex-direction:column;gap:24px;">
+<img src="NARUUN_LABS_logo2.svg" alt="NARUUN LABS Symbol Logo">
+<img src="naruunlabs_logo.svg" alt="NARUUN LABS Wordmark Logo">
+</div>
+      <div class="product-logo-grid">
+        <div class="product-logo-card"><img src="kick1.svg" alt="AI KICK MASTER 가로형 로고"></div>
+        <div class="product-logo-card"><img src="jump1.svg" alt="AI JUMP MASTER 가로형 로고"></div>
+        <div class="product-logo-card"><img src="kick2.svg" alt="AI KICK MASTER 세로형 로고"></div>
+        <div class="product-logo-card"><img src="jump2.svg" alt="AI JUMP MASTER 세로형 로고"></div>
+      </div>
+      <div class="logo-rules">
+        <div class="rule-card do">
+          <span class="label">DO</span>
+          <ul>
+            <li>로고 주변에 글자 높이(N 기준)만큼 여백을 항상 확보한다</li>
+            <li>White(#FFFFFF), Deep Navy(#071C49) 또는 Light Blue(#EAF4FF)처럼 단순한 배경 위에서 사용한다</li>
+            <li>가로 최소 80px 이하로는 축소하지 않는다</li>
+            <li>파비콘 등 초소형 사용 시 "N" 모노그램만 단독 사용한다</li>
+          </ul>
+        </div>
+        <div class="rule-card dont">
+          <span class="label">DON'T</span>
+          <ul>
+            <li>가로/세로 비율을 임의로 늘리거나 줄이지 않는다</li>
+            <li>KICK·JUMP 제품 컬러로 NARUUN LABS 본사 로고를 임의로 재채색하지 않는다</li>
+            <li>그림자, 외곽선, 입체 효과를 추가하지 않는다</li>
+            <li>사진이나 복잡한 패턴 위에 직접 얹지 않는다 (필요 시 딤 처리된 오버레이 사용)</li>
+          </ul>
+        </div>
+      </div>
+      <div class="note-box">공식 로고 파일은 SVG를 기준 원본으로 관리하고, 웹·앱·인쇄용 PNG는 이 SVG에서 파생합니다.</div>
+    </section>
+
+    <section id="color">
+      <div class="sec-head">
+        <div class="sec-eyebrow">Color System</div>
+        <h2>공식 컬러 시스템</h2>
+        <p>현재 홈페이지와 제품 화면에 실제 적용 중인 공식 색상입니다. 스와치를 클릭하면 HEX 코드가 복사됩니다.</p>
+      </div>
+
+      <div class="palette-block">
+        <div class="palette-title"><h3>NARUUN LABS Core</h3></div>
+        <div class="palette-concept">신뢰감 있는 블루를 중심으로 사용하는 밝은 본사 브랜드 컬러</div>
+        <div class="swatch-grid">
+          <div class="swatch" style="--c:#0757D8" data-hex="#0757D8"><div class="swatch-color"></div><div class="swatch-meta"><span class="name">Primary Blue</span><span class="hex">#0757D8</span><span class="usage">브랜드 핵심색 · 링크 · 주요 강조</span></div></div>
+          <div class="swatch" style="--c:#1288F8" data-hex="#1288F8"><div class="swatch-color"></div><div class="swatch-meta"><span class="name">Secondary Blue</span><span class="hex">#1288F8</span><span class="usage">그라데이션 · 보조 강조 · 인터랙션</span></div></div>
+          <div class="swatch" style="--c:#071C49" data-hex="#071C49"><div class="swatch-color"></div><div class="swatch-meta"><span class="name">Deep Navy</span><span class="hex">#071C49</span><span class="usage">제목 · 핵심 텍스트 · 진한 브랜드 표현</span></div></div>
+          <div class="swatch" style="--c:#EAF4FF" data-hex="#EAF4FF"><div class="swatch-color"></div><div class="swatch-meta"><span class="name">Light Blue</span><span class="hex">#EAF4FF</span><span class="usage">연한 배경 · 선택 상태 · 보조 면</span></div></div>
+        </div>
+      </div>
+
+      <div class="palette-block">
+        <div class="palette-title"><h3>AI KICK MASTER</h3></div>
+        <div class="palette-concept">발차기의 힘, 속도와 타격감을 표현하는 레드·오렌지 컬러</div>
+        <div class="swatch-grid">
+          <div class="swatch" style="--c:#E3172E" data-hex="#E3172E"><div class="swatch-color"></div><div class="swatch-meta"><span class="name">Primary</span><span class="hex">#E3172E</span><span class="usage">제품 핵심색 · 주요 버튼 · 활성 상태</span></div></div>
+          <div class="swatch" style="--c:#B91426" data-hex="#B91426"><div class="swatch-color"></div><div class="swatch-meta"><span class="name">Primary Dark</span><span class="hex">#B91426</span><span class="usage">눌림 상태 · 진한 강조 · 테두리</span></div></div>
+          <div class="swatch" style="--c:#FF6A1A" data-hex="#FF6A1A"><div class="swatch-color"></div><div class="swatch-meta"><span class="name">Secondary</span><span class="hex">#FF6A1A</span><span class="usage">그라데이션 끝색 · 에너지 강조</span></div></div>
+          <div class="swatch" style="--c:#FF8C42" data-hex="#FF8C42"><div class="swatch-color"></div><div class="swatch-meta"><span class="name">Accent</span><span class="hex">#FF8C42</span><span class="usage">숫자 · 배지 · 보조 하이라이트</span></div></div>
+        </div>
+      </div>
+
+      <div class="palette-block">
+        <div class="palette-title"><h3>AI JUMP MASTER</h3></div>
+        <div class="palette-concept">줄넘기의 리듬, 활력과 성장감을 표현하는 민트·라임 컬러</div>
+        <div class="swatch-grid">
+          <div class="swatch" style="--c:#14B8A6" data-hex="#14B8A6"><div class="swatch-color"></div><div class="swatch-meta"><span class="name">Primary</span><span class="hex">#14B8A6</span><span class="usage">제품 핵심색 · 주요 버튼 · 활성 상태</span></div></div>
+          <div class="swatch" style="--c:#0D9488" data-hex="#0D9488"><div class="swatch-color"></div><div class="swatch-meta"><span class="name">Primary Dark</span><span class="hex">#0D9488</span><span class="usage">눌림 상태 · 진한 강조 · 테두리</span></div></div>
+          <div class="swatch" style="--c:#A3E635" data-hex="#A3E635"><div class="swatch-color"></div><div class="swatch-meta"><span class="name">Secondary</span><span class="hex">#A3E635</span><span class="usage">그라데이션 끝색 · 기록 · 성장 강조</span></div></div>
+          <div class="swatch" style="--c:#5EEAD4" data-hex="#5EEAD4"><div class="swatch-color"></div><div class="swatch-meta"><span class="name">Accent</span><span class="hex">#5EEAD4</span><span class="usage">숫자 · 배지 · 보조 하이라이트</span></div></div>
+        </div>
+      </div>
+
+      <div class="note-box">다크 컬러인 #0B0B0D와 #0A1628은 실행 프로그램의 카메라 HUD 배경에만 제한적으로 사용하며, 홈페이지와 일반 관리 화면의 기본 배경에는 사용하지 않습니다.</div>
+    </section>
+
+    <section id="type">
+      <div class="sec-head">
+        <div class="sec-eyebrow">Typography</div>
+        <h2>타이포그래피</h2>
+        <p>한글 UI와 본문은 Pretendard를 기본으로 사용하고, 숫자·HEX·영문 라벨 등 데이터성 텍스트는 Space Grotesk를 사용합니다. Noto Sans KR은 대체 폰트로 둡니다.</p>
+      </div>
+      <div class="type-row"><span class="type-label">H1 · 900</span><span class="type-sample h1">나른랩스 리뉴얼</span></div>
+      <div class="type-row"><span class="type-label">H2 · 700</span><span class="type-sample h2">AI KICK MASTER</span></div>
+      <div class="type-row"><span class="type-label">H3 · 700</span><span class="type-sample h3">발차기 정확도 분석</span></div>
+      <div class="type-row"><span class="type-label">Body · 400</span><span class="type-sample body">태권도장 현장에서 바로 쓸 수 있는 AI 코칭 도구를 만듭니다. 문장은 짧고 명확하게, 존댓말 기본 톤을 유지합니다.</span></div>
+      <div class="type-row"><span class="type-label">Caption · 400</span><span class="type-sample caption">보조 설명 · 타임스탬프 · 메타 정보</span></div>
+      <div class="type-row"><span class="type-label">Data · Grotesk</span><span class="type-sample data">128 KICKS · 00:42</span></div>
+      <div class="font-tags">
+        <span class="tag">Pretendard — 본문/제목/UI</span>
+        <span class="tag">Space Grotesk — 숫자/라벨/HEX</span>
+      </div>
+    </section>
+
+    <section id="buttons">
+      <div class="sec-head">
+        <div class="sec-eyebrow">Buttons</div>
+        <h2>버튼 시스템</h2>
+        <p>제품마다 Primary 컬러만 바뀌고, 구조·높이·폰트 굵기·상태 표현은 동일하게 유지합니다. 기본 버튼은 무배경·선형이며, 주요 실행 버튼만 제한적으로 배경을 사용합니다.</p>
+      </div>
+
+      <div class="theme-block core">
+        <div class="theme-label">Naruun Labs Core</div>
+        <div class="btn-row">
+          <button class="btn core-primary">시작하기</button>
+          <button class="btn core-secondary">더 알아보기</button>
+          <button class="btn core-ghost">건너뛰기 →</button>
+          <button class="btn disabled" disabled>준비 중</button>
+        </div>
+      </div>
+
+      <div class="theme-block kick">
+        <div class="theme-label" style="color:#ffb199">AI Kick Master</div>
+        <div class="btn-row">
+          <button class="btn kick-primary">훈련 시작</button>
+          <button class="btn kick-secondary">기록 보기</button>
+        </div>
+      </div>
+
+      <div class="theme-block jump">
+        <div class="theme-label" style="color:#8fe3d6">AI Jump Master</div>
+        <div class="btn-row">
+          <button class="btn jump-primary">점프 시작</button>
+          <button class="btn jump-secondary">스트릭 확인</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="cards">
+      <div class="sec-head">
+        <div class="sec-eyebrow">Cards</div>
+        <h2>카드 스타일</h2>
+        <p>일반 페이지는 밝고 평평한 카드를 기본으로 사용합니다. 글래스 HUD 카드는 카메라 기반 실행 프로그램에만 제한적으로 사용합니다.</p>
+      </div>
+      <div class="card-grid">
+        <div class="demo-card standard">
+          <div class="card-tag">Standard</div>
+          <h4>기본 카드</h4>
+          <p>일반 콘텐츠, 목록, 설정 화면 등 기본 UI에 사용합니다.</p>
+        </div>
+        <div class="demo-card glass">
+          <div class="card-tag">Glass HUD</div>
+          <h4>글래스 HUD 카드</h4>
+          <p>실시간 측정 화면, 대시보드 등 몰입감이 필요한 화면에 사용합니다. 반드시 배경에 그라디언트/이미지가 있어야 유리 효과가 보입니다.</p>
+        </div>
+        <div class="demo-card stat">
+          <div class="card-tag">Stat</div>
+          <h4>기록 카드</h4>
+          <div class="stat-num">247</div>
+          <p>연속 점프 · 오늘의 최고 기록</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="icons">
+      <div class="sec-head">
+        <div class="sec-eyebrow">Icons</div>
+        <h2>아이콘 가이드</h2>
+        <p>시스템과 내비게이션에는 라인 아이콘을 사용합니다. <b>제품 화면과 홈페이지의 안내 문구에는 이모지를 사용하지 않습니다.</b> 이모지는 기기·운영체제마다 모양이 달라 브랜드 인상을 통일할 수 없고, 정식 제품다운 느낌을 해칩니다. (2026-07-31 개정)</p>
+      </div>
+      <div class="sub-head">라인 아이콘 사이즈 스케일 (stroke 1.75px)</div>
+      <div class="icon-scale">
+        <div class="icon-item"><div class="box sm"></div><div class="lbl">16px · SM</div></div>
+        <div class="icon-item"><div class="box md"></div><div class="lbl">24px · MD (기본)</div></div>
+        <div class="icon-item"><div class="box lg"></div><div class="lbl">32px · LG</div></div>
+      </div>
+      <div class="sub-head">이모지 사용 규칙</div>
+      <div class="note-box">버튼 · 안내 문구 · 상태 메시지에는 이모지를 넣지 않습니다. 다만 <b>게임 요소 자체</b>(격파 모드의 표적, 타격 효과, 기록 축하 연출)는 예외로 두어 아이들이 직관적으로 알아볼 수 있게 합니다.</div>
+    </section>
+
+    <section id="tokens">
+      <div class="sec-head">
+        <div class="sec-eyebrow">Spacing & Radius</div>
+        <h2>여백 · Radius 토큰</h2>
+        <p>8px 여백 스케일은 유지하되, 모서리는 0~8px 범위를 기본으로 사용합니다. Pill 형태는 상태 배지와 작은 태그에만 제한합니다.</p>
+      </div>
+      <table class="token-table">
+        <tr><th>토큰</th><th>값</th><th>미리보기</th></tr>
+        <tr><td>--s2</td><td>8px</td><td><div class="token-vis" style="width:8px;height:8px"></div></td></tr>
+        <tr><td>--s4</td><td>16px</td><td><div class="token-vis" style="width:16px;height:16px"></div></td></tr>
+        <tr><td>--s6</td><td>32px</td><td><div class="token-vis" style="width:32px;height:16px"></div></td></tr>
+        <tr><td>--s8</td><td>64px</td><td><div class="token-vis" style="width:64px;height:16px"></div></td></tr>
+        <tr><td>--r-sm</td><td>4px</td><td><div class="radius-vis" style="border-radius:4px"></div></td></tr>
+        <tr><td>--r-md</td><td>6px</td><td><div class="radius-vis" style="border-radius:6px"></div></td></tr>
+        <tr><td>--r-lg</td><td>8px</td><td><div class="radius-vis" style="border-radius:8px"></div></td></tr>
+        <tr><td>--r-pill</td><td>999px · 배지 전용</td><td><div class="radius-vis" style="border-radius:999px"></div></td></tr>
+      </table>
+    </section>
+
+    <section id="domain">
+      <div class="sec-head">
+        <div class="sec-eyebrow">Domain Structure</div>
+        <h2>도메인 구조</h2>
+        <p>GitHub Pages 는 <code>/kickmaster</code> 로 접속해도 <code>kickmaster.html</code> 을 찾아 보여줍니다. 두 주소가 모두 열리므로, <b>.html 을 붙이지 않은 짧은 주소를 정식 주소로 정하고</b> 각 페이지에 canonical 태그와 sitemap 을 그 형태로 맞췄습니다. 홍보에도 짧은 주소를 사용합니다. (2026-07-31 적용)</p>
+      </div>
+      <div class="sitemap">
+        <div class="root">naruunlabs.kr</div>
+        <ul>
+          <li>/ <span class="future">— NARUUN LABS 메인</span></li>
+          <li>/kickmaster <span class="future">— AI KICK MASTER 소개</span></li>
+          <li>/jumpmaster <span class="future">— AI JUMP MASTER 소개</span></li>
+          <li>/aikickmaster <span class="future">— AI KICK MASTER 실행 화면</span></li>
+          <li>/aijumpmaster <span class="future">— AI JUMP MASTER 실행 화면</span></li>
+        </ul>
+        <div class="redirect">
+          <span class="from">정식 주소</span> → .html 없는 짧은 형태 → <span class="to">canonical · sitemap 반영 완료</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="roadmap">
+      <div class="sec-head">
+        <div class="sec-eyebrow">Reference</div>
+        <h2>프로젝트 로드맵</h2>
+        <p>메인 홈페이지와 제품 소개·관리 화면 리뉴얼이 진행 중입니다. 브랜드 가이드는 현재 적용 상태를 기준으로 계속 갱신합니다.</p>
+      </div>
+      <div class="roadmap">
+        <div class="phase-row"><span class="phase-num">P0</span><span class="phase-txt">프로젝트 구조 정리 및 파일명 규칙 통일 <span class="done-tag">완료</span></span></div>
+        <div class="phase-row"><span class="phase-num">P1</span><span class="phase-txt">NARUUN LABS 브랜드 컬러·타이포·UI 규칙 확정 <span class="active-tag">진행 중</span></span></div>
+        <div class="phase-row"><span class="phase-num">P2</span><span class="phase-txt">naruunlabs.kr 메인 홈페이지 제작 <span class="done-tag">완료</span></span></div>
+        <div class="phase-row"><span class="phase-num">P3</span><span class="phase-txt">KICK MASTER / JUMP MASTER 소개 페이지 통일 <span class="active-tag">진행 중</span></span></div>
+        <div class="phase-row"><span class="phase-num">P4</span><span class="phase-txt">KICK HOME / JUMP HOME 관리 화면 통일 <span class="active-tag">진행 중</span></span></div>
+        <div class="phase-row"><span class="phase-num">P5</span><span class="phase-txt">AI KICK MASTER / AI JUMP MASTER 실행 프로그램 UI 통일</span></div>
+        <div class="phase-row"><span class="phase-num">P6</span><span class="phase-txt">공식 SVG 로고 세트와 파비콘·앱 아이콘 제작</span></div>
+      </div>
+    </section>
+
+    <footer>
+      <span>NARUUN LABS Brand Guide · v1.0</span>
+      <span>Last updated 2026-07-10</span>
+    <div class="wrap naruun-biz" style="flex:1 1 100%" aria-label="사업자 정보">
+<style>.naruun-biz{margin-top:26px;padding-top:18px;border-top:1px solid rgba(128,128,128,.2);font-size:11.5px;line-height:1.95;color:#8A97A8;letter-spacing:-.01em;word-break:keep-all;font-weight:400;text-align:left}.naruun-biz p{margin:0;padding:0}.naruun-biz b{font-weight:700;color:inherit}.naruun-biz a{color:inherit;text-decoration:none;border-bottom:1px solid rgba(128,128,128,.32)}.naruun-biz a:hover{color:inherit;opacity:.72}.naruun-biz span+span::before{content:"·";opacity:.4;margin:0 7px}@media(max-width:680px){.naruun-biz{font-size:11px;line-height:1.9}}</style>
+<p><span><b>나른랩스</b></span><span>대표 이완수</span><span>사업자등록번호 554-65-00786</span><span>통신판매업신고 제2025-경북구미-0614호</span><span><a href="https://www.ftc.go.kr/bizCommPop.do?wrkr_no=5546500786" target="_blank" rel="noopener">사업자정보 확인</a></span></p>
+<p><span>경상북도 구미시 산동읍 신당3로 43 (골드클래스)</span><span><a href="mailto:naruunlabs@gmail.com">naruunlabs@gmail.com</a></span><span><a href="tel:01076573579">010-7657-3579</a></span><span>호스팅 GitHub, Inc.</span></p>
+</div>
+</footer>
+  
+<section id="contact-guideline">
+  <div class="sec-head"><span class="sec-eyebrow">Contact Experience</span><h2>문의 경험</h2><p>홈페이지의 상담 경로는 카카오톡 채널 1:1 상담을 우선으로 하고, 전화번호를 보조 수단으로 함께 표시합니다.</p></div>
+  <div class="theme-block core">
+    <div class="theme-label">공통 문의 CTA</div>
+    <div class="btn-row"><button class="btn core-primary">카카오톡 1:1 상담하기</button><a class="btn core-secondary" href="tel:01076573579">010-7657-3579</a></div>
+    <div class="note-box">도장 수업 중에는 답변이 늦어질 수 있습니다. 확인하는 대로 순차적으로 답변드리겠습니다.</div>
+  </div>
+</section>
+</main>
+</div>
+
+<script>
+  
+  document.querySelectorAll('.swatch').forEach(function(el){
+    el.addEventListener('click', function(){
+      var hex = el.getAttribute('data-hex');
+      var toast = document.getElementById('toast');
+      var showToast = function(){
+        toast.textContent = hex + ' 복사됨';
+        toast.classList.add('show');
+        setTimeout(function(){ toast.classList.remove('show'); }, 1400);
+      };
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(hex).then(showToast).catch(showToast);
+      } else {
+        showToast();
+      }
+    });
+  });
+
+  var sections = document.querySelectorAll('main section, main header');
+  var links = document.querySelectorAll('.toc-list a');
+  var map = {};
+  links.forEach(function(l){ map[l.getAttribute('href').slice(1)] = l; });
+
+  var observer = new IntersectionObserver(function(entries){
+    entries.forEach(function(entry){
+      var link = map[entry.target.id];
+      if(!link) return;
+      if(entry.isIntersecting){
+        links.forEach(function(l){ l.classList.remove('active'); });
+        link.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-40% 0px -50% 0px' });
+
+  sections.forEach(function(s){ if(s.id) observer.observe(s); });
+</script>
+</body>
+</html>

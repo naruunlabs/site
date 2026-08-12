@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+
+<script>
+(function () {
+  var KEY = 'naruunlabs_ga_optout';
+  try {
+    var q = new URLSearchParams(location.search);
+    if (q.get('me') === '1') { localStorage.setItem(KEY, '1'); }
+    if (q.get('me') === '0') { localStorage.removeItem(KEY); }
+    if (localStorage.getItem(KEY) === '1') { return; }
+  } catch (e) {}
+  var h = location.hostname;
+  if (h === 'localhost' || h === '127.0.0.1' || h === '' || h.endsWith('.local')) { return; }
+  var s = document.createElement('script');
+  s.async = true;
+  s.src = 'https://www.googletagmanager.com/gtag/js?id=G-8SN72HTTK4';
+  document.head.appendChild(s);
+  window.dataLayer = window.dataLayer || [];
+  function gtag() { dataLayer.push(arguments); }
+  window.gtag = gtag;
+  gtag('js', new Date());
+  gtag('config', 'G-8SN72HTTK4');
+})();
+</script>
+
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<meta name="robots" content="noindex, nofollow">
+<title>AI 킥마스터 — 사운드 랩</title>
+<style>
+  :root{
+    --bg:#0d0f14; --panel:#161a22; --panel2:#1e2430;
+    --line:#2a3240; --txt:#e8ecf3; --dim:#8b94a6;
+    --gold:#f5a524; --red:#e3172e; --orange:#ff6a1a;
+    --green:#22c55e; --blue:#3b82f6;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+       font-family:-apple-system,BlinkMacSystemFont,'Malgun Gothic','맑은 고딕',sans-serif;
+       padding:20px 16px 60px;line-height:1.6}
+  .wrap{max-width:820px;margin:0 auto}
+  h1{font-size:24px;margin:0 0 4px;letter-spacing:-.5px}
+  h1 span{color:var(--orange)}
+  .sub{color:var(--dim);font-size:14px;margin-bottom:22px}
+  h2{font-size:16px;margin:30px 0 10px;padding-bottom:8px;border-bottom:1px solid var(--line);
+     display:flex;align-items:center;gap:8px}
+  h2 .num{background:var(--orange);color:#000;font-size:12px;font-weight:800;
+          width:22px;height:22px;border-radius:6px;display:grid;place-items:center}
+  .note{color:var(--dim);font-size:13px;margin:-4px 0 12px}
+
+  .master{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+          padding:14px 16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+          position:sticky;top:10px;z-index:10;box-shadow:0 6px 24px rgba(0,0,0,.5)}
+  .master label{font-size:13px;color:var(--dim);white-space:nowrap}
+  input[type=range]{flex:1;min-width:140px;accent-color:var(--orange)}
+  .vol{font-variant-numeric:tabular-nums;font-size:13px;color:var(--gold);min-width:40px}
+
+  .row{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;
+       background:var(--panel);border:1px solid var(--line);border-radius:10px;
+       padding:11px 13px;margin-bottom:8px}
+  .row .name{font-size:14px;font-weight:600}
+  .row .desc{font-size:12px;color:var(--dim);margin-top:2px}
+  button{font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;
+         border-radius:8px;border:1px solid var(--line);padding:9px 14px;
+         background:var(--panel2);color:var(--txt);transition:.12s;white-space:nowrap}
+  button:hover{transform:translateY(-1px);border-color:var(--orange)}
+  button:active{transform:translateY(1px)}
+  button.old{background:#232833;color:var(--dim)}
+  button.new{background:linear-gradient(135deg,var(--orange),var(--red));color:#fff;border-color:transparent}
+  button.solo{background:var(--panel2);border-color:var(--line)}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+  .grid button{width:100%;padding:14px 10px;display:block;text-align:center}
+  .grid button small{display:block;font-weight:500;color:var(--dim);font-size:11px;margin-top:3px}
+
+  .tierbtn{background:var(--panel2);border:1px solid var(--line)}
+  .t60{border-left:4px solid #64748b} .t75{border-left:4px solid var(--blue)}
+  .t88{border-left:4px solid var(--green)} .t98{border-left:4px solid var(--gold)}
+  .t100{border-left:4px solid var(--red);
+        background:linear-gradient(135deg,rgba(227,23,46,.25),rgba(245,165,36,.25))}
+
+  .tip{background:rgba(255,106,26,.08);border:1px solid rgba(255,106,26,.3);
+       border-radius:10px;padding:12px 14px;font-size:13px;color:#f0d9c4;margin:14px 0}
+  .tip b{color:var(--gold)}
+  footer{margin-top:36px;padding-top:16px;border-top:1px solid var(--line);
+         color:var(--dim);font-size:12px}
+  kbd{background:var(--panel2);border:1px solid var(--line);border-radius:4px;
+      padding:1px 6px;font-size:11px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>AI 킥마스터 <span>사운드 랩</span></h1>
+  <div class="sub">현재 소리와 새 합성음을 귀로 직접 비교하는 페이지입니다. 앱 파일은 건드리지 않습니다.</div>
+
+  <div class="master">
+    <label>전체 음량</label>
+    <input type="range" id="vol" min="0" max="100" value="70">
+    <span class="vol" id="volTxt">70%</span>
+    <button id="muteBtn">🔊 소리 켬</button>
+  </div>
+
+  <div class="tip">
+    처음 버튼을 누를 때 브라우저가 소리를 켭니다. <b>이어폰보다 스피커로</b> 들어야 저음 타격감이 제대로 느껴집니다.
+  </div>
+
+  <h2><span class="num">1</span> 현재 소리 vs 새 소리</h2>
+  <div class="note">왼쪽이 지금 앱에 들어있는 소리, 오른쪽이 새로 만든 소리입니다.</div>
+  <div id="abRows"></div>
+
+  <h2><span class="num">2</span> 점수대별 연출</h2>
+  <div class="note">점수가 높을수록 층이 쌓이고 잔향이 커집니다. 100점은 특별 연출입니다.</div>
+  <div class="grid" id="tiers"></div>
+
+  <h2><span class="num">3</span> 콤보 (겨루기용)</h2>
+  <div class="note">연속 타격할수록 음이 반음씩 올라갑니다. 격투게임의 그 느낌.</div>
+  <div class="grid">
+    <button class="new" onclick="demoCombo()">콤보 8연타<small>피치 상승</small></button>
+    <button class="solo" onclick="S.combo(0)">1타<small>기준음</small></button>
+    <button class="solo" onclick="S.combo(4)">5타<small>+4반음</small></button>
+    <button class="solo" onclick="S.combo(9)">10타<small>+9반음</small></button>
+  </div>
+
+  <h2><span class="num">4</span> 기법별 따로 듣기</h2>
+  <div class="note">타격음이 어떤 층으로 이루어져 있는지 하나씩 분리해서 들어봅니다.</div>
+  <div class="grid">
+    <button class="solo" onclick="S.layerLow()">① 저음 급강하<small>180→45Hz · 무게</small></button>
+    <button class="solo" onclick="S.layerNoise()">② 대역 노이즈<small>찰싹 · 살의 느낌</small></button>
+    <button class="solo" onclick="S.layerMetal()">③ 왜곡 사각파<small>금속성 · 날</small></button>
+    <button class="new" onclick="S.impact('body')">①+②+③ 합치기<small>완성된 타격음</small></button>
+    <button class="solo" onclick="S.whoosh()">공기 가르기<small>노이즈 스윕</small></button>
+    <button class="solo" onclick="S.impact('body',{rev:0})">잔향 없이<small>비교용</small></button>
+    <button class="solo" onclick="S.impact('body',{rev:1.4})">잔향 크게<small>도장 울림</small></button>
+    <button class="solo" onclick="S.impact('body',{dist:0})">왜곡 없이<small>비교용</small></button>
+  </div>
+
+  <h2><span class="num">5</span> 타격 강도</h2>
+  <div class="note">같은 설계로 세기만 다르게. 몸통/얼굴 타격 구분에 씁니다.</div>
+  <div class="grid">
+    <button class="solo" onclick="S.impact('light')">약<small>가벼운 접촉</small></button>
+    <button class="new" onclick="S.impact('body')">중 (몸통)<small>기본 타격</small></button>
+    <button class="new" onclick="S.impact('head')">강 (얼굴)<small>높고 날카롭게</small></button>
+    <button class="new" onclick="S.impact('critical')">치명타<small>콤보 5회 이상</small></button>
+  </div>
+
+  <h2><span class="num">6</span> 실제 흐름으로 들어보기</h2>
+  <div class="note">수업에서 실제로 들리게 될 순서대로 재생합니다.</div>
+  <div class="grid">
+    <button class="new" onclick="seqCountdown()">카운트다운 → 시작<small>3·2·1·GO</small></button>
+    <button class="new" onclick="seqGoodKick()">발차기 → 95점<small>휙 → 퍽 → 팡파레</small></button>
+    <button class="new" onclick="seqPerfect()">발차기 → 100점<small>특별 연출</small></button>
+    <button class="new" onclick="seqFail()">발차기 → 실패<small>휙 → 하강음</small></button>
+    <button class="new" onclick="seqDrill()">연습 10회 완료<small>연속 → 결과</small></button>
+  </div>
+
+  <footer>
+    마음에 드는 것을 골라서 알려주시면 <b>aikickmaster.html</b>에 이식합니다.<br>
+    "3번 소리는 좋은데 저음이 너무 세다" 같은 식으로 말해주셔도 조정 가능합니다.
+  </footer>
+</div>
+
+<script>
+
+let ac=null, master=null, comp=null, revBus=null, noiseBuf=null, muted=false;
+
+function initAudio(){
+  if(ac) return;
+  ac=new (window.AudioContext||window.webkitAudioContext)();
+
+  comp=ac.createDynamicsCompressor();
+  comp.threshold.value=-18; comp.knee.value=22;
+  comp.ratio.value=8; comp.attack.value=0.003; comp.release.value=0.18;
+  comp.connect(ac.destination);
+
+  master=ac.createGain();
+  master.gain.value=0.7;
+  master.connect(comp);
+
+  const conv=ac.createConvolver();
+  const len=Math.floor(ac.sampleRate*1.1), imp=ac.createBuffer(2,len,ac.sampleRate);
+  for(let ch=0;ch<2;ch++){
+    const d=imp.getChannelData(ch);
+    for(let i=0;i<len;i++){
+      
+      d[i]=(Math.random()*2-1)*Math.pow(1-i/len,2.6);
+    }
+  }
+  conv.buffer=imp;
+  revBus=ac.createGain(); revBus.gain.value=1;
+  revBus.connect(conv); conv.connect(master);
+
+  const nlen=ac.sampleRate*2;
+  noiseBuf=ac.createBuffer(1,nlen,ac.sampleRate);
+  const nd=noiseBuf.getChannelData(0);
+  for(let i=0;i<nlen;i++) nd[i]=Math.random()*2-1;
+}
+function T(d=0){ return ac.currentTime+d; }
+
+function distCurve(amount){
+  const n=1024, c=new Float32Array(n), k=amount*100;
+  for(let i=0;i<n;i++){
+    const x=i*2/n-1;
+    c[i]=(3+k)*x*20*Math.PI/180/(Math.PI+k*Math.abs(x));
+  }
+  return c;
+}
+
+function osc({f0,f1,type='sine',dur=0.2,vol=0.3,delay=0,attack=0.002,dist=0,send=0,detune=0}){
+  const t=T(delay);
+  const o=ac.createOscillator(), g=ac.createGain();
+  o.type=type; o.frequency.setValueAtTime(f0,t);
+  if(f1 && f1!==f0) o.frequency.exponentialRampToValueAtTime(Math.max(1,f1),t+dur);
+  if(detune) o.detune.value=detune;
+
+  g.gain.setValueAtTime(0.0001,t);
+  g.gain.linearRampToValueAtTime(vol,t+attack);
+  g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+
+  let node=o;
+  if(dist>0){
+    const ws=ac.createWaveShaper();
+    ws.curve=distCurve(dist); ws.oversample='4x';
+    o.connect(ws); node=ws;
+  }
+  node.connect(g);
+  g.connect(master);
+  if(send>0){ const s=ac.createGain(); s.gain.value=send; g.connect(s); s.connect(revBus); }
+  o.start(t); o.stop(t+dur+0.05);
+}
+
+function noise({f0=1200,f1=null,q=1,type='bandpass',dur=0.12,vol=0.3,delay=0,attack=0.001,send=0}){
+  const t=T(delay);
+  const src=ac.createBufferSource(); src.buffer=noiseBuf;
+  src.playbackRate.value=1;
+  const flt=ac.createBiquadFilter();
+  flt.type=type; flt.Q.value=q;
+  flt.frequency.setValueAtTime(f0,t);
+  if(f1 && f1!==f0) flt.frequency.exponentialRampToValueAtTime(Math.max(20,f1),t+dur);
+
+  const g=ac.createGain();
+  g.gain.setValueAtTime(0.0001,t);
+  g.gain.linearRampToValueAtTime(vol,t+attack);
+  g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+
+  src.connect(flt).connect(g); g.connect(master);
+  if(send>0){ const s=ac.createGain(); s.gain.value=send; g.connect(s); s.connect(revBus); }
+  src.start(t); src.stop(t+dur+0.05);
+}
+
+const S={
+
+  oldTone(freq,dur,type='sine',vol=0.18,delay=0){
+    const t=T(delay);
+    const o=ac.createOscillator(), g=ac.createGain();
+    o.type=type; o.frequency.value=freq;
+    g.gain.setValueAtTime(0.0001,t);
+    g.gain.linearRampToValueAtTime(vol,t+0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    o.connect(g).connect(master); o.start(t); o.stop(t+dur+0.03);
+  },
+  oldKick(){ S.oldTone(170,0.09,'square',0.10); },
+  oldScore(s){ S.oldTone(280+Math.min(100,s)*5,0.16,'sine',0.18); },
+  oldFail(){ S.oldTone(220,0.25,'sawtooth',0.12); },
+  oldCount(){ S.oldTone(520,0.12,'sine',0.2); },
+  oldGo(){ S.oldTone(740,0.30,'sine',0.22); },
+  oldSuccess(){ [440,554,659].forEach((f,i)=>S.oldTone(f,0.18,'sine',0.18,i*0.08)); },
+  oldImpact(){ S.oldTone(160,0.055,'square',0.16); S.oldTone(650,0.08,'triangle',0.13,0.025); },
+
+  layerLow(d=0){ osc({f0:180,f1:45,type:'sine',dur:0.20,vol:0.85,delay:d,attack:0.001}); },
+  layerNoise(d=0){ noise({f0:2600,f1:600,q:1.1,dur:0.09,vol:0.42,delay:d}); },
+  layerMetal(d=0){ osc({f0:420,f1:150,type:'square',dur:0.07,vol:0.18,delay:d,dist:0.55,attack:0.001}); },
+
+  whoosh(d=0){
+    noise({f0:280,f1:3400,q:2.2,dur:0.17,vol:0.20,delay:d,attack:0.05});
+    noise({f0:900,f1:220,q:1.4,dur:0.13,vol:0.12,delay:d+0.06});
+  },
+
+  impact(kind='body',opt={}){
+    const P={
+      light   :{low:130,lowEnd:42,nf:1900,nv:0.26,mv:0.10,dur:0.14,lv:0.55,rev:0.16},
+      body    :{low:185,lowEnd:44,nf:2600,nv:0.42,mv:0.18,dur:0.21,lv:0.85,rev:0.26},
+      head    :{low:235,lowEnd:58,nf:3600,nv:0.50,mv:0.24,dur:0.19,lv:0.78,rev:0.32},
+      critical:{low:210,lowEnd:38,nf:3100,nv:0.60,mv:0.34,dur:0.34,lv:1.00,rev:0.55}
+    }[kind]||{};
+    const d=opt.delay||0;
+    const rev=(opt.rev===undefined)?P.rev:opt.rev;
+    const dist=(opt.dist===undefined)?0.55:opt.dist;
+
+    osc({f0:P.low,f1:P.lowEnd,type:'sine',dur:P.dur,vol:P.lv,delay:d,attack:0.001,send:rev*0.5});
+    
+    noise({f0:P.nf,f1:P.nf*0.22,q:1.1,dur:P.dur*0.45,vol:P.nv,delay:d,send:rev});
+    
+    if(dist>0) osc({f0:P.low*2.3,f1:P.low*0.8,type:'square',dur:0.07,vol:P.mv,delay:d,dist:dist,attack:0.001,send:rev*0.4});
+    
+    if(kind==='critical'){
+      osc({f0:300,f1:1500,type:'sawtooth',dur:0.26,vol:0.14,delay:d+0.02,dist:0.4,send:rev});
+      noise({f0:5000,f1:9000,q:0.8,dur:0.30,vol:0.10,delay:d+0.05,attack:0.08,send:rev});
+    }
+  },
+
+  score(s){
+    if(s>=100) return S.perfect();
+    
+    S.impact(s>=88?'head':'body',{rev:s>=88?0.34:0.2});
+
+    if(s<75){                       
+      osc({f0:392,type:'triangle',dur:0.16,vol:0.20,delay:0.05,send:0.15});
+    }else if(s<88){                 
+      [523,659].forEach((f,i)=>
+        osc({f0:f,type:'triangle',dur:0.20,vol:0.22,delay:0.05+i*0.075,send:0.22}));
+    }else{                          
+      [659,831,988].forEach((f,i)=>{
+        osc({f0:f,type:'triangle',dur:0.26,vol:0.24,delay:0.05+i*0.07,send:0.3});
+        osc({f0:f*2,type:'sine',dur:0.18,vol:0.08,delay:0.05+i*0.07,send:0.3});
+      });
+      noise({f0:7000,f1:11000,q:0.7,dur:0.34,vol:0.07,delay:0.12,attack:0.1,send:0.5});
+    }
+  },
+
+  perfect(){
+    S.impact('critical',{rev:0.6});
+    
+    const notes=[523,659,784,1047,1319];
+    notes.forEach((f,i)=>{
+      const d=0.10+i*0.085;
+      osc({f0:f,type:'triangle',dur:0.42,vol:0.24,delay:d,send:0.45});
+      osc({f0:f,type:'sawtooth',dur:0.36,vol:0.07,delay:d,detune:+9,dist:0.25,send:0.45});
+      osc({f0:f,type:'sawtooth',dur:0.36,vol:0.07,delay:d,detune:-9,dist:0.25,send:0.45});
+    });
+    
+    [1047,1319,1568].forEach(f=>
+      osc({f0:f,type:'triangle',dur:0.9,vol:0.16,delay:0.55,send:0.7}));
+    noise({f0:6000,f1:13000,q:0.6,dur:0.8,vol:0.09,delay:0.55,attack:0.25,send:0.9});
+    osc({f0:70,f1:40,type:'sine',dur:0.7,vol:0.5,delay:0.55,send:0.3});
+  },
+
+  fail(){
+    osc({f0:260,f1:70,type:'sawtooth',dur:0.34,vol:0.22,delay:0,dist:0.35,attack:0.004,send:0.2});
+    noise({f0:700,f1:180,q:0.9,dur:0.24,vol:0.16,delay:0.02,send:0.18});
+    osc({f0:150,f1:60,type:'sine',dur:0.30,vol:0.35,delay:0.02});
+  },
+
+  combo(n=0,d=0){
+    const semi=Math.min(n,14);
+    const f=330*Math.pow(2,semi/12);
+    S.impact(n>=5?'critical':'body',{delay:d,rev:0.2+semi*0.02});
+    osc({f0:f,type:'square',dur:0.13,vol:0.16,delay:d+0.03,dist:0.3,send:0.25});
+    osc({f0:f*1.5,type:'triangle',dur:0.16,vol:0.10,delay:d+0.03,send:0.25});
+  },
+
+  count(d=0){
+    osc({f0:440,f1:430,type:'triangle',dur:0.16,vol:0.28,delay:d,send:0.2});
+    noise({f0:1800,f1:900,q:2,dur:0.06,vol:0.14,delay:d});
+  },
+  go(d=0){
+    osc({f0:200,f1:90,type:'sine',dur:0.35,vol:0.7,delay:d,attack:0.001,send:0.3});
+    [523,784,1047].forEach((f,i)=>{
+      osc({f0:f,type:'triangle',dur:0.45,vol:0.24,delay:d+i*0.02,send:0.4});
+      osc({f0:f,type:'sawtooth',dur:0.35,vol:0.06,delay:d+i*0.02,detune:8,dist:0.3,send:0.4});
+    });
+    noise({f0:3000,f1:8000,q:0.8,dur:0.4,vol:0.11,delay:d,attack:0.12,send:0.5});
+  },
+
+  finish(){
+    S.impact('body',{rev:0.4});
+    const notes=[392,523,659,784,1047];
+    notes.forEach((f,i)=>osc({f0:f,type:'triangle',dur:0.5,vol:0.22,delay:0.08+i*0.1,send:0.5}));
+    noise({f0:5000,f1:12000,q:0.6,dur:0.7,vol:0.08,delay:0.5,attack:0.2,send:0.8});
+  }
+};
+
+const AB=[
+  ['발차기 감지','발이 올라간 순간. 지금은 짧은 사각파 한 번',()=>S.oldKick(),()=>S.whoosh()],
+  ['타격 (겨루기)','상대를 맞혔을 때',()=>S.oldImpact(),()=>S.impact('body')],
+  ['점수 70점','통과선 근처',()=>S.oldScore(70),()=>S.score(70)],
+  ['점수 85점','좋은 발차기',()=>S.oldScore(85),()=>S.score(85)],
+  ['점수 95점','아주 좋은 발차기',()=>S.oldScore(95),()=>S.score(95)],
+  ['점수 100점','만점 — 특별 연출',()=>S.oldScore(100),()=>S.perfect()],
+  ['실패 / 거부','다시 차라는 신호',()=>S.oldFail(),()=>S.fail()],
+  ['카운트다운','3 · 2 · 1',()=>S.oldCount(),()=>S.count()],
+  ['시작 (GO)','카운트다운 끝',()=>S.oldGo(),()=>S.go()],
+  ['세션 완료','연습 10회를 다 채웠을 때',()=>S.oldSuccess(),()=>S.finish()]
+];
+
+const abRows=document.getElementById('abRows');
+AB.forEach(([name,desc,oldFn,newFn])=>{
+  const div=document.createElement('div');
+  div.className='row';
+  div.innerHTML=`<div><div class="name">${name}</div><div class="desc">${desc}</div></div>`;
+  const b1=document.createElement('button'); b1.className='old'; b1.textContent='▶ 현재';
+  const b2=document.createElement('button'); b2.className='new'; b2.textContent='▶ 새 소리';
+  b1.onclick=()=>{go(oldFn)}; b2.onclick=()=>{go(newFn)};
+  div.appendChild(b1); div.appendChild(b2);
+  abRows.appendChild(div);
+});
+
+const TIERS=[[62,'t60','겨우 통과'],[70,'t60','통과선'],[80,'t75','좋아요'],
+             [90,'t88','아주 좋아요'],[97,'t98','거의 완벽'],[100,'t100','만점!']];
+const tiersEl=document.getElementById('tiers');
+TIERS.forEach(([s,cls,label])=>{
+  const b=document.createElement('button');
+  b.className='tierbtn '+cls;
+  b.innerHTML=`${s}점<small>${label}</small>`;
+  b.onclick=()=>go(()=>S.score(s));
+  tiersEl.appendChild(b);
+});
+
+function demoCombo(){ go(()=>{ for(let i=0;i<8;i++) S.combo(i, i*0.28); }); }
+function seqCountdown(){ go(()=>{ S.count(0); S.count(0.6); S.count(1.2); S.go(1.85); }); }
+function seqGoodKick(){ go(()=>{ S.whoosh(0); setTimeout(()=>S.score(95),330); }); }
+function seqPerfect(){ go(()=>{ S.whoosh(0); setTimeout(()=>S.perfect(),330); }); }
+function seqFail(){ go(()=>{ S.whoosh(0); setTimeout(()=>S.fail(),330); }); }
+function seqDrill(){
+  go(()=>{
+    const scores=[78,92,65,88,95,71,90,84,97,93];
+    scores.forEach((s,i)=>{
+      setTimeout(()=>{ S.whoosh(0); setTimeout(()=>S.score(s),300); }, i*950);
+    });
+    setTimeout(()=>S.finish(), scores.length*950+400);
+  });
+}
+
+function go(fn){ initAudio(); if(ac.state==='suspended') ac.resume(); if(!muted) fn(); }
+
+const volEl=document.getElementById('vol'), volTxt=document.getElementById('volTxt');
+volEl.oninput=()=>{
+  volTxt.textContent=volEl.value+'%';
+  if(master && !muted) master.gain.value=volEl.value/100;
+};
+document.getElementById('muteBtn').onclick=function(){
+  muted=!muted;
+  this.textContent=muted?'🔇 소리 끔':'🔊 소리 켬';
+  if(master) master.gain.value=muted?0:volEl.value/100;
+};
+</script>
+</body>
+</html>

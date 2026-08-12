@@ -1,0 +1,9 @@
+# 나른랩스 (naruunlabs.kr)
+# 검색엔진 로봇에게 주는 안내문입니다.
+# 관리자 페이지는 여기에 적지 않습니다 — 적으면 오히려 위치를 알려주는 셈이라
+# admin.html 안에 noindex 태그를 넣어서 막았습니다.
+
+User-agent: *
+Allow: /
+
+Sitemap: https://naruunlabs.kr/sitemap.xml

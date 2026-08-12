@@ -1,0 +1,1251 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
+<title>NARUUN LABS · 관리자</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css">
+<style>
+:root{
+  --ink:#585c66;
+  --ink2:#484c55;
+  --red:#e5262a;
+  --red2:#c81f22;
+  --teal:#12b3a0;
+  --gold:#c98a1f;
+  --amber:#b8790a;
+  --green:#12a15c;
+  --danger:#dc2626;
+  --bg:#f3f4f7;
+  --panel:#ffffff;
+  --panel-soft:#f6f7f9;
+  --text:#171a21;
+  --muted:#70757e;
+  --muted2:#9aa0aa;
+  --line:#eceef1;
+  --radius-lg:24px;
+  --radius:16px;
+  --radius-sm:11px;
+  --shadow-sm:0 2px 10px rgba(20,22,30,.05);
+  --shadow-md:0 12px 32px rgba(20,22,30,.06);
+  --shadow-lg:0 24px 64px rgba(20,22,30,.10);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg)}
+body{
+  min-height:100vh;
+  color:var(--text);
+  font-family:'Pretendard','Noto Sans KR','Gothic A1',system-ui,sans-serif;
+  letter-spacing:-.2px;
+  -webkit-font-smoothing:antialiased;
+}
+button,input,select,textarea{font-family:inherit;color:inherit}
+button{cursor:pointer;transition:transform .15s ease,background .15s ease,color .15s ease,box-shadow .15s ease;border:0}
+button:hover{transform:translateY(-1px)}
+button:active{transform:translateY(0)}
+button:disabled{opacity:.45;cursor:not-allowed!important;transform:none!important}
+code{color:var(--text);font-weight:800;background:var(--panel-soft);border-radius:8px;padding:4px 8px;letter-spacing:.2px;font-size:12px}
+
+#loginWrap{
+  display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px;
+  background:radial-gradient(circle at 50% 0%,rgba(229,38,42,.18),transparent 32%),linear-gradient(135deg,#0e0f14,#1a1c24 60%,#0e0f14);
+}
+#loginWrap.hidden{display:none}
+.login-box{
+  width:420px;max-width:calc(100vw - 36px);
+  background:var(--panel);color:var(--text);
+  border-radius:28px;padding:44px 40px;
+  box-shadow:0 40px 120px rgba(0,0,0,.35);
+}
+.akm-admin-logo{font-weight:900;font-size:22px;letter-spacing:-.8px;color:var(--ink)}
+.login-box .akm-admin-logo{font-size:26px;margin-bottom:6px}
+.login-box p{font-size:13px;color:var(--muted);font-weight:700;margin-bottom:26px}
+.login-brand-meta{display:flex;flex-direction:column;align-items:flex-start;margin:-10px 0 22px}
+.akm-powered{font-size:11px;font-weight:700;color:var(--muted2);letter-spacing:.1px}
+
+.f-input,.f-textarea,.select-filter{
+  width:100%;background:var(--panel-soft);border:0;border-radius:13px;color:var(--text);
+  outline:none;font-size:14px;font-weight:600;
+}
+.f-input{height:46px;padding:0 15px;margin-bottom:12px}
+.f-textarea{min-height:86px;padding:13px 15px;margin-bottom:12px;resize:vertical;line-height:1.6}
+.f-input:focus,.f-textarea:focus,.select-filter:focus{background:#fff;box-shadow:0 0 0 3px rgba(20,22,28,.10)}
+.f-input::placeholder,.f-textarea::placeholder{color:var(--muted2)}
+.err-msg{color:var(--danger);font-size:13px;font-weight:700;margin-top:8px;min-height:18px}
+.ok-msg{color:var(--green);font-size:13px;font-weight:700;margin-top:8px;min-height:18px}
+
+.btn-primary,.btn-add,.btn-sm-act,.btn-save{font-weight:800;border-radius:13px}
+.btn-primary{width:100%;height:52px;background:var(--ink);color:#fff;font-size:15px}
+.btn-primary:hover{background:var(--red)}
+.btn-add{height:42px;padding:0 18px;background:var(--ink);color:#fff;font-size:13px;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.btn-add:hover{background:var(--red)}
+.btn-ghost{background:var(--panel-soft)!important;color:var(--text)!important}
+.btn-ghost:hover{background:#e9ebef!important}
+.btn-danger-soft{background:#fdecec!important;color:var(--danger)!important}
+.btn-danger-soft:hover{background:var(--danger)!important;color:#fff!important}
+.btn-gold{background:linear-gradient(135deg,var(--gold),#e0a83f)!important;color:#fff!important}
+.btn-gold:hover{filter:brightness(1.05)}
+.btn-cancel{background:var(--panel-soft);color:var(--muted)}
+.btn-cancel:hover{background:#e9ebef}
+.btn-save{background:var(--ink);color:#fff}
+.btn-save:hover{background:var(--red)}
+
+#dashboard{display:none;min-height:100vh}
+#dashboard.show{display:block}
+
+.tab-bar{
+  position:fixed;left:0;top:0;bottom:0;z-index:80;
+  width:232px;height:100vh;
+  padding:28px 14px 22px;
+  display:flex;flex-direction:column;gap:6px;
+  background:linear-gradient(180deg,var(--ink),var(--ink2));
+  overflow-y:auto;
+}
+.sidebar-brand{display:flex;flex-direction:column;gap:5px;margin:2px 8px 26px;padding:0 2px 20px;border-bottom:1px solid rgba(255,255,255,.08)}
+.sidebar-brand div{font-weight:900;font-size:17px;letter-spacing:-.5px;color:#fff}
+.sidebar-brand span{font-size:11px;font-weight:650;color:rgba(255,255,255,.42)}
+.tab-btn{
+  height:48px;padding:0 14px;border-radius:13px;
+  background:transparent;color:rgba(255,255,255,.58);
+  font-size:14px;font-weight:750;letter-spacing:-.2px;
+  display:flex;align-items:center;justify-content:flex-start;text-align:left;
+  white-space:nowrap;
+}
+.tab-btn:hover{background:rgba(255,255,255,.06);color:#fff;transform:none}
+.tab-btn.active{background:#fff;color:var(--ink);box-shadow:0 14px 30px rgba(0,0,0,.20)}
+
+#dashboard.show{padding-left:232px}
+
+.top-bar{
+  position:sticky;top:0;z-index:50;
+  min-height:76px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  padding:14px 34px;
+  background:rgba(255,255,255,.9);backdrop-filter:blur(14px);
+  box-shadow:0 1px 0 var(--line);
+}
+.top-logo{display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-width:0}
+.top-logo-row{display:flex;align-items:center;gap:10px}
+.top-logo .akm-admin-logo{font-size:19px}
+.admin-label{font-size:12px;font-weight:800;color:var(--red)}
+.top-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.btn-sm-act{height:38px;padding:0 14px;border-radius:999px;font-size:12px;white-space:nowrap}
+
+.tab-content{display:none;width:min(1280px,calc(100% - 64px));margin:0 auto;padding:28px 0 70px}
+.tab-content.active{display:block}
+
+.stats-row{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:18px}
+.stat-card{background:var(--panel);border-radius:20px;padding:22px 20px;box-shadow:var(--shadow-sm)}
+.stat-card .num{font-size:32px;font-weight:900;line-height:1;color:var(--text);letter-spacing:-1px}
+.stat-card .label{font-size:12px;color:var(--muted);font-weight:700;margin-top:9px}
+
+.toolbar{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;background:var(--panel);border-radius:18px;padding:12px;margin-bottom:18px;box-shadow:var(--shadow-sm)}
+.toolbar .f-input{margin:0}
+.select-filter{height:46px;min-width:132px;padding:0 13px;font-weight:700}
+.table-wrap{background:var(--panel);border-radius:20px;overflow:hidden;box-shadow:var(--shadow-sm)}
+table{width:100%;border-collapse:collapse}
+th{background:var(--panel-soft);padding:15px 14px;font-size:11px;color:var(--muted);font-weight:800;text-align:left;white-space:nowrap}
+td{padding:15px 14px;font-size:14px;vertical-align:middle;border-top:1px solid var(--line)}
+tr:hover td{background:var(--panel-soft)}
+tr.row-expiring td{background:#fff8e8}
+tr.row-expired td{background:#fdecec}
+.sub-text{display:block;color:var(--muted2);font-size:11px;font-weight:600;margin-top:4px}
+.badge{display:inline-flex;align-items:center;justify-content:center;min-height:24px;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:800;white-space:nowrap}
+.badge.active{background:#e7f8ee;color:#0c8d54}
+.badge.expired{background:#fdeaec;color:#dc2626}
+.badge.inactive{background:#eef0f4;color:#6b7280}
+.badge.soon{background:#fff3cc;color:#a16207}
+.action-btns{display:flex;gap:6px;flex-wrap:wrap;min-width:200px}
+.btn-sm{height:30px;padding:0 10px;border-radius:9px;font-size:11px;font-weight:800}
+.btn-edit{background:#eef1ff;color:#3343c8}
+.btn-copy{background:#e7f8ee;color:#0c8d54}
+.btn-toggle{background:var(--panel-soft);color:var(--text)}
+.btn-del{background:#fdecec;color:#dc2626}
+.empty-msg,.loading{text-align:center;padding:52px!important;color:var(--muted2);font-weight:700}
+.footer-note{color:var(--muted2);font-size:11px;text-align:right;margin-top:16px;font-weight:700}
+
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(15,16,20,.55);z-index:999;align-items:center;justify-content:center;padding:18px;backdrop-filter:blur(6px)}
+.modal-bg.show{display:flex}
+.modal{background:var(--panel);border-radius:26px;padding:30px;width:520px;max-width:96vw;max-height:92vh;overflow-y:auto;box-shadow:0 40px 120px rgba(0,0,0,.30)}
+.modal h3{font-size:21px;font-weight:900;letter-spacing:-.6px;margin-bottom:22px}
+.modal h3 span{color:var(--red)}
+.modal label{font-size:12px;color:var(--muted);font-weight:800;display:block;margin:0 0 7px}
+.modal .f-input{margin-bottom:15px}
+.modal-section{border-top:1px solid var(--line);margin:20px 0 16px;padding-top:18px}
+.modal-section-title{font-size:11px;color:var(--red);font-weight:800;margin-bottom:14px;letter-spacing:.4px;text-transform:uppercase}
+.modal-help{color:var(--muted2);font-size:12px;line-height:1.5;margin:-5px 0 12px;font-weight:600}
+.modal-btns{display:flex;gap:10px;margin-top:20px}
+.modal-btns button{flex:1;height:48px;border-radius:14px;font-size:14px;font-weight:800}
+.input-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.input-row .f-input{margin-bottom:0}
+
+.admin-slot-grid{display:flex;gap:8px;flex-wrap:wrap}
+.admin-slot-card{flex:1 1 130px;min-width:130px;border-radius:14px;padding:12px;background:var(--panel-soft)}
+.admin-slot-card.is-used{background:#e7f8ee}
+.admin-slot-card.is-empty{opacity:.6}
+.admin-slot-card.is-toggle{cursor:pointer;transition:transform .1s}
+.admin-slot-card.is-toggle:hover{transform:translateY(-1px)}
+.admin-slot-card.is-locked{opacity:.55}
+.admin-slot-card.is-open{background:#eaf2ff;box-shadow:0 0 0 2px rgba(47,123,246,.25)}
+.admin-slot-card.is-open .admin-slot-status{color:#2f7bf6}
+.admin-slot-status{font-weight:800;font-size:13px;margin-bottom:6px}
+.admin-slot-sub{font-size:11px;color:var(--muted2);line-height:1.4}
+.admin-slot-card .btn-sm{margin-top:6px}
+
+.edit-section{background:var(--panel);border-radius:22px;padding:26px;margin-bottom:16px;box-shadow:var(--shadow-sm)}
+.edit-section h3{font-size:16px;font-weight:900;letter-spacing:-.3px;color:var(--text);margin-bottom:20px;display:flex;align-items:center;gap:10px}
+.edit-section h3:before{content:"";display:block;width:9px;height:9px;background:var(--red);border-radius:50%}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.field-row.single{grid-template-columns:1fr}
+.field-group{display:flex;flex-direction:column;gap:6px}
+.field-label{font-size:12px;color:var(--muted);font-weight:800}
+.field-hint{font-size:11px;color:var(--muted2);margin-top:2px;font-weight:600}
+
+.home-subtab-btn{height:40px;padding:0 16px;border-radius:999px;background:var(--panel-soft);color:var(--muted);font-size:13px;font-weight:800}
+.home-subtab-btn:hover{background:#e9ebef;color:var(--text)}
+.home-subtab-btn.active{background:var(--ink);color:#fff}
+#license-subtab-kick-btn,#license-subtab-jump-btn{height:40px;padding:0 16px;border-radius:999px;background:var(--panel-soft);color:var(--muted);font-size:13px;font-weight:800}
+#license-subtab-kick-btn:hover,#license-subtab-jump-btn:hover{background:#e9ebef;color:var(--text)}
+#license-subtab-kick-btn.active,#license-subtab-jump-btn.active{background:var(--ink);color:#fff}
+
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--ink);color:#fff;font-size:14px;font-weight:800;padding:13px 28px;border-radius:999px;box-shadow:0 20px 60px rgba(0,0,0,.24);transition:.3s;z-index:9999;white-space:nowrap}
+.toast.show{transform:translateX(-50%) translateY(0)}
+
+@media(max-width:980px){
+  .tab-bar{position:static;left:auto;width:100%;height:auto;flex-direction:row;padding:10px 14px;gap:8px;overflow-x:auto;z-index:80}
+  .sidebar-brand{display:none}
+  .tab-btn{width:auto;min-width:max-content;height:40px;padding:0 14px}
+  #dashboard.show{padding-left:0}
+  .top-bar{padding:12px 18px}
+  .tab-content{width:min(100% - 32px,1280px);padding-top:18px}
+  .stats-row{grid-template-columns:repeat(2,1fr)}
+  .toolbar{grid-template-columns:1fr}
+  .table-wrap{overflow-x:auto}
+  table{min-width:1050px}
+  .field-row{grid-template-columns:1fr}
+}
+@media(max-width:560px){
+  .stats-row{grid-template-columns:1fr}
+  .modal{padding:24px}
+  .input-row{grid-template-columns:1fr}
+}
+
+.admin-company-logo{display:block;object-fit:contain;object-position:left center}
+.login-box .admin-company-logo{width:320px;height:80px;margin-bottom:4px}
+.top-logo-row .admin-company-logo{width:240px;height:56px}
+.sidebar-company-logo{width:220px;height:52px;display:block;object-fit:contain;object-position:left center;filter:brightness(0) invert(1)}
+@media(max-width:620px){.top-logo-row .admin-company-logo{width:190px;height:46px}}
+
+</style>
+
+<style id="naruun-admin-v2-final">
+:root{
+  --ink:#071C49;--ink2:#0B2E6B;--red:#0757D8;--red2:#0649B5;
+  --teal:#14B8A6;--gold:#FF8A3D;--bg:#F3F7FC;--panel:#FFFFFF;
+  --panel-soft:#F7FAFE;--text:#162033;--muted:#667085;--muted2:#98A2B3;
+  --line:#E3EAF3;--shadow-sm:0 2px 12px rgba(7,28,73,.05);
+  --shadow-md:0 16px 44px rgba(7,28,73,.08);--shadow-lg:0 28px 80px rgba(7,28,73,.14)
+}
+body{background:linear-gradient(180deg,#F7FAFE 0%,#F1F5FB 100%);letter-spacing:-.025em}
+#loginWrap{background:radial-gradient(circle at 18% 8%,rgba(18,136,248,.30),transparent 30%),radial-gradient(circle at 82% 82%,rgba(20,184,166,.17),transparent 28%),linear-gradient(145deg,#061632,#0A2B64 56%,#071C49)}
+.login-box{border-radius:26px;padding:42px 38px;border:1px solid rgba(255,255,255,.65);box-shadow:0 36px 100px rgba(0,0,0,.32)}
+.akm-admin-logo{color:var(--ink);font-weight:900;letter-spacing:-.045em}
+.login-box .akm-admin-logo{font-size:28px}.login-box p{font-weight:650;margin-top:5px}
+.f-input,.f-textarea,.select-filter{background:#F5F8FC;border:1px solid transparent;border-radius:12px;font-weight:600}
+.f-input:focus,.f-textarea:focus,.select-filter:focus{background:#fff;border-color:rgba(7,87,216,.35);box-shadow:0 0 0 4px rgba(7,87,216,.09)}
+.btn-primary,.btn-add,.btn-save{background:linear-gradient(135deg,#071C49,#0757D8);box-shadow:0 10px 24px rgba(7,87,216,.18)}
+.btn-primary:hover,.btn-add:hover,.btn-save:hover{background:linear-gradient(135deg,#0757D8,#1288F8)}
+.tab-bar{width:244px;padding:24px 14px;background:linear-gradient(180deg,#061632 0%,#071C49 48%,#0A2B64 100%);box-shadow:16px 0 50px rgba(7,28,73,.12)}
+#dashboard.show{padding-left:244px}
+.sidebar-brand{margin:0 8px 22px;padding:8px 4px 22px}.sidebar-brand div{font-size:18px;letter-spacing:-.04em}.sidebar-brand span{color:rgba(255,255,255,.52)}
+.tab-btn{height:46px;border-radius:11px;color:rgba(255,255,255,.62);font-weight:750}
+.tab-btn:hover{background:rgba(255,255,255,.07)}
+.tab-btn.active{background:linear-gradient(135deg,#fff,#EDF5FF);color:#0757D8;box-shadow:0 12px 28px rgba(0,0,0,.18)}
+.top-bar{min-height:72px;padding:12px 30px;background:rgba(255,255,255,.88);border-bottom:1px solid rgba(227,234,243,.9);box-shadow:none}
+.admin-label{color:#0757D8;background:#EAF4FF;padding:4px 8px;border-radius:999px}
+.tab-content{width:min(1320px,calc(100% - 52px));padding-top:26px}
+.stat-card,.card,.panel-card,.form-card,.table-wrap{border:1px solid rgba(227,234,243,.9);box-shadow:var(--shadow-sm)}
+.stat-card{border-radius:18px}.stat-card .num{color:#071C49}
+.card,.panel-card,.form-card{border-radius:18px}
+.section-title h2,.card-title{color:#071C49;letter-spacing:-.035em}
+.btn-sm-act{border-radius:10px;font-weight:750}.btn-ghost{background:#F3F7FC!important;color:#344054!important}.btn-ghost:hover{background:#EAF2FC!important;color:#0757D8!important}
+.btn-danger-soft{background:#FFF0F1!important}.btn-gold{background:linear-gradient(135deg,#FF8A3D,#FFB15F)!important}
+table{border-collapse:separate;border-spacing:0}thead th{background:#F7FAFE;color:#475467;font-weight:800;border-bottom:1px solid var(--line)}tbody tr:hover td{background:#FAFCFF}
+.modal-box{border-radius:22px;border:1px solid var(--line);box-shadow:var(--shadow-lg)}
+.admin-slot-card{border:1px solid var(--line);background:#F7FAFE}.admin-slot-card.is-used{background:#ECFDF3;border-color:#ABEFC6}.admin-slot-card.is-open{background:#EAF4FF;border-color:#B2D4FF}
+.footer-note{color:#98A2B3}
+@media(max-width:980px){
+  .tab-bar{position:sticky;top:0;width:100%;height:auto;min-height:0;padding:10px 12px;flex-direction:row;overflow-x:auto;overflow-y:hidden;align-items:center;box-shadow:0 8px 24px rgba(7,28,73,.15)}
+  .sidebar-brand{min-width:max-content;margin:0 8px 0 0;padding:0 16px 0 4px;border-bottom:0;border-right:1px solid rgba(255,255,255,.12)}
+  .sidebar-brand span{display:none}.tab-btn{min-width:max-content;height:40px;padding:0 13px}
+  #dashboard.show{padding-left:0}.top-bar{position:sticky;top:60px;padding:10px 16px}.tab-content{width:min(100% - 28px,1320px);padding-top:18px}
+}
+@media(max-width:620px){
+  .login-box{padding:32px 24px}.top-actions{width:100%;justify-content:flex-start}.btn-sm-act{flex:1}.stats-row{grid-template-columns:repeat(2,minmax(0,1fr))}.top-bar{top:60px}.tab-content{width:calc(100% - 20px)}
+}
+
+.lab-check{display:flex;align-items:center;gap:9px;padding:14px;border:1px solid var(--line);border-radius:13px;background:var(--panel-soft);font-size:13px;font-weight:800}
+.lab-check input{width:17px;height:17px;accent-color:#FF8A3D}
+
+.exp-intro{margin-bottom:16px}
+.exp-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.exp-card{border:1px solid var(--line);border-radius:16px;background:var(--panel-soft);padding:18px;display:flex;flex-direction:column;gap:10px}
+.exp-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.exp-name{font-size:15px;font-weight:900;letter-spacing:-.3px}
+.exp-tag{font-size:10.5px;font-weight:800;padding:4px 9px;border-radius:999px;white-space:nowrap}
+.exp-tag.run{background:rgba(18,161,92,.13);color:var(--green)}
+.exp-tag.wait{background:rgba(88,92,102,.13);color:var(--muted2)}
+.exp-desc{font-size:12.5px;line-height:1.65;color:var(--muted2);font-weight:600;flex:1}
+.exp-meta{font-size:11px;color:var(--muted2);font-weight:700;word-break:break-all}
+.exp-act{display:flex;gap:8px;margin-top:2px}
+.exp-act a.btn-add{text-decoration:none}
+.exp-empty{grid-column:1/-1;padding:34px;text-align:center;font-size:13px;font-weight:700;color:var(--muted2);border:1px dashed var(--line);border-radius:16px}
+@media(max-width:800px){.exp-grid{grid-template-columns:1fr}}
+
+</style>
+
+</head>
+<body>
+
+<div id="loginWrap">
+  <div class="login-box">
+    <img class="admin-company-logo" src="naruunlabs_logo.svg" alt="NARUUN LABS">
+    <p>NARUUN LABS 통합 관리자</p>
+    <div class="login-brand-meta">
+      <div class="akm-powered">Powered by Google MediaPipe</div>
+    </div>
+    <input id="adminPw" class="f-input" type="password" placeholder="관리자 비밀번호" autocomplete="current-password" />
+    <button class="btn-primary" onclick="adminLogin()">로그인</button>
+    <div class="err-msg" id="adminErr"></div>
+  </div>
+</div>
+
+<div id="dashboard">
+
+  <div class="top-bar">
+    <div class="top-logo">
+      <div class="top-logo-row"><img class="admin-company-logo" src="naruunlabs_logo.svg" alt="NARUUN LABS"><span class="admin-label">관리자</span></div>
+      <div class="akm-powered">Powered by Google MediaPipe</div>
+    </div>
+    <div class="top-actions">
+      <button class="btn-sm-act btn-ghost" onclick="openPwModal()">비밀번호 변경</button>
+      <button class="btn-sm-act btn-ghost" onclick="window.open('/','_blank')">NARUUN LABS 미리보기</button>
+      <button class="btn-sm-act btn-danger-soft" onclick="logoutAdmin()">로그아웃</button>
+    </div>
+  </div>
+
+  <div class="tab-bar">
+    <div class="sidebar-brand"><img class="sidebar-company-logo" src="naruunlabs_logo.svg" alt="NARUUN LABS"><span>Powered by Google MediaPipe</span></div>
+    <button class="tab-btn active" onclick="switchTab('license')">라이선스 관리</button>
+    <button class="tab-btn" onclick="switchTab('home')">홈페이지 관리</button>
+    <button class="tab-btn" onclick="switchTab('lab')">실험실</button>
+  </div>
+
+  <div class="tab-content active" id="tab-license">
+    <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
+      <button class="home-subtab-btn active" id="license-subtab-kick-btn" onclick="switchLicenseSubtab('kick')">킥마스터 라이선스</button>
+      <button class="home-subtab-btn" id="license-subtab-jump-btn" onclick="switchLicenseSubtab('jump')">점프마스터 라이선스</button>
+      <div style="flex:1"></div>
+      <button class="btn-add btn-ghost" onclick="loadLicenses()">↻ 새로고침</button>
+      <button class="btn-add" id="licenseAddBtn" onclick="openAddModal()">+ 라이선스 발급</button>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card"><div class="num" id="statTotal">-</div><div class="label">전체 도장</div></div>
+      <div class="stat-card"><div class="num" id="statActive" style="color:var(--green)">-</div><div class="label">활성</div></div>
+      <div class="stat-card"><div class="num" id="statInactive" style="color:var(--red)">-</div><div class="label">비활성</div></div>
+      <div class="stat-card"><div class="num" id="statLifetime" style="color:var(--gold)">-</div><div class="label">영구 라이선스</div></div>
+      <div class="stat-card"><div class="num" id="statExpiring" style="color:var(--amber)">-</div><div class="label">만료 임박 (7일)</div></div>
+      <div class="stat-card"><div class="num" id="statTrial" style="color:#4fa3ff">-</div><div class="label">체험판 진행중</div></div>
+    </div>
+
+    <div class="toolbar">
+      <input id="searchInput" class="f-input" type="search" placeholder="도장명, 라이선스 키, 연락처 검색" oninput="renderTable()" />
+      <select id="statusFilter" class="select-filter" onchange="renderTable()">
+        <option value="all">전체</option>
+        <option value="active">활성</option>
+        <option value="inactive">비활성</option>
+        <option value="expiring">만료 임박</option>
+        <option value="expired">만료됨</option>
+        <option value="trial">체험판</option>
+      </select>
+      <button class="btn-add btn-ghost" onclick="clearFilters()">초기화</button>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>도장명 / 연락처</th><th>라이선스 키</th><th>종류</th><th>결제</th><th>만료일</th><th>최근 인증</th><th>상태</th><th>관리</th>
+          </tr>
+        </thead>
+        <tbody id="dojangsTable"><tr><td colspan="8" class="loading">불러오는 중...</td></tr></tbody>
+      </table>
+    </div>
+    <div class="footer-note">admin v7 · administrator console</div>
+  </div>
+
+  <div class="tab-content" id="tab-lab">
+    <div class="edit-section exp-intro">
+      <h3 style="margin-bottom:6px">실험실</h3>
+      <div class="field-hint">정식 기능이 되기 전의 시험용 페이지들입니다. 홈페이지 어디에도 링크가 없고 검색에도 잡히지 않습니다. 여기서만 들어갈 수 있습니다.</div>
+    </div>
+    <div class="exp-grid" id="expGrid"></div>
+  </div>
+
+  <div class="tab-content" id="tab-home">
+    <div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap">
+      <button class="home-subtab-btn active" id="subtab-index-btn" onclick="switchHomeSubtab('index')">메인</button>
+      <button class="home-subtab-btn" id="subtab-kick-btn" onclick="switchHomeSubtab('kick')">AI KICK MASTER</button>
+      <div style="flex:1"></div>
+      <button class="btn-add btn-ghost" onclick="loadHomeFields()">불러오기</button>
+      <button class="btn-add btn-gold" onclick="saveHomeData()">저장</button>
+    </div>
+
+    <div class="home-subtab-content" id="home-subtab-index">
+      <div class="edit-section">
+        <h3>제품 노출 관리</h3>
+        <div class="field-row single"><label class="lab-check" style="max-width:360px"><input id="f_index_jump_enabled" type="checkbox">AI JUMP MASTER 배너 노출</label></div>
+        <div class="field-hint">현재는 꺼짐이 기본값입니다. 점프마스터 출시 시 체크 후 저장하면 메인 배너가 다시 나타납니다.</div>
+      </div>
+      <div class="edit-section">
+        <h3>핵심 링크</h3>
+        <div class="field-row"><div class="field-group"><div class="field-label">킥 프로그램 링크</div><input id="f_index_program_url" class="f-input" type="text"></div><div class="field-group"><div class="field-label">관리자 링크</div><input id="f_index_admin_url" class="f-input" type="text"></div></div>
+        <div class="field-row"><div class="field-group"><div class="field-label">카카오톡 문의 링크</div><input id="f_index_kakao_url" class="f-input" type="url"></div><div class="field-group"><div class="field-label">전화 링크</div><input id="f_index_tel_url" class="f-input" type="text"></div></div>
+      </div>
+      <div class="edit-section"><h3>첫 화면</h3>
+        <div class="field-row single"><div class="field-group"><div class="field-label">상단 작은 문구</div><input id="f_index_hero_eyebrow" class="f-input"></div></div>
+        <div class="field-row single"><div class="field-group"><div class="field-label">메인 타이틀 HTML</div><textarea id="f_index_hero_title" class="f-textarea"></textarea><div class="field-hint">강조: &lt;em&gt;단어&lt;/em&gt;, 줄바꿈: &lt;br&gt;</div></div></div>
+        <div class="field-row single"><div class="field-group"><div class="field-label">메인 설명</div><textarea id="f_index_hero_desc" class="f-textarea"></textarea></div></div>
+      </div>
+      <div class="edit-section"><h3>문의 정보</h3>
+        <div class="field-row single"><div class="field-group"><div class="field-label">문의 설명</div><textarea id="f_index_contact_desc" class="f-textarea"></textarea></div></div>
+        <div class="field-row"><div class="field-group"><div class="field-label">전화번호 표시</div><input id="f_index_phone" class="f-input"></div><div class="field-group"><div class="field-label">상담 안내</div><input id="f_index_hours" class="f-input"></div></div>
+        <div class="field-row single"><div class="field-group"><div class="field-label">저작권 문구</div><input id="f_index_copyright" class="f-input"></div></div>
+      </div>
+    </div>
+
+    <div class="home-subtab-content" id="home-subtab-kick" style="display:none">
+      <div class="edit-section"><h3>첫 화면 Hero</h3>
+        <div class="field-row single"><div class="field-group"><div class="field-label">상단 작은 문구</div><input id="f_kick_badge" class="f-input"></div></div>
+        <div class="field-row single"><div class="field-group"><div class="field-label">메인 타이틀 HTML</div><textarea id="f_kick_title" class="f-textarea"></textarea></div></div>
+        <div class="field-row single"><div class="field-group"><div class="field-label">메인 설명</div><textarea id="f_kick_lead" class="f-textarea"></textarea></div></div>
+      </div>
+      <div class="edit-section"><h3>가격</h3>
+        <div class="field-row"><div class="field-group"><div class="field-label">정가</div><input id="f_kick_regular_price" class="f-input"></div><div class="field-group"><div class="field-label">할인가</div><input id="f_kick_sale_price" class="f-input"></div></div>
+        <div class="field-row single"><div class="field-group"><div class="field-label">할인 안내 문구</div><input id="f_kick_price_note" class="f-input"></div></div>
+      </div>
+      <div class="edit-section"><h3>핵심 기능 4개</h3>
+        <div class="field-row"><div class="field-group"><div class="field-label">기능 1 제목</div><input id="f_kick_feature1_title" class="f-input"></div><div class="field-group"><div class="field-label">기능 1 설명</div><textarea id="f_kick_feature1_desc" class="f-textarea"></textarea></div></div><div class="field-row"><div class="field-group"><div class="field-label">기능 2 제목</div><input id="f_kick_feature2_title" class="f-input"></div><div class="field-group"><div class="field-label">기능 2 설명</div><textarea id="f_kick_feature2_desc" class="f-textarea"></textarea></div></div><div class="field-row"><div class="field-group"><div class="field-label">기능 3 제목</div><input id="f_kick_feature3_title" class="f-input"></div><div class="field-group"><div class="field-label">기능 3 설명</div><textarea id="f_kick_feature3_desc" class="f-textarea"></textarea></div></div><div class="field-row"><div class="field-group"><div class="field-label">기능 4 제목</div><input id="f_kick_feature4_title" class="f-input"></div><div class="field-group"><div class="field-label">기능 4 설명</div><textarea id="f_kick_feature4_desc" class="f-textarea"></textarea></div></div>
+      </div>
+      <div class="edit-section"><h3>도입 효과 4개</h3>
+        <div class="field-row"><div class="field-group"><div class="field-label">효과 1 제목</div><input id="f_kick_benefit1_title" class="f-input"></div><div class="field-group"><div class="field-label">효과 1 설명</div><textarea id="f_kick_benefit1_desc" class="f-textarea"></textarea></div></div><div class="field-row"><div class="field-group"><div class="field-label">효과 2 제목</div><input id="f_kick_benefit2_title" class="f-input"></div><div class="field-group"><div class="field-label">효과 2 설명</div><textarea id="f_kick_benefit2_desc" class="f-textarea"></textarea></div></div><div class="field-row"><div class="field-group"><div class="field-label">효과 3 제목</div><input id="f_kick_benefit3_title" class="f-input"></div><div class="field-group"><div class="field-label">효과 3 설명</div><textarea id="f_kick_benefit3_desc" class="f-textarea"></textarea></div></div><div class="field-row"><div class="field-group"><div class="field-label">효과 4 제목</div><input id="f_kick_benefit4_title" class="f-input"></div><div class="field-group"><div class="field-label">효과 4 설명</div><textarea id="f_kick_benefit4_desc" class="f-textarea"></textarea></div></div>
+      </div>
+      <div class="edit-section"><h3>추천 대상 5개</h3>
+        <div class="field-row"><div class="field-group"><div class="field-label">대상 1</div><input id="f_kick_recommend1_title" class="f-input"></div><div class="field-group"><div class="field-label">설명</div><textarea id="f_kick_recommend1_desc" class="f-textarea"></textarea></div></div><div class="field-row"><div class="field-group"><div class="field-label">대상 2</div><input id="f_kick_recommend2_title" class="f-input"></div><div class="field-group"><div class="field-label">설명</div><textarea id="f_kick_recommend2_desc" class="f-textarea"></textarea></div></div><div class="field-row"><div class="field-group"><div class="field-label">대상 3</div><input id="f_kick_recommend3_title" class="f-input"></div><div class="field-group"><div class="field-label">설명</div><textarea id="f_kick_recommend3_desc" class="f-textarea"></textarea></div></div><div class="field-row"><div class="field-group"><div class="field-label">대상 4</div><input id="f_kick_recommend4_title" class="f-input"></div><div class="field-group"><div class="field-label">설명</div><textarea id="f_kick_recommend4_desc" class="f-textarea"></textarea></div></div><div class="field-row"><div class="field-group"><div class="field-label">대상 5</div><input id="f_kick_recommend5_title" class="f-input"></div><div class="field-group"><div class="field-label">설명</div><textarea id="f_kick_recommend5_desc" class="f-textarea"></textarea></div></div>
+      </div>
+      <div class="edit-section"><h3>구매 절차 4단계</h3>
+        <div class="field-row"><div class="field-group"><div class="field-label">단계 1 제목</div><input id="f_kick_step1_title" class="f-input"></div><div class="field-group"><div class="field-label">단계 1 설명</div><textarea id="f_kick_step1_desc" class="f-textarea"></textarea></div></div><div class="field-row"><div class="field-group"><div class="field-label">단계 2 제목</div><input id="f_kick_step2_title" class="f-input"></div><div class="field-group"><div class="field-label">단계 2 설명</div><textarea id="f_kick_step2_desc" class="f-textarea"></textarea></div></div><div class="field-row"><div class="field-group"><div class="field-label">단계 3 제목</div><input id="f_kick_step3_title" class="f-input"></div><div class="field-group"><div class="field-label">단계 3 설명</div><textarea id="f_kick_step3_desc" class="f-textarea"></textarea></div></div><div class="field-row"><div class="field-group"><div class="field-label">단계 4 제목</div><input id="f_kick_step4_title" class="f-input"></div><div class="field-group"><div class="field-label">단계 4 설명</div><textarea id="f_kick_step4_desc" class="f-textarea"></textarea></div></div>
+      </div>
+      <div class="edit-section"><h3>사양 안내</h3>
+        <div class="field-hint" style="margin-bottom:12px">각 줄이 목록 한 항목으로 표시됩니다.</div>
+        <div class="field-row"><div class="field-group"><div class="field-label">Windows 최소사양</div><textarea id="f_kick_spec_min_windows" class="f-textarea"></textarea></div><div class="field-group"><div class="field-label">Windows 권장사양</div><textarea id="f_kick_spec_rec_windows" class="f-textarea"></textarea></div></div><div class="field-row"><div class="field-group"><div class="field-label">Android 최소사양</div><textarea id="f_kick_spec_min_android" class="f-textarea"></textarea></div><div class="field-group"><div class="field-label">Android 권장사양</div><textarea id="f_kick_spec_rec_android" class="f-textarea"></textarea></div></div><div class="field-row"><div class="field-group"><div class="field-label">iPad 최소사양</div><textarea id="f_kick_spec_min_ipad" class="f-textarea"></textarea></div><div class="field-group"><div class="field-label">iPad 권장사양</div><textarea id="f_kick_spec_rec_ipad" class="f-textarea"></textarea></div></div>
+      </div>
+      <div class="edit-section"><h3>FAQ</h3><div class="field-hint" style="margin-bottom:12px">질문과 답변 11개를 수정할 수 있습니다.</div>
+        <div class="field-row"><div class="field-group"><div class="field-label">질문 1</div><input id="f_kick_faq1_q" class="f-input"></div><div class="field-group"><div class="field-label">답변 1</div><textarea id="f_kick_faq1_a" class="f-textarea"></textarea></div></div><div class="field-row"><div class="field-group"><div class="field-label">질문 2</div><input id="f_kick_faq2_q" class="f-input"></div><div class="field-group"><div class="field-label">답변 2</div><textarea id="f_kick_faq2_a" class="f-textarea"></textarea></div></div><div class="field-row"><div class="field-group"><div class="field-label">질문 3</div><input id="f_kick_faq3_q" class="f-input"></div><div class="field-group"><div class="field-label">답변 3</div><textarea id="f_kick_faq3_a" class="f-textarea"></textarea></div></div><div class="field-row"><div class="field-group"><div class="field-label">질문 4</div><input id="f_kick_faq4_q" class="f-input"></div><div class="field-group"><div class="field-label">답변 4</div><textarea id="f_kick_faq4_a" class="f-textarea"></textarea></div></div><div class="field-row"><div class="field-group"><div class="field-label">질문 5</div><input id="f_kick_faq5_q" class="f-input"></div><div class="field-group"><div class="field-label">답변 5</div><textarea id="f_kick_faq5_a" class="f-textarea"></textarea></div></div><div class="field-row"><div class="field-group"><div class="field-label">질문 6</div><input id="f_kick_faq6_q" class="f-input"></div><div class="field-group"><div class="field-label">답변 6</div><textarea id="f_kick_faq6_a" class="f-textarea"></textarea></div></div><div class="field-row"><div class="field-group"><div class="field-label">질문 7</div><input id="f_kick_faq7_q" class="f-input"></div><div class="field-group"><div class="field-label">답변 7</div><textarea id="f_kick_faq7_a" class="f-textarea"></textarea></div></div><div class="field-row"><div class="field-group"><div class="field-label">질문 8</div><input id="f_kick_faq8_q" class="f-input"></div><div class="field-group"><div class="field-label">답변 8</div><textarea id="f_kick_faq8_a" class="f-textarea"></textarea></div></div><div class="field-row"><div class="field-group"><div class="field-label">질문 9</div><input id="f_kick_faq9_q" class="f-input"></div><div class="field-group"><div class="field-label">답변 9</div><textarea id="f_kick_faq9_a" class="f-textarea"></textarea></div></div><div class="field-row"><div class="field-group"><div class="field-label">질문 10</div><input id="f_kick_faq10_q" class="f-input"></div><div class="field-group"><div class="field-label">답변 10</div><textarea id="f_kick_faq10_a" class="f-textarea"></textarea></div></div><div class="field-row"><div class="field-group"><div class="field-label">질문 11</div><input id="f_kick_faq11_q" class="f-input"></div><div class="field-group"><div class="field-label">답변 11</div><textarea id="f_kick_faq11_a" class="f-textarea"></textarea></div></div>
+      </div>
+      <div class="edit-section"><h3>문의 CTA</h3><div class="field-row single"><div class="field-group"><div class="field-label">CTA 설명</div><textarea id="f_kick_cta_desc" class="f-textarea"></textarea></div></div></div>
+    </div>
+
+    <div class="edit-section"><h3>연결 상태</h3><div class="field-hint" id="homeSaveStatus">서버 데이터를 불러오거나 저장하면 여기에 결과가 표시됩니다.</div></div>
+  </div>
+
+</div>
+
+<div class="modal-bg" id="pwModalBg">
+  <div class="modal">
+    <h3>관리자 비밀번호 <span>변경</span></h3>
+    <label>현재 비밀번호</label><input id="pwCurrent" class="f-input" type="password" placeholder="현재 비밀번호" />
+    <label>새 비밀번호</label><input id="pwNew" class="f-input" type="password" placeholder="새 비밀번호 6자 이상" />
+    <label>새 비밀번호 확인</label><input id="pwConfirm" class="f-input" type="password" placeholder="새 비밀번호 재입력" />
+    <div class="err-msg" id="pwErr"></div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closePwModal()">취소</button>
+      <button class="btn-save" onclick="changePassword()">변경</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <h3 id="modalTitle">라이선스 <span>발급</span></h3>
+    <input type="hidden" id="editId" />
+    <label>도장명 *</label>
+    <input id="mDojang" class="f-input" type="text" placeholder="예) 구미태권도장" />
+    <label>라이선스 종류 *</label>
+    <select id="mLicenseType" class="f-input" onchange="onTypeChange(true)">
+      <option value="lifetime">영구 (Lifetime)</option>
+      <option value="package">태블릿 패키지</option>
+      <option value="trial">체험판 (Trial)</option>
+    </select>
+    <label>버전</label>
+    <input id="mVersion" class="f-input" type="text" placeholder="예) 1.0.0" value="1.0.0" />
+    <label>라이선스 키 <span style="color:var(--muted);font-weight:400">(직접 수정 가능)</span></label>
+    <div style="display:flex;gap:8px">
+      <input id="mKey" class="f-input" type="text" style="letter-spacing:1px;flex:1" />
+      <button type="button" class="btn-sm btn-toggle" onclick="regenerateKey()">재생성</button>
+    </div>
+    <input id="mMaxDevices" type="hidden" value="2" />
+    <div class="modal-section" id="deviceSlotSection" style="display:none;">
+      <div class="modal-section-title">기기 슬롯</div>
+      <div id="deviceSlotsBox" class="admin-slot-grid"></div>
+      <button type="button" class="btn-sm btn-toggle" style="margin-top:10px;" onclick="resetDeviceSlots()">전체 기기 초기화 (재발급 시 사용)</button>
+    </div>
+<div id="expireSection">
+      <div class="modal-section">
+        <div class="modal-section-title">만료일 설정</div>
+        <label>만료일</label>
+        <input id="mExpireDate" class="f-input" type="date" />
+        <div class="modal-help">비워두면 만료일 없음(영구)으로 처리됩니다.</div>
+      </div>
+    </div>
+    <div id="trialSection" style="display:none;">
+      <div class="modal-section">
+        <div class="modal-section-title">체험 기간 설정</div>
+        <label>체험 일수</label>
+        <input id="mTrialDays" class="f-input" type="number" min="1" max="30" value="3" />
+        <div class="modal-help">
+          발급일이 아니라 <b>고객이 처음 인증에 성공한 날</b>부터 계산됩니다.<br>
+          키를 보내놓고 며칠 뒤에 열어도 온전히 이 일수만큼 사용할 수 있습니다.<br>
+          체험판은 기기 <b>1대</b>로 자동 설정됩니다.
+        </div>
+        <div id="trialStatusBox" class="modal-help" style="margin-top:10px;"></div>
+      </div>
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-title">결제 정보</div>
+      <div class="input-row" style="margin-bottom:14px">
+        <div>
+          <label>결제 금액 (원)</label>
+          <input id="mPayAmount" class="f-input" type="number" placeholder="예) 150000" style="margin-bottom:0" />
+        </div>
+        <div>
+          <label>결제 날짜</label>
+          <input id="mPayDate" class="f-input" type="date" style="margin-bottom:0" />
+        </div>
+      </div>
+      <label>결제 메모</label>
+      <input id="mPayMemo" class="f-input" type="text" placeholder="예) 카드결제, 계좌이체 등" />
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-title">고객 연락처</div>
+      <label>연락처</label>
+      <input id="mPhone" class="f-input" type="tel" placeholder="예) 010-1234-5678" />
+      <label>메모</label>
+      <textarea id="mMemo" class="f-textarea" placeholder="특이사항, 계약 조건 등"></textarea>
+    </div>
+    <div class="err-msg" id="modalErr"></div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal()">취소</button>
+      <button class="btn-save" id="saveBtn" onclick="saveLicense()">발급</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">저장되었습니다!</div>
+
+<script>
+
+const ADMIN_EDGE_URL = 'https://ebgoolsymyzkftvavpyj.supabase.co/functions/v1/clever-worker';
+const KICK_LOGIN_URL = 'https://naruunlabs.kr/kickmaster';
+const JUMP_LOGIN_URL = 'https://naruunlabs.kr/jumpmaster';
+const AKM_VERSION = '1.0.0';
+const HOME_DATA_KEY = 'akm_home_data';
+
+let ADMIN_TOKEN = ''; 
+let LICENSES = [];
+let currentLicenseProduct = 'kick'; 
+
+function escapeHtml(v) {
+  return String(v ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+}
+function todayStr() { return new Date().toISOString().slice(0,10); }
+function generateKey(prefix) {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const seg = () => Array.from({length:4}, () => chars[Math.floor(Math.random()*chars.length)]).join('');
+  return `${prefix||'AKM'}-${seg()}-${seg()}-${seg()}`;
+}
+function daysUntil(dateStr) {
+  if (!dateStr) return null;
+  return Math.ceil((new Date(dateStr) - new Date(todayStr())) / 86400000);
+}
+function formatMoney(v) { return v ? Number(v).toLocaleString('ko-KR') + '원' : '-'; }
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg || '저장되었습니다!';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function switchTab(tab) {
+  const names=['license','home','lab'];
+  document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', names[i]===tab));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  if (tab === 'license') loadLicenses();
+  if (tab === 'home') loadHomeFields();
+  if (tab === 'lab') renderExperiments();
+}
+
+async function adminLogin() {
+  const pw = document.getElementById('adminPw').value;
+  const errEl = document.getElementById('adminErr');
+  if (!pw) { errEl.textContent = '비밀번호를 입력해주세요.'; return; }
+  errEl.textContent = '확인 중...';
+  try {
+    
+    const res = await fetch(ADMIN_EDGE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'LOGIN', payload: { password: pw } })
+    });
+    const data = await res.json();
+    if (!res.ok) { errEl.textContent = data?.error || '로그인 실패'; return; }
+
+    ADMIN_TOKEN = data.token; 
+    sessionStorage.setItem('akm_admin_token', ADMIN_TOKEN);
+    document.getElementById('loginWrap').classList.add('hidden');
+    document.getElementById('dashboard').classList.add('show');
+    loadLicenses();
+    loadHomeFields();
+  } catch(e) {
+    errEl.textContent = '서버 연결 실패: ' + e.message;
+  }
+}
+
+function logoutAdmin() {
+  ADMIN_TOKEN = '';
+  sessionStorage.removeItem('akm_admin_token');
+  document.getElementById('dashboard').classList.remove('show');
+  document.getElementById('loginWrap').classList.remove('hidden');
+  document.getElementById('adminPw').value = '';
+}
+document.getElementById('adminPw').addEventListener('keydown', e => { if(e.key==='Enter') adminLogin(); });
+
+function openPwModal() {
+  ['pwCurrent','pwNew','pwConfirm'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('pwErr').textContent = '';
+  document.getElementById('pwModalBg').classList.add('show');
+}
+function closePwModal() { document.getElementById('pwModalBg').classList.remove('show'); }
+async function changePassword() {
+  const current = document.getElementById('pwCurrent').value;
+  const newPw = document.getElementById('pwNew').value;
+  const confirm = document.getElementById('pwConfirm').value;
+  const errEl = document.getElementById('pwErr');
+  if (!current) { errEl.textContent = '현재 비밀번호를 입력해주세요.'; return; }
+  if (newPw.length < 6) { errEl.textContent = '새 비밀번호는 6자 이상으로 입력해주세요.'; return; }
+  if (newPw !== confirm) { errEl.textContent = '새 비밀번호가 일치하지 않습니다.'; return; }
+  
+  try {
+    errEl.textContent = '확인 중...';
+    const verifyRes = await fetch(ADMIN_EDGE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'LOGIN', payload: { password: current } })
+    });
+    if (!verifyRes.ok) { errEl.textContent = '현재 비밀번호가 올바르지 않습니다.'; return; }
+    await edgeCall('UPDATE_ADMIN_PW', { value: newPw });
+    closePwModal();
+    showToast('비밀번호가 변경되었습니다!');
+  } catch(e) { errEl.textContent = '저장 실패: ' + e.message; }
+}
+
+async function edgeCall(action, payload) {
+  if (!ADMIN_TOKEN) { alert('로그인이 필요합니다.'); logoutAdmin(); throw new Error('미로그인'); }
+  const res = await fetch(ADMIN_EDGE_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-admin-token': ADMIN_TOKEN   
+    },
+    body: JSON.stringify({ action, payload })
+  });
+  const text = await res.text();
+  let data = null;
+  try { data = text ? JSON.parse(text) : null; } catch { data = text; }
+  if (res.status === 401) {
+    
+    alert('세션이 만료되었습니다. 다시 로그인해주세요.');
+    logoutAdmin();
+    throw new Error('세션 만료');
+  }
+  if (!res.ok) throw new Error(data?.error || text || `요청 실패 (${res.status})`);
+  return data;
+}
+
+async function loadLicenses() {
+  const tbody = document.getElementById('dojangsTable');
+  tbody.innerHTML = '<tr><td colspan="8" class="loading">불러오는 중...</td></tr>';
+  try {
+    LICENSES = await edgeCall('GET_LICENSES', {});
+    updateStats(); renderTable();
+  } catch(err) {
+    tbody.innerHTML = `<tr><td colspan="8" class="empty-msg">불러오기 실패: ${escapeHtml(err.message)}</td></tr>`;
+  }
+}
+
+function currentProductPrefix(){ return currentLicenseProduct === 'jump' ? 'JMP-' : 'AKM-'; }
+function licensesForCurrentProduct(){ return LICENSES.filter(d => (d.license_key||'').startsWith(currentProductPrefix())); }
+
+function switchLicenseSubtab(p){
+  currentLicenseProduct = p;
+  document.getElementById('license-subtab-kick-btn').classList.toggle('active', p==='kick');
+  document.getElementById('license-subtab-jump-btn').classList.toggle('active', p==='jump');
+  document.getElementById('licenseAddBtn').textContent = p==='jump' ? '+ 점프마스터 라이선스 발급' : '+ 킥마스터 라이선스 발급';
+  updateStats(); renderTable();
+}
+
+function updateStats() {
+  const list = licensesForCurrentProduct();
+  const expiringCount = list.filter(d => { const days = daysUntil(d.expire_date); return d.is_active && days !== null && days >= 0 && days <= 7; }).length;
+  document.getElementById('statTotal').textContent = list.length;
+  document.getElementById('statActive').textContent = list.filter(d => d.is_active).length;
+  document.getElementById('statInactive').textContent = list.filter(d => !d.is_active).length;
+  document.getElementById('statLifetime').textContent = list.filter(d => d.license_type === 'lifetime').length;
+  document.getElementById('statExpiring').textContent = expiringCount;
+  const trialLive = list.filter(d => {
+    if (d.license_type !== 'trial' || !d.is_active) return false;
+    if (!d.trial_started_at) return true; 
+    const days = Number(d.trial_days) || 3;
+    return (new Date(d.trial_started_at).getTime() + days * 86400000) > Date.now();
+  }).length;
+  document.getElementById('statTrial').textContent = trialLive;
+}
+
+function clearFilters() {
+  document.getElementById('searchInput').value = '';
+  document.getElementById('statusFilter').value = 'all';
+  renderTable();
+}
+
+function renderTable() {
+  const tbody = document.getElementById('dojangsTable');
+  const q = document.getElementById('searchInput').value.trim().toLowerCase();
+  const filter = document.getElementById('statusFilter').value;
+  let rows = licensesForCurrentProduct().filter(d => {
+    const hay = [d.dojang_name, d.license_key, d.phone||'', d.memo||''].join(' ').toLowerCase();
+    const days = daysUntil(d.expire_date);
+    const isExpired = days !== null && days < 0;
+    const isExpiring = days !== null && days >= 0 && days <= 7;
+    let statusMatch = true;
+    if (filter === 'active') statusMatch = d.is_active;
+    else if (filter === 'inactive') statusMatch = !d.is_active;
+    else if (filter === 'expiring') statusMatch = d.is_active && isExpiring;
+    else if (filter === 'expired') statusMatch = isExpired;
+    else if (filter === 'trial') statusMatch = d.license_type === 'trial';
+    return (!q || hay.includes(q)) && statusMatch;
+  });
+  if (!rows.length) { tbody.innerHTML = '<tr><td colspan="8" class="empty-msg">표시할 라이선스가 없습니다.</td></tr>'; return; }
+  tbody.innerHTML = rows.map(d => {
+    const days = daysUntil(d.expire_date);
+    const isExpired = days !== null && days < 0;
+    const isExpiring = days !== null && days >= 0 && days <= 7;
+    let statusCls = d.is_active ? 'active' : 'inactive';
+    let statusText = d.is_active ? '활성' : '비활성';
+    if (d.is_active && isExpired) { statusCls = 'expired'; statusText = '만료됨'; }
+    else if (d.is_active && isExpiring) { statusCls = 'soon'; statusText = `D-${days}`; }
+    const rowCls = isExpired ? 'row-expired' : (isExpiring ? 'row-expiring' : '');
+    const isTrial = d.license_type === 'trial';
+    const typeLabel = isTrial ? `체험 ${Number(d.trial_days)||3}일`
+                    : (d.license_type === 'package' ? '패키지' : '영구');
+    const lastVerified = d.last_verified_at ? d.last_verified_at.slice(0,10) : '미사용';
+    let expireDisplay = d.expire_date ? `${d.expire_date}<br><span style="font-size:11px;color:${isExpired?'#ff687a':isExpiring?'#ffd76b':'#71859d'}">${isExpired?'만료됨':`D-${days}`}</span>` : '<span style="color:#4f637c">-</span>';
+    if (isTrial && !d.trial_started_at) {
+      expireDisplay = '<span style="color:#4fa3ff;font-size:12px">시작 전<br><span style="font-size:11px;color:#71859d">첫 인증 시 시작</span></span>';
+    }
+    const payDisplay = d.pay_amount ? `${formatMoney(d.pay_amount)}<span class="sub-text">${d.pay_date||''}</span>` : '-';
+    const encoded = encodeURIComponent(JSON.stringify(d));
+    return `<tr class="${rowCls}">
+      <td><strong>${escapeHtml(d.dojang_name)}</strong><span class="sub-text">등록 ${(d.created_at||'').slice(0,10)||'-'}</span>${d.phone?`<span class="sub-text">${escapeHtml(d.phone)}</span>`:''}${d.memo?`<span class="sub-text" title="${escapeHtml(d.memo)}">${escapeHtml(d.memo.length>20?d.memo.slice(0,20)+'…':d.memo)}</span>`:''}<span class="sub-text">기기 ${(d.device_slots||[]).length}/${d.max_devices||2}</span></td>
+      <td><code style="font-size:12px">${escapeHtml(d.license_key)}</code></td>
+      <td>${typeLabel}</td>
+      <td style="font-size:13px">${payDisplay}</td>
+      <td style="font-size:13px">${expireDisplay}</td>
+      <td style="font-size:13px">${escapeHtml(lastVerified)}</td>
+      <td><span class="badge ${statusCls}">${statusText}</span></td>
+      <td><div class="action-btns">
+        <button class="btn-sm btn-copy" onclick="copyLicenseMsg('${encoded}')">카톡복사</button>
+        <button class="btn-sm btn-edit" onclick="openEditModal('${encoded}')">수정</button>
+        <button class="btn-sm btn-toggle" onclick="toggleActive('${d.id}',${d.is_active})">${d.is_active?'중지':'활성'}</button>
+        <button class="btn-sm btn-del" onclick="deleteLicense('${d.id}','${escapeHtml(d.dojang_name)}')">삭제</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+
+function onTypeChange(fromUser) {
+  const type = document.getElementById('mLicenseType').value;
+  document.getElementById('expireSection').style.display = type === 'package' ? 'block' : 'none';
+  document.getElementById('trialSection').style.display = type === 'trial' ? 'block' : 'none';
+  
+  if (type === 'trial') {
+    document.getElementById('mMaxDevices').value = 1;
+  } else if (fromUser && Number(document.getElementById('mMaxDevices').value) === 1) {
+    document.getElementById('mMaxDevices').value = 2;
+  }
+}
+
+function trialStatusText(d) {
+  if (!d || d.license_type !== 'trial') return '';
+  const days = Number(d.trial_days) || 3;
+  if (!d.trial_started_at) return `아직 시작 전 · 첫 인증 시 ${days}일 시작`;
+  const started = new Date(d.trial_started_at);
+  const ends = new Date(started.getTime() + days * 86400000);
+  const leftMs = ends - new Date();
+  if (leftMs <= 0) return `체험 종료됨 (${ends.toLocaleString('ko-KR')})`;
+  const leftDays = Math.floor(leftMs / 86400000);
+  const leftHours = Math.floor((leftMs % 86400000) / 3600000);
+  return `체험 중 · 남은 기간 ${leftDays}일 ${leftHours}시간 (종료 ${ends.toLocaleString('ko-KR')})`;
+}
+
+function openAddModal() {
+  const productLabel = currentLicenseProduct === 'jump' ? 'AI JUMP MASTER' : 'AI KICK MASTER';
+  document.getElementById('modalTitle').innerHTML = `${productLabel} 라이선스 <span>발급</span>`;
+  document.getElementById('editId').value = '';
+  document.getElementById('mDojang').value = '';
+  document.getElementById('mLicenseType').value = 'lifetime';
+  document.getElementById('mVersion').value = AKM_VERSION;
+  document.getElementById('mKey').value = generateKey(currentLicenseProduct === 'jump' ? 'JMP' : 'AKM');
+  document.getElementById('mExpireDate').value = '';
+  document.getElementById('mPayAmount').value = '';
+  document.getElementById('mPayDate').value = todayStr();
+  document.getElementById('mPayMemo').value = '';
+  document.getElementById('mPhone').value = '';
+  document.getElementById('mMemo').value = '';
+  document.getElementById('mMaxDevices').value = 2;
+  document.getElementById('mTrialDays').value = 3;
+  document.getElementById('trialStatusBox').textContent = '';
+  currentEditDeviceSlots = [];
+  currentEditLicenseId = null;
+  document.getElementById('deviceSlotSection').style.display = 'none';
+  document.getElementById('saveBtn').textContent = '발급';
+  document.getElementById('modalErr').textContent = '';
+  onTypeChange();
+  document.getElementById('modalBg').classList.add('show');
+}
+
+function openEditModal(encoded) {
+  const d = JSON.parse(decodeURIComponent(encoded));
+  const productLabel = (d.license_key||'').startsWith('JMP-') ? 'AI JUMP MASTER' : 'AI KICK MASTER';
+  document.getElementById('modalTitle').innerHTML = `${productLabel} 라이선스 <span>수정</span>`;
+  document.getElementById('editId').value = d.id;
+  document.getElementById('mDojang').value = d.dojang_name || '';
+  document.getElementById('mLicenseType').value = d.license_type || 'lifetime';
+  document.getElementById('mVersion').value = d.version || AKM_VERSION;
+  document.getElementById('mKey').value = d.license_key || '';
+  document.getElementById('mExpireDate').value = d.expire_date || '';
+  document.getElementById('mPayAmount').value = d.pay_amount || '';
+  document.getElementById('mPayDate').value = d.pay_date || '';
+  document.getElementById('mPayMemo').value = d.pay_memo || '';
+  document.getElementById('mPhone').value = d.phone || '';
+  document.getElementById('mMemo').value = d.memo || '';
+  document.getElementById('mMaxDevices').value = d.max_devices || 2;
+  document.getElementById('mTrialDays').value = Number(d.trial_days) || 3;
+  document.getElementById('trialStatusBox').textContent = trialStatusText(d);
+  currentEditDeviceSlots = Array.isArray(d.device_slots) ? d.device_slots : [];
+  currentEditLicenseId = d.id;
+  document.getElementById('deviceSlotSection').style.display = 'block';
+  renderDeviceSlotsUI();
+  document.getElementById('saveBtn').textContent = '저장';
+  document.getElementById('modalErr').textContent = '';
+  onTypeChange();
+  document.getElementById('modalBg').classList.add('show');
+}
+function closeModal() { document.getElementById('modalBg').classList.remove('show'); }
+
+let currentEditDeviceSlots = [];
+let currentEditLicenseId = null;
+
+function renderDeviceSlotsUI() {
+  const box = document.getElementById('deviceSlotsBox');
+  if (!box) return;
+  const maxDevices = Number(document.getElementById('mMaxDevices').value) || 2;
+  let html = '';
+  for (let i = 0; i < 2; i++) {
+    const slot = currentEditDeviceSlots[i];
+    if (slot) {
+      const dateStr = slot.registered_at ? slot.registered_at.slice(0,10) : '-';
+      html += `<div class="admin-slot-card is-used">
+        <div class="admin-slot-status">사용 중</div>
+        <div class="admin-slot-sub">등록일 ${dateStr}</div>
+        <button type="button" class="btn-sm btn-del" onclick="removeDeviceSlot(${i})">기기 해제</button>
+      </div>`;
+    } else {
+      html += `<div class="admin-slot-card is-empty">
+        <div class="admin-slot-status">사용 가능</div>
+        <div class="admin-slot-sub">기본 포함 슬롯</div>
+      </div>`;
+    }
+  }
+  
+  if (maxDevices >= 3) {
+    const slot3 = currentEditDeviceSlots[2];
+    if (slot3) {
+      const dateStr = slot3.registered_at ? slot3.registered_at.slice(0,10) : '-';
+      html += `<div class="admin-slot-card is-used is-toggle" onclick="toggleSlot3()">
+        <div class="admin-slot-status">사용 중</div>
+        <div class="admin-slot-sub">등록일 ${dateStr}<br>클릭하면 슬롯을 닫습니다</div>
+      </div>`;
+    } else {
+      html += `<div class="admin-slot-card is-open is-toggle" onclick="toggleSlot3()">
+        <div class="admin-slot-status">확장 슬롯 열림</div>
+        <div class="admin-slot-sub">사용 가능 · 클릭하면 닫습니다</div>
+      </div>`;
+    }
+  } else {
+    html += `<div class="admin-slot-card is-locked is-toggle" onclick="toggleSlot3()">
+      <div class="admin-slot-status">확장 슬롯 잠김</div>
+      <div class="admin-slot-sub">클릭하면 3번째 기기를<br>등록할 수 있게 엽니다</div>
+    </div>`;
+  }
+  box.innerHTML = html;
+}
+
+async function toggleSlot3() {
+  if (!currentEditLicenseId) return;
+  const maxDevices = Number(document.getElementById('mMaxDevices').value) || 2;
+  if (maxDevices >= 3) {
+    if (!confirm('확장 슬롯을 닫을까요? 3번째로 등록된 기기가 있다면 함께 해제됩니다.')) return;
+    const newSlots = currentEditDeviceSlots.slice(0, 2);
+    try {
+      await edgeCall('UPDATE_LICENSE', { id: currentEditLicenseId, max_devices: 2, device_slots: newSlots });
+      document.getElementById('mMaxDevices').value = 2;
+      currentEditDeviceSlots = newSlots;
+      renderDeviceSlotsUI();
+      await loadLicenses();
+    } catch (err) { alert('변경 실패: ' + err.message); }
+  } else {
+    try {
+      await edgeCall('UPDATE_LICENSE', { id: currentEditLicenseId, max_devices: 3 });
+      document.getElementById('mMaxDevices').value = 3;
+      renderDeviceSlotsUI();
+      await loadLicenses();
+    } catch (err) { alert('변경 실패: ' + err.message); }
+  }
+}
+
+async function removeDeviceSlot(idx) {
+  if (!currentEditLicenseId) return;
+  if (!confirm('이 기기 등록을 해제할까요? 해당 태블릿은 다시 로그인해야 합니다.')) return;
+  const newSlots = currentEditDeviceSlots.filter((_, i) => i !== idx);
+  try {
+    await edgeCall('UPDATE_LICENSE', { id: currentEditLicenseId, device_slots: newSlots });
+    currentEditDeviceSlots = newSlots;
+    renderDeviceSlotsUI();
+    await loadLicenses();
+  } catch (err) { alert('삭제 실패: ' + err.message); }
+}
+
+async function resetDeviceSlots() {
+  if (!currentEditLicenseId) return;
+  if (!confirm('등록된 기기를 전부 초기화할까요? 모든 태블릿에서 다시 로그인해야 합니다.')) return;
+  try {
+    await edgeCall('UPDATE_LICENSE', { id: currentEditLicenseId, device_slots: [] });
+    currentEditDeviceSlots = [];
+    renderDeviceSlotsUI();
+    await loadLicenses();
+  } catch (err) { alert('초기화 실패: ' + err.message); }
+}
+
+async function saveLicense() {
+  const saveBtn = document.getElementById('saveBtn');
+  const errEl = document.getElementById('modalErr');
+  const id = document.getElementById('editId').value;
+  const dojang_name = document.getElementById('mDojang').value.trim();
+  const license_type = document.getElementById('mLicenseType').value;
+  const version = document.getElementById('mVersion').value.trim() || AKM_VERSION;
+  const license_key = document.getElementById('mKey').value.trim();
+  
+  const expire_date = license_type === 'trial'
+    ? null
+    : (document.getElementById('mExpireDate').value || null);
+  const pay_amount = document.getElementById('mPayAmount').value ? Number(document.getElementById('mPayAmount').value) : null;
+  const pay_date = document.getElementById('mPayDate').value || null;
+  const pay_memo = document.getElementById('mPayMemo').value.trim() || null;
+  const phone = document.getElementById('mPhone').value.trim() || null;
+  const memo = document.getElementById('mMemo').value.trim() || null;
+  const max_devices = Number(document.getElementById('mMaxDevices').value) || 2;
+  const trial_days = license_type === 'trial'
+    ? Math.min(30, Math.max(1, Number(document.getElementById('mTrialDays').value) || 3))
+    : null;
+  if (!dojang_name) { errEl.textContent = '도장명은 필수입니다.'; return; }
+  if (!license_key) { errEl.textContent = '라이선스 키는 필수입니다.'; return; }
+  saveBtn.disabled = true; errEl.textContent = '';
+  try {
+    const payload = { dojang_name, license_key, license_type, version, expire_date, pay_amount, pay_date, pay_memo, phone, memo, max_devices, trial_days };
+    if (id) { await edgeCall('UPDATE_LICENSE', { id, ...payload }); }
+    else { await edgeCall('INSERT_LICENSE', { ...payload, is_active: true }); }
+    closeModal(); await loadLicenses();
+  } catch(err) { errEl.textContent = '저장 실패: ' + err.message; }
+  finally { saveBtn.disabled = false; }
+}
+
+function regenerateKey(){
+  const cur = document.getElementById('mKey').value || '';
+  const prefix = cur.startsWith('JMP-') ? 'JMP' : (cur.startsWith('AKM-') ? 'AKM' : (currentLicenseProduct === 'jump' ? 'JMP' : 'AKM'));
+  document.getElementById('mKey').value = generateKey(prefix);
+}
+
+async function toggleActive(id, current) {
+  try { await edgeCall('UPDATE_LICENSE', { id, is_active: !current }); await loadLicenses(); }
+  catch(err) { alert('상태 변경 실패: ' + err.message); }
+}
+
+async function deleteLicense(id, name) {
+  const input = prompt(`정말 삭제하려면 도장명을 그대로 입력하세요.\n삭제 대상: ${name}`);
+  if (input !== name) { alert('도장명이 일치하지 않아 삭제하지 않았습니다.'); return; }
+  try { await edgeCall('DELETE_LICENSE', { id }); await loadLicenses(); }
+  catch(err) { alert('삭제 실패: ' + err.message); }
+}
+
+async function copyLicenseMsg(encoded) {
+  const d = JSON.parse(decodeURIComponent(encoded));
+  const isJump = (d.license_key||'').startsWith('JMP-');
+  const productName = isJump ? 'AI JUMP MASTER' : 'AI KICK MASTER';
+  const loginUrl = isJump ? JUMP_LOGIN_URL : KICK_LOGIN_URL;
+  const actionLabel = isJump ? '줄넘기 프로그램 실행' : '발차기 프로그램 실행';
+  const isTrial = d.license_type === 'trial';
+  const trialDays = Number(d.trial_days) || 3;
+  const typeLabel = isTrial ? `${trialDays}일 체험판`
+                  : (d.license_type === 'package' ? '태블릿 패키지' : '영구 라이선스');
+  const expireLine = (!isTrial && d.expire_date) ? `만료일: ${d.expire_date}\n` : '';
+
+  const msg = isTrial
+    ? `[${productName} ${trialDays}일 체험판 안내]\n\n안녕하세요, ${d.dojang_name} 관장님!\n${productName}를 직접 써보실 수 있는 체험판 키를 보내드립니다.\n\n체험판 라이선스 키\n${d.license_key}\n\n체험 기간: 처음 인증하신 시점부터 ${trialDays}일\n   (키를 받은 날이 아니라, 처음 여신 날부터 계산됩니다)\n사용 기기: 1대\n\n접속 링크: ${loginUrl}\n\n사용 방법\n1. 위 홈페이지로 접속하세요\n2. [${actionLabel}] 버튼을 누르세요\n3. 체험판 키를 입력하세요\n4. 최초 1회 입력 후 자동으로 실행됩니다\n\n편하실 때 여셔도 ${trialDays}일이 그대로 보장되니 부담 없이 사용해보세요.\n체험 후 궁금한 점은 카카오톡으로 편하게 문의 주세요!`
+    : `[${productName} 라이선스 안내]\n\n안녕하세요, ${d.dojang_name} 관장님!\n${productName} 라이선스를 보내드립니다.\n\n라이선스 키\n${d.license_key}\n\n라이선스 종류: ${typeLabel}\n${expireLine}접속 링크: ${loginUrl}\n\n사용 방법\n1. 위 홈페이지로 접속하세요\n2. [${actionLabel}] 버튼을 누르세요\n3. 라이선스 키를 입력하세요\n4. 최초 1회 입력 후 자동으로 실행됩니다\n\n라이선스 키는 소중히 보관해주세요.\n문의사항은 카카오톡으로 연락 주세요.`;
+  try { await navigator.clipboard.writeText(msg); showToast('카톡 안내문을 복사했습니다!'); }
+  catch { prompt('복사 실패. 아래 내용을 직접 복사하세요.', msg); }
+}
+
+const HOME_TARGET_DEFAULTS = {
+  index: {
+    program_url: "/aikickmaster",
+    admin_url: "/admin",
+    kakao_url: "#",
+    tel_url: "tel:01076573579",
+    phone: "010-7657-3579",
+    hours: "도장 수업 중에는 답변이 늦어질 수 있습니다. 확인하는 대로 순차적으로 답변드리겠습니다.",
+    copyright: "© 2026 NARUUN LABS. All rights reserved.",
+    hero_eyebrow: "AI SPORTS EDUCATION PLATFORM",
+    hero_title: "Learn with Joy.<br><em>Grow with AI.</em>",
+    hero_desc: "NARUUN LABS는 AI 기술로 스포츠 교육을 더 즐겁고, 더 정확하고, 더 성장하는 경험으로 만듭니다.",
+    contact_desc: "AI KICK MASTER의 구매, 설치, 사용 환경을 안내해드립니다.",
+    jump_enabled: false
+  },
+  kick: {
+    badge: "AI 자세 인식 · 발차기 훈련 프로그램",
+    title: "발차기가<br><span>게임이 되는 순간.</span>",
+    lead: "전면 카메라가 작동되는 태블릿/노트북에서 AI 자세 인식으로 발차기 훈련을 게임처럼 즐길 수 있습니다.",
+    regular_price: "399,000원",
+    sale_price: "339,000원",
+    price_note: "출시 기념 할인가",
+    cta_desc: "구매, 설치 환경, 사용 방법을 안내해드립니다.",
+    feature1_title: "발차기 측정",
+    feature1_desc: "AI 자세 인식으로 발차기 스피드와 임팩트를 실시간으로 측정합니다.",
+    feature2_title: "콤보 시스템",
+    feature2_desc: "연속 동작을 인식해 콤보 점수를 쌓아가는 게임형 훈련 경험을 제공합니다.",
+    feature3_title: "다양한 훈련 모드",
+    feature3_desc: "발차기 연습과 격파, 겨루기 등 목적에 맞는 모드로 수련할 수 있습니다.",
+    feature4_title: "바로 시작",
+    feature4_desc: "번거로운 준비 없이 켜자마자 바로 측정을 시작할 수 있습니다.",
+    benefit1_title: "아이들이 먼저 참여합니다",
+    benefit1_desc: "점수와 콤보가 즉시 표시되어 반복 발차기 훈련을 게임처럼 즐길 수 있습니다.",
+    benefit2_title: "반복 훈련이 지루하지 않습니다",
+    benefit2_desc: "발차기·격파·겨루기 모드를 바꿔가며 같은 동작도 다양한 방식으로 훈련합니다.",
+    benefit3_title: "수업 구성이 더 풍부해집니다",
+    benefit3_desc: "기본기 수업, 미션 활동, 개인 도전과 단체 참여 등 여러 수업 방식에 활용할 수 있습니다.",
+    benefit4_title: "추가 센서 없이 시작합니다",
+    benefit4_desc: "전면 카메라가 작동되는 태블릿/노트북만 있으면 기존 공간에서 간편하게 사용할 수 있습니다.",
+    recommend1_title: "태권도장",
+    recommend1_desc: "기본 발차기, 격파, 겨루기 수업의 참여도를 높이고 싶은 도장",
+    recommend2_title: "합기도장",
+    recommend2_desc: "발차기 반복 훈련에 새로운 방식과 게임 요소를 더하고 싶은 도장",
+    recommend3_title: "격투기 체육관",
+    recommend3_desc: "킥 동작을 활용한 체력·민첩성 훈련 프로그램이 필요한 체육관",
+    recommend4_title: "학교·방과후 수업",
+    recommend4_desc: "학생들이 함께 참여하는 체육 활동과 미션형 수업을 운영하는 곳",
+    recommend5_title: "체육 교육기관",
+    recommend5_desc: "카메라 기반 신체 활동 콘텐츠를 간편하게 도입하려는 교육기관",
+    step1_title: "구매 상담",
+    step1_desc: "카카오톡 또는 전화로 사용 기기와 설치 환경을 확인하고 구매를 진행합니다.",
+    step2_title: "결제 및 라이선스 발급",
+    step2_desc: "결제 확인 후 최대 2대의 기기에서 사용할 수 있는 영구 라이선스 키를 발급합니다.",
+    step3_title: "기기 인증",
+    step3_desc: "프로그램을 열고 발급받은 라이선스 키를 한 번 입력합니다.",
+    step4_title: "바로 훈련 시작",
+    step4_desc: "인증이 끝나면 원하는 모드를 선택해 바로 수업에 활용할 수 있습니다.",
+    spec_min_windows: "Windows 10 64비트 이상\nIntel Core i3 8세대 또는 Ryzen 3급 이상\nRAM 4GB 이상\nChrome 또는 Edge 최신 버전 · 전면 카메라",
+    spec_rec_windows: "Windows 11 64비트\nIntel Core i5 10세대 또는 Ryzen 5급 이상\nRAM 8GB 이상\nFHD급 전면 카메라 · 최신 브라우저",
+    spec_min_android: "Android 10 이상\nRAM 4GB 이상\nSnapdragon 720G 또는 동급 이상\nChrome 최신 버전 · 전면 카메라",
+    spec_rec_android: "Android 12 이상\nRAM 6GB 이상\nSnapdragon 778G 또는 동급 이상\nFHD급 전면 카메라 · Chrome 최신 버전",
+    spec_min_ipad: "iPadOS 16 이상\niPad 8세대(A12) 또는 동급 이상\nSafari 최신 버전\n가로 화면 사용 권장",
+    spec_rec_ipad: "iPadOS 17 이상\niPad 9세대(A13) 또는 그 이후 모델\nSafari 최신 버전\n외부 화면 연결 시 최신 기종 권장",
+    faq1_q: "어떤 기기에서 사용할 수 있나요?",
+    faq1_a: "전면 카메라가 작동되는 Windows 노트북, 안드로이드 태블릿, iPad에서 사용할 수 있습니다.",
+    faq2_q: "인터넷이 필요한가요?",
+    faq2_a: "네. 프로그램 이용 시 인터넷 연결이 필요합니다.",
+    faq3_q: "설치가 어렵나요?",
+    faq3_a: "별도 설치 없이 웹에 접속해 라이선스 키를 입력하면 사용할 수 있습니다.",
+    faq4_q: "라이선스는 어떻게 제공되나요?",
+    faq4_a: "구매 후 영구 라이선스 키를 발급해드립니다.",
+    faq5_q: "몇 대까지 사용할 수 있나요?",
+    faq5_a: "기본 라이선스는 최대 2대의 기기에서 사용할 수 있습니다.",
+    faq6_q: "월 이용료가 있나요?",
+    faq6_a: "아닙니다. 별도의 월 구독료가 없는 영구 라이선스입니다.",
+    faq7_q: "프로젝터가 없어도 사용할 수 있나요?",
+    faq7_a: "네. 태블릿이나 노트북 화면만으로도 사용할 수 있습니다.",
+    faq8_q: "카메라가 꼭 필요한가요?",
+    faq8_a: "네. 실시간 동작 인식을 위해 전면 카메라가 필요합니다.",
+    faq9_q: "AI가 영상을 저장하나요?",
+    faq9_a: "아닙니다. 사진이나 영상은 별도로 저장하지 않습니다.",
+    faq10_q: "업데이트는 어떻게 하나요?",
+    faq10_a: "웹 업데이트가 자동으로 반영됩니다.",
+    faq11_q: "환불이 가능한가요?",
+    faq11_a: "환불 정책 페이지의 기준에 따라 처리됩니다."
+  }
+};
+let HOME_DATA_BY_TARGET = { index:{}, kick:{} };
+let currentHomeSubtab = 'index';
+
+function switchHomeSubtab(t){
+  currentHomeSubtab=t;
+  ['index','kick'].forEach(k=>{
+    document.getElementById('home-subtab-'+k).style.display=(k===t?'':'none');
+    document.getElementById('subtab-'+k+'-btn').classList.toggle('active',k===t);
+  });
+}
+function setHomeStatus(msg,ok=true){const el=document.getElementById('homeSaveStatus');if(!el)return;el.textContent=msg;el.style.color=ok?'#0c8d54':'#dc2626';}
+async function loadHomeFields(){
+  for(const t of Object.keys(HOME_TARGET_DEFAULTS)){
+    let fetched={};
+    try{const res=await edgeCall('GET_HOME_DATA',{target:t});fetched=res?.data||{};}
+    catch(e){setHomeStatus('서버 불러오기 실패: '+e.message,false);fetched={};}
+    HOME_DATA_BY_TARGET[t]={...HOME_TARGET_DEFAULTS[t],...fetched};
+    Object.keys(HOME_TARGET_DEFAULTS[t]).forEach(k=>{const el=document.getElementById('f_'+t+'_'+k);if(!el)return;if(el.type==='checkbox')el.checked=!!HOME_DATA_BY_TARGET[t][k];else el.value=HOME_DATA_BY_TARGET[t][k]??'';});
+  }
+  setHomeStatus('서버에서 메인과 킥마스터 데이터를 불러왔습니다.');
+}
+async function saveHomeData(){
+  const t=currentHomeSubtab;
+  Object.keys(HOME_TARGET_DEFAULTS[t]).forEach(k=>{const el=document.getElementById('f_'+t+'_'+k);if(!el)return;HOME_DATA_BY_TARGET[t][k]=el.type==='checkbox'?el.checked:el.value;});
+  try{await edgeCall('UPDATE_HOME_DATA',{target:t,data:HOME_DATA_BY_TARGET[t]});showToast('저장되었습니다.');setHomeStatus('저장 완료. 실제 방문자 페이지에 반영됩니다.');}
+  catch(e){showToast('저장 실패');setHomeStatus('저장 실패. 서버에는 반영되지 않았습니다: '+e.message,false);}
+}
+
+const EXPERIMENTS=[
+  {
+    name:'2인 인식 측정실',
+    url:'lab-2p.html',
+    date:'2026-08-01',
+    status:'run',
+    desc:'두 사람을 동시에 인식할 때 몇 fps 가 나오고 관절이 얼마나 흔들리는지 재는 곳. 인원 1·2·3명, 모델 full·lite, GPU·CPU 를 버튼으로 바꿔가며 비교한다. 청·홍 좌우 배정과 발 속도 계산 방식도 함께 확인한다. 라이선스 없이 열린다.'
+  }
+];
+
+function renderExperiments(){
+  const g=document.getElementById('expGrid'); if(!g) return;
+  if(!EXPERIMENTS.length){
+    g.innerHTML='<div class="exp-empty">아직 등록된 실험이 없습니다.</div>';
+    return;
+  }
+  g.innerHTML=EXPERIMENTS.map(x=>{
+    const run = x.status==='run';
+    return `<div class="exp-card">
+      <div class="exp-top">
+        <div class="exp-name">${escapeHtml(x.name)}</div>
+        <span class="exp-tag ${run?'run':'wait'}">${run?'진행 중':'대기'}</span>
+      </div>
+      <div class="exp-desc">${escapeHtml(x.desc)}</div>
+      <div class="exp-meta">${escapeHtml(x.date)} · ${escapeHtml(x.url)}</div>
+      <div class="exp-act">
+        <a class="btn-add" href="${escapeHtml(x.url)}" target="_blank" rel="noopener">열기</a>
+        <button class="btn-add btn-ghost" onclick="copyExpLink('${escapeHtml(x.url)}')">주소 복사</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function copyExpLink(u){
+  const full=location.origin+'/'+u;
+  try{ await navigator.clipboard.writeText(full); showToast('주소를 복사했습니다'); }
+  catch(e){ prompt('아래 주소를 복사하세요', full); }
+}
+
+document.getElementById('pwModalBg').addEventListener('click', e => { if(e.target===e.currentTarget) closePwModal(); });
+document.getElementById('modalBg').addEventListener('click', e => { if(e.target===e.currentTarget) closeModal(); });
+document.addEventListener('keydown', e => { if(e.key==='Escape') { closeModal(); closePwModal(); } });
+
+const savedToken = sessionStorage.getItem('akm_admin_token');
+if (savedToken) {
+  ADMIN_TOKEN = savedToken;
+  document.getElementById('loginWrap').classList.add('hidden');
+  document.getElementById('dashboard').classList.add('show');
+  loadLicenses();
+  loadHomeFields();
+}
+</script>
+
+<script id="akm-v5-ui-polish-js">
+(function(){
+  function setSyncLabel(){
+    var el=document.querySelector('.top-actions');
+    if(!el) return;
+    var d=new Date();
+    var hh=String(d.getHours()).padStart(2,'0');
+    var mm=String(d.getMinutes()).padStart(2,'0');
+    el.setAttribute('data-sync', hh+':'+mm);
+  }
+  function initHomeAccordion(){
+    document.querySelectorAll('#tab-home .edit-section > h3').forEach(function(h){
+      if(h.dataset.akmV5Bound) return;
+      h.dataset.akmV5Bound='1';
+      h.addEventListener('click', function(e){
+        var tag=(e.target && e.target.tagName || '').toLowerCase();
+        if(['input','textarea','button','select'].includes(tag)) return;
+        var box=h.parentElement;
+        if(box) box.classList.toggle('is-collapsed');
+      });
+    });
+  }
+  function animateStats(){
+    document.querySelectorAll('.stat-card .num').forEach(function(el){
+      var txt=(el.textContent||'').trim();
+      var n=parseInt(txt.replace(/[^0-9-]/g,''),10);
+      if(!Number.isFinite(n) || n<0 || n>999 || el.dataset.akmAnimated===txt) return;
+      el.dataset.akmAnimated=txt;
+      var start=0, t0=performance.now(), dur=420;
+      function step(t){
+        var p=Math.min(1,(t-t0)/dur);
+        var v=Math.round(start+(n-start)*(1-Math.pow(1-p,3)));
+        el.textContent=txt.replace(String(n), String(v));
+        if(p<1) requestAnimationFrame(step); else el.textContent=txt;
+      }
+      requestAnimationFrame(step);
+    });
+  }
+  window.addEventListener('DOMContentLoaded', function(){
+    setSyncLabel();
+    initHomeAccordion();
+    animateStats();
+  });
+  document.addEventListener('click', function(){
+    setTimeout(function(){initHomeAccordion(); animateStats(); setSyncLabel();},80);
+  }, true);
+})();
+</script>
+
+</body>
+</html>

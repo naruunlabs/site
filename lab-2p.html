@@ -1,0 +1,831 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>2인 인식 측정 · 나른랩스 실험실</title>
+<style>
+  :root{
+    --bg:#0e1013; --panel:#171a1f; --line:#2a2f37;
+    --txt:#e8eaed; --dim:#9aa3ad;
+    --cheong:#2b7fff; --hong:#E3172E; --ok:#3ddc84; --warn:#ffb020;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+       font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;}
+  .wrap{max-width:1100px;margin:0 auto;padding:12px}
+  h1{font-size:17px;margin:4px 0 2px}
+  .sub{font-size:12px;color:var(--dim);margin-bottom:12px;line-height:1.5}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;
+         padding:10px;margin-bottom:10px;display:flex;flex-wrap:wrap;gap:14px;align-items:center}
+  .grp{display:flex;align-items:center;gap:6px}
+  .grp>span{font-size:12px;color:var(--dim);margin-right:2px}
+  button.sel{background:#22262d;color:var(--txt);border:1px solid var(--line);
+             border-radius:7px;padding:6px 11px;font-size:13px;cursor:pointer}
+  button.sel.on{background:#ff6a1a;border-color:#ff6a1a;color:#fff;font-weight:700}
+  button.act{background:#2b7fff;color:#fff;border:0;border-radius:7px;
+             padding:7px 13px;font-size:13px;cursor:pointer;font-weight:600}
+  button:disabled{opacity:.45;cursor:default}
+
+  #camWrap{position:relative;width:100%;background:#000;border-radius:10px;
+           overflow:hidden;aspect-ratio:16/9}
+  #camWrap.mir video,#camWrap.mir canvas{transform:scaleX(-1)}
+  video,canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .divider{position:absolute;left:50%;top:0;bottom:0;width:0;
+           border-left:2px dashed rgba(255,255,255,.35);pointer-events:none}
+  .zone{position:absolute;top:8px;font-size:13px;font-weight:800;padding:3px 10px;
+        border-radius:6px;color:#fff;pointer-events:none}
+  .zone.c{left:10px;background:var(--cheong)}
+  .zone.h{right:10px;background:var(--hong)}
+  .badge{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+         font-size:14px;color:#fff;background:rgba(0,0,0,.65);padding:8px 14px;
+         border-radius:8px;text-align:center;line-height:1.5;white-space:pre-line}
+
+  .cards{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+  @media(max-width:640px){.cards{grid-template-columns:1fr}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px}
+  .card h2{font-size:13px;margin:0 0 8px;display:flex;align-items:center;gap:7px}
+  .hist-wrap{overflow-x:auto;margin-bottom:8px}
+  table.hist{width:100%;border-collapse:collapse;font-size:12px;white-space:nowrap}
+  table.hist th{text-align:right;color:var(--dim);font-weight:600;padding:5px 8px;border-bottom:1px solid var(--line)}
+  table.hist th:nth-child(-n+2),table.hist td:nth-child(-n+2){text-align:left}
+  table.hist td{text-align:right;padding:5px 8px;border-bottom:1px solid rgba(255,255,255,.05);font-variant-numeric:tabular-nums}
+  .hist-empty{text-align:center!important;color:var(--dim);padding:18px 0}
+  .dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  td{padding:3px 0;vertical-align:top}
+  td:first-child{color:var(--dim);width:46%}
+  td:last-child{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+  .big{font-size:26px;font-weight:800;font-variant-numeric:tabular-nums}
+  .unit{font-size:12px;color:var(--dim);font-weight:400}
+  .note{font-size:11.5px;color:var(--dim);line-height:1.6;margin-top:8px}
+  .good{color:var(--ok)} .bad{color:var(--hong)} .mid{color:var(--warn)} .dim{color:var(--dim)}
+  textarea{width:100%;height:150px;background:#0b0d10;color:var(--txt);
+           border:1px solid var(--line);border-radius:8px;padding:9px;
+           font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px;line-height:1.6}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>2인 인식 측정 · 실험실</h1>
+  <div class="sub">
+    킥마스터 원본은 건드리지 않는 측정 전용 페이지입니다. 라이선스 확인도 없습니다.<br>
+    <b>측정 순서</b> · ① 혼자 서서 1명 재기 → ② 두 명 서서 2명으로 재기 → ③ <b>파일로 내려받기</b> 눌러 보내주기<br>
+    설정을 바꾸면 직전 측정이 자동으로 기록에 쌓입니다. 파일 하나에 전부 들어갑니다.
+  </div>
+
+  <div class="panel">
+    <div class="grp"><span>인원</span>
+      <button class="sel on" data-k="np" data-v="1">1명</button>
+      <button class="sel" data-k="np" data-v="2">2명</button>
+      <button class="sel" data-k="np" data-v="3">3명</button>
+    </div>
+    <div class="grp"><span>모델</span>
+      <button class="sel on" data-k="md" data-v="full">full</button>
+      <button class="sel" data-k="md" data-v="lite">lite</button>
+    </div>
+    <div class="grp"><span>가속</span>
+      <button class="sel on" data-k="dl" data-v="GPU">GPU</button>
+      <button class="sel" data-k="dl" data-v="CPU">CPU</button>
+    </div>
+    <div class="grp"><span>해상도</span>
+      <button class="sel on" data-k="rs" data-v="720">720p</button>
+      <button class="sel" data-k="rs" data-v="540">540p</button>
+      <button class="sel" data-k="rs" data-v="480">480p</button>
+    </div>
+    <div class="grp"><span>좌우반전</span>
+      <button class="sel on" data-k="mr" data-v="1">켬</button>
+      <button class="sel" data-k="mr" data-v="0">끔</button>
+    </div>
+    <div class="grp"><span>모델비교</span>
+      <button class="sel" id="btnCmp">full ↔ lite 동시</button>
+    </div>
+    <div class="grp" style="margin-left:auto">
+      <button class="act" id="btnSave">기록 저장</button>
+      <button class="act" id="btnFile">파일로 내려받기</button>
+      <button class="act" id="btnReset">다시 재기</button>
+    </div>
+  </div>
+
+  <div id="camWrap" class="mir">
+    <video id="video" playsinline muted></video>
+    <canvas id="overlay"></canvas>
+    <div class="divider"></div>
+    <div class="zone c">청</div>
+    <div class="zone h">홍</div>
+    <div class="badge" id="badge">시작하는 중…</div>
+  </div>
+
+  <div class="cards">
+    <div class="card">
+      <h2>성능</h2>
+      <div class="big"><span id="fpsNow">--</span> <span class="unit">fps</span>
+        &nbsp;<span class="unit">최저</span> <span id="fpsMin" class="unit">--</span></div>
+      <table>
+        <tr><td>평균 fps (전체)</td><td id="fpsAvg">--</td></tr>
+        <tr><td>AI 추론 1회</td><td id="infMs">-- ms</td></tr>
+        <tr><td>검출된 사람</td><td id="nDet">0 명</td></tr>
+        <tr><td><b>인원 끊김</b></td><td id="drops">--</td></tr>
+        <tr><td><b>인식 튐</b></td><td id="jumps">--</td></tr>
+        <tr><td>카메라 해상도</td><td id="res">--</td></tr>
+        <tr><td>측정 시간</td><td id="elapsed">0 초</td></tr>
+        <tr><td><b>성능 유지</b></td><td id="thermal">--</td></tr>
+      </table>
+      <canvas id="fpsChart" height="90" style="width:100%;height:90px;margin-top:10px;display:block"></canvas>
+      <div class="note" style="margin-top:4px">
+        시간에 따른 fps입니다. 처음엔 높다가 <b>몇 분 뒤 계단처럼 내려가면 발열</b>로 기기가
+        스스로 속도를 낮춘 것입니다. 태블릿에서 특히 잘 나타납니다.
+      </div>
+      <div class="note" id="verdict">10초 이상 움직이면서 재야 값이 정확합니다.</div>
+      <div class="note">
+        <b>인원 끊김</b>은 잡히는 사람 수가 바뀐 횟수입니다(2명→1명→2명).
+        <b>인식 튐</b>은 발이 한 프레임에 화면 40% 넘게 순간이동한 횟수로,
+        사람은 못 하는 움직임이니 인식이 엉뚱한 곳을 짚은 것입니다.
+        <b>둘 다 0에 가까워야 2인 모드에서 점수가 뒤바뀌지 않습니다.</b>
+      </div>
+    </div>
+
+    <div class="card" id="cmpCard" style="display:none;grid-column:1/-1">
+      <h2>full ↔ lite 같은 순간 비교</h2>
+      <table>
+        <tr><td>무릎 각도 · full</td><td id="cmpKF">--</td></tr>
+        <tr><td>무릎 각도 · lite</td><td id="cmpKL">--</td></tr>
+        <tr><td><b>무릎 각도 평균 차이</b></td><td id="cmpKD">--</td></tr>
+        <tr><td style="padding-top:9px">발 높이 · full</td><td id="cmpPF" style="padding-top:9px">--</td></tr>
+        <tr><td>발 높이 · lite</td><td id="cmpPL">--</td></tr>
+        <tr><td><b>발 높이 평균 차이</b></td><td id="cmpPD">--</td></tr>
+        <tr><td style="padding-top:9px">추론 · full / lite</td><td id="cmpInf" style="padding-top:9px">--</td></tr>
+        <tr><td>비교한 프레임</td><td id="cmpN">0</td></tr>
+      </table>
+      <div class="note">
+        같은 카메라 화면을 두 모델에 동시에 넣어 결과를 견줍니다. 사람도 순간도 같으니 공정한 비교입니다.<br>
+        <b>무릎 각도 평균 차이</b>가 관건입니다. 3도 이하면 사용자가 못 느끼고,
+        10도를 넘으면 앞차기·돌려차기 분류가 흔들립니다.
+        <b>발 높이</b>는 점수에 바로 반영되는 값이라 3%를 넘으면 점수가 눈에 띄게 달라집니다.<br>
+        ※ 두 모델을 같이 돌리므로 <b>이 모드에서는 fps가 절반</b>입니다. 성능 측정용이 아니라 정확도 비교용입니다.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>이 기기</h2>
+      <table>
+        <tr><td>그래픽(GPU)</td><td id="dvGpu" style="text-align:right;font-size:11px;line-height:1.5">--</td></tr>
+        <tr><td>CPU 코어</td><td id="dvCore">--</td></tr>
+        <tr><td>메모리</td><td id="dvMem">--</td></tr>
+        <tr><td>브라우저</td><td id="dvBrowser">--</td></tr>
+        <tr><td>화면</td><td id="dvScreen">--</td></tr>
+      </table>
+      <div class="note">
+        기기마다 결과가 크게 다릅니다. <b>도장에서 실제로 쓸 기기마다</b> 한 번씩 재주세요.
+        이 정보는 요약에 자동으로 들어갑니다.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>발 속도 — 왜 초 단위로 바꿔야 하는가</h2>
+      <table>
+        <tr><td>프레임당 · 지금</td><td id="spF">--</td></tr>
+        <tr><td><b>프레임당 · 이번 측정 최고</b></td><td id="spFmax">--</td></tr>
+        <tr><td>현재 문턱값</td><td>0.0012</td></tr>
+        <tr><td style="padding-top:9px">초당 · 지금</td><td id="spS" style="padding-top:9px">--</td></tr>
+        <tr><td><b>초당 · 이번 측정 최고</b></td><td id="spSmax">--</td></tr>
+        <tr><td>환산 문턱값</td><td>0.036</td></tr>
+      </table>
+      <div class="note">
+        <b>확인법</b> · 인원을 1명 → 2명으로 바꿔가며 <u>같은 빠르기로</u> 발을 세게 차보세요.
+        볼 것은 <b>최고</b> 두 줄입니다. 위(프레임당)는 fps 따라 같이 변하고,
+        아래(초당)는 비슷하게 유지되면 정상입니다.
+        위가 변한다는 건 지금 발차기 판정이 fps에 끌려다닌다는 뜻입니다.<br>
+        최고값은 설정을 바꾸거나 기록 초기화를 누를 때만 지워집니다.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span class="dot" style="background:var(--cheong)"></span>청 · 화면 왼쪽</h2>
+      <table>
+        <tr><td>잡힘</td><td id="c_on">--</td></tr>
+        <tr><td>무릎 각도 (오른)</td><td id="c_kr">--</td></tr>
+        <tr><td>무릎 각도 (왼)</td><td id="c_kl">--</td></tr>
+        <tr><td>각도 흔들림</td><td id="c_jit">--</td></tr>
+        <tr><td>골반 인식도</td><td id="c_vis">--</td></tr>
+        <tr><td>발 높이</td><td id="c_pct">--</td></tr>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2><span class="dot" style="background:var(--hong)"></span>홍 · 화면 오른쪽</h2>
+      <table>
+        <tr><td>잡힘</td><td id="h_on">--</td></tr>
+        <tr><td>무릎 각도 (오른)</td><td id="h_kr">--</td></tr>
+        <tr><td>무릎 각도 (왼)</td><td id="h_kl">--</td></tr>
+        <tr><td>각도 흔들림</td><td id="h_jit">--</td></tr>
+        <tr><td>골반 인식도</td><td id="h_vis">--</td></tr>
+        <tr><td>발 높이</td><td id="h_pct">--</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:10px">
+    <h2>저장된 기록
+      <button class="act" id="btnClearHist" style="margin-left:auto;font-size:11px;padding:4px 9px;background:#3a3f47">기록 지우기</button>
+    </h2>
+    <div class="hist-wrap">
+      <table class="hist">
+        <thead><tr><th>#</th><th>설정</th><th>시간</th><th>평균fps</th><th>최저</th><th>추론</th><th>끊김/튐</th><th>발열</th></tr></thead>
+        <tbody id="histBody"></tbody>
+      </table>
+    </div>
+    <div class="note">
+      설정(인원·모델·가속)을 바꾸면 <b>직전 측정이 자동으로 여기 저장됩니다.</b>
+      같은 설정으로 여러 번 재고 싶으면 <b>지금 기록 저장</b>을 누르세요.
+      브라우저에 남으므로 새로고침해도 사라지지 않습니다.
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:10px">
+    <h2>요약 (글로 보내고 싶을 때)
+      <button class="act" id="btnCopy" style="margin-left:auto;font-size:11px;padding:4px 9px">복사</button>
+    </h2>
+    <textarea id="summary" readonly></textarea>
+    <div class="note">
+      <b>각도 흔들림</b>은 가만히 서 있을 때의 무릎 각도 떨림입니다.
+      2도 이하면 안정, 5도를 넘으면 판정이 흔들립니다.
+      두 명이 가까이 붙거나 서로 가릴 때 이 값이 튀는지 보세요.
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { PoseLandmarker, FilesetResolver, DrawingUtils }
+  from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs";
+
+const MODEL = {
+  full:"https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task",
+  lite:"https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task"
+};
+
+const $ = id => document.getElementById(id);
+const video=$('video'), canvas=$('overlay'), ctx=canvas.getContext('2d');
+const camWrap=$('camWrap'), badge=$('badge');
+
+let cfg = { np:1, md:'full', dl:'GPU', mr:1, rs:720 };
+let vision=null, landmarker=null, draw=null;
+let lastVideoTime=-1, building=false;
+
+let liteLm=null, cmpOn=false, cmpInfMs=[];
+let cmpKneeDiffs=[], cmpPctDiffs=[];
+let cmpLastF=null, cmpLastL=null;
+
+let frameTimes=[], infTimes=[], fpsMinVal=null, fpsSum=0, fpsCnt=0;
+let startedAt=performance.now();
+let lastFrameT=null;
+let peakSpF=0, peakSpS=0;           
+let peakDecayT=0;
+let maxSpF=0, maxSpS=0;             
+
+const JUMP_LIMIT = 0.4;
+let jumpCount=0;                    
+let dropCount=0, lastDetCount=-1;   
+
+let fpsSamples=[], lastSampleT=0;
+let prevFoot={};                    
+let jitBuf={};                      
+
+const HIST_KEY='lab2p_history_v1';
+let history=[];
+try{ history=JSON.parse(localStorage.getItem(HIST_KEY)||'[]'); }catch(e){ history=[]; }
+
+function snapshot(){
+  const el=(performance.now()-startedAt)/1000;
+  return {
+    설정:`${cfg.np}명 · ${cfg.md} · ${cfg.dl} · ${cfg.rs}p${cmpOn?' · 비교중':''}`,
+    해상도:$('res').textContent,
+    시간:+el.toFixed(0),
+    평균fps: fpsCnt? +(fpsSum/fpsCnt).toFixed(1) : null,
+    최저fps: fpsMinVal,
+    추론ms: infTimes.length? +(infTimes.reduce((a,b)=>a+b,0)/infTimes.length).toFixed(1) : null,
+    끊김: dropCount, 튐: jumpCount,
+    발속프레임:+maxSpF.toFixed(4), 발속초:+maxSpS.toFixed(3),
+    발열: thermalCheck(el).drop
+  };
+}
+
+function saveIfMeaningful(){
+  const el=(performance.now()-startedAt)/1000;
+  if(el<8 || !fpsCnt) return;
+  history.push(snapshot());
+  if(history.length>20) history.shift();
+  try{ localStorage.setItem(HIST_KEY, JSON.stringify(history)); }catch(e){}
+  renderHistory();
+}
+function renderHistory(){
+  const t=$('histBody');
+  if(!history.length){ t.innerHTML='<tr><td colspan="8" class="hist-empty">아직 저장된 기록이 없습니다. 설정을 바꾸면 직전 측정이 여기 쌓입니다.</td></tr>'; return; }
+  t.innerHTML=history.map((h,i)=>`<tr>
+    <td>${i+1}</td><td>${h.설정}</td><td>${h.시간}초</td>
+    <td><b>${h.평균fps ?? '--'}</b></td><td>${h.최저fps ?? '--'}</td>
+    <td>${h.추론ms ?? '--'}ms</td><td>${h.끊김}/${h.튐}</td>
+    <td>${h.발열==null?'--':(h.발열>0?'-':'+')+Math.abs(h.발열).toFixed(0)+'%'}</td></tr>`).join('');
+}
+
+document.querySelectorAll('button.sel').forEach(b=>{
+  b.addEventListener('click',()=>{
+    const k=b.dataset.k, v=b.dataset.v;
+    if(b.classList.contains('on')) return;          
+    if(k==='np'||k==='md'||k==='dl') saveIfMeaningful();   
+    document.querySelectorAll(`button.sel[data-k="${k}"]`).forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    cfg[k] = (k==='np'||k==='mr') ? parseInt(v,10) : v;
+    if(k==='mr') camWrap.classList.toggle('mir', cfg.mr===1);
+    if(k==='np'||k==='md'||k==='dl'){ resetStats(); buildModel(); }
+    if(k==='rs'){ resetStats(); startCam(); }
+  });
+});
+
+$('btnCmp').addEventListener('click', async ()=>{
+  cmpOn=!cmpOn;
+  $('btnCmp').classList.toggle('on', cmpOn);
+  $('cmpCard').style.display = cmpOn ? '' : 'none';
+  cmpKneeDiffs=[]; cmpPctDiffs=[]; cmpInfMs=[];
+  if(cmpOn){
+    badge.style.display='block'; badge.textContent='lite 모델 준비 중…';
+    try{
+      liteLm=await PoseLandmarker.createFromOptions(vision,{
+        baseOptions:{ modelAssetPath:MODEL.lite, delegate:cfg.dl },
+        runningMode:"VIDEO", numPoses:cfg.np
+      });
+      badge.style.display='none';
+    }catch(e){ badge.textContent='lite 모델 실패: '+(e.message||e); cmpOn=false; $('btnCmp').classList.remove('on'); }
+  }else{
+    if(liteLm){ liteLm.close(); liteLm=null; }
+  }
+});
+$('btnSave').addEventListener('click',()=>{
+  const el=(performance.now()-startedAt)/1000;
+  if(el<8||!fpsCnt){ alert('8초 이상 재고 나서 저장할 수 있습니다.'); return; }
+  history.push(snapshot());
+  if(history.length>20) history.shift();
+  try{ localStorage.setItem(HIST_KEY, JSON.stringify(history)); }catch(e){}
+  renderHistory();
+  $('btnSave').textContent='저장됨';
+  setTimeout(()=>$('btnSave').textContent='지금 기록 저장',1500);
+});
+
+$('btnFile').addEventListener('click',()=>{
+  const el=(performance.now()-startedAt)/1000;
+  const th=thermalCheck(el);
+  const data={
+    측정일시: new Date().toLocaleString('ko-KR'),
+    기기: DEVICE,
+    전체기기정보: navigator.userAgent,
+    저장된기록: history,
+    지금재던것: (fpsCnt? {...snapshot(), 반전:cfg.mr?'켬':'끔', 해상도설정:cfg.rs+'p'} : null),
+    성능유지: { 처음1분:th.first, 최근1분:th.last, 하락률퍼센트:th.drop },
+    fps흐름: fpsSamples,
+    모델비교: cmpKneeDiffs.length ? {
+      무릎각도_평균차이: +mean(cmpKneeDiffs).toFixed(2),
+      발높이_평균차이: +mean(cmpPctDiffs).toFixed(2),
+      비교프레임수: cmpKneeDiffs.length,
+      추론_full_ms: +(mean(infTimes)||0).toFixed(1),
+      추론_lite_ms: +(mean(cmpInfMs)||0).toFixed(1)
+    } : null,
+    청홍: {
+      청:{ 무릎R:$('c_kr').textContent, 흔들림:$('c_jit').textContent, 골반:$('c_vis').textContent },
+      홍:{ 무릎R:$('h_kr').textContent, 흔들림:$('h_jit').textContent, 골반:$('h_vis').textContent }
+    }
+  };
+  const d=new Date(), p=n=>String(n).padStart(2,'0');
+  const stamp=`${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}`;
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download=`lab2p_${stamp}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 4000);
+  $('btnFile').textContent='내려받음';
+  setTimeout(()=>$('btnFile').textContent='파일로 내려받기',1800);
+});
+
+$('btnClearHist').addEventListener('click',()=>{
+  if(!confirm('저장된 기록을 모두 지울까요?')) return;
+  history=[]; try{ localStorage.removeItem(HIST_KEY); }catch(e){}
+  renderHistory();
+});
+$('btnReset').addEventListener('click', resetStats);
+$('btnCopy').addEventListener('click', async ()=>{
+  try{ await navigator.clipboard.writeText($('summary').value); $('btnCopy').textContent='복사됨'; }
+  catch(e){ $('summary').select(); $('btnCopy').textContent='직접 복사하세요'; }
+  setTimeout(()=>$('btnCopy').textContent='요약 복사',1600);
+});
+
+function resetStats(){
+  frameTimes=[]; infTimes=[]; fpsMinVal=null; fpsSum=0; fpsCnt=0;
+  startedAt=performance.now(); lastFrameT=null;
+  peakSpF=0; peakSpS=0; maxSpF=0; maxSpS=0; prevFoot={}; jitBuf={};
+  jumpCount=0; dropCount=0; lastDetCount=-1;
+  fpsSamples=[]; lastSampleT=0;
+}
+
+function gpuName(){
+  try{
+    const c=document.createElement('canvas');
+    const gl=c.getContext('webgl2')||c.getContext('webgl');
+    if(!gl) return 'WebGL 없음 (GPU 가속 불가)';
+    const ext=gl.getExtension('WEBGL_debug_renderer_info');
+    const n = ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
+    return n || '이름 확인 불가';
+  }catch(e){ return '확인 불가'; }
+}
+function browserName(){
+  const u=navigator.userAgent;
+  const m = u.match(/(Edg|OPR|Chrome|CriOS|Firefox|FxiOS)\/([\d.]+)/);
+  const os = /Windows/.test(u)?'Windows' : /Android/.test(u)?'Android'
+           : /iPad|iPhone|iPod/.test(u)?'iOS/iPadOS' : /Mac OS X/.test(u)?'macOS' : '기타';
+  if(/Safari/.test(u) && !m) return 'Safari · '+os;
+  if(!m) return os;
+  const name={Edg:'Edge',OPR:'Opera',CriOS:'Chrome',FxiOS:'Firefox'}[m[1]]||m[1];
+  return name+' '+m[2].split('.')[0]+' · '+os;
+}
+const DEVICE={
+  gpu: gpuName(),
+  cores: navigator.hardwareConcurrency || null,
+  mem: navigator.deviceMemory || null,
+  browser: browserName(),
+  screen: `${screen.width}×${screen.height} @${window.devicePixelRatio||1}x`
+};
+function renderDevice(){
+  $('dvGpu').textContent=DEVICE.gpu;
+  $('dvCore').textContent=DEVICE.cores? DEVICE.cores+'개' : '알 수 없음';
+  $('dvMem').textContent=DEVICE.mem? DEVICE.mem+'GB 이상' : '알 수 없음';
+  $('dvBrowser').textContent=DEVICE.browser;
+  $('dvScreen').textContent=DEVICE.screen;
+}
+
+async function buildModel(){
+  if(building) return;
+  building=true;
+  badge.style.display='block';
+  badge.textContent=`AI 모델 준비 중…\n${cfg.md} · ${cfg.dl} · ${cfg.np}명`;
+  try{
+    if(landmarker){ landmarker.close(); landmarker=null; }
+    if(!vision) vision=await FilesetResolver.forVisionTasks(
+      "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm");
+    landmarker=await PoseLandmarker.createFromOptions(vision,{
+      baseOptions:{ modelAssetPath:MODEL[cfg.md], delegate:cfg.dl },
+      runningMode:"VIDEO", numPoses:cfg.np
+    });
+    draw=new DrawingUtils(ctx);
+    lastVideoTime=-1;
+    badge.style.display='none';
+  }catch(e){
+    console.error(e);
+    badge.textContent='모델 실패: '+(e.message||e)+'\n(GPU가 안 되면 CPU로 바꿔보세요)';
+  }
+  building=false;
+}
+
+const RES={720:[1280,720], 540:[960,540], 480:[854,480]};
+async function startCam(){
+  try{
+    if(video.srcObject) video.srcObject.getTracks().forEach(t=>t.stop());
+    const [w,h]=RES[cfg.rs]||RES[720];
+    const s=await navigator.mediaDevices.getUserMedia({
+      video:{ facingMode:'user', width:{ideal:w}, height:{ideal:h} }, audio:false });
+    video.srcObject=s; await video.play();
+    lastVideoTime=-1;
+  }catch(e){
+    badge.textContent='카메라를 열지 못했습니다.\n'+(e.message||e)+
+      '\n※ 이 페이지는 https 주소에서만 카메라가 켜집니다.';
+  }
+}
+
+function angleDeg(a,b,c){
+  if(!a||!b||!c) return null;
+  const abx=a.x-b.x, aby=a.y-b.y, cbx=c.x-b.x, cby=c.y-b.y;
+  const dot=abx*cbx+aby*cby, mag=Math.hypot(abx,aby)*Math.hypot(cbx,cby);
+  if(!mag) return null;
+  return Math.acos(Math.max(-1,Math.min(1,dot/mag)))*180/Math.PI;
+}
+function footPoint(lm,side){
+  const ids = side==='left'?[27,29,31]:[28,30,32];
+  let sx=0,sy=0,n=0;
+  ids.forEach(i=>{ if(lm[i]){ sx+=lm[i].x; sy+=lm[i].y; n++; } });
+  return n?{x:sx/n,y:sy/n}:null;
+}
+function std(arr){
+  if(arr.length<4) return null;
+  const m=arr.reduce((a,b)=>a+b,0)/arr.length;
+  return Math.sqrt(arr.reduce((a,b)=>a+(b-m)*(b-m),0)/arr.length);
+}
+function fmt(v,d=1,suffix=''){ return (v==null||!isFinite(v))?'--':v.toFixed(d)+suffix; }
+
+function metricsOf(lm){
+  if(!lm||!lm[11]||!lm[24]) return null;
+  const shoulderY=(lm[11].y+lm[12].y)/2, hipY=(lm[23].y+lm[24].y)/2;
+  const torso=hipY-shoulderY;
+  if(torso<=0.02) return null;
+  const kR=angleDeg(lm[24],lm[26],lm[28]);
+  const fR=footPoint(lm,'right'), fL=footPoint(lm,'left');
+  const hi=(fR&&fL)?(fR.y<fL.y?fR:fL):(fR||fL);
+  let pct=null;
+  if(hi){ const lift=(hipY-hi.y)/torso; pct=Math.max(0,Math.min(100,((lift+0.8)/1.6)*100)); }
+  return { kR, pct, hipX:(lm[23].x+lm[24].x)/2 };
+}
+
+function sortedPeople(res){
+  const out=[];
+  (res.landmarks||[]).forEach(lm=>{ const m=metricsOf(lm); if(m) out.push(m); });
+  out.sort((a,b)=> cfg.mr===1 ? b.hipX-a.hipX : a.hipX-b.hipX);
+  return out;
+}
+const mean=a=>a.length? a.reduce((x,y)=>x+y,0)/a.length : null;
+
+function loop(){
+  const now=performance.now();
+
+  if(landmarker && !building && video.readyState>=2 && video.currentTime!==lastVideoTime){
+    lastVideoTime=video.currentTime;
+    if(canvas.width!==video.videoWidth){
+      canvas.width=video.videoWidth; canvas.height=video.videoHeight;
+      $('res').textContent=video.videoWidth+'×'+video.videoHeight;
+    }
+
+    const t0=performance.now();
+    const res=landmarker.detectForVideo(video, now);
+    const t1=performance.now();
+
+    const dt = lastFrameT ? (now-lastFrameT)/1000 : null;
+    lastFrameT=now;
+    frameTimes.push(now);
+    while(frameTimes.length && now-frameTimes[0]>1000) frameTimes.shift();
+    infTimes.push(t1-t0); if(infTimes.length>30) infTimes.shift();
+
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    const people=[];
+    const L = res.landmarks || [];
+    for(let i=0;i<L.length;i++){
+      const lm=L[i];
+      if(!lm || !lm[23] || !lm[24]) continue;
+      people.push({ lm, hipX:(lm[23].x+lm[24].x)/2 });
+    }
+    people.sort((a,b)=> cfg.mr===1 ? b.hipX-a.hipX : a.hipX-b.hipX);
+
+    $('nDet').textContent = people.length+' 명';
+    if(lastDetCount>=0 && people.length!==lastDetCount) dropCount++;
+    lastDetCount=people.length;
+
+    const slots=['c','h'];
+    let bestSpF=0, bestSpS=0;
+
+    for(let s=0;s<2;s++){
+      const p=people[s];
+      if(!p){ paintEmpty(slots[s]); continue; }
+      const lm=p.lm;
+      const color = s===0 ? 'rgba(43,127,255,0.75)' : 'rgba(227,23,46,0.75)';
+      const dotC  = s===0 ? '#7fb4ff' : '#ff8090';
+      draw.drawConnectors(lm, PoseLandmarker.POSE_CONNECTIONS, {color, lineWidth:3});
+      draw.drawLandmarks(lm, {color:dotC, lineWidth:1, radius:3});
+
+      const shoulderY=(lm[11].y+lm[12].y)/2;
+      const hipY=(lm[23].y+lm[24].y)/2;
+      const torso=hipY-shoulderY;
+      const kR=angleDeg(lm[24],lm[26],lm[28]);
+      const kL=angleDeg(lm[23],lm[25],lm[27]);
+      const hipVis=Math.min(lm[23].visibility??0, lm[24].visibility??0);
+
+      let pct=null;
+      const fR=footPoint(lm,'right'), fL=footPoint(lm,'left');
+      const hi = (fR&&fL) ? (fR.y<fL.y?fR:fL) : (fR||fL);
+      if(hi && torso>0.02){
+        const lift=(hipY-hi.y)/torso;
+        pct=Math.max(0,Math.min(100,((lift+0.8)/1.6)*100));
+      }
+
+      const key=slots[s];
+
+      if(!prevFoot[key]) prevFoot[key]={left:null,right:null};
+      [['left',fL],['right',fR]].forEach(([sd,fp])=>{
+        if(!fp) return;
+        const pv=prevFoot[key][sd];
+        if(pv && dt && dt>0){
+          const d=Math.hypot(fp.x-pv.x, fp.y-pv.y);
+          if(d>JUMP_LIMIT){
+            jumpCount++;              
+          }else{
+            if(d>bestSpF) bestSpF=d;
+            const perSec=d/dt;
+            if(perSec>bestSpS) bestSpS=perSec;
+          }
+        }
+        prevFoot[key][sd]={x:fp.x,y:fp.y};
+      });
+
+      if(!jitBuf[key]) jitBuf[key]=[];
+      if(kR!=null){ jitBuf[key].push(kR); if(jitBuf[key].length>45) jitBuf[key].shift(); }
+
+      $(key+'_on').innerHTML='<span class="good">예</span>';
+      $(key+'_kr').textContent=fmt(kR,0,'°');
+      $(key+'_kl').textContent=fmt(kL,0,'°');
+      const j=std(jitBuf[key]);
+      const jc = j==null?'':(j<2?'good':(j<5?'mid':'bad'));
+      $(key+'_jit').innerHTML = j==null?'--':`<span class="${jc}">${j.toFixed(1)}°</span>`;
+      const vc = hipVis>0.7?'good':(hipVis>0.4?'mid':'bad');
+      $(key+'_vis').innerHTML=`<span class="${vc}">${(hipVis*100).toFixed(0)}%</span>`;
+      $(key+'_pct').textContent=fmt(pct,0,'%');
+    }
+
+    if(bestSpF>peakSpF){ peakSpF=bestSpF; peakSpS=bestSpS; peakDecayT=now; }
+    if(now-peakDecayT>1500){ peakSpF*=0.9; peakSpS*=0.9; }
+    if(bestSpF>maxSpF) maxSpF=bestSpF;
+    if(bestSpS>maxSpS) maxSpS=bestSpS;
+
+    $('spF').innerHTML=`<span class="${peakSpF>0.0012?'good':'dim'}">${peakSpF.toFixed(4)}</span>`;
+    $('spS').innerHTML=`<span class="${peakSpS>0.036?'good':'dim'}">${peakSpS.toFixed(3)}</span>`;
+    $('spFmax').innerHTML=`<span class="${maxSpF>0.0012?'good':'dim'}">${maxSpF.toFixed(4)}</span>`;
+    $('spSmax').innerHTML=`<span class="${maxSpS>0.036?'good':'dim'}">${maxSpS.toFixed(3)}</span>`;
+
+    if(cmpOn && liteLm){
+      const l0=performance.now();
+      const lres=liteLm.detectForVideo(video, now);
+      cmpInfMs.push(performance.now()-l0); if(cmpInfMs.length>30) cmpInfMs.shift();
+
+      const F=sortedPeople(res), L=sortedPeople(lres);
+      const n=Math.min(F.length, L.length);
+      for(let i=0;i<n;i++){
+        if(F[i].kR!=null && L[i].kR!=null){
+          cmpKneeDiffs.push(Math.abs(F[i].kR-L[i].kR));
+          if(cmpKneeDiffs.length>3000) cmpKneeDiffs.shift();
+        }
+        if(F[i].pct!=null && L[i].pct!=null){
+          cmpPctDiffs.push(Math.abs(F[i].pct-L[i].pct));
+          if(cmpPctDiffs.length>3000) cmpPctDiffs.shift();
+        }
+      }
+      cmpLastF=F[0]||null; cmpLastL=L[0]||null;
+
+      const kd=mean(cmpKneeDiffs), pd=mean(cmpPctDiffs);
+      $('cmpKF').textContent=fmt(cmpLastF?.kR,1,'°');
+      $('cmpKL').textContent=fmt(cmpLastL?.kR,1,'°');
+      $('cmpKD').innerHTML = kd==null?'--'
+        : `<span class="${kd<3?'good':(kd<10?'mid':'bad')}">${kd.toFixed(1)}°</span>`;
+      $('cmpPF').textContent=fmt(cmpLastF?.pct,1,'%');
+      $('cmpPL').textContent=fmt(cmpLastL?.pct,1,'%');
+      $('cmpPD').innerHTML = pd==null?'--'
+        : `<span class="${pd<1.5?'good':(pd<3?'mid':'bad')}">${pd.toFixed(1)}%</span>`;
+      $('cmpInf').textContent=`${mean(infTimes)?.toFixed(1) ?? '--'} / ${mean(cmpInfMs)?.toFixed(1) ?? '--'} ms`;
+      $('cmpN').textContent=cmpKneeDiffs.length+' 개';
+    }
+
+    if(people.length===0) badgeMsg('사람을 찾는 중…');
+    else if(people.length<cfg.np) badgeMsg(`${cfg.np}명 설정인데 ${people.length}명만 잡힙니다`);
+    else badgeMsg(null);
+  }
+
+  updatePerf(now);
+  requestAnimationFrame(loop);
+}
+
+function paintEmpty(k){
+  $(k+'_on').innerHTML='<span class="dim">아니오</span>';
+  ['_kr','_kl','_jit','_vis','_pct'].forEach(s=>$(k+s).textContent='--');
+  jitBuf[k]=[];
+  prevFoot[k]=null;   
+}
+function badgeMsg(m){
+  if(m===null){ badge.style.display='none'; return; }
+  badge.style.display='block'; badge.textContent=m;
+}
+
+function drawChart(){
+  const cv=$('fpsChart'); if(!cv) return;
+  const dpr=window.devicePixelRatio||1;
+  const W=cv.clientWidth||600, H=90;
+  if(cv.width!==Math.round(W*dpr)){ cv.width=Math.round(W*dpr); cv.height=Math.round(H*dpr); }
+  const g=cv.getContext('2d');
+  g.setTransform(dpr,0,0,dpr,0,0);
+  g.clearRect(0,0,W,H);
+
+  const MAXY=60, pad=4;
+  const gy=v=>H-pad-(v/MAXY)*(H-pad*2);
+
+  g.strokeStyle='rgba(255,255,255,.12)'; g.lineWidth=1;
+  g.fillStyle='rgba(255,255,255,.30)'; g.font='9px sans-serif';
+  [30,15].forEach(v=>{
+    const y=gy(v);
+    g.beginPath(); g.moveTo(22,y); g.lineTo(W,y); g.stroke();
+    g.fillText(v+'', 2, y+3);
+  });
+
+  if(fpsSamples.length<2) return;
+  const t0=fpsSamples[0].t, t1=Math.max(fpsSamples[fpsSamples.length-1].t, t0+10);
+  const gx=t=>22+((t-t0)/(t1-t0))*(W-26);
+
+  g.beginPath();
+  fpsSamples.forEach((s,i)=>{ const x=gx(s.t), y=gy(Math.min(s.fps,MAXY));
+    i?g.lineTo(x,y):g.moveTo(x,y); });
+  g.strokeStyle='#3ddc84'; g.lineWidth=1.6; g.stroke();
+
+  g.fillStyle='rgba(255,255,255,.30)';
+  for(let m=60;m<=t1;m+=60){ const x=gx(m);
+    g.fillRect(x,H-pad-2,1,4); g.fillText((m/60)+'분', x-8, H-pad-5); }
+}
+
+function thermalCheck(el){
+  if(el<120 || fpsSamples.length<40)
+    return { html:`<span class="dim">2분 이상 필요</span>`, drop:null, first:null, last:null };
+  const first=fpsSamples.filter(s=>s.t<=65 && s.t>=5);
+  const last =fpsSamples.filter(s=>s.t>=el-60);
+  if(first.length<10||last.length<10)
+    return { html:`<span class="dim">표본 부족</span>`, drop:null, first:null, last:null };
+  const avg=a=>a.reduce((x,y)=>x+y.fps,0)/a.length;
+  const f=avg(first), l=avg(last);
+  const drop=(f-l)/f*100;
+  const cls = drop<5?'good':(drop<20?'mid':'bad');
+  return {
+    html:`<span class="${cls}">${f.toFixed(1)} → ${l.toFixed(1)} fps (${drop>0?'-':'+'}${Math.abs(drop).toFixed(0)}%)</span>`,
+    drop:+drop.toFixed(1), first:+f.toFixed(1), last:+l.toFixed(1)
+  };
+}
+
+function updatePerf(now){
+  const fps=frameTimes.length;
+  const el=(now-startedAt)/1000;
+  $('elapsed').textContent=el.toFixed(0)+' 초';
+  $('fpsNow').textContent=fps||'--';
+  $('infMs').textContent = infTimes.length
+    ? (infTimes.reduce((a,b)=>a+b,0)/infTimes.length).toFixed(1)+' ms' : '-- ms';
+
+  if(el>3 && fps>0){
+    fpsSum+=fps; fpsCnt++;
+    if(fpsMinVal===null||fps<fpsMinVal) fpsMinVal=fps;
+    if(now-lastSampleT>=1000){ lastSampleT=now; fpsSamples.push({t:el, fps}); drawChart(); }
+  }
+
+  const th=thermalCheck(el);
+  $('thermal').innerHTML=th.html;
+  $('fpsAvg').textContent = fpsCnt? (fpsSum/fpsCnt).toFixed(1) : '--';
+  $('fpsMin').textContent = fpsMinVal ?? '--';
+  $('drops').innerHTML=`<span class="${dropCount<3?'good':(dropCount<15?'mid':'bad')}">${dropCount}회</span>`;
+  $('jumps').innerHTML=`<span class="${jumpCount<3?'good':(jumpCount<15?'mid':'bad')}">${jumpCount}회</span>`;
+
+  const avg = fpsCnt? fpsSum/fpsCnt : 0;
+  const v=$('verdict');
+  if(el<10) v.innerHTML='10초 이상 움직이면서 재야 값이 정확합니다.';
+  else if(avg>=24) v.innerHTML='<span class="good">넉넉합니다.</span> 이 설정으로 진행해도 됩니다.';
+  else if(avg>=16) v.innerHTML='<span class="mid">쓸 만하지만 여유가 없습니다.</span> lite 모델도 재보세요.';
+  else v.innerHTML='<span class="bad">부족합니다.</span> lite 모델 또는 인원을 줄여야 합니다.';
+
+  const histText = history.length
+    ? history.map((h,i)=>
+`${String(i+1).padStart(2)}. ${h.설정}  |  ${h.시간}초  |  평균 ${h.평균fps} · 최저 ${h.최저fps} fps  |  추론 ${h.추론ms}ms  |  끊김 ${h.끊김} · 튐 ${h.튐}${h.발열==null?'':'  |  발열 '+(h.발열>0?'-':'+')+Math.abs(h.발열).toFixed(0)+'%'}`).join('\n')
+    : '(없음)';
+
+  $('summary').value =
+`[2인 인식 측정 결과]
+
+■ 기기
+GPU      : ${DEVICE.gpu}
+CPU 코어 : ${DEVICE.cores ?? '알 수 없음'}
+메모리   : ${DEVICE.mem? DEVICE.mem+'GB 이상' : '알 수 없음'}
+브라우저 : ${DEVICE.browser}
+화면     : ${DEVICE.screen}
+
+■ 저장된 기록
+${histText}
+
+■ 지금 재고 있는 것
+설정      : ${cfg.np}명 · ${cfg.md} · ${cfg.dl} · 반전${cfg.mr?'켬':'끔'}
+해상도    : ${$('res').textContent}
+측정시간  : ${el.toFixed(0)}초
+현재 fps  : ${fps}
+평균 fps  : ${$('fpsAvg').textContent}
+최저 fps  : ${$('fpsMin').textContent}
+추론 1회  : ${$('infMs').textContent}
+검출 인원 : ${$('nDet').textContent}
+인원 끊김 : ${dropCount}회
+인식 튐   : ${jumpCount}회
+성능 유지 : ${th.first==null? '2분 이상 필요' : `${th.first} → ${th.last} fps (${th.drop>0?'-':'+'}${Math.abs(th.drop)}%)`}
+
+발속도 최고 (프레임당) : ${maxSpF.toFixed(4)}   [문턱 0.0012]
+발속도 최고 (초당)     : ${maxSpS.toFixed(3)}   [문턱 0.036]
+
+청 무릎R ${$('c_kr').textContent} / 흔들림 ${$('c_jit').textContent} / 골반 ${$('c_vis').textContent}
+홍 무릎R ${$('h_kr').textContent} / 흔들림 ${$('h_jit').textContent} / 골반 ${$('h_vis').textContent}
+
+전체 기기정보 : ${navigator.userAgent}`;
+}
+
+(async function(){
+  renderDevice();
+  renderHistory();
+  await buildModel();
+  await startCam();
+  loop();
+})();
+</script>
+</body>
+</html>

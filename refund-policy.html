@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+
+<script>
+(function () {
+  var KEY = 'naruunlabs_ga_optout';
+  try {
+    var q = new URLSearchParams(location.search);
+    if (q.get('me') === '1') { localStorage.setItem(KEY, '1'); }
+    if (q.get('me') === '0') { localStorage.removeItem(KEY); }
+    if (localStorage.getItem(KEY) === '1') { return; }
+  } catch (e) {}
+  var h = location.hostname;
+  if (h === 'localhost' || h === '127.0.0.1' || h === '' || h.endsWith('.local')) { return; }
+  var s = document.createElement('script');
+  s.async = true;
+  s.src = 'https://www.googletagmanager.com/gtag/js?id=G-8SN72HTTK4';
+  document.head.appendChild(s);
+  window.dataLayer = window.dataLayer || [];
+  function gtag() { dataLayer.push(arguments); }
+  window.gtag = gtag;
+  gtag('js', new Date());
+  gtag('config', 'G-8SN72HTTK4');
+})();
+</script>
+
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>환불 정책 | AI 킥마스터 · 나른랩스</title>
+
+<link rel="canonical" href="https://naruunlabs.kr/refund-policy">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="NARUUN LABS">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:url" content="https://naruunlabs.kr/refund-policy">
+<meta property="og:title" content="환불 정책 | AI KICK MASTER">
+<meta property="og:description" content="AI KICK MASTER 환불 및 청약철회 정책입니다.">
+<meta property="og:image" content="https://naruunlabs.kr/og-kickmaster.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="환불 정책 | AI KICK MASTER">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="환불 정책 | AI KICK MASTER">
+<meta name="twitter:description" content="AI KICK MASTER 환불 및 청약철회 정책입니다.">
+<meta name="twitter:image" content="https://naruunlabs.kr/og-kickmaster.jpg">
+<meta name="description" content="AI KICK MASTER 환불 정책">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css">
+<style>
+:root{
+  --primary:#E3172E;
+  --secondary:#FF6A1A;
+  --deep:#071C49;
+  --text:#1D2939;
+  --muted:#667085;
+  --line:#D9E2EC;
+  --soft:#F7F9FC;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  font-family:'Pretendard','Noto Sans KR',system-ui,-apple-system,sans-serif;
+  color:var(--text);
+  background:#fff;
+  line-height:1.75;
+  letter-spacing:-.02em;
+}
+a{color:inherit;text-decoration:none}
+.wrap{width:min(1040px,calc(100% - 40px));margin:0 auto}
+header{
+  position:sticky;top:0;z-index:30;
+  background:rgba(255,255,255,.94);
+  backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--line);
+}
+.nav{
+  min-height:74px;
+  display:flex;align-items:center;justify-content:space-between;gap:24px;
+}
+.logo{font-weight:950;color:var(--deep);letter-spacing:.04em}
+.logo span{color:var(--primary)}
+.nav-links{display:flex;gap:22px;align-items:center;font-size:13px;font-weight:800}
+.nav-links a:hover{color:var(--primary)}
+.hero{
+  padding:74px 0 44px;
+  border-bottom:1px solid var(--line);
+  background:
+    radial-gradient(circle at 88% 14%,rgba(227,23,46,.08),transparent 31%),
+    linear-gradient(180deg,#fff,#FAFBFD);
+}
+.eyebrow{
+  color:var(--primary);
+  font-size:12px;font-weight:900;letter-spacing:.15em;text-transform:uppercase;
+}
+h1{
+  margin-top:12px;
+  color:var(--deep);
+  font-size:clamp(38px,6vw,66px);
+  line-height:1.05;
+  letter-spacing:-.06em;
+}
+.updated{margin-top:18px;color:var(--muted);font-size:13px}
+.policy{padding:58px 0 84px}
+.policy-inner{display:grid;grid-template-columns:210px minmax(0,1fr);gap:54px}
+.toc{
+  position:sticky;top:104px;align-self:start;
+  padding:20px 0;border-top:1px solid var(--line);
+}
+.toc strong{display:block;color:var(--deep);font-size:13px;margin-bottom:12px}
+.toc a{display:block;padding:6px 0;color:var(--muted);font-size:13px}
+.toc a:hover{color:var(--primary)}
+.content section{
+  padding:0 0 34px;margin-bottom:34px;border-bottom:1px solid var(--line);
+}
+.content section:last-child{margin-bottom:0}
+.content h2{
+  color:var(--deep);font-size:24px;line-height:1.35;letter-spacing:-.04em;
+  margin-bottom:13px;
+}
+.content h3{
+  color:var(--deep);font-size:17px;margin:20px 0 8px;
+}
+.content p{color:#465467;margin-top:8px;word-break:keep-all}
+.content ul{margin:10px 0 0 20px;color:#465467}
+.content li{margin:5px 0}
+.note{
+  margin-top:16px;padding:16px 18px;
+  background:var(--soft);border-left:3px solid var(--primary);
+  color:#526174;font-size:13.5px;
+}
+footer{
+  padding:30px 0;
+  background:#071426;color:rgba(255,255,255,.58);font-size:12.5px;
+}
+.footer-row{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.footer-links{display:flex;gap:16px;flex-wrap:wrap}
+.footer-links a:hover{color:#fff}
+@media(max-width:760px){
+  .nav{min-height:68px}
+  .nav-links{gap:12px;font-size:12px}
+  .policy-inner{grid-template-columns:1fr;gap:22px}
+  .toc{position:static;padding-bottom:6px}
+  .toc a{display:inline-block;margin-right:14px}
+  .hero{padding:56px 0 34px}
+}
+
+.policy-header-logo{
+  display:block;
+  width:300px;
+  height:64px;
+  object-fit:contain;
+  object-position:left center;
+}
+.logo{
+  display:flex;
+  align-items:center;
+  min-width:248px;
+}
+@media(max-width:760px){
+  .policy-header-logo{
+    width:210px;
+    height:50px;
+  }
+  .logo{
+    min-width:0;
+  }
+}
+@media(max-width:520px){
+  .policy-header-logo{
+    width:168px;
+    height:44px;
+  }
+  .nav-links{
+    gap:9px;
+    font-size:11px;
+  }
+}
+
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap nav">
+    <a class="logo" href="/kickmaster" aria-label="AI KICK MASTER 제품 소개"><img class="policy-header-logo" src="kick1.svg" alt="AI KICK MASTER"></a>
+    <nav class="nav-links" aria-label="정책 페이지 메뉴">
+      <a href="/kickmaster">제품 소개</a>
+      <a href="/">전체 제품</a>
+      <a href="/aikickmaster">프로그램 실행</a>
+    </nav>
+  </div>
+</header>
+<main>
+  <section class="hero">
+    <div class="wrap">
+      <div class="eyebrow">Refund Policy</div>
+      <h1>환불 정책</h1>
+      <p class="updated">시행일자 2026년 7월 31일</p>
+    </div>
+  </section>
+  <div class="policy">
+    <div class="wrap policy-inner">
+      <aside class="toc" aria-label="목차">
+        <strong>목차</strong>
+        <a href="#s0">1. 청약철회 기간</a>
+<a href="#s1">2. 라이선스 발급 전</a>
+<a href="#s2">3. 라이선스 발급 후</a>
+<a href="#s3">4. 예외적으로 확인이 필요한 경우</a>
+<a href="#s4">5. 환불이 제한될 수 있는 경우</a>
+<a href="#s5">6. 환불 신청</a>
+<a href="#s6">7. 처리 기간</a>
+      </aside>
+      <article class="content">
+        <section id="s0"><h2>1. 청약철회 기간</h2>
+<p>구매자는 「전자상거래 등에서의 소비자보호에 관한 법률」 제17조에 따라 계약 체결일 또는 재화를 공급받은 날부터 <b>7일 이내</b>에 청약철회를 할 수 있습니다.</p>
+<h3>다만 아래의 경우 청약철회가 제한됩니다</h3>
+<p>나른랩스는 구매 전에 프로그램을 실제 수업에서 사용해 볼 수 있도록 <b>3일 무료체험</b>을 제공합니다. 이는 같은 법 시행령 제21조가 정한 <b>시험 사용 기회의 제공</b>에 해당합니다.</p>
+<p>따라서 무료체험을 통해 프로그램을 확인하신 뒤 정식 라이선스를 구매하여 <b>라이선스 키가 발급되고 인증 및 사용이 시작된 이후</b>에는, 디지털 콘텐츠의 제공이 개시된 것으로 보아 구매자의 단순 변심에 따른 청약철회가 제한됩니다.</p>
+<div class="note">이 내용은 구매 상담 단계에서 결제 전에 안내해 드리며, 확인하신 후 결제를 진행하시게 됩니다. 회사의 귀책 사유나 프로그램 오류가 있는 경우에는 이 제한과 관계없이 환불이 가능합니다.</div>
+</section><section id="s1"><h2>2. 라이선스 발급 전</h2>
+<p>결제 후 라이선스 키가 발급되기 전에는 언제든지 전액 환불을 신청할 수 있습니다.</p>
+</section><section id="s2"><h2>3. 라이선스 발급 후</h2>
+<p>라이선스가 발급되거나 인증 및 사용이 시작된 이후에는 디지털 콘텐츠의 특성상 구매자의 단순 변심에 따른 환불이 제한됩니다.</p>
+<p>다만 중복 결제, 회사 귀책 사유 또는 프로그램 자체 오류가 합리적인 기간 내 해결되지 않는 경우에는 확인 절차를 거쳐 환불할 수 있습니다.</p>
+</section><section id="s3"><h2>4. 예외적으로 확인이 필요한 경우</h2>
+<ul><li>결제 오류로 중복 결제가 발생한 경우</li><li>회사의 문제로 프로그램을 정상적으로 이용할 수 없는 경우</li><li>프로그램 자체 오류가 확인되고 합리적인 기간 내 수정 또는 기술 지원으로 해결되지 않는 경우</li></ul>
+<p>위 사유는 확인 절차를 거쳐 환불 여부를 결정합니다.</p>
+</section><section id="s4"><h2>5. 환불이 제한될 수 있는 경우</h2>
+<ul><li>라이선스가 발급되어 인증 또는 사용이 시작된 경우</li><li>구매자의 단순 변심</li><li>구매자의 기기, 카메라 설정 또는 네트워크 환경으로 인해 발생한 문제</li><li>이용약관 또는 라이선스 정책을 위반한 경우</li></ul>
+</section><section id="s5"><h2>6. 환불 신청</h2>
+<p>환불 및 청약철회는 아래 채널 중 편하신 곳으로 접수하실 수 있습니다.</p>
+<ul><li><b>이메일</b> naruunlabs@gmail.com</li><li><b>전화</b> 010-7657-3579</li><li><b>NARUUN LABS 공식 카카오톡 상담</b></li></ul>
+<h3>접수 시 알려주실 내용</h3>
+<ul><li>도장명</li><li>구매자명</li><li>연락처</li><li>구매일</li><li>환불 사유</li></ul>
+</section><section id="s6"><h2>7. 처리 기간</h2>
+<p>환불이 승인될 경우 영업일 기준 3~7일 이내 처리됩니다. 결제수단 또는 금융기관 사정에 따라 실제 반영 시점은 달라질 수 있습니다.</p>
+<p>회사는 청약철회 접수를 확인한 날부터 <b>3영업일 이내</b>에 대금을 환급하며, 지연될 경우 관계 법령에서 정한 지연이자를 함께 지급합니다.</p>
+<div class="note"><b>시행일자: 2026년 7월 31일</b></div>
+</section>
+      </article>
+    </div>
+  </div>
+</main>
+<footer>
+  <div class="wrap footer-row">
+    <span>© 2026 NARUUN LABS · AI KICK MASTER</span>
+    <nav class="footer-links">
+      <a href="/terms">이용약관</a>
+      <a href="/privacy">개인정보처리방침</a>
+      <a href="/license">라이선스 정책</a>
+      <a href="/refund-policy">환불 정책</a>
+    </nav>
+  </div>
+<div class="wrap naruun-biz" aria-label="사업자 정보">
+<style>.naruun-biz{margin-top:26px;padding-top:18px;border-top:1px solid rgba(128,128,128,.2);font-size:11.5px;line-height:1.95;color:#8A97A8;letter-spacing:-.01em;word-break:keep-all;font-weight:400;text-align:left}.naruun-biz p{margin:0;padding:0}.naruun-biz b{font-weight:700;color:inherit}.naruun-biz a{color:inherit;text-decoration:none;border-bottom:1px solid rgba(128,128,128,.32)}.naruun-biz a:hover{color:inherit;opacity:.72}.naruun-biz span+span::before{content:"·";opacity:.4;margin:0 7px}@media(max-width:680px){.naruun-biz{font-size:11px;line-height:1.9}}</style>
+<p><span><b>나른랩스</b></span><span>대표 이완수</span><span>사업자등록번호 554-65-00786</span><span>통신판매업신고 제2025-경북구미-0614호</span><span><a href="https://www.ftc.go.kr/bizCommPop.do?wrkr_no=5546500786" target="_blank" rel="noopener">사업자정보 확인</a></span></p>
+<p><span>경상북도 구미시 산동읍 신당3로 43 (골드클래스)</span><span><a href="mailto:naruunlabs@gmail.com">naruunlabs@gmail.com</a></span><span><a href="tel:01076573579">010-7657-3579</a></span><span>호스팅 GitHub, Inc.</span></p>
+</div>
+</footer>
+</body>
+</html>

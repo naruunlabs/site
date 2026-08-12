@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+
+<script>
+(function () {
+  var KEY = 'naruunlabs_ga_optout';
+  try {
+    var q = new URLSearchParams(location.search);
+    if (q.get('me') === '1') { localStorage.setItem(KEY, '1'); }
+    if (q.get('me') === '0') { localStorage.removeItem(KEY); }
+    if (localStorage.getItem(KEY) === '1') { return; }
+  } catch (e) {}
+  var h = location.hostname;
+  if (h === 'localhost' || h === '127.0.0.1' || h === '' || h.endsWith('.local')) { return; }
+  var s = document.createElement('script');
+  s.async = true;
+  s.src = 'https://www.googletagmanager.com/gtag/js?id=G-8SN72HTTK4';
+  document.head.appendChild(s);
+  window.dataLayer = window.dataLayer || [];
+  function gtag() { dataLayer.push(arguments); }
+  window.gtag = gtag;
+  gtag('js', new Date());
+  gtag('config', 'G-8SN72HTTK4');
+})();
+</script>
+
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>라이선스 정책 | AI 킥마스터 · 나른랩스</title>
+
+<link rel="canonical" href="https://naruunlabs.kr/license">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="NARUUN LABS">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:url" content="https://naruunlabs.kr/license">
+<meta property="og:title" content="라이선스 정책 | AI KICK MASTER">
+<meta property="og:description" content="AI KICK MASTER 라이선스 정책입니다.">
+<meta property="og:image" content="https://naruunlabs.kr/og-kickmaster.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="라이선스 정책 | AI KICK MASTER">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="라이선스 정책 | AI KICK MASTER">
+<meta name="twitter:description" content="AI KICK MASTER 라이선스 정책입니다.">
+<meta name="twitter:image" content="https://naruunlabs.kr/og-kickmaster.jpg">
+<meta name="description" content="AI KICK MASTER 라이선스 정책">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css">
+<style>
+:root{
+  --primary:#E3172E;
+  --secondary:#FF6A1A;
+  --deep:#071C49;
+  --text:#1D2939;
+  --muted:#667085;
+  --line:#D9E2EC;
+  --soft:#F7F9FC;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  font-family:'Pretendard','Noto Sans KR',system-ui,-apple-system,sans-serif;
+  color:var(--text);
+  background:#fff;
+  line-height:1.75;
+  letter-spacing:-.02em;
+}
+a{color:inherit;text-decoration:none}
+.wrap{width:min(1040px,calc(100% - 40px));margin:0 auto}
+header{
+  position:sticky;top:0;z-index:30;
+  background:rgba(255,255,255,.94);
+  backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--line);
+}
+.nav{
+  min-height:74px;
+  display:flex;align-items:center;justify-content:space-between;gap:24px;
+}
+.logo{font-weight:950;color:var(--deep);letter-spacing:.04em}
+.logo span{color:var(--primary)}
+.nav-links{display:flex;gap:22px;align-items:center;font-size:13px;font-weight:800}
+.nav-links a:hover{color:var(--primary)}
+.hero{
+  padding:74px 0 44px;
+  border-bottom:1px solid var(--line);
+  background:
+    radial-gradient(circle at 88% 14%,rgba(227,23,46,.08),transparent 31%),
+    linear-gradient(180deg,#fff,#FAFBFD);
+}
+.eyebrow{
+  color:var(--primary);
+  font-size:12px;font-weight:900;letter-spacing:.15em;text-transform:uppercase;
+}
+h1{
+  margin-top:12px;
+  color:var(--deep);
+  font-size:clamp(38px,6vw,66px);
+  line-height:1.05;
+  letter-spacing:-.06em;
+}
+.updated{margin-top:18px;color:var(--muted);font-size:13px}
+.policy{padding:58px 0 84px}
+.policy-inner{display:grid;grid-template-columns:210px minmax(0,1fr);gap:54px}
+.toc{
+  position:sticky;top:104px;align-self:start;
+  padding:20px 0;border-top:1px solid var(--line);
+}
+.toc strong{display:block;color:var(--deep);font-size:13px;margin-bottom:12px}
+.toc a{display:block;padding:6px 0;color:var(--muted);font-size:13px}
+.toc a:hover{color:var(--primary)}
+.content section{
+  padding:0 0 34px;margin-bottom:34px;border-bottom:1px solid var(--line);
+}
+.content section:last-child{margin-bottom:0}
+.content h2{
+  color:var(--deep);font-size:24px;line-height:1.35;letter-spacing:-.04em;
+  margin-bottom:13px;
+}
+.content h3{
+  color:var(--deep);font-size:17px;margin:20px 0 8px;
+}
+.content p{color:#465467;margin-top:8px;word-break:keep-all}
+.content ul{margin:10px 0 0 20px;color:#465467}
+.content li{margin:5px 0}
+.note{
+  margin-top:16px;padding:16px 18px;
+  background:var(--soft);border-left:3px solid var(--primary);
+  color:#526174;font-size:13.5px;
+}
+footer{
+  padding:30px 0;
+  background:#071426;color:rgba(255,255,255,.58);font-size:12.5px;
+}
+.footer-row{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.footer-links{display:flex;gap:16px;flex-wrap:wrap}
+.footer-links a:hover{color:#fff}
+@media(max-width:760px){
+  .nav{min-height:68px}
+  .nav-links{gap:12px;font-size:12px}
+  .policy-inner{grid-template-columns:1fr;gap:22px}
+  .toc{position:static;padding-bottom:6px}
+  .toc a{display:inline-block;margin-right:14px}
+  .hero{padding:56px 0 34px}
+}
+
+.policy-header-logo{
+  display:block;
+  width:300px;
+  height:64px;
+  object-fit:contain;
+  object-position:left center;
+}
+.logo{
+  display:flex;
+  align-items:center;
+  min-width:248px;
+}
+@media(max-width:760px){
+  .policy-header-logo{
+    width:210px;
+    height:50px;
+  }
+  .logo{
+    min-width:0;
+  }
+}
+@media(max-width:520px){
+  .policy-header-logo{
+    width:168px;
+    height:44px;
+  }
+  .nav-links{
+    gap:9px;
+    font-size:11px;
+  }
+}
+
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap nav">
+    <a class="logo" href="/kickmaster" aria-label="AI KICK MASTER 제품 소개"><img class="policy-header-logo" src="kick1.svg" alt="AI KICK MASTER"></a>
+    <nav class="nav-links" aria-label="정책 페이지 메뉴">
+      <a href="/kickmaster">제품 소개</a>
+      <a href="/">전체 제품</a>
+      <a href="/aikickmaster">프로그램 실행</a>
+    </nav>
+  </div>
+</header>
+<main>
+  <section class="hero">
+    <div class="wrap">
+      <div class="eyebrow">License Policy</div>
+      <h1>라이선스 정책</h1>
+      <p class="updated">시행일자 2026년 7월 31일</p>
+    </div>
+  </section>
+  <div class="policy">
+    <div class="wrap policy-inner">
+      <aside class="toc" aria-label="목차">
+        <strong>목차</strong>
+        <a href="#s1">1. 라이선스 종류</a>
+<a href="#s2">2. 사용 가능 기기</a>
+<a href="#s3">3. 사용 범위</a>
+<a href="#s4">4. 기기 변경</a>
+<a href="#s5">5. 인터넷 연결</a>
+<a href="#s6">6. 라이선스 관리</a>
+<a href="#s7">7. 업데이트</a>
+<a href="#s8">8. 고객지원</a>
+      </aside>
+      <article class="content">
+        <section id="s1"><h2>1. 라이선스 종류</h2>
+<p>AI KICK MASTER는 영구 라이선스로 판매됩니다. 구매 후 별도의 월 구독료 없이 사용할 수 있습니다.</p>
+</section><section id="s2"><h2>2. 사용 가능 기기</h2>
+<p>하나의 기본 라이선스로 최대 2대의 기기에서 사용할 수 있습니다.</p>
+<ul><li>노트북 + 태블릿</li><li>노트북 + 노트북</li><li>태블릿 + 태블릿</li></ul>
+<p>추가 기기 등록은 유료로 제공될 수 있으며, 비용과 절차는 홈페이지 또는 고객 문의 채널을 통해 안내합니다.</p>
+</section><section id="s3"><h2>3. 사용 범위</h2>
+<p>라이선스는 구매한 도장에서만 사용할 수 있습니다. 다른 도장 또는 제3자와 공유하거나 공동 사용하는 것은 허용되지 않습니다.</p>
+</section><section id="s4"><h2>4. 기기 변경</h2>
+<p>기기를 교체하는 경우 기존 기기에서 로그아웃한 후 새로운 기기에서 로그인하여 사용할 수 있습니다. 사용 가능 기기 수를 초과하거나 기존 기기에 접근하기 어려운 경우 고객 문의 채널로 문의해 주세요.</p>
+</section><section id="s5"><h2>5. 인터넷 연결</h2>
+<p>라이선스 인증과 AI 동작 분석을 위해 프로그램 이용 중 인터넷 연결이 필요합니다. 안정적인 인터넷 환경에서 사용해 주세요.</p>
+</section><section id="s6"><h2>6. 라이선스 관리</h2>
+<p>라이선스 키는 구매자에게만 제공됩니다.</p>
+<ul><li>라이선스 공유 또는 대여</li><li>라이선스 재판매 또는 양도</li><li>무단 복제 및 불법 배포</li></ul>
+<p>위반 사실이 확인될 경우 라이선스 사용이 제한되거나 종료될 수 있습니다.</p>
+</section><section id="s7"><h2>7. 업데이트</h2>
+<p>기능 개선 및 오류 수정 업데이트는 웹페이지에 자동으로 반영됩니다. 중요한 변경 사항이 있는 경우 홈페이지 또는 고객 문의 채널을 통해 안내합니다.</p>
+</section><section id="s8"><h2>8. 고객지원</h2>
+<p>프로그램 사용 중 문의사항은 아래 채널로 지원받을 수 있습니다.</p>
+<ul><li>이메일: naruunlabs@gmail.com</li><li>전화: 010-7657-3579</li><li>NARUUN LABS 공식 카카오톡 상담</li></ul>
+</section>
+      </article>
+    </div>
+  </div>
+</main>
+<footer>
+  <div class="wrap footer-row">
+    <span>© 2026 NARUUN LABS · AI KICK MASTER</span>
+    <nav class="footer-links">
+      <a href="/terms">이용약관</a>
+      <a href="/privacy">개인정보처리방침</a>
+      <a href="/license">라이선스 정책</a>
+      <a href="/refund-policy">환불 정책</a>
+    </nav>
+  </div>
+<div class="wrap naruun-biz" aria-label="사업자 정보">
+<style>.naruun-biz{margin-top:26px;padding-top:18px;border-top:1px solid rgba(128,128,128,.2);font-size:11.5px;line-height:1.95;color:#8A97A8;letter-spacing:-.01em;word-break:keep-all;font-weight:400;text-align:left}.naruun-biz p{margin:0;padding:0}.naruun-biz b{font-weight:700;color:inherit}.naruun-biz a{color:inherit;text-decoration:none;border-bottom:1px solid rgba(128,128,128,.32)}.naruun-biz a:hover{color:inherit;opacity:.72}.naruun-biz span+span::before{content:"·";opacity:.4;margin:0 7px}@media(max-width:680px){.naruun-biz{font-size:11px;line-height:1.9}}</style>
+<p><span><b>나른랩스</b></span><span>대표 이완수</span><span>사업자등록번호 554-65-00786</span><span>통신판매업신고 제2025-경북구미-0614호</span><span><a href="https://www.ftc.go.kr/bizCommPop.do?wrkr_no=5546500786" target="_blank" rel="noopener">사업자정보 확인</a></span></p>
+<p><span>경상북도 구미시 산동읍 신당3로 43 (골드클래스)</span><span><a href="mailto:naruunlabs@gmail.com">naruunlabs@gmail.com</a></span><span><a href="tel:01076573579">010-7657-3579</a></span><span>호스팅 GitHub, Inc.</span></p>
+</div>
+</footer>
+</body>
+</html>

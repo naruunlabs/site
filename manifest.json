@@ -1,0 +1,19 @@
+{
+  "name": "AI KICK MASTER",
+  "short_name": "KICK MASTER",
+  "description": "AI 발차기 훈련 시스템",
+  "start_url": "/aikickmaster",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#0B0B0D",
+  "theme_color": "#0B0B0D",
+  "icons": [
+    {
+      "src": "./kick1.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
