@@ -8407,6 +8407,8 @@ function deviceState(){
   const s={
     dev:DEVINFO.dev||null, gpu:DEVINFO.gpu||null, cores:DEVINFO.cores||null, ram:DEVINFO.ram||null,
     cam:camInfo,
+
+    vid:(video && video.videoWidth) ? (video.videoWidth+'x'+video.videoHeight) : null,
     upMin:(camStartT==null?null:+((performance.now()-camStartT)/60000).toFixed(1)),
     infer:(()=>{ const m=medianOf(inferHist); return m==null?null:Math.round(m); })(),
     press:pressureNow, pressMax:pressureWorst,
