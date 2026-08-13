@@ -4031,6 +4031,25 @@ let gGround=0;
 
 let gndGapLast=null;
 
+const BODY_LOW_MIN=0.8;
+let gBody=0, gVis=0;         
+let bodyLowLast=null;        
+function bodyInFrame(lm){
+  if(!lm||!lm[11]||!lm[12]||!lm[23]||!lm[24]) return true;
+  const shoulderY=(lm[11].y+lm[12].y)/2;
+  const hipY=(lm[23].y+lm[24].y)/2;
+  const torso=hipY-shoulderY;
+  if(!(torso>0.02)) return true;
+  const a1=lm[27]?.y, a2=lm[28]?.y;
+  let lowY=null;
+  if(Number.isFinite(a1)) lowY=a1;
+  if(Number.isFinite(a2)) lowY=(lowY==null)?a2:Math.max(lowY,a2);
+  if(lowY==null) return true;
+  const ratio=(lowY-hipY)/torso;
+  bodyLowLast=Math.round(ratio*100)/100;
+  return ratio>=BODY_LOW_MIN;
+}
+
 function footOnGround(m){
   if(!m) return null;
   if(!Number.isFinite(m.footY) || !Number.isFinite(m.otherFootY)) return null;
@@ -4504,14 +4523,16 @@ function speedTimeout(){
 function speedOnKickStart(now, pct, m){
   if(!speedGame) return;
   const key=speedKey();
-  if(speedGame.phase==='wait'){ speedFalseStart(key); return; }
+  if(speedGame.phase==='wait'){ speedFalseStart(key,false,pct); return; }
   if(speedGame.phase!=='go') return;
   if(speedGame.rec[key]!=null) return;              
   const t=speedCrossTime(key, now, pct);
   const ms=Math.max(0, Math.round(t-speedGame.goT));
   
-  if(ms<SPEED_MIN_MS){ speedFalseStart(key, true); return; }
+  if(ms<SPEED_MIN_MS){ speedFalseStart(key, true, pct); return; }
   speedGame.rec[key]=ms;
+  
+  diagLogSpeed('speed_ok', {speedMs:ms, peakPct:Math.round(pct??0)});
   sndPop();
   
   speedPopup(key, speedFmt(speedGame.rec[key]), '#ffe36b', true);
@@ -4537,13 +4558,15 @@ function speedFrame(now, pct, TH){
   if(speedGame.phase==='wait'){
 
     const line=Math.min(TH-5, Math.max(SPEED_EARLY_PCT, Math.round(TH*0.5)));
-    if(pct>=line) speedFalseStart(key,false);
+    if(pct>=line) speedFalseStart(key,false,pct);
     return;
   }
   if(speedGame.phase==='go' && pct<TH) speedPrev[key]={pct,t:now};
 }
 
-function speedFalseStart(key, tooFast){
+function speedFalseStart(key, tooFast, pct){
+
+  diagLogSpeed(tooFast?'speed_toofast':'speed_false', {peakPct:Math.round(pct??0)});
   speedGame.fs[key]++;
   const who=(key==='c'?'청':'홍');
   sndFail();
@@ -6821,6 +6844,15 @@ function diagLogHit(peak, extra){
   diagLogSubmit(entry);
 }
 
+function diagLogSpeed(reason, extra){
+  if(!diagMode || !running) return;
+  const entry=diagLogBase(reason==='speed_ok'?'hit':'miss');
+  entry.reason=reason;
+  entry.sparringMode='speed';
+  if(extra && typeof extra==='object') Object.assign(entry,extra);
+  diagLogSubmit(entry);
+}
+
 window.downloadDiagLog=function(){
   if(!diagLog.length){ alert('아직 기록된 발차기가 없습니다.'); return; }
   const blob=new Blob([JSON.stringify(diagLog,null,2)],{type:'application/json'});
@@ -8123,9 +8155,13 @@ function processPersonFrame(lm, wlm){
   }
 
   const ankleVis=Math.max(lm[27]?.visibility??0,lm[28]?.visibility??0);
-  
-  const ankleVisMin=twoPlayerMode?0.18:0.25;
-  if(ankleVis>ankleVisMin){
+
+  const ankleVisMin=0.25;
+  const visOk=ankleVis>ankleVisMin;
+
+  const bodyOk=visOk ? bodyInFrame(lm) : true;
+  if(!visOk) gVis++; else if(!bodyOk) gBody++;
+  if(visOk && bodyOk){
     const m=computeMetrics(lm,wlm);
     if(m){
 
@@ -8383,7 +8419,11 @@ function deviceState(){
 
     gGround:gGround,
     
-    gndGap:gndGapLast
+    gndGap:gndGapLast,
+
+    gVis:gVis, gBody:gBody,
+
+    bodyLow:bodyLowLast
   };
   if(fpsBase!=null){
     s.fps0=Math.round(fpsBase);
