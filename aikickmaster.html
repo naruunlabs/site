@@ -9321,28 +9321,13 @@ document.addEventListener('keydown', function(e){
   if(e.key==='Enter' && !document.getElementById('loginScreen').classList.contains('hidden')) doLicenseActivate();
 });
 
-window.addEventListener('load', function(){
-  const cache=_akmGetCache();
-  if(!cache) return;
-
-  if(cache.expires_at && Date.now() > new Date(cache.expires_at).getTime()){
-    _akmClearCache();
-    _akmShowTrialExpired(
-      cache.is_trial
-        ? `<b>체험 기간</b>이 모두 사용되었습니다.<br>계속 사용하시려면 <b>정식 라이선스</b>가 필요합니다.<br>월 구독료 없는 <b>영구 라이선스</b>로 제공됩니다.`
-        : `라이선스 <b>사용 기간이 종료</b>되었습니다.<br>연장 또는 재발급은 아래로 문의해 주세요.`,
-      cache.is_trial ? '체험 기간이 끝났습니다' : '라이선스 기간이 끝났습니다',
-      '', '');
-    return;
-  }
-  
-  if(_akmIsCacheExpired(cache)){ _akmClearCache(); return; }
-
+let _akmExpiryWatchTimer = null;   
+function _akmEnterAuthed(cache){
   _akmShowTrialBadge(cache);
   _akmShowAuthedUI(cache.dojang_name, cache.version);
 
-  if(cache.expires_at){
-    setInterval(function(){
+  if(cache.expires_at && !_akmExpiryWatchTimer){
+    _akmExpiryWatchTimer = setInterval(function(){
       const c=_akmGetCache();
       if(!c || !c.expires_at) return;
       if(Date.now() > new Date(c.expires_at).getTime()){
@@ -9353,6 +9338,58 @@ window.addEventListener('load', function(){
       }
     }, 60000);
   }
+}
+
+function _akmExpiredMessage(cache){
+  return [
+    cache.is_trial
+      ? `<b>체험 기간</b>이 모두 사용되었습니다.<br>계속 사용하시려면 <b>정식 라이선스</b>가 필요합니다.<br>월 구독료 없는 <b>영구 라이선스</b>로 제공됩니다.`
+      : `라이선스 <b>사용 기간이 종료</b>되었습니다.<br>연장 또는 재발급은 아래로 문의해 주세요.`,
+    cache.is_trial ? '체험 기간이 끝났습니다' : '라이선스 기간이 끝났습니다'
+  ];
+}
+
+async function _akmRecheckExpired(cache){
+  let result=null;
+  try{
+    result = await _akmVerifyWithServer(cache.license_key);
+  }catch(e){  }
+
+  if(result && result.valid){
+    _akmSetCache({
+      license_key : cache.license_key,
+      dojang_name : result.dojang_name || cache.dojang_name,
+      license_type: result.license_type || cache.license_type,
+      version     : result.version || cache.version,
+      device_slots: result.device_slots || cache.device_slots || [],
+      max_devices : result.max_devices || cache.max_devices || 2,
+      is_trial    : !!result.is_trial,
+      expires_at  : result.expires_at || null,
+      is_beta     : !!result.is_beta,
+      cached_at   : Date.now()
+    });
+    _akmEnterAuthed(_akmGetCache());
+    if(window._akmStartHeartbeat) window._akmStartHeartbeat();
+    return;
+  }
+
+  _akmClearCache();
+  const [msg,title] = _akmExpiredMessage(cache);
+  _akmShowTrialExpired(msg, title, '', '');
+}
+
+window.addEventListener('load', function(){
+  const cache=_akmGetCache();
+  if(!cache) return;
+
+  if(cache.expires_at && Date.now() > new Date(cache.expires_at).getTime()){
+    _akmRecheckExpired(cache);
+    return;
+  }
+  
+  if(_akmIsCacheExpired(cache)){ _akmClearCache(); return; }
+
+  _akmEnterAuthed(cache);
 });
 
 window.logoutLicense=()=>{
