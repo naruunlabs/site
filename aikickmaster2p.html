@@ -9589,5 +9589,219 @@ window.addEventListener('load', function(){
   overlay.addEventListener('click', function(e){ if(e.target === overlay) closeModal(); });
 })();
 </script>
+<script id="akm-css-debug">
+
+(function(){
+  if(!/[?&]cssdebug=1/.test(location.search||'')) return;
+
+  var WATCH = ['display','position','top','right','bottom','left','width','height',
+    'min-width','min-height','max-width','max-height','font-size','line-height',
+    'transform','z-index','opacity','visibility','padding','margin','gap',
+    'flex','flex-wrap','flex-direction','align-items','justify-content',
+    'color','background','border','overflow','pointer-events','white-space'];
+
+  var srcText = null;   
+  var armed = false;
+
+  function spec(sel){
+    var s = sel.replace(/:not\(([^()]*)\)/g, ' $1 ');
+    var id = (s.match(/#[\w-]+/g)||[]).length;
+    var cl = (s.match(/\.[\w-]+/g)||[]).length
+           + (s.match(/\[[^\]]*\]/g)||[]).length
+           + (s.match(/:(?!:)[a-z-]+/g)||[]).length;
+    var el = (s.match(/(^|[\s>+~])([a-zA-Z][\w-]*)/g)||[]).length
+           + (s.match(/::[a-z-]+/g)||[]).length;
+    return [id,cl,el];
+  }
+  function specStr(a){ return '('+a.join(',')+')'; }
+  function specNum(a){ return a[0]*10000 + a[1]*100 + a[2]; }
+
+  function collect(el){
+    var out = [], order = 0;
+    function walk(rules, media){
+      for(var i=0;i<rules.length;i++){
+        var r = rules[i];
+        if(r.type === 4){                                  
+          var q = r.conditionText || r.media.mediaText;
+          
+          if(window.matchMedia(q).matches) walk(r.cssRules, media ? media+' & '+q : q);
+          continue;
+        }
+        if(r.type === 12 || r.type === 5 || r.type === 7) continue;  
+        if(!r.selectorText) continue;
+        var parts = r.selectorText.split(',');
+        for(var j=0;j<parts.length;j++){
+          var sel = parts[j].trim();
+          if(!sel) continue;
+          var hit = false;
+          try{ hit = el.matches(sel.replace(/::?(before|after|first-line|first-letter)/g,'')); }catch(e){}
+          if(!hit) continue;
+          
+          if(/::(before|after)/.test(sel)) continue;
+          out.push({ sel:sel, style:r.style, media:media, order:order++ , spec:spec(sel)});
+          break;
+        }
+      }
+    }
+    for(var s=0;s<document.styleSheets.length;s++){
+      try{ walk(document.styleSheets[s].cssRules, null); }catch(e){}
+    }
+    return out;
+  }
+
+  function winnerOf(list){
+    return list.slice().sort(function(a,b){
+      if(a.imp !== b.imp) return a.imp - b.imp;
+      var d = specNum(a.spec) - specNum(b.spec);
+      if(d) return d;
+      return a.order - b.order;
+    });
+  }
+
+  function lineOf(sel){
+    if(!srcText) return null;
+    var needle = sel.replace(/\s+/g,' ').trim();
+    var i = srcText.indexOf(needle);
+    if(i < 0){
+      var last = needle.split(/[\s>+~]+/).pop();
+      i = srcText.indexOf(last + '{');
+      if(i < 0) i = srcText.indexOf(last + ' {');
+    }
+    if(i < 0) return null;
+    return srcText.slice(0,i).split('\n').length;
+  }
+
+  function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
+
+  function describe(el){
+    var t = el.tagName.toLowerCase();
+    if(el.id) t += '#'+el.id;
+    if(el.className && typeof el.className === 'string')
+      t += '.'+el.className.trim().split(/\s+/).join('.');
+    return t;
+  }
+
+  function inspect(el){
+    var rules = collect(el);
+    var cs = getComputedStyle(el);
+    var byProp = {};
+    rules.forEach(function(r){
+      for(var k=0;k<r.style.length;k++){
+        var p = r.style[k];
+        if(WATCH.indexOf(p) < 0) continue;
+        (byProp[p] = byProp[p] || []).push({
+          sel:r.sel, media:r.media, order:r.order, spec:r.spec,
+          val:r.style.getPropertyValue(p),
+          imp:r.style.getPropertyPriority(p) === 'important' ? 1 : 0
+        });
+      }
+    });
+
+    var props = Object.keys(byProp).sort(function(a,b){ return byProp[b].length - byProp[a].length; });
+    var h = '';
+    h += '<div class="cd-el">'+esc(describe(el))+'</div>';
+    var rect = el.getBoundingClientRect();
+    h += '<div class="cd-box">화면 위치 &nbsp;top '+Math.round(rect.top)+'&nbsp; left '+Math.round(rect.left)
+       + '&nbsp; 크기 '+Math.round(rect.width)+'×'+Math.round(rect.height)+'</div>';
+    if(el.getAttribute('style'))
+      h += '<div class="cd-warn">[주의] 인라인 style 이 있다 (거의 항상 이것이 이긴다)<br>'+esc(el.getAttribute('style').slice(0,140))+'</div>';
+
+    props.forEach(function(p){
+      var sorted = winnerOf(byProp[p]);
+      var win = sorted[sorted.length-1];
+      var n = sorted.length;
+      h += '<div class="cd-prop"><div class="cd-pname">'+esc(p)+'  <span class="cd-n">'+n+'겹</span></div>';
+      sorted.slice().reverse().forEach(function(r,idx){
+        var ln = lineOf(r.sel);
+        h += '<div class="cd-rule'+(idx===0?' cd-win':'')+'">'
+           + '<span class="cd-line">'+(ln?ln+'줄':'—')+'</span>'
+           + '<span class="cd-val">'+esc(r.val)+(r.imp?' !':'')+'</span>'
+           + '<span class="cd-spec">'+specStr(r.spec)+'</span>'
+           + '<div class="cd-sel">'+esc(r.sel)+(r.media?'<br><i>@media '+esc(r.media)+'</i>':'')+'</div>'
+           + (idx===0?'<div class="cd-tag">← 이것이 이깁니다</div>':'')
+           + '</div>';
+      });
+      var real = cs.getPropertyValue(p);
+      
+      if(real && win && real.trim() !== win.val.trim())
+        h += '<div class="cd-mismatch">실제 적용값은 <b>'+esc(real)+'</b> — 위 목록에 없는 것(상속·인라인·JS)이 개입했다</div>';
+      h += '</div>';
+    });
+    if(!props.length) h += '<div class="cd-box">이 요소를 직접 정하는 규칙이 없습니다 (부모에서 물려받는 중)</div>';
+    show(h);
+  }
+
+  var panel, body;
+  function show(html){
+    body.innerHTML = html;
+    panel.style.display = 'block';
+  }
+
+  function build(){
+    var css = ''
+    + '#cdPanel{position:fixed;left:0;right:0;bottom:0;max-height:62vh;overflow:auto;z-index:2147483647;'
+    +   'background:#0d1420;color:#dfe8f5;font:12px/1.5 ui-monospace,Menlo,Consolas,monospace;'
+    +   'border-top:2px solid #ffd15a;padding:8px 10px 40px;display:none;-webkit-overflow-scrolling:touch}'
+    + '#cdBar{position:fixed;right:10px;bottom:10px;z-index:2147483647;display:flex;gap:6px}'
+    + '#cdBar button{font:700 13px/1 system-ui;padding:10px 12px;border-radius:10px;border:1px solid #3a4a63;'
+    +   'background:#16233a;color:#dfe8f5}'
+    + '#cdBar button.on{background:#ffd15a;color:#111;border-color:#ffd15a}'
+    + '.cd-el{font-weight:700;color:#ffd15a;word-break:break-all;margin-bottom:4px}'
+    + '.cd-box{color:#8fa6c4;margin-bottom:6px}'
+    + '.cd-warn{color:#ff9f6b;margin:4px 0}'
+    + '.cd-prop{border-top:1px solid #22314a;padding:6px 0}'
+    + '.cd-pname{color:#7fd4ff;font-weight:700}'
+    + '.cd-n{color:#8fa6c4;font-weight:400}'
+    + '.cd-rule{opacity:.5;padding:2px 0 2px 6px;border-left:2px solid #22314a}'
+    + '.cd-rule.cd-win{opacity:1;border-left-color:#5cff9d}'
+    + '.cd-line{display:inline-block;min-width:56px;color:#ffd15a}'
+    + '.cd-val{color:#fff;font-weight:700}'
+    + '.cd-spec{color:#8fa6c4;margin-left:6px}'
+    + '.cd-sel{color:#9fb6d4;word-break:break-all}'
+    + '.cd-tag{color:#5cff9d}'
+    + '.cd-mismatch{color:#ff8fa3;margin-top:3px}';
+    var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
+
+    panel = document.createElement('div'); panel.id = 'cdPanel';
+    body  = document.createElement('div'); panel.appendChild(body);
+    document.body.appendChild(panel);
+
+    var bar = document.createElement('div'); bar.id = 'cdBar';
+    var pick = document.createElement('button'); pick.textContent = '🎯 고르기';
+    var close = document.createElement('button'); close.textContent = '✕';
+    bar.appendChild(pick); bar.appendChild(close); document.body.appendChild(bar);
+
+    pick.addEventListener('click', function(e){
+      e.stopPropagation();
+      armed = !armed;
+      pick.classList.toggle('on', armed);
+      pick.textContent = armed ? '👆 눌러보세요' : '🎯 고르기';
+    });
+    close.addEventListener('click', function(e){ e.stopPropagation(); panel.style.display='none'; });
+
+    document.addEventListener('click', function(e){
+      if(!armed) return;
+      if(bar.contains(e.target) || panel.contains(e.target)) return;
+      e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+      armed = false; pick.classList.remove('on'); pick.textContent = '🎯 고르기';
+      try{ inspect(e.target); }catch(err){ show('오류: '+esc(err && err.message)); }
+    }, true);
+  }
+
+  function start(){
+    build();
+    
+    try{
+      fetch(location.pathname, {cache:'force-cache'})
+        .then(function(r){ return r.text(); })
+        .then(function(t){ srcText = t.replace(/\r/g,''); })
+        .catch(function(){});
+    }catch(e){}
+  }
+
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+  else start();
+})();
+</script>
 </body>
 </html>
