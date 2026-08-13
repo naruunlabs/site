@@ -40,7 +40,7 @@
     if(!isPhone) return;
 
     var mv = /[?&]vw=(\d{3,4})/.exec(q);
-    var vw = mv ? Math.max(600, Math.min(1219, parseInt(mv[1], 10))) : 1000;
+    var vw = mv ? Math.max(380, Math.min(1219, parseInt(mv[1], 10))) : 1000;
 
     document.documentElement.classList.add('akm-phone');
     document.documentElement.style.setProperty('--akm-phone-vw', vw);
