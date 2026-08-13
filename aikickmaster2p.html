@@ -30,23 +30,47 @@
 <script id="akm-phone-viewport">
 
 (function(){
-  try{
-    var q   = location.search || '';
-    var on  = /[?&]phone=1/.test(q);
-    var off = /[?&]phone=0/.test(q);
-    var shortSide = Math.min(screen.width || 9999, screen.height || 9999);
+  var q   = location.search || '';
+  var on  = /[?&]phone=1/.test(q);
+  var off = /[?&]phone=0/.test(q);
+  var mv  = /[?&]vw=(\d{3,4})/.exec(q);
+  var ms  = /[?&]scale=([\d.]+)/.exec(q);
+  var TARGET = ms ? Math.max(0.5, Math.min(1.5, parseFloat(ms[1]) || 0.9)) : 0.90;
+  var MIN_VW = 380, MAX_VW = 1219;
+  var lastPortrait = null;
+
+  function apply(){
+
+    var a = screen.width || 9999, b = screen.height || 9999;
+    var shortSide = Math.min(a, b), longSide = Math.max(a, b);
     var coarse = window.matchMedia && window.matchMedia('(pointer:coarse)').matches;
-    var isPhone = on || (!off && coarse && shortSide <= 500);
-    if(!isPhone) return;
+    if(!(on || (!off && coarse && shortSide <= 500))) return;
 
-    var mv = /[?&]vw=(\d{3,4})/.exec(q);
-    var vw = mv ? Math.max(380, Math.min(1219, parseInt(mv[1], 10))) : 1000;
+    var portrait = !!(window.matchMedia && window.matchMedia('(orientation: portrait)').matches);
+    if(portrait === lastPortrait) return;      
+    lastPortrait = portrait;
 
-    document.documentElement.classList.add('akm-phone');
-    document.documentElement.style.setProperty('--akm-phone-vw', vw);
+    var physW = portrait ? shortSide : longSide;
+    var vw = mv ? parseInt(mv[1], 10) : Math.round(physW / TARGET);
+    vw = Math.max(MIN_VW, Math.min(MAX_VW, vw));
+
+    var root = document.documentElement;
+    root.classList.add('akm-phone');
+
+    root.classList.toggle('akm-portrait', portrait);
+    root.classList.toggle('akm-landscape', !portrait);
+    root.style.setProperty('--akm-phone-vw', vw);
     var m = document.querySelector('meta[name="viewport"]');
     if(m) m.setAttribute('content','width='+vw+', viewport-fit=cover, user-scalable=no');
-  }catch(e){  }
+  }
+
+  try{ apply(); }catch(e){  }
+  
+  ['orientationchange','resize'].forEach(function(ev){
+    window.addEventListener(ev, function(){
+      setTimeout(function(){ try{ apply(); }catch(e){} }, 300);
+    });
+  });
 })();
 </script>
 <title>AI KICK MASTER - Taekwondo Training System</title>
