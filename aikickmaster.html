@@ -27,6 +27,52 @@
 </script>
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<script id="akm-phone-viewport">
+
+(function(){
+  var q   = location.search || '';
+  var on  = /[?&]phone=1/.test(q);
+  var off = /[?&]phone=0/.test(q);
+  var mv  = /[?&]vw=(\d{3,4})/.exec(q);
+  var ms  = /[?&]scale=([\d.]+)/.exec(q);
+  var TARGET = ms ? Math.max(0.5, Math.min(1.5, parseFloat(ms[1]) || 0.9)) : 0.90;
+  var MIN_VW = 380, MAX_VW = 1219;
+  var lastPortrait = null;
+
+  function apply(){
+
+    var a = screen.width || 9999, b = screen.height || 9999;
+    var shortSide = Math.min(a, b), longSide = Math.max(a, b);
+    var coarse = window.matchMedia && window.matchMedia('(pointer:coarse)').matches;
+    if(!(on || (!off && coarse && shortSide <= 500))) return;
+
+    var portrait = !!(window.matchMedia && window.matchMedia('(orientation: portrait)').matches);
+    if(portrait === lastPortrait) return;      
+    lastPortrait = portrait;
+
+    var physW = portrait ? shortSide : longSide;
+    var vw = mv ? parseInt(mv[1], 10) : Math.round(physW / TARGET);
+    vw = Math.max(MIN_VW, Math.min(MAX_VW, vw));
+
+    var root = document.documentElement;
+    root.classList.add('akm-phone');
+
+    root.classList.toggle('akm-portrait', portrait);
+    root.classList.toggle('akm-landscape', !portrait);
+    root.style.setProperty('--akm-phone-vw', vw);
+    var m = document.querySelector('meta[name="viewport"]');
+    if(m) m.setAttribute('content','width='+vw+', viewport-fit=cover, user-scalable=no');
+  }
+
+  try{ apply(); }catch(e){  }
+  
+  ['orientationchange','resize'].forEach(function(ev){
+    window.addEventListener(ev, function(){
+      setTimeout(function(){ try{ apply(); }catch(e){} }, 300);
+    });
+  });
+})();
+</script>
 <title>AI KICK MASTER - Taekwondo Training System</title>
 
 <link rel="canonical" href="https://naruunlabs.kr/aikickmaster">
@@ -3997,6 +4043,26 @@ let gGround=0;
 
 let gndGapLast=null;
 
+const BODY_GATE_ON=false;      
+const BODY_LOW_MIN=0.55;       
+let gBody=0, gVis=0, gVisHi=0; 
+let bodyLowLast=null;          
+function bodyInFrame(lm){
+  if(!lm||!lm[11]||!lm[12]||!lm[23]||!lm[24]) return true;
+  const shoulderY=(lm[11].y+lm[12].y)/2;
+  const hipY=(lm[23].y+lm[24].y)/2;
+  const torso=hipY-shoulderY;
+  if(!(torso>0.02)) return true;
+  const a1=lm[27]?.y, a2=lm[28]?.y;
+  let lowY=null;
+  if(Number.isFinite(a1)) lowY=a1;
+  if(Number.isFinite(a2)) lowY=(lowY==null)?a2:Math.max(lowY,a2);
+  if(lowY==null) return true;
+  const ratio=(lowY-hipY)/torso;
+  bodyLowLast=Math.round(ratio*100)/100;
+  return ratio>=BODY_LOW_MIN;
+}
+
 function footOnGround(m){
   if(!m) return null;
   if(!Number.isFinite(m.footY) || !Number.isFinite(m.otherFootY)) return null;
@@ -4458,14 +4524,16 @@ function speedTimeout(){
 function speedOnKickStart(now, pct, m){
   if(!speedGame) return;
   const key=speedKey();
-  if(speedGame.phase==='wait'){ speedFalseStart(key); return; }
+  if(speedGame.phase==='wait'){ speedFalseStart(key,false,pct); return; }
   if(speedGame.phase!=='go') return;
   if(speedGame.rec[key]!=null) return;              
   const t=speedCrossTime(key, now, pct);
   const ms=Math.max(0, Math.round(t-speedGame.goT));
   
-  if(ms<SPEED_MIN_MS){ speedFalseStart(key, true); return; }
+  if(ms<SPEED_MIN_MS){ speedFalseStart(key, true, pct); return; }
   speedGame.rec[key]=ms;
+  
+  diagLogSpeed('speed_ok', {speedMs:ms, peakPct:Math.round(pct??0)});
   sndPop();
   
   speedPopup(key, speedFmt(speedGame.rec[key]), '#ffe36b', true);
@@ -4491,13 +4559,15 @@ function speedFrame(now, pct, TH){
   if(speedGame.phase==='wait'){
 
     const line=Math.min(TH-5, Math.max(SPEED_EARLY_PCT, Math.round(TH*0.5)));
-    if(pct>=line) speedFalseStart(key,false);
+    if(pct>=line) speedFalseStart(key,false,pct);
     return;
   }
   if(speedGame.phase==='go' && pct<TH) speedPrev[key]={pct,t:now};
 }
 
-function speedFalseStart(key, tooFast){
+function speedFalseStart(key, tooFast, pct){
+  
+  diagLogSpeed(tooFast?'speed_toofast':'speed_false', {peakPct:Math.round(pct??0)});
   speedGame.fs[key]++;
   const who=(key==='c'?'청':'홍');
   sndFail();
@@ -6848,6 +6918,15 @@ function diagLogHit(peak, extra){
   diagLogSubmit(entry);
 }
 
+function diagLogSpeed(reason, extra){
+  if(!diagMode || !running) return;
+  const entry=diagLogBase(reason==='speed_ok'?'hit':'miss');
+  entry.reason=reason;
+  entry.sparringMode='speed';
+  if(extra && typeof extra==='object') Object.assign(entry,extra);
+  diagLogSubmit(entry);
+}
+
 window.downloadDiagLog=function(){
   if(!diagLog.length){ alert('아직 기록된 발차기가 없습니다.'); return; }
   const blob=new Blob([JSON.stringify(diagLog,null,2)],{type:'application/json'});
@@ -8155,7 +8234,17 @@ function processPersonFrame(lm, wlm){
   const ankleVis=Math.max(lm[27]?.visibility??0,lm[28]?.visibility??0);
   
   const ankleVisMin=twoPlayerMode?0.18:0.25;
-  if(ankleVis>ankleVisMin){
+
+  const visOk=ankleVis>ankleVisMin;
+
+  const bodyOk = visOk ? bodyInFrame(lm) : true;
+  if(!visOk) gVis++;
+  else{
+    if(twoPlayerMode && ankleVis<=0.25) gVisHi++;
+    if(!bodyOk) gBody++;
+  }
+
+  if(visOk && (bodyOk || !BODY_GATE_ON)){
     const m=computeMetrics(lm,wlm);
     if(m){
 
@@ -8401,6 +8490,8 @@ function deviceState(){
   const s={
     dev:DEVINFO.dev||null, gpu:DEVINFO.gpu||null, cores:DEVINFO.cores||null, ram:DEVINFO.ram||null,
     cam:camInfo,
+
+    vid:(video && video.videoWidth) ? (video.videoWidth+'x'+video.videoHeight) : null,
     upMin:(camStartT==null?null:+((performance.now()-camStartT)/60000).toFixed(1)),
     infer:(()=>{ const m=medianOf(inferHist); return m==null?null:Math.round(m); })(),
     press:pressureNow, pressMax:pressureWorst,
@@ -8413,7 +8504,11 @@ function deviceState(){
 
     gGround:gGround,
     
-    gndGap:gndGapLast
+    gndGap:gndGapLast,
+
+    gVis:gVis, gVisHi:gVisHi, gBody:gBody,
+    
+    bodyLow:bodyLowLast
   };
   if(fpsBase!=null){
     s.fps0=Math.round(fpsBase);
@@ -8897,6 +8992,77 @@ body.hud-v21.akm-ui .mode-row.hud-kick-row1{
   row-gap:9px !important;
   white-space:normal !important;
 }
+
+html.akm-phone body.hud-v21 .mode-row.hud-kick-row .drill-btn,
+html.akm-phone body.hud-v21.akm-ui .mode-row.hud-kick-row .drill-btn,
+html.akm-phone body.hud-v21 .mode-row.hud-kick-tabs .drill-btn,
+html.akm-phone body.hud-v21.akm-ui .mode-row.hud-kick-tabs .drill-btn{
+  min-width:44px !important;
+  min-height:50px !important;
+  padding:4px 2px !important;
+  font-size:12px !important;
+  line-height:1.1 !important;
+}
+
+html.akm-phone body.hud-v21 .mode-row.hud-kick-row,
+html.akm-phone body.hud-v21.akm-ui .mode-row.hud-kick-row,
+html.akm-phone body.hud-v21 .mode-row.hud-kick-tabs,
+html.akm-phone body.hud-v21.akm-ui .mode-row.hud-kick-tabs{
+  gap:10px !important;
+  column-gap:10px !important;
+  row-gap:8px !important;
+}
+html.akm-phone body.hud-v21 .mode-row.hud-kick-row1,
+html.akm-phone body.hud-v21.akm-ui .mode-row.hud-kick-row1{
+  max-width:min(232px, 94vw) !important;
+}
+
+html.akm-phone body.hud-v21 .hud-drill-row{    top:150px !important; }
+html.akm-phone body.hud-v21 .hud-balloon-row{  top:180px !important; }
+html.akm-phone body.hud-v21 .hud-sparring-row{ top:210px !important; }
+html.akm-phone body.hud-v21 .hud-lab-row{      top:240px !important; }
+
+html.akm-phone body.hud-v21 .hud-drill-row .game-btn,
+html.akm-phone body.hud-v21 .hud-balloon-row .game-btn,
+html.akm-phone body.hud-v21 .hud-sparring-row .game-btn,
+html.akm-phone body.hud-v21 .hud-lab-row .game-btn{
+  min-height:26px !important;
+  font-size:12px !important;
+}
+
+html.akm-phone #p2PlayerToggle.show{ top:276px !important; }
+
+html.akm-phone.akm-landscape body.hud-v21 .hud-drill-row{    top:110px !important; }
+html.akm-phone.akm-landscape body.hud-v21 .hud-balloon-row{  top:140px !important; }
+html.akm-phone.akm-landscape body.hud-v21 .hud-sparring-row{ top:170px !important; }
+html.akm-phone.akm-landscape body.hud-v21 .hud-lab-row{      top:200px !important; }
+html.akm-phone.akm-landscape #p2PlayerToggle.show{           top:236px !important; }
+
+html.akm-phone.akm-portrait body.hud-v21 #modeBadge{
+  top:12px !important;
+  left:auto !important;
+  right:12px !important;
+  min-width:0 !important;
+  max-width:calc(100% - 160px) !important;
+  text-align:right !important;
+  transform:skewX(-8deg) !important;
+}
+html.akm-phone.akm-portrait body.hud-v21 .difficulty-panel{
+  transform:translateY(150px) scale(.88) !important;
+}
+
+html.akm-phone body.hud-v21 .title{
+  transform:scale(.80) !important;
+  transform-origin:top left !important;
+}
+
+html.akm-phone body.hud-v21 .hud-settings-btn,
+html.akm-phone body.hud-v21.akm-ui .hud-settings-btn{
+  min-height:32px !important;
+  min-width:62px !important;
+  padding:6px 12px !important;
+}
+
 </style>
 <script id="fix4-start-stop-text-helper">
 (function(){
