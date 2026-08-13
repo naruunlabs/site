@@ -135,6 +135,34 @@
   #drillResultText{font-size:54px;font-weight:900;text-align:center;line-height:1.1;
     animation:drillIconPop .5s cubic-bezier(.22,1,.36,1);}
   #drillResultSub{font-size:20px;color:#cdd8e8;font-weight:700;text-align:center;}
+  .result-action-row{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;}
+  .result-action-primary,.result-action-secondary{
+    min-height:44px;padding:11px 24px;border-radius:14px;cursor:pointer;
+    color:#fff;font-size:15px;font-weight:900;font-family:inherit;
+  }
+  .result-action-primary{
+    border:0;background:linear-gradient(135deg,#31b7ff,#1f5fd6);
+    box-shadow:0 10px 26px rgba(49,183,255,.35);
+  }
+  .result-action-secondary{
+    border:1.5px solid rgba(76,163,255,.32);background:rgba(13,28,48,.82);
+    color:#cfe2ff;box-shadow:none;
+  }
+  .result-action-primary:active,.result-action-secondary:active{transform:scale(.98);}
+  #startupRecovery{
+    display:none;position:absolute;inset:0;z-index:14;align-items:center;justify-content:center;
+    padding:24px;background:rgba(2,8,18,.76);backdrop-filter:blur(5px);
+  }
+  #startupRecovery.show{display:flex;}
+  .startup-recovery-box{
+    width:min(420px,88vw);padding:26px 24px;border-radius:20px;text-align:center;
+    background:#0d1c30;border:1.5px solid rgba(76,163,255,.35);
+    box-shadow:0 20px 60px rgba(0,0,0,.6);
+  }
+  #startupRecoveryTitle{font-size:22px;font-weight:1000;color:#fff;}
+  #startupRecoveryMessage{margin-top:9px;color:#b9cbe4;font-size:14px;font-weight:700;line-height:1.55;}
+  #startupRetryBtn{margin-top:18px;min-width:150px;}
+  #startupRetryBtn:disabled{opacity:.55;cursor:default;transform:none;}
   @keyframes drillIconPop{0%{transform:scale(.2);opacity:0;}70%{transform:scale(1.12);}100%{transform:scale(1);opacity:1;}}
 
   .balloon{position:absolute;transform:translate(-50%,-50%);
@@ -730,10 +758,15 @@ html body.akm-lite-fx .p2-hpbar{ box-shadow:none !important; }
 }
 #p2ResultScores b.p2rc{ color:var(--arcade-blue); }
 #p2ResultScores b.p2rh{ color:var(--arcade-red); }
-#p2ResultCloseBtn{
+#p2ResultReplayBtn{
   margin-top:10px; padding:12px 32px; border-radius:14px; border:0; cursor:pointer;
   background:linear-gradient(135deg,#31b7ff,#1f5fd6); color:#fff; font-size:16px; font-weight:900;
   box-shadow:0 10px 26px rgba(49,183,255,.35);
+}
+#p2ResultBackBtn{
+  margin-top:10px;padding:11px 26px;border-radius:14px;cursor:pointer;
+  border:1.5px solid rgba(76,163,255,.32);background:rgba(13,28,48,.82);
+  color:#cfe2ff;font-size:15px;font-weight:900;
 }
 
 .p2-toggle-row{ display:flex; gap:8px; margin-top:8px; }
@@ -3267,6 +3300,9 @@ button{transition:transform .14s ease, filter .14s ease, background .14s ease}bu
   font-family:inherit; font-size:18px; font-weight:1000; cursor:pointer;
   box-shadow:0 0 24px rgba(46,204,113,.30);
 }
+#drillResult .result-action-row{display:none;}
+#drillResult.auto-summary .result-action-row,
+#drillResult.final-result .result-action-row{display:flex;}
 #drillResult.auto-summary #drillRestartBtn,
 #drillResult.final-result #drillRestartBtn{display:block;}
 body.hud-v21.auto-drill-selected .mode-row.hud-kick-row .drill-btn{
@@ -3548,6 +3584,13 @@ body.hud-v21.akm-ui.sparring-mode .stats-row{
   <div class="cam-wrap mirrored" id="camWrap">
   
     <div id="status">AI 모델 로딩 중…</div>
+    <div id="startupRecovery" role="alert" aria-live="assertive">
+      <div class="startup-recovery-box">
+        <div id="startupRecoveryTitle">연결을 확인해주세요</div>
+        <div id="startupRecoveryMessage"></div>
+        <button id="startupRetryBtn" type="button" class="result-action-primary" onclick="retryStartup()">다시 시도</button>
+      </div>
+    </div>
     <div id="modeBadge">앞차기 오른발<small>오른발로 중앙선 위로 차기</small></div>
     <div id="sparringHud">
       <div id="enemyHpWrap"><span id="enemyName">상대</span><div id="enemyHpTrack"><div id="enemyHpFill"></div></div><span id="enemyHpText">HP 100</span></div>
@@ -3579,7 +3622,10 @@ body.hud-v21.akm-ui.sparring-mode .stats-row{
       <div id="drillResultIcon"></div>
       <div id="drillResultText">훈련 완료</div>
       <div id="drillResultSub"></div>
-      <button id="drillRestartBtn" type="button" onclick="restartDrillFromResult()">다시 시작</button>
+      <div class="result-action-row">
+        <button id="drillRestartBtn" class="result-action-primary" type="button" onclick="replayFromDrillResult()">같은 훈련 다시 시작</button>
+        <button id="drillBackBtn" class="result-action-secondary" type="button" onclick="returnToTrainingSelection()">훈련 선택으로 돌아가기</button>
+      </div>
     </div>
 
     <div id="readyOverlay">
@@ -3751,7 +3797,10 @@ body.hud-v21.akm-ui.sparring-mode .stats-row{
       
       <div id="p2ResultBreakdown"></div>
       <div id="p2ResultReason"></div>
-      <button type="button" id="p2ResultCloseBtn" onclick="closeP2Result()">다시 경기</button>
+      <div class="result-action-row" id="p2ResultActions">
+        <button type="button" id="p2ResultReplayBtn" onclick="replayFromP2Result()">같은 훈련 다시 시작</button>
+        <button type="button" id="p2ResultBackBtn" onclick="returnFromP2Result()">훈련 선택으로 돌아가기</button>
+      </div>
     </div>
 
     <div class="stats-row">
@@ -4223,7 +4272,7 @@ function beginAutoDrillStage(index, announce=true){
     },1400);
   }
 }
-window.restartDrillFromResult=()=>{
+window.returnToTrainingSelection=()=>{
   drillResult.classList.remove('show','auto-summary','final-result');
   drillResultSub.classList.remove('auto-result-summary');
   autoDrillIndex=0; autoDrillResults={}; autoDrillTransitioning=false;
@@ -4248,6 +4297,11 @@ window.restartDrillFromResult=()=>{
       ?'시작 버튼을 눌러 자동 발차기 훈련을 시작하세요'
       :'시작 버튼을 눌러 '+MODE_CFG[currentMode].label+' 연습을 시작하세요';
   }
+};
+window.restartDrillFromResult=window.returnToTrainingSelection;
+window.replayFromDrillResult=()=>{
+  window.returnToTrainingSelection();
+  window.startGame();
 };
 
 let lastScore=null, lastGrade='', lastColor='var(--gold)';
@@ -6765,7 +6819,7 @@ function stopGame(){
   if(typeof clearBalloons2p==='function') clearBalloons2p(); 
   if(typeof p2StageResultTimer!=='undefined' && p2StageResultTimer){ clearTimeout(p2StageResultTimer); p2StageResultTimer=null; }
   document.getElementById('p2Result')?.classList.remove('show');
-  const p2Close=document.getElementById('p2ResultCloseBtn'); if(p2Close) p2Close.style.display='';
+  const p2Actions=document.getElementById('p2ResultActions'); if(p2Actions) p2Actions.style.display='';
   if(typeof auto2pTransitioning!=='undefined') auto2pTransitioning=false;
   drillResult.classList.remove('show','auto-summary','final-result'); sparringHud?.classList.remove('show');
   if(drillResultTimer){ clearTimeout(drillResultTimer); drillResultTimer=null; }
@@ -7548,7 +7602,20 @@ async function startCamera(){
     const isDrill=MODE_CFG[currentMode].isDrill;
     updateModeBadge();
     statusEl.textContent=isDrill?'시작 버튼을 눌러 연습을 시작하세요':'시작 버튼을 누르세요';
-  }catch(e){ statusEl.textContent='카메라 실패: '+e.message; }
+    hideStartupRecovery();
+    return true;
+  }catch(e){
+    const denied=e && (e.name==='NotAllowedError' || e.name==='SecurityError');
+    const busy=e && (e.name==='NotReadableError' || e.name==='TrackStartError');
+    const message=denied
+      ?'카메라 권한이 꺼져 있습니다. 브라우저 설정에서 카메라를 허용한 뒤 다시 시도해주세요.'
+      :busy
+        ?'다른 앱이 카메라를 사용 중일 수 있습니다. 다른 앱을 닫은 뒤 다시 시도해주세요.'
+        :'카메라를 연결하지 못했습니다. 연결 상태를 확인한 뒤 다시 시도해주세요.';
+    statusEl.textContent='카메라 연결 실패';
+    showStartupRecovery('camera','카메라 연결이 필요합니다',message);
+    return false;
+  }
 }
 
 let twoPlayerMode=false;
@@ -7802,6 +7869,16 @@ window.closeP2Result=function(){
   reset2pAfterMatch();
   clearHudOnResultClose();   
 };
+window.returnFromP2Result=function(){
+  window.closeP2Result();
+  setStartBtn(false,'시작!');
+  statusEl.style.opacity='1';
+  statusEl.textContent='훈련을 선택한 뒤 시작 버튼을 눌러주세요.';
+};
+window.replayFromP2Result=function(){
+  window.closeP2Result();
+  window.startGame();
+};
 
 function reset2pAfterMatch(){
   if(!twoPlayerMode || running) return;
@@ -7866,8 +7943,8 @@ function showP2AutoFinal(rows,cAvg,hAvg,winnerKey,reason){
     bdEl.innerHTML=html;
     bdEl.classList.add('show');
   }
-  const closeBtn=document.getElementById('p2ResultCloseBtn');
-  if(closeBtn) closeBtn.style.display='';
+  const actionRow=document.getElementById('p2ResultActions');
+  if(actionRow) actionRow.style.display='';
   document.getElementById('p2Result')?.classList.add('show');
   setStartBtn(false,'다시 시작');
   confetti(Math.max(cAvg,hAvg)>=90);
@@ -7880,14 +7957,14 @@ function showP2StageResult(stageLabel,cAvg,hAvg,winnerKey,onDone,isLast=false){
     :'종목 완료';
   setP2ResultContent(stageLabel,title,'평균',cAvg+'점','평균',hAvg+'점',winnerKey,
     isLast?'마지막 종목입니다 · 잠시 후 종합 결과':'잠시 후 다음 종목으로 이동합니다');
-  const closeBtn=document.getElementById('p2ResultCloseBtn');
-  if(closeBtn) closeBtn.style.display='none';
+  const actionRow=document.getElementById('p2ResultActions');
+  if(actionRow) actionRow.style.display='none';
   document.getElementById('p2Result')?.classList.add('show');
   if(p2StageResultTimer) clearTimeout(p2StageResultTimer);
   p2StageResultTimer=setTimeout(()=>{
     p2StageResultTimer=null;
     document.getElementById('p2Result')?.classList.remove('show');
-    if(closeBtn) closeBtn.style.display='';
+    if(actionRow) actionRow.style.display='';
     if(typeof onDone==='function') onDone();
   },isLast?AUTO_FINAL.STAGE_HOLD_MS:1800);
 }
@@ -7904,8 +7981,8 @@ function showP2Result(cLabel,cVal,hLabel,hVal,winnerKey,reason=''){
   setP2ResultContent('FINAL MATCH RESULT',title,cLabel,cVal,hLabel,hVal,winnerKey,reason||(
     winnerKey==null?'기록이 같습니다':winnerKey==='c'?'청 선수가 앞섰습니다':'홍 선수가 앞섰습니다'
   ));
-  const closeBtn=document.getElementById('p2ResultCloseBtn');
-  if(closeBtn) closeBtn.style.display='';
+  const actionRow=document.getElementById('p2ResultActions');
+  if(actionRow) actionRow.style.display='';
   document.getElementById('p2Result')?.classList.add('show');
   setStartBtn(false,'다시 시작');
 }
@@ -8607,6 +8684,50 @@ function loop(){
   requestAnimationFrame(loop);
 }
 
+let startupRecoveryStage='';
+let startupRetrying=false;
+let mainLoopStarted=false;
+function showStartupRecovery(stage,title,message){
+  startupRecoveryStage=stage;
+  const box=document.getElementById('startupRecovery');
+  const titleEl=document.getElementById('startupRecoveryTitle');
+  const messageEl=document.getElementById('startupRecoveryMessage');
+  const retryBtn=document.getElementById('startupRetryBtn');
+  if(titleEl) titleEl.textContent=title;
+  if(messageEl) messageEl.textContent=message;
+  if(retryBtn){ retryBtn.disabled=false; retryBtn.textContent='다시 시도'; }
+  box?.classList.add('show');
+}
+function hideStartupRecovery(){
+  document.getElementById('startupRecovery')?.classList.remove('show');
+  startupRecoveryStage='';
+}
+function startMainLoopOnce(){
+  if(mainLoopStarted) return;
+  mainLoopStarted=true;
+  loop();
+}
+window.retryStartup=async function(){
+  if(startupRetrying) return;
+  startupRetrying=true;
+  const retryBtn=document.getElementById('startupRetryBtn');
+  if(retryBtn){ retryBtn.disabled=true; retryBtn.textContent='연결 중...'; }
+  try{
+    if(startupRecoveryStage==='model' || !poseLandmarker) await initModel();
+    const cameraOk=await startCamera();
+    if(cameraOk){ hideStartupRecovery(); startMainLoopOnce(); }
+  }catch(e){
+    console.error('복구 시도 실패:',e);
+    statusEl.textContent='AI 모델 연결 실패';
+    showStartupRecovery('model','AI 모델을 불러오지 못했습니다','인터넷 연결을 확인한 뒤 다시 시도해주세요.');
+  }finally{
+    startupRetrying=false;
+    if(retryBtn && document.getElementById('startupRecovery')?.classList.contains('show')){
+      retryBtn.disabled=false; retryBtn.textContent='다시 시도';
+    }
+  }
+};
+
 initDevInfo();   
 
 drillCountArea.style.display='flex';
@@ -8630,7 +8751,15 @@ updateKickButtonVisibility();
 renderStats(); updateModeBadge();
 
 window.__startApp = async function() {
-  await initModel(); await startCamera(); loop();
+  try{
+    await initModel();
+    const cameraOk=await startCamera();
+    if(cameraOk) startMainLoopOnce();
+  }catch(e){
+    console.error('앱 시작 실패:',e);
+    statusEl.textContent='AI 모델 연결 실패';
+    showStartupRecovery('model','AI 모델을 불러오지 못했습니다','인터넷 연결을 확인한 뒤 다시 시도해주세요.');
+  }
 };
 </script>
 
@@ -8968,7 +9097,7 @@ body.hud-v21.akm-ui.two-player-mode .p2-enemy-target{
   font-size:clamp(13px,1.5vw,17px); font-weight:900; color:rgba(255,255,255,.72); letter-spacing:.02em;
 }
 #p2ResultReason{margin-top:10px;font-size:clamp(13px,1.5vw,19px);font-weight:900;color:rgba(255,255,255,.76);letter-spacing:.02em}
-#p2ResultCloseBtn{
+#p2ResultBackBtn{
   margin-top:22px !important;padding:9px 26px !important;border:1px solid rgba(255,255,255,.34) !important;
   border-radius:999px !important;background:rgba(0,0,0,.16) !important;color:#fff !important;
   font-size:14px !important;font-weight:900 !important;box-shadow:none !important;backdrop-filter:blur(4px);
@@ -9049,6 +9178,51 @@ html.akm-phone.akm-portrait body.hud-v21 #modeBadge{
 }
 html.akm-phone.akm-portrait body.hud-v21 .difficulty-panel{
   transform:translateY(150px) scale(.88) !important;
+}
+
+html.akm-phone #p2Result.show{
+  justify-content:flex-start !important;
+  overflow-y:auto !important;
+  overflow-x:hidden !important;
+  padding:10px 10px 26px !important;
+  gap:6px !important;
+  -webkit-overflow-scrolling:touch;
+}
+html.akm-phone.akm-landscape #p2ResultTitle{
+  font-size:clamp(34px, 6.5vw, 68px) !important;
+  margin:2px 0 6px !important;
+}
+html.akm-phone.akm-portrait #p2ResultTitle{
+  font-size:clamp(40px, 11vw, 82px) !important;
+  margin:2px 0 8px !important;
+}
+html.akm-phone #p2ResultKicker{ font-size:11px !important; letter-spacing:2px !important; }
+html.akm-phone #p2ResultActions{ margin-top:4px !important; gap:8px !important; }
+html.akm-phone #p2ResultReplayBtn,
+html.akm-phone #p2ResultBackBtn{
+  margin-top:4px !important;
+  padding:10px 18px !important;
+  font-size:14px !important;
+}
+
+html.akm-phone #drillResult{ padding:12px !important; }
+html.akm-phone #drillResult .result-action-row{ gap:8px !important; }
+
+html.akm-phone body.hud-v21 .title{
+  z-index:90 !important;
+  pointer-events:none !important;
+}
+html.akm-phone body.hud-v21 .title *{ pointer-events:none !important; }
+html.akm-phone body.hud-v21 .hud-settings-btn,
+html.akm-phone body.hud-v21.akm-ui .hud-settings-btn{ pointer-events:auto !important; }
+
+html.akm-phone.akm-portrait body.hud-v21 .mode-row.hud-kick-row,
+html.akm-phone.akm-portrait body.hud-v21 .mode-row.hud-kick-row1,
+html.akm-phone.akm-portrait body.hud-v21 .mode-row.hud-kick-tabs,
+html.akm-phone.akm-portrait body.hud-v21.akm-ui .mode-row.hud-kick-row,
+html.akm-phone.akm-portrait body.hud-v21.akm-ui .mode-row.hud-kick-row1,
+html.akm-phone.akm-portrait body.hud-v21.akm-ui .mode-row.hud-kick-tabs{
+  bottom:140px !important;
 }
 
 html.akm-phone body.hud-v21 .title{
