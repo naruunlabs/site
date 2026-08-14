@@ -97,7 +97,16 @@
 
 <style id="kick-test-refactored-css">
 
-:root{ --red:#E3172E; --red-dark:#B91426; --orange:#FF6A1A; --orange-soft:#FF8C42; --navy:#0B0B0D; --gold:#FF6A1A; --green:#2ecc71; --blue:#1288F8;}
+:root{ --red:#E3172E; --red-dark:#B91426; --orange:#FF6A1A; --orange-soft:#FF8C42; --navy:#0B0B0D; --gold:#FF6A1A; --green:#2ecc71; --blue:#1288F8;
+  
+  --s-bg:#141110;       
+  --s-tile:#221d1a;     
+  --s-tile-hi:#2b2421;  
+  --s-line:#241f1c;     
+  --s-txt:#f5efe9;      
+  --s-dim:#8a807a;      
+  --s-on:#2a1002;       
+}
   *{box-sizing:border-box;margin:0;padding:0;}
   html,body{height:100%;background:var(--navy);color:#fff;
     font-family:'Gothic A1','Noto Sans KR',system-ui,sans-serif;}
@@ -769,27 +778,39 @@ html body.akm-lite-fx .p2-hpbar{ box-shadow:none !important; }
   color:#cfe2ff;font-size:15px;font-weight:900;
 }
 
-.p2-toggle-row{ display:flex; gap:8px; margin-top:8px; }
-.p2-toggle-btn{
-  flex:1; padding:9px 0; border-radius:10px; border:1.5px solid rgba(76,163,255,.3);
-  background:rgba(13,28,48,.7); color:#9fb6d6; font-size:13px; font-weight:900; cursor:pointer;
+.akm-sw{
+  all:unset; box-sizing:border-box; flex:none;
+  width:52px; height:30px; border-radius:15px;
+  background:var(--s-tile); position:relative; cursor:pointer;
+  transition:background .16s ease;
 }
-.p2-toggle-btn.active{ background:linear-gradient(135deg,#31b7ff,#1f5fd6); color:#fff; border-color:#5fa2ff; }
+.akm-sw::after{
+  content:''; position:absolute; top:4px; left:4px;
+  width:22px; height:22px; border-radius:50%; background:var(--s-dim);
+  transition:transform .16s ease, background .16s ease;
+}
+.akm-sw.on{ background:var(--gold); }
+.akm-sw.on::after{ transform:translateX(22px); background:#fff; }
+.akm-sw:focus-visible{ box-shadow:0 0 0 3px rgba(255,106,26,.45); }
 
-.autodrill-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-top:8px; }
+.settings-row{ display:flex; align-items:center; justify-content:space-between; gap:14px; }
+.settings-row .settings-label{ margin-bottom:0; display:block; }
+
+.autodrill-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-top:10px; }
 .autodrill-chip{
-  padding:9px 0; border-radius:10px; border:1.5px solid rgba(76,163,255,.28);
-  background:rgba(13,28,48,.7); color:#7d8ca5; font-size:12px; font-weight:900;
-  cursor:pointer; font-family:inherit; transition:all .12s;
+  padding:10px 0; border-radius:9px; border:0;
+  background:var(--s-tile); color:var(--s-dim); font-size:12px; font-weight:500;
+  cursor:pointer; font-family:inherit; transition:background .12s, color .12s;
 }
-.autodrill-chip.on{ background:linear-gradient(135deg,#31b7ff,#1f5fd6); color:#fff; border-color:#5fa2ff; }
-.autodrill-chip.on::before{ content:"✓ "; }
+.autodrill-chip:hover{ background:var(--s-tile-hi); }
+.autodrill-chip.on{ background:var(--gold); color:var(--s-on); font-weight:700; }
+.autodrill-chip.on::before{ content:"✓"; font-size:10px; margin-right:3px; opacity:.7; }
 .settings-modal-box{
-  background:#0d1c30;
-  border:1.5px solid rgba(76,163,255,0.35);
-  border-radius:20px; padding:28px 26px;
+  background:var(--s-bg);
+  border:1px solid var(--s-line);
+  border-radius:22px; padding:26px 24px;
   width:340px; max-width:92vw;
-  box-shadow:0 20px 60px rgba(0,0,0,0.6);
+  box-shadow:0 24px 70px rgba(0,0,0,0.72);
   
   max-height:88dvh;
   overflow-y:auto;
@@ -801,46 +822,68 @@ html body.akm-lite-fx .p2-hpbar{ box-shadow:none !important; }
 
 .settings-modal-box::-webkit-scrollbar{ width:10px; }
 .settings-modal-box::-webkit-scrollbar-thumb{
-  background:rgba(76,163,255,.45); border-radius:5px;
+  background:#3a322d; border-radius:5px;
 }
 .settings-modal-box::-webkit-scrollbar-track{ background:transparent; }
 .settings-modal-box h3{
-  font-size:16px; font-weight:900; color:#fff;
-  margin-bottom:20px; display:flex; align-items:center; justify-content:space-between;
+  font-size:16px; font-weight:500; color:var(--s-txt); letter-spacing:.01em;
+  margin-bottom:18px; display:flex; align-items:center; justify-content:space-between;
 }
-.settings-modal-box h3 span{ color:var(--gold); }
+.settings-modal-box h3 span{ color:var(--gold); font-weight:700; }
+
+#settingsModal .settings-tabs{
+  display:flex; gap:2px; margin:-4px 0 18px;
+  border-bottom:1px solid var(--s-line);
+}
+#settingsModal .settings-tab{
+  flex:1; padding:10px 0 9px; margin-bottom:-1px;
+  border:0; border-bottom:2px solid transparent; background:none;
+  color:var(--s-dim); font-size:13px; font-weight:500; cursor:pointer;
+  font-family:inherit; transition:color .12s;
+}
+#settingsModal .settings-tab.on{ color:var(--gold); border-bottom-color:var(--gold); }
+#settingsModal .settings-pane{ display:none; }
+#settingsModal .settings-pane.on{ display:block; }
+
+.settings-hint{ font-size:11.5px; color:var(--s-dim); margin-top:7px; line-height:1.55; }
+
 .settings-close-btn{
-  background:rgba(255,255,255,0.08); border:none; border-radius:8px;
-  color:#aaa; font-size:14px; padding:5px 10px; cursor:pointer; font-weight:900;
+  background:var(--s-tile); border:none; border-radius:9px;
+  color:var(--s-dim); font-size:13px; padding:6px 11px; cursor:pointer;
+  font-weight:500; font-family:inherit;
 }
-.settings-close-btn:hover{ color:#fff; }
-.settings-section{ margin-bottom:16px; }
-.settings-label{ font-size:13px; color:#dcecff; font-weight:800; margin-bottom:6px; display:flex; justify-content:space-between; }
-.settings-divider{ border:none; border-top:1px solid rgba(76,163,255,0.15); margin:16px 0; }
+.settings-close-btn:hover{ background:var(--s-tile-hi); color:var(--s-txt); }
+.settings-section{ margin-bottom:18px; }
+.settings-label{ font-size:13px; color:var(--s-txt); font-weight:500; margin-bottom:6px; display:flex; align-items:center; justify-content:space-between; }
+
+.settings-label span{ color:var(--s-dim); font-weight:400; }
+.settings-divider{ border:none; border-top:1px solid var(--s-line); margin:18px 0; }
+
 .settings-pw-btn{
-  width:100%; padding:12px; border-radius:11px; border:none;
-  background:rgba(76,163,255,0.12); color:var(--blue);
-  font-size:14px; font-weight:900; cursor:pointer;
+  width:100%; padding:12px; border-radius:12px; border:0;
+  background:rgba(227,23,46,0.14); color:#ff8f9c;
+  font-size:14px; font-weight:500; cursor:pointer; font-family:inherit;
 }
-.settings-pw-btn:hover{ background:rgba(76,163,255,0.22); }
+.settings-pw-btn:hover{ background:rgba(227,23,46,0.22); }
 .settings-home-btn{
   width:100%;
   margin-top:8px;
   padding:12px;
   border:0;
-  border-radius:11px;
-  background:rgba(255,255,255,.07);
-  color:#fff;
+  border-radius:12px;
+  background:var(--s-tile);
+  color:var(--s-txt);
   font-size:14px;
-  font-weight:900;
+  font-weight:500;
+  font-family:inherit;
   cursor:pointer;
   transition:background .15s ease,transform .15s ease;
 }
-.settings-home-btn:hover{background:rgba(255,255,255,.13);}
-.settings-home-btn:active{transform:scale(.98);}
+.settings-home-btn:hover{background:var(--s-tile-hi);}
+.settings-home-btn:active{transform:scale(.985);}
 
-#settingsModal .bar-track{ position:relative; height:18px; background:#0a1220; border-radius:9px; overflow:hidden; border:1px solid #1d3050; }
-#settingsModal .bar-fill{ height:100%; width:0%; background:linear-gradient(90deg,var(--gold),var(--red)); border-radius:9px; transition:width .06s linear; }
+#settingsModal .bar-track{ position:relative; height:16px; background:var(--s-tile); border-radius:8px; overflow:hidden; border:0; }
+#settingsModal .bar-fill{ height:100%; width:0%; background:var(--gold); border-radius:8px; transition:width .06s linear; }
 
 body.hud-v21 .btns{position:absolute; right:14px; bottom:14px; width:300px; display:flex; gap:7px; z-index:8;}
 body.hud-v21 .btns button{min-height:36px; padding:5px; border-radius:11px; font-size:11px; font-weight:850; color:#fff;}
@@ -3373,15 +3416,16 @@ body.hud-v21.auto-drill-selected .mode-row.hud-kick-row .drill-btn.active{
 
 #loginScreen {
   position: fixed; inset: 0; z-index: 9999;
-  background: radial-gradient(circle at top, #142a4a 0, var(--navy) 44%, #050b14 100%);
+  
+  background: radial-gradient(circle at top, #241c17 0, var(--navy) 46%, #050505 100%);
   display: flex; align-items: center; justify-content: center;
   font-family: 'Gothic A1','Noto Sans KR',system-ui,sans-serif;
 }
 #loginScreen.hidden { display: none; }
 
 .login-box {
-  background: rgba(255,255,255,0.04);
-  border: 1.5px solid rgba(76,163,255,0.25);
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--s-line);
   border-radius: 24px;
   padding: 48px 44px 40px;
   width: 400px;
@@ -3395,44 +3439,45 @@ body.hud-v21.auto-drill-selected .mode-row.hud-kick-row .drill-btn.active{
 }
 .login-logo span { color: var(--gold); }
 .login-sub {
-  font-size: 12px; color: #7a90aa; margin-bottom: 10px; font-weight: 600;
+  font-size: 12px; color: var(--s-dim); margin-bottom: 10px; font-weight: 500;
 }
 .login-key-label {
-  font-size: 12px; color: #9aadc5; font-weight: 800;
+  font-size: 12px; color: var(--s-txt); font-weight: 500;
   text-align: left; display: block; margin-bottom: 8px; margin-top: 20px;
 }
 .login-key-help {
-  font-size: 11px; color: #4a5a6a; margin-bottom: 20px; line-height: 1.5;
+  font-size: 11.5px; color: var(--s-dim); margin-bottom: 20px; line-height: 1.55;
 }
 .login-field {
   width: 100%; margin-bottom: 14px;
-  background: rgba(255,255,255,0.06);
-  border: 1.5px solid rgba(76,163,255,0.2);
+  background: var(--s-tile);
+  border: 1px solid transparent;
   border-radius: 12px;
   padding: 14px 18px;
-  color: #fff; font-size: 15px; font-weight: 600;
+  color: var(--s-txt); font-size: 15px; font-weight: 500;
   outline: none; box-sizing: border-box;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, background 0.2s;
   letter-spacing: 1px; text-align: center;
 }
-.login-field:focus { border-color: var(--blue); }
-.login-field::placeholder { color: #4a5a6a; letter-spacing: 0; }
+.login-field:focus { border-color: var(--gold); background: var(--s-tile-hi); }
+.login-field::placeholder { color: #6b6259; letter-spacing: 0; }
+
 .login-btn {
   width: 100%; padding: 15px;
-  background: linear-gradient(135deg, var(--blue), #2255cc);
+  background: var(--gold);
   border: none; border-radius: 12px;
-  color: #fff; font-size: 16px; font-weight: 900;
+  color: var(--s-on); font-size: 16px; font-weight: 700;
   cursor: pointer; margin-top: 6px;
-  transition: opacity 0.2s, transform 0.1s;
+  transition: filter 0.2s, transform 0.1s;
 }
-.login-btn:hover { opacity: 0.9; }
+.login-btn:hover { filter: brightness(1.08); }
 .login-btn:active { transform: scale(0.98); }
 .login-error {
   color: var(--red); font-size: 13px; font-weight: 700;
   margin-top: 14px; min-height: 20px;
 }
 .login-footer {
-  font-size: 11px; color: #3a4a5a; margin-top: 24px; line-height: 1.6;
+  font-size: 11px; color: #6b6259; margin-top: 24px; line-height: 1.6;
 }
 
 #trialExpiredBox { display: none; }
@@ -3442,10 +3487,10 @@ body.hud-v21.auto-drill-selected .mode-row.hud-kick-row .drill-btn.active{
 .te-icon:empty { display: none; }
 #drillResultIcon:empty { display: none; }
 .te-title {
-  color: #fff; font-size: 19px; font-weight: 900; letter-spacing: -0.4px;
+  color: var(--s-txt); font-size: 19px; font-weight: 700; letter-spacing: -0.4px;
 }
 .te-desc {
-  color: #9aadc5; font-size: 13px; line-height: 1.7; margin-top: 10px;
+  color: var(--s-dim); font-size: 13px; line-height: 1.7; margin-top: 10px;
 }
 .te-desc b { color: var(--gold); }
 .te-actions { display: flex; flex-direction: column; gap: 9px; margin-top: 22px; }
@@ -3460,15 +3505,16 @@ body.hud-v21.auto-drill-selected .mode-row.hud-kick-row .drill-btn.active{
 .te-btn:hover { opacity: 0.9; }
 .te-btn-primary { background: linear-gradient(135deg, #FAE100, #E5CF00); color: #191600; }
 .te-btn-ghost {
-  background: rgba(255,255,255,0.06); color: #cfe0f5;
-  border: 1.5px solid rgba(76,163,255,0.28);
+  background: var(--s-tile); color: var(--s-txt);
+  border: 1px solid transparent;
 }
+.te-btn-ghost:hover { background: var(--s-tile-hi); }
 .te-again {
   margin-top: 16px; background: none; border: none;
-  color: #5a6a7a; font-size: 12px; font-weight: 700;
-  cursor: pointer; text-decoration: underline;
+  color: #6b6259; font-size: 12px; font-weight: 500;
+  cursor: pointer; text-decoration: underline; font-family: inherit;
 }
-.te-again:hover { color: #9aadc5; }
+.te-again:hover { color: var(--s-dim); }
 
 .login-box.trial-over .login-key-label,
 .login-box.trial-over .login-key-help,
@@ -3534,7 +3580,8 @@ body.hud-v21.akm-ui.sparring-mode .stats-row{
 
 <div id="loginScreen">
   <div class="login-box">
-    <div class="login-logo"><img class="app-login-product-logo" src="kick1.svg" alt="AI KICK MASTER"></div>
+    
+    <div class="login-logo"><img class="app-login-product-logo" src="kick1w.svg" alt="AI KICK MASTER"></div>
     <div class="login-sub">태권도 AI 발차기 훈련 시스템</div>
     <div class="login-brand-meta">
       <div class="akm-powered">Powered by Google MediaPipe</div>
@@ -3688,6 +3735,11 @@ body.hud-v21.akm-ui.sparring-mode .stats-row{
       <button class="drill-btn" id="m_yeop_l" onclick="setMode('yeop_l')">옆L</button>
       <button class="drill-btn" id="m_dwi_r" onclick="setMode('dwi_r')">뒤R</button>
       <button class="drill-btn" id="m_dwi_l" onclick="setMode('dwi_l')">뒤L</button>
+      
+      <button class="drill-btn" id="m_apcha_x" onclick="setMode('apcha_x')" style="display:none !important">앞↔</button>
+      <button class="drill-btn" id="m_dollo_x" onclick="setMode('dollo_x')" style="display:none !important">돌↔</button>
+      <button class="drill-btn" id="m_yeop_x"  onclick="setMode('yeop_x')"  style="display:none !important">옆↔</button>
+      <button class="drill-btn" id="m_dwi_x"   onclick="setMode('dwi_x')"   style="display:none !important">뒤↔</button>
     </div>
     <div class="game-area" id="drillCountArea">
       <div class="drill-count-row">
@@ -3833,91 +3885,85 @@ body.hud-v21.akm-ui.sparring-mode .stats-row{
   <div class="settings-modal-box">
     <h3><span>설정</span> <button class="settings-close-btn" onclick="toggleHudSettings()">닫기</button></h3>
 
-    <div class="settings-section">
-      <div class="settings-label">발 높이 (실시간)</div>
-      <div class="bar-track">
-        <div class="bar-fill" id="barFill"></div>
-        <div class="bar-thresh" id="barThresh"></div>
-      </div>
+    <div class="settings-tabs">
+      <button type="button" class="settings-tab on" id="setTabBtn_train" onclick="switchSettingsTab('train')">훈련</button>
+      <button type="button" class="settings-tab"    id="setTabBtn_view"  onclick="switchSettingsTab('view')">화면·소리</button>
+      <button type="button" class="settings-tab"    id="setTabBtn_dev"   onclick="switchSettingsTab('dev')">기기</button>
     </div>
 
-    <div class="settings-section">
-      <div class="settings-label">민감도 (기준 높이) <span id="sensVal">50%</span></div>
-      <input type="range" id="sens" min="25" max="85" value="50" style="width:100%;accent-color:var(--gold);">
-    </div>
+    <div class="settings-pane on" id="setPane_train">
 
-    <div class="settings-section">
-      <div class="settings-label">소리 <span id="volVal">70%</span></div>
-      <input type="range" id="sndRange" min="0" max="100" value="70" style="width:100%;accent-color:var(--gold);">
-    </div>
+      <div class="settings-section">
+        <div class="settings-label">무엇을 <span id="autoDrillCount">앞·돌려를 양발로</span></div>
+        <div class="autodrill-grid">
+          <button type="button" class="autodrill-chip" data-kind="apcha" onclick="toggleDrillKick('apcha')">앞</button>
+          <button type="button" class="autodrill-chip" data-kind="dollo" onclick="toggleDrillKick('dollo')">돌려</button>
+          <button type="button" class="autodrill-chip" data-kind="yeop"  onclick="toggleDrillKick('yeop')">옆</button>
+          <button type="button" class="autodrill-chip" data-kind="dwi"   onclick="toggleDrillKick('dwi')">뒤</button>
+        </div>
+      </div>
 
-    <div class="settings-section">
-      <div class="settings-label">사용할 발차기 <span id="autoDrillCount">4종</span></div>
-      <div class="autodrill-grid">
-        <button type="button" class="autodrill-chip" data-mode="apcha_r" onclick="toggleAutoDrillPick('apcha_r')">앞R</button>
-        <button type="button" class="autodrill-chip" data-mode="apcha_l" onclick="toggleAutoDrillPick('apcha_l')">앞L</button>
-        <button type="button" class="autodrill-chip" data-mode="dollo_r" onclick="toggleAutoDrillPick('dollo_r')">돌R</button>
-        <button type="button" class="autodrill-chip" data-mode="dollo_l" onclick="toggleAutoDrillPick('dollo_l')">돌L</button>
-        <button type="button" class="autodrill-chip" data-mode="yeop_r" onclick="toggleAutoDrillPick('yeop_r')">옆R</button>
-        <button type="button" class="autodrill-chip" data-mode="yeop_l" onclick="toggleAutoDrillPick('yeop_l')">옆L</button>
-        <button type="button" class="autodrill-chip" data-mode="dwi_r" onclick="toggleAutoDrillPick('dwi_r')">뒤R</button>
-        <button type="button" class="autodrill-chip" data-mode="dwi_l" onclick="toggleAutoDrillPick('dwi_l')">뒤L</button>
+      <div class="settings-section">
+        <div class="settings-label">어느 발로</div>
+        <div class="autodrill-grid">
+          <button type="button" class="autodrill-chip" data-foot="right" onclick="setDrillFoot('right')">오른발</button>
+          <button type="button" class="autodrill-chip" data-foot="left"  onclick="setDrillFoot('left')">왼발</button>
+          <button type="button" class="autodrill-chip" data-foot="both"  onclick="setDrillFoot('both')">양발</button>
+          <button type="button" class="autodrill-chip" data-foot="alt"   onclick="setDrillFoot('alt')">번갈아</button>
+        </div>
+        <div class="settings-hint">
+          <b style="color:var(--s-txt);font-weight:500">양발</b>은 오른발을 다 하고 왼발로 넘어갑니다.
+          <b style="color:var(--s-txt);font-weight:500">번갈아</b>는 한 종목 안에서 오른발·왼발을 한 번씩 교대로 찹니다.
+        </div>
       </div>
-      <div style="font-size:11px;opacity:.6;margin-top:6px;line-height:1.5;">
-        고른 발차기만 화면 아래 버튼에 나오고, 자동모드도 그것만 순서대로 돕니다.
-        오늘 가르칠 것만 켜두면 아이들이 헷갈리지 않습니다.
-      </div>
-    </div>
 
-    <div class="settings-section">
-      <div class="settings-label">2인 모드 승패 표시</div>
-      <div class="p2-toggle-row">
-        <button type="button" class="p2-toggle-btn active" id="p2ResultOnBtn" onclick="setTwoPlayerShowResult(true)">켬</button>
-        <button type="button" class="p2-toggle-btn" id="p2ResultOffBtn" onclick="setTwoPlayerShowResult(false)">끔</button>
-      </div>
-      <div style="font-size:11px;opacity:.6;margin-top:6px;line-height:1.5;">
-        꺼두면 경기가 끝나도 "청 승리" 같은 표시 없이 양쪽 점수만 보여줍니다.
-      </div>
-    </div>
-
-    <div class="settings-section">
-      <div class="settings-label">화면 흐림 효과</div>
-      <div class="p2-toggle-row">
-        <button type="button" class="p2-toggle-btn active" id="bdfOnBtn" onclick="setBackdropFx(true)">켬</button>
-        <button type="button" class="p2-toggle-btn" id="bdfOffBtn" onclick="setBackdropFx(false)">끔</button>
-      </div>
-      <div style="font-size:11px;opacity:.6;margin-top:6px;line-height:1.5;">
-        글자 상자 뒤가 뿌옇게 보이는 효과입니다. 끄면 조금 밋밋해지지만
-        느린 기기에서 빨라질 수 있습니다. 진단 기록에 <b>bdf</b> 로 남습니다.
-      </div>
-    </div>
-
-    <div class="settings-section">
-      <div class="settings-label">2인 인식 · 좌우 나눠보기</div>
-      <div class="p2-toggle-row">
-        <button type="button" class="p2-toggle-btn" id="p2CropOnBtn" onclick="setCrop2p(true)">켬</button>
-        <button type="button" class="p2-toggle-btn active" id="p2CropOffBtn" onclick="setCrop2p(false)">끔</button>
-      </div>
-      <div style="font-size:11px;opacity:.6;margin-top:6px;line-height:1.5;">
-        켜면 청·홍을 각각 따로 잘라서 인식합니다. 안쪽 발이 잘 안 잡히는 문제와
-        무릎 인식 실패가 줄어듭니다. 대신 두 선수가 서로 붙으면 약해집니다.
-      </div>
-    </div>
-
-    <hr class="settings-divider">
-
-    <button class="settings-pw-btn" onclick="logoutLicense()" style="margin-top:8px;background:rgba(227,23,46,0.15);color:#ff8795;border-color:rgba(227,23,46,0.3);">라이선스 로그아웃</button>
-    <hr class="settings-divider">
-    <button class="settings-home-btn" type="button" id="shortcutBtn">바탕화면에 바로가기 추가</button>
-    <hr class="settings-divider">
-    <button class="settings-home-btn" type="button" onclick="location.href='/kickmaster'">홈페이지로 돌아가기</button>
-
-    <div class="settings-section" id="labHintSection" style="display:none;">
       <hr class="settings-divider">
-      <div style="font-size:12px;opacity:.65;line-height:1.5;">
-        측정·기록은 왼쪽 <b>발차기 연구소</b> 버튼에 모여 있습니다.
+
+      <div class="settings-section">
+        <div class="settings-label">민감도 (기준 높이) <span id="sensVal">50%</span></div>
+        <input type="range" id="sens" min="25" max="85" value="50" style="width:100%;accent-color:var(--gold);">
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-label">발 높이 (실시간)</div>
+        <div class="bar-track">
+          <div class="bar-fill" id="barFill"></div>
+          <div class="bar-thresh" id="barThresh"></div>
+        </div>
       </div>
     </div>
+
+    <div class="settings-pane" id="setPane_view">
+
+      <div class="settings-section">
+        <div class="settings-label">소리 <span id="volVal">70%</span></div>
+        <input type="range" id="sndRange" min="0" max="100" value="70" style="width:100%;accent-color:var(--gold);">
+      </div>
+
+      <hr class="settings-divider">
+
+      <div class="settings-section">
+        <div class="settings-row">
+          <div class="settings-label">2인 모드 승패 표시</div>
+          <button type="button" class="akm-sw on" id="p2ResultSw" onclick="toggleTwoPlayerShowResult()" aria-label="2인 모드 승패 표시"></button>
+        </div>
+        <div class="settings-hint">
+          꺼두면 경기가 끝나도 "청 승리" 같은 표시 없이 양쪽 점수만 보여줍니다.
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-pane" id="setPane_dev">
+
+      <button class="settings-home-btn" type="button" id="shortcutBtn" style="margin-top:0;">바탕화면에 바로가기 추가</button>
+      <button class="settings-home-btn" type="button" onclick="location.href='/kickmaster'">홈페이지로 돌아가기</button>
+
+      <hr class="settings-divider">
+
+      <button class="settings-pw-btn" onclick="logoutLicense()">라이선스 로그아웃</button>
+      <div class="settings-hint">다음 실행 때 라이선스 키를 다시 넣어야 합니다.</div>
+    </div>
+
   </div>
 </div>
 
@@ -3928,7 +3974,7 @@ body.hud-v21.akm-ui.sparring-mode .stats-row{
     <div class="settings-section">
       <div class="settings-label">기록 <span id="labRecState">꺼짐</span></div>
       <button class="settings-home-btn" type="button" id="labRecBtn" onclick="toggleLabRecording()" style="margin-top:0;">기록 시작</button>
-      <div style="font-size:12px;opacity:.6;margin-top:6px;line-height:1.5;">
+      <div class="settings-hint">
         켜 두면 차는 발차기마다 특징값이 쌓입니다. 이름·영상은 저장하지 않습니다.
       </div>
     </div>
@@ -3937,7 +3983,7 @@ body.hud-v21.akm-ui.sparring-mode .stats-row{
 
     <div class="settings-section">
       <div class="settings-label">쌓인 자료 <span id="diagCount">0건</span></div>
-      <div id="diagRange" style="font-size:12px;opacity:.65;margin:-4px 0 8px;"></div>
+      <div id="diagRange" class="settings-hint" style="margin:-2px 0 10px;"></div>
       <button class="settings-home-btn" type="button" onclick="downloadDiagLog()" style="margin-top:0;">JSON으로 다운로드</button>
       <button class="settings-home-btn" type="button" onclick="clearDiagLog()">기록 비우기</button>
     </div>
@@ -3945,15 +3991,39 @@ body.hud-v21.akm-ui.sparring-mode .stats-row{
     <hr class="settings-divider">
 
     <div class="settings-section">
+      <div class="settings-row">
+        <div class="settings-label">화면 흐림 효과</div>
+        <button type="button" class="akm-sw on" id="bdfSw" onclick="toggleBackdropFx()" aria-label="화면 흐림 효과"></button>
+      </div>
+      <div class="settings-hint">
+        글자 상자 뒤가 뿌옇게 보이는 효과입니다. 끄면 느린 기기에서 빨라질 수
+        있습니다. 진단 기록에 <b>bdf</b> 로 남습니다.
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-row">
+        <div class="settings-label">2인 인식 · 좌우 나눠보기</div>
+        <button type="button" class="akm-sw" id="p2CropSw" onclick="toggleCrop2p()" aria-label="2인 인식 좌우 나눠보기"></button>
+      </div>
+      <div class="settings-hint">
+        켜면 청·홍을 각각 따로 잘라서 인식합니다. 두 선수가 서로 붙으면
+        약해집니다. 진단 기록에 <b>detMode</b> 로 남습니다.
+      </div>
+    </div>
+
+    <hr class="settings-divider">
+
+    <div class="settings-section">
       <div class="settings-label">지금 (실시간)</div>
-      <div id="labLive" style="font-size:12px;line-height:1.7;color:#cdd8e8;font-family:ui-monospace,monospace;">카메라를 켜면 표시됩니다</div>
+      <div id="labLive" style="font-size:12px;line-height:1.7;color:var(--s-txt);font-family:ui-monospace,monospace;">카메라를 켜면 표시됩니다</div>
     </div>
 
     <hr class="settings-divider">
 
     <div class="settings-section">
       <div class="settings-label">마지막 발차기</div>
-      <div id="labLastKick" style="font-size:12px;line-height:1.7;color:#cdd8e8;font-family:ui-monospace,monospace;">아직 없습니다</div>
+      <div id="labLastKick" style="font-size:12px;line-height:1.7;color:var(--s-txt);font-family:ui-monospace,monospace;">아직 없습니다</div>
     </div>
   </div>
 </div>
@@ -4022,39 +4092,84 @@ const MODE_CFG={
   yeop_l:   {rank:false, isDrill:true,  measureOnly:true, label:'옆차기 왼발',   kick:'yeop', foot:'left'},
   dwi_r:    {rank:false, isDrill:true,  measureOnly:true, label:'뒤차기 오른발', kick:'dwi',  foot:'right'},
   dwi_l:    {rank:false, isDrill:true,  measureOnly:true, label:'뒤차기 왼발',   kick:'dwi',  foot:'left'},
+
+  apcha_x:  {rank:false, isDrill:true,  label:'앞차기 번갈아',   kick:'apcha', foot:'alt'},
+  dollo_x:  {rank:false, isDrill:true,  label:'돌려차기 번갈아', kick:'dollo', foot:'alt'},
+  yeop_x:   {rank:false, isDrill:true,  measureOnly:true, label:'옆차기 번갈아', kick:'yeop', foot:'alt'},
+  dwi_x:    {rank:false, isDrill:true,  measureOnly:true, label:'뒤차기 번갈아', kick:'dwi',  foot:'alt'},
 };
 
 function isMeasureOnlyMode(){ return MODE_CFG[currentMode]?.measureOnly===true; }
 
 const ALL_KICK_MODES=['apcha_r','apcha_l','dollo_r','dollo_l','yeop_r','yeop_l','dwi_r','dwi_l'];
 
-const AUTODRILL_LS_KEY='akm_autodrill_v1';
-let autoDrillPick=(()=>{
+const ALT_KICK_MODES=['apcha_x','dollo_x','yeop_x','dwi_x'];
+
+const EVERY_KICK_MODE=ALL_KICK_MODES.concat(ALT_KICK_MODES);
+
+const KICK_KINDS=['apcha','dollo','yeop','dwi'];
+
+const AUTODRILL_LS_KEY='akm_autodrill_v2';
+let drillKicks=['apcha','dollo'];   
+let drillFoot='both';               
+(function loadDrillPick(){
   try{
     const raw=localStorage.getItem(AUTODRILL_LS_KEY);
     if(raw){
-      const arr=JSON.parse(raw).filter(m=>ALL_KICK_MODES.includes(m));
-      if(arr.length) return arr;
+      const o=JSON.parse(raw);
+      const ks=(o.kicks||[]).filter(k=>KICK_KINDS.includes(k));
+      if(ks.length) drillKicks=ks;
+      if(['right','left','both','alt'].includes(o.foot)) drillFoot=o.foot;
+      return;
+    }
+
+    const old=localStorage.getItem('akm_autodrill_v1');
+    if(old){
+      const arr=JSON.parse(old).filter(m=>ALL_KICK_MODES.includes(m));
+      if(arr.length){
+        const ks=KICK_KINDS.filter(k=>arr.some(m=>m.indexOf(k+'_')===0));
+        if(ks.length) drillKicks=ks;
+        const hasR=arr.some(m=>m.slice(-2)==='_r'), hasL=arr.some(m=>m.slice(-2)==='_l');
+        drillFoot = (hasR&&hasL) ? 'both' : hasR ? 'right' : hasL ? 'left' : 'both';
+      }
     }
   }catch(e){}
-  return ['apcha_r','apcha_l','dollo_r','dollo_l'];   
 })();
+function saveDrillPick(){
+  try{ localStorage.setItem(AUTODRILL_LS_KEY, JSON.stringify({kicks:drillKicks, foot:drillFoot})); }catch(e){}
+}
 
-function autoDrillModes(){ return ALL_KICK_MODES.filter(m=>autoDrillPick.includes(m)); }
+function autoDrillModes(){
+  const ks=KICK_KINDS.filter(k=>drillKicks.includes(k));
+  if(!ks.length) return [];
+  if(drillFoot==='alt')   return ks.map(k=>k+'_x');
+  if(drillFoot==='right') return ks.map(k=>k+'_r');
+  if(drillFoot==='left')  return ks.map(k=>k+'_l');
+  const out=[]; ks.forEach(k=>{ out.push(k+'_r'); out.push(k+'_l'); });
+  return out;
+}
 
 function activeKickModes(){ const a=autoDrillModes(); return a.length?a:[ALL_KICK_MODES[0]]; }
 function isDrillMode(){ return MODE_CFG[currentMode]?.isDrill===true; }
-function currentGuideMode(){
-  if(currentMode==='sparring' && sparringMode==='practice' && sparringMission) return sparringMission.mode;
-  return currentMode;
-}
 function drillKickType(){
   if(currentMode==='sparring' && sparringMode==='practice' && sparringMission) return sparringMission.kick;
   return MODE_CFG[currentMode]?.kick || '';
 }
+
+let altFoot='right';   
 function selectedFoot(){
   if(currentMode==='sparring' && sparringMode==='practice' && sparringMission) return sparringMission.foot;
-  return MODE_CFG[currentMode]?.foot || null;
+  const f=MODE_CFG[currentMode]?.foot;
+  if(f==='alt') return altFoot;
+  return f || null;
+}
+
+function altFootReset(){ altFoot='right'; }
+
+function altFootAdvance(){
+  if(MODE_CFG[currentMode]?.foot!=='alt') return;
+  altFoot = (altFoot==='right') ? 'left' : 'right';
+  if(typeof updateModeBadge==='function') updateModeBadge();   
 }
 function guideTargetPct(){
   if(currentMode==='sparring' && sparringMode==='practice' && sparringMission) return sparringMission.targetPct;
@@ -4240,7 +4355,7 @@ function initDrillRunMode(){
 }
 function updateSelectedKickButtons(){
 
-  ALL_KICK_MODES.concat(['balloon','sparring']).forEach(m=>{
+  EVERY_KICK_MODE.concat(['balloon','sparring']).forEach(m=>{
     const el=document.getElementById('m_'+m);
     if(el) el.classList.toggle('active',m===currentMode);
   });
@@ -4427,8 +4542,7 @@ window.setBackdropFx=(on)=>{
   backdropFxOn=!!on;
   try{ localStorage.setItem('akm_backdrop_fx', backdropFxOn?'1':'0'); }catch(e){}
   document.body.classList.toggle('akm-nobdf', !backdropFxOn);
-  document.getElementById('bdfOnBtn')?.classList.toggle('active', backdropFxOn);
-  document.getElementById('bdfOffBtn')?.classList.toggle('active', !backdropFxOn);
+  document.getElementById('bdfSw')?.classList.toggle('on', backdropFxOn);
   if(typeof statusEl!=='undefined'){
     statusEl.style.opacity='1';
     statusEl.textContent=backdropFxOn?'화면 흐림 효과를 켰습니다':'화면 흐림 효과를 껐습니다';
@@ -4439,9 +4553,9 @@ function initBackdropFx(){
   try{ saved=localStorage.getItem('akm_backdrop_fx') || '1'; }catch(e){}
   backdropFxOn=(saved!=='0');
   document.body.classList.toggle('akm-nobdf', !backdropFxOn);
-  document.getElementById('bdfOnBtn')?.classList.toggle('active', backdropFxOn);
-  document.getElementById('bdfOffBtn')?.classList.toggle('active', !backdropFxOn);
+  document.getElementById('bdfSw')?.classList.toggle('on', backdropFxOn);
 }
+window.toggleBackdropFx=()=>setBackdropFx(!backdropFxOn);
 
 function initSparringMode(){
   let saved='speed';
@@ -5064,6 +5178,11 @@ function modeTitleText(){
     return ['겨루기 실전모드','키에 맞춰 나오는 머리/몸통 타겟 공격'];
   }
   const autoPrefix=(drillRunMode==='auto' ? '자동 '+autoDrillStageLabel()+' · ' : '');
+
+  const cfgX=MODE_CFG[currentMode];
+  if(cfgX && cfgX.foot==='alt'){
+    return [autoPrefix+cfgX.label, (altFoot==='right'?'오른발':'왼발')+' 차례 · 한 번씩 번갈아 찹니다'];
+  }
   if(currentMode==='apcha_r') return [autoPrefix+'앞차기 오른발','오른발로 중앙선 위로 곧게 차기'];
   if(currentMode==='apcha_l') return [autoPrefix+'앞차기 왼발','왼발로 중앙선 위로 곧게 차기'];
   if(currentMode==='dollo_r') return [autoPrefix+'돌려차기 오른발','오른발 화살표를 따라 회전'];
@@ -5984,7 +6103,8 @@ function drawDolloGuide(){
   const rawBodyX=smHipX*W;
   const visualBodyX=mirrored ? W-rawBodyX : rawBodyX;
   const toCanvasX=(visualX)=> mirrored ? W-visualX : visualX;
-  const visualSide = (currentGuideMode()==='dollo_r') ? 1 : -1;
+
+  const visualSide = (selectedFoot()==='right') ? 1 : -1;
 
   const faceY=Math.max(H*0.14, Math.min(H*0.46, (smHipY - smTorso*0.98)*H));
   const topY=faceY;
@@ -6753,6 +6873,7 @@ window.startGame=()=>{
 };
 
 function resetCounters(){
+  altFootReset();    
   holdSaveCount=0;   
   lastKickCompleteT=0;
   groundSince=0;     
@@ -6826,9 +6947,22 @@ function stopGame(){
   clearHudScores();   
 }
 
+window.switchSettingsTab=(name)=>{
+  ['train','view','dev'].forEach(k=>{
+    const btn=document.getElementById('setTabBtn_'+k);
+    const pane=document.getElementById('setPane_'+k);
+    if(btn)  btn.classList.toggle('on',  k===name);
+    if(pane) pane.classList.toggle('on', k===name);
+  });
+  const box=document.querySelector('#settingsModal .settings-modal-box');
+  if(box) box.scrollTop=0;
+};
+
 window.toggleHudSettings=()=>{
   const modal = document.getElementById('settingsModal');
+  const opening = !modal.classList.contains('show');
   modal.classList.toggle('show');
+  if(opening) switchSettingsTab('train');
 };
 window.logoutLicense=()=>{
   if(!confirm('라이선스 로그아웃 하시겠습니까? 다음 실행 시 라이선스 키를 다시 입력해야 합니다.')) return;
@@ -7036,7 +7170,8 @@ function labRowsHtml(m){
   const TH=effThreshPct();
   const over=m.pct>=TH;
   const vis=m.visibility??0;
-  const row=(k,v,warn)=>'<div><span style="opacity:.55">'+k+'</span> <span style="color:'+(warn?'#ff8795':'#cdd8e8')+'">'+v+'</span></div>';
+  
+  const row=(k,v,warn)=>'<div><span style="color:var(--s-dim)">'+k+'</span> <span style="color:'+(warn?'#ff8f9c':'var(--s-txt)')+'">'+v+'</span></div>';
   return row('발 높이', Math.round(m.pct)+'% (기준 '+Math.round(TH)+'%)', !over)+
     row('기준선 넘음', over?'예':'아니오', !over)+
     row('발 보임', vis.toFixed(2), vis<0.5)+
@@ -7118,7 +7253,7 @@ window.setMode=(mode)=>{
     document.body.classList.toggle('sparring-live', mode==='sparring' && sparringMode==='live');
     document.body.classList.toggle('sparring-speed', mode==='sparring' && sparringMode==='speed');
   }catch(e){}
-  ensureAudio(); stopGame(); currentMode=mode; updateModeBadge(); updateKickButtonVisibility();
+  ensureAudio(); stopGame(); currentMode=mode; altFootReset(); updateModeBadge(); updateKickButtonVisibility();
   
   if(typeof twoPlayerMode!=='undefined' && twoPlayerMode) reset2pAll();
   const drillPanel=document.getElementById('drillModePanel');
@@ -7155,13 +7290,17 @@ function syncAutoDrillSequence(){
   const use=activeKickModes();
   AUTO_DRILL_SEQUENCE=use.slice();
 
-  document.querySelectorAll('.autodrill-chip').forEach(btn=>{
-    btn.classList.toggle('on', use.includes(btn.dataset.mode));
+  document.querySelectorAll('.autodrill-chip[data-kind]').forEach(btn=>{
+    btn.classList.toggle('on', drillKicks.includes(btn.dataset.kind));
   });
+  document.querySelectorAll('.autodrill-chip[data-foot]').forEach(btn=>{
+    btn.classList.toggle('on', btn.dataset.foot===drillFoot);
+  });
+  
   const cnt=document.getElementById('autoDrillCount');
-  if(cnt) cnt.textContent=use.length+'종';
+  if(cnt) cnt.textContent=drillPickSentence();
 
-  ALL_KICK_MODES.forEach(m=>{
+  EVERY_KICK_MODE.forEach(m=>{
     const btn=document.getElementById('m_'+m);
     if(!btn) return;
     if(use.includes(m)) btn.style.removeProperty('display');
@@ -7170,37 +7309,58 @@ function syncAutoDrillSequence(){
 
   if(MODE_CFG[currentMode]?.isDrill && !use.includes(currentMode)){
     currentMode=use[0];
+    altFootReset();
     updateSelectedKickButtons(); updateModeBadge(); renderStats();
   }
 }
-window.toggleAutoDrillPick=function(mode){
-  if(!ALL_KICK_MODES.includes(mode)) return;
-  const on=autoDrillPick.includes(mode);
-  
-  if(on && autoDrillPick.length<=1){
+const KICK_KIND_LABEL={apcha:'앞', dollo:'돌려', yeop:'옆', dwi:'뒤'};
+const FOOT_LABEL={right:'오른발로', left:'왼발로', both:'양발로', alt:'번갈아'};
+
+function drillPickSentence(){
+  const ks=KICK_KINDS.filter(k=>drillKicks.includes(k)).map(k=>KICK_KIND_LABEL[k]);
+  if(!ks.length) return '없음';
+  return ks.join('·')+'를 '+FOOT_LABEL[drillFoot];
+}
+
+function applyDrillPickChange(){
+  saveDrillPick();
+  syncAutoDrillSequence();
+  if(!running && isDrillMode() && drillRunMode==='auto'){
+    autoDrillIndex=0;
+    currentMode=AUTO_DRILL_SEQUENCE[0];
+    altFootReset();
+    updateSelectedKickButtons(); updateModeBadge(); renderStats();
+  }
+}
+
+window.toggleDrillKick=function(kind){
+  if(!KICK_KINDS.includes(kind)) return;
+  const on=drillKicks.includes(kind);
+
+  if(on && drillKicks.length<=1){
     statusEl.style.opacity='1';
     statusEl.textContent='발차기는 최소 하나는 남겨야 합니다.';
     return;
   }
-
   if(running && isDrillMode()) stopGame();
-  autoDrillPick = on ? autoDrillPick.filter(m=>m!==mode) : autoDrillPick.concat([mode]);
-  try{ localStorage.setItem(AUTODRILL_LS_KEY, JSON.stringify(autoDrillPick)); }catch(e){}
-  syncAutoDrillSequence();
+  drillKicks = on ? drillKicks.filter(k=>k!==kind) : drillKicks.concat([kind]);
+  applyDrillPickChange();
+};
 
-  if(!running && isDrillMode() && drillRunMode==='auto'){
-    autoDrillIndex=0;
-    currentMode=AUTO_DRILL_SEQUENCE[0];
-    updateSelectedKickButtons(); updateModeBadge(); renderStats();
-  }
+window.setDrillFoot=function(foot){
+  if(!['right','left','both','alt'].includes(foot)) return;
+  if(foot===drillFoot){ syncAutoDrillSequence(); return; }
+  if(running && isDrillMode()) stopGame();
+  drillFoot=foot;
+  altFootReset();
+  applyDrillPickChange();
 };
 
 window.applyBetaVisibility=function(){
   const on=!!(window.akmIsBeta && window.akmIsBeta());
 
   document.body.classList.toggle('beta-on', on);
-  const hint=document.getElementById('labHintSection');
-  if(hint) hint.style.display=on?'block':'none';
+
   if(!on) diagMode=false;               
 };
 
@@ -7231,7 +7391,12 @@ function onKickComplete(peak){
 
   rearmNeeded=true;
   sndKick();
-  if(isDrillMode()){ onDrillKick(peak); }
+  if(isDrillMode()){
+
+    const modeBefore=currentMode;
+    onDrillKick(peak);
+    if(currentMode===modeBefore) altFootAdvance();
+  }
   else if(currentMode==='sparring'){ handleSparringKick(peak); }
   else {
 
@@ -7627,6 +7792,7 @@ function makeKickSlot(key){
     
     kickTopFootY:null, kickRefTorso:null, rearmNeeded:false, groundSince:0,   
     nearPeak:0, nearAboveN:0, nearProj:0, kickFoot:null,   
+    altFoot:'right',   
     trajX:[], trajY:[], trajHipX:[], trajTorso:[], trajHipW:[], trajKneeX:[], trajKneeAngle:[], trajHipVis:[], trajKneeVis:[], trajKneeAngle3D:[], trajShoulderW:[],
 
     preT:[], preFootY:[], preKneeAngle:[], preKneeVis:[], preKneeAngle3D:[], preTraj:[],
@@ -7647,6 +7813,7 @@ function saveToSlot(slot){
   slot.kickTopFootY=kickTopFootY; slot.kickRefTorso=kickRefTorso; slot.rearmNeeded=rearmNeeded;  
   slot.groundSince=groundSince;   
   slot.nearPeak=nearPeak; slot.nearAboveN=nearAboveN; slot.nearProj=nearProj; slot.kickFoot=kickFoot;
+  slot.altFoot=altFoot;   
   slot.trajX=trajX; slot.trajY=trajY; slot.trajHipX=trajHipX; slot.trajTorso=trajTorso; slot.trajHipW=trajHipW;
   slot.trajKneeX=trajKneeX; slot.trajKneeAngle=trajKneeAngle; slot.trajHipVis=trajHipVis; slot.trajKneeVis=trajKneeVis;
   slot.trajKneeAngle3D=trajKneeAngle3D; slot.trajShoulderW=trajShoulderW;
@@ -7665,6 +7832,7 @@ function loadFromSlot(slot){
   rearmNeeded=!!slot.rearmNeeded;
   groundSince=slot.groundSince||0;   
   nearPeak=slot.nearPeak||0; nearAboveN=slot.nearAboveN||0; nearProj=slot.nearProj||0; kickFoot=slot.kickFoot||null;
+  altFoot=slot.altFoot||'right';   
   trajX=slot.trajX; trajY=slot.trajY; trajHipX=slot.trajHipX; trajTorso=slot.trajTorso; trajHipW=slot.trajHipW;
   trajKneeX=slot.trajKneeX; trajKneeAngle=slot.trajKneeAngle; trajHipVis=slot.trajHipVis; trajKneeVis=slot.trajKneeVis;
   trajKneeAngle3D=slot.trajKneeAngle3D; trajShoulderW=slot.trajShoulderW;
@@ -7736,9 +7904,9 @@ function initCrop2p(){
   paintCrop2pBtns();
 }
 function paintCrop2pBtns(){
-  document.getElementById('p2CropOnBtn')?.classList.toggle('active', crop2pEnabled);
-  document.getElementById('p2CropOffBtn')?.classList.toggle('active', !crop2pEnabled);
+  document.getElementById('p2CropSw')?.classList.toggle('on', crop2pEnabled);
 }
+window.toggleCrop2p=()=>setCrop2p(!crop2pEnabled);
 window.setCrop2p=async function(on){
   const next=!!on;
   if(next===crop2pEnabled){ paintCrop2pBtns(); return; }
@@ -7856,9 +8024,11 @@ try{
 window.setTwoPlayerShowResult=function(on){
   twoPlayerShowResult=!!on;
   try{ localStorage.setItem('akm_2p_show_result', twoPlayerShowResult?'1':'0'); }catch(e){}
-  document.getElementById('p2ResultOnBtn')?.classList.toggle('active', twoPlayerShowResult);
-  document.getElementById('p2ResultOffBtn')?.classList.toggle('active', !twoPlayerShowResult);
+  document.getElementById('p2ResultSw')?.classList.toggle('on', twoPlayerShowResult);
 };
+window.toggleTwoPlayerShowResult=()=>setTwoPlayerShowResult(!twoPlayerShowResult);
+
+document.getElementById('p2ResultSw')?.classList.toggle('on', twoPlayerShowResult);
 let p2StageResultTimer=null;
 window.closeP2Result=function(){
   if(p2StageResultTimer){ clearTimeout(p2StageResultTimer); p2StageResultTimer=null; }
