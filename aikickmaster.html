@@ -3928,20 +3928,6 @@ body.hud-v21.akm-ui.sparring-mode .stats-row{
         </div>
       </div>
 
-      <hr class="settings-divider">
-
-      <div class="settings-section">
-        <div class="settings-label">민감도 (기준 높이) <span id="sensVal">50%</span></div>
-        <input type="range" id="sens" min="25" max="85" value="50" style="width:100%;accent-color:var(--gold);">
-      </div>
-
-      <div class="settings-section">
-        <div class="settings-label">발 높이 (실시간)</div>
-        <div class="bar-track">
-          <div class="bar-fill" id="barFill"></div>
-          <div class="bar-thresh" id="barThresh"></div>
-        </div>
-      </div>
     </div>
 
     <div class="settings-pane" id="setPane_view">
@@ -3997,6 +3983,23 @@ body.hud-v21.akm-ui.sparring-mode .stats-row{
       <div id="diagRange" class="settings-hint" style="margin:-2px 0 10px;"></div>
       <button class="settings-home-btn" type="button" onclick="downloadDiagLog()" style="margin-top:0;">JSON으로 다운로드</button>
       <button class="settings-home-btn" type="button" onclick="clearDiagLog()">기록 비우기</button>
+    </div>
+
+    <hr class="settings-divider">
+
+    <div class="settings-section">
+      <div class="settings-label">발차기 인식 높이 <span id="sensVal">문턱 50%</span></div>
+      <input type="range" id="sens" min="25" max="85" value="50" style="width:100%;accent-color:var(--gold);">
+      <div class="bar-track" style="margin-top:10px;">
+        <div class="bar-fill" id="barFill"></div>
+        <div class="bar-thresh" id="barThresh"></div>
+      </div>
+      <div class="settings-hint">
+        색 막대가 지금 발 높이, 흰 줄이 문턱입니다. 발이 흰 줄을 넘어야 한 번
+        찬 것으로 셉니다. <b style="color:var(--s-txt);font-weight:500">점수는 이 값과 무관합니다</b> —
+        인정되냐 마느냐만 달라집니다.
+      </div>
+      <button class="settings-home-btn" type="button" id="sensResetBtn" onclick="resetSens()">기본값(50)으로 되돌리기</button>
     </div>
 
     <hr class="settings-divider">
@@ -5117,8 +5120,21 @@ function confetti(big=false){
   })(start);
 }
 
-sensEl.addEventListener('input',()=>{ threshPct=parseInt(sensEl.value); applyThreshUi(); });
-barThresh.style.left=threshPct+'%';
+const SENS_LS_KEY='akm_sens_v1', SENS_DEFAULT=50;
+function applySens(v, save, paint){
+  threshPct=Math.max(25, Math.min(85, parseInt(v)||SENS_DEFAULT));
+  if(sensEl) sensEl.value=threshPct;          
+  if(save){ try{ localStorage.setItem(SENS_LS_KEY, String(threshPct)); }catch(e){} }
+  if(paint!==false) applyThreshUi();
+}
+window.resetSens=()=>applySens(SENS_DEFAULT, true);
+sensEl.addEventListener('input',()=>applySens(sensEl.value, true));
+
+(function initSens(){
+  let v=SENS_DEFAULT;
+  try{ const raw=localStorage.getItem(SENS_LS_KEY); if(raw!=null) v=parseInt(raw); }catch(e){}
+  applySens(v, false, false);
+})();
 
 function avgOf(arr){ return arr.length?Math.round(arr.reduce((a,b)=>a+b,0)/arr.length):null; }
 function renderStats(){
@@ -5544,8 +5560,14 @@ function effThreshPct(){
   return Math.max(12, Math.min(100, threshPct + (JUDGE.THRESH_OFFSET||0) + p2Offset - lowFps));
 }
 function applyThreshUi(){
-  if(typeof barThresh!=='undefined' && barThresh) barThresh.style.left=effThreshPct()+'%';
-  if(typeof sensVal!=='undefined' && sensVal) sensVal.textContent=threshPct+'%';
+  const eff=effThreshPct();
+  if(typeof barThresh!=='undefined' && barThresh) barThresh.style.left=eff+'%';
+
+  if(typeof sensVal!=='undefined' && sensVal){
+    const off=(typeof SENS_DEFAULT!=='undefined' && threshPct!==SENS_DEFAULT);
+    sensVal.textContent='문턱 '+Math.round(eff)+'%'+(off?' · 기본 아님':'');
+    sensVal.style.color=off?'var(--gold)':'';
+  }
 }
 window.setKickLevel=(level)=>{
   if(level!=='easy' && level!=='hard') return;
