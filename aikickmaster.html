@@ -370,6 +370,9 @@ body.hud-v21.sparring-mode #gameArea .balloon-time-row{display:none !important;}
 body.hud-v21.balloon-mode #gameArea .sparring-time-row{display:none !important;}
 
 body.hud-v21.sparring-speed #gameArea .sparring-time-row{display:none !important;}
+
+.sparring-round-row{display:none !important;}
+body.hud-v21.sparring-speed #gameArea .sparring-round-row{display:flex !important;}
 body.hud-v21 .drill-count-row{display:flex; gap:7px; align-items:center; width:100%;}
 body.hud-v21 .drill-count-row label{font-size:11px; color:#dbeaff; font-weight:800; white-space:nowrap;}
 body.hud-v21 .drill-count-row select{flex:1; height:32px; border-radius:10px; padding:0 8px; color:#fff; font-size:12px; font-weight:800; background:rgba(8,20,38,.76); border:1px solid rgba(130,178,255,.28);}
@@ -3787,6 +3790,14 @@ body.hud-v21.akm-ui.sparring-mode .stats-row{
           <option value="45">45초</option>
         </select>
       </div>
+      
+      <div class="drill-count-row sparring-round-row">
+        <label>겨루기 판수</label>
+        <select id="sparringRoundSel">
+          <option value="3" selected>3판 2승</option>
+          <option value="5">5판 3승</option>
+        </select>
+      </div>
       <button id="startBtn2" class="primary-start" onclick="startGame()">시작!</button>
       <div id="gameResult2" style="text-align:center;font-size:13px;font-weight:700;color:var(--green);min-height:18px;"></div>
     </div>
@@ -4068,6 +4079,7 @@ const drillCountArea=document.getElementById('drillCountArea');
 const drillCountSel=document.getElementById('drillCountSel');
 const balloonTimeSel=document.getElementById('balloonTimeSel');
 const sparringTimeSel=document.getElementById('sparringTimeSel');
+const sparringRoundSel=document.getElementById('sparringRoundSel');   
 const gameArea=document.getElementById('gameArea');
 
 const startBtn=document.getElementById('startBtn');
@@ -4583,10 +4595,19 @@ function sparringModeLabel(){
 const SPEED_WAIT_MIN=500, SPEED_WAIT_MAX=2000;  
 const SPEED_COUNT_MS=800;                        
 const SPEED_TIMEOUT_MS=6000;                     
+
 const SPEED_WIN_NEED=2;                          
 const SPEED_MAX_ROUND=3;
 const SPEED_FS_LIMIT=2;                          
 const SPEED_TRIES_1P=3;                          
+
+function speedRoundSetting(){
+  return parseInt(sparringRoundSel && sparringRoundSel.value || '3')===5 ? 5 : 3;
+}
+
+function speedTries1p(){
+  return speedGame ? speedGame.tries1p : speedRoundSetting();
+}
 
 const SPEED_EARLY_PCT=20;
 const SPEED_MIN_MS=300;
@@ -4605,8 +4626,11 @@ function speedClear(){
   speedPrev={c:null,h:null};
 }
 function speedNewState(){
+
+  const n=speedRoundSetting();
   return {phase:'idle', round:1, win:{c:0,h:0}, fs:{c:0,h:0},
-          rec:{c:null,h:null}, goT:0, tries:0, times:[]};
+          rec:{c:null,h:null}, goT:0, tries:0, times:[],
+          maxRound:n, winNeed:(n===5?3:2), tries1p:n};
 }
 function speedFmt(ms){ return ms==null ? '—' : (ms/1000).toFixed(1)+'초'; }
 
@@ -4667,7 +4691,7 @@ function speedBeginRound(){
   })();
 }
 function speedRoundLabel(){
-  if(!twoPlayerMode) return (speedGame.tries+1)+' / '+SPEED_TRIES_1P+' 번째';
+  if(!twoPlayerMode) return (speedGame.tries+1)+' / '+speedTries1p()+' 번째';
   return speedGame.round+'판 · 청 '+speedGame.win.c+' : '+speedGame.win.h+' 홍';
 }
 
@@ -4768,7 +4792,7 @@ function speedEndRound(reason){
     statusEl.style.opacity='1';
     statusEl.textContent = t!=null ? speedFmt(t)+'!' : (reason||'기록 없음');
     speedRender();
-    if(speedGame.tries>=SPEED_TRIES_1P){ speedTimer=setTimeout(speedFinish,900); return; }
+    if(speedGame.tries>=speedTries1p()){ speedTimer=setTimeout(speedFinish,900); return; }
     speedTimer=setTimeout(()=>{ if(speedGame && running) speedBeginRound(); }, 1400);
     return;
   }
@@ -4790,8 +4814,8 @@ function speedAwardRound(winner, why){
   if(winner) speedGame.win[winner]++;
   speedRender();
   showP2Notice((winner==null?'무승부':(winner==='c'?'청':'홍')+' 승')+' · '+why);
-  const over = speedGame.win.c>=SPEED_WIN_NEED || speedGame.win.h>=SPEED_WIN_NEED
-            || speedGame.round>=SPEED_MAX_ROUND;
+  const over = speedGame.win.c>=speedGame.winNeed || speedGame.win.h>=speedGame.winNeed
+            || speedGame.round>=speedGame.maxRound;
   if(over){ speedTimer=setTimeout(speedFinish,1200); return; }
   speedGame.round++;
   speedTimer=setTimeout(()=>{ if(speedGame && running) speedBeginRound(); }, 1600);
@@ -5108,7 +5132,7 @@ function renderStats(){
   } else if(currentMode==='sparring'){
     if(sparringMode==='speed'){
       const s=speedGame;
-      lblA.textContent='시도'; valA.textContent=(s?s.tries:0)+' / '+SPEED_TRIES_1P;
+      lblA.textContent='시도'; valA.textContent=(s?s.tries:0)+' / '+speedTries1p();
       lblB.textContent='이번 기록'; valB.textContent=(s&&s.rec.c!=null)?speedFmt(s.rec.c):'—'; valB.style.color='var(--gold)';
       if(scoreGrade) scoreGrade.style.display='none';
       lblC.textContent='최고'; valC.textContent=(s&&s.times.length)?speedFmt(Math.min(...s.times)):'—';
@@ -5166,8 +5190,9 @@ function angleDeg(a,b,c){
 function modeTitleText(){
   if(currentMode==='sparring'){
     if(sparringMode==='speed'){
-      return ['겨루기 스피드', twoPlayerMode ? '삐 소리에 먼저 차는 쪽이 승 · 3판 2선승'
-                                            : '삐 소리에 얼마나 빨리 차는지 · '+SPEED_TRIES_1P+'번'];
+      const _n=speedRoundSetting();
+      return ['겨루기 스피드', twoPlayerMode ? '삐 소리에 먼저 차는 쪽이 승 · '+_n+'판 '+(_n===5?3:2)+'승'
+                                            : '삐 소리에 얼마나 빨리 차는지 · '+speedTries1p()+'번'];
     }
     if(sparringMode==='practice'){
       const mission=sparringMission;
@@ -9406,6 +9431,9 @@ html.akm-phone body.hud-v21.akm-ui .hud-settings-btn{
   min-width:62px !important;
   padding:6px 12px !important;
 }
+
+body.hud-v21 #gameArea .drill-count-row.sparring-round-row{ display:none !important; }
+body.hud-v21.sparring-speed #gameArea .drill-count-row.sparring-round-row{ display:flex !important; }
 
 </style>
 <script id="fix4-start-stop-text-helper">
