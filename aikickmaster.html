@@ -5268,25 +5268,7 @@ const JUDGE_HARD={
   MIN_RISE_T:0.14,
   
   KNEE_VIS_MIN:0.35,
-  ROUND:{
-    
-    LAT_T:0.16,
-    NET_T:0.075,
-    LAT_SUPPORT_T:0.12,
-    HIP_TURN:0.74,
-    HIP_TURN_WEAK:0.87,
-    HIP_TURN_FRAMES:2,
-    HIP_VIS_MIN:0.50,
-    KNEE_OPEN_T:0.10,
-    KNEE_NET_T:0.06,
-    KNEE_EXT_DEG:25,
-    
-    CORRIDOR_SOFT_T:0.13,
-    CORRIDOR_HARD_T:0.24,
-    CORRIDOR_MIN_FIT:0.38,
-    SCORE_RISE_SPAN:0.69,
-    SCORE_LAT_SPAN:0.42
-  },
+  ROUND:{},
 
   FRONT:{
     
@@ -5326,25 +5308,7 @@ const JUDGE_EASY={
   MIN_FOOT_SPEED:0.0003,
   MIN_RISE_T:0.045,
   KNEE_VIS_MIN:0.30,
-  ROUND:{
-
-    LAT_T:0.045,
-    NET_T:0.018,
-    LAT_SUPPORT_T:0.032,
-    HIP_TURN:0.92,
-    HIP_TURN_WEAK:0.98,
-    HIP_TURN_FRAMES:1,
-    HIP_VIS_MIN:0.35,
-    KNEE_OPEN_T:0.030,
-    KNEE_NET_T:0.016,
-
-    KNEE_EXT_DEG:20,
-    CORRIDOR_SOFT_T:0.36,
-    CORRIDOR_HARD_T:0.60,
-    CORRIDOR_MIN_FIT:0.09,
-    SCORE_RISE_SPAN:0.44,
-    SCORE_LAT_SPAN:0.28
-  },
+  ROUND:{},
 
   FRONT:{
 
@@ -5375,15 +5339,7 @@ const JUDGE_EASY={
   }
 };
 
-const KICK_TYPE={
-  LAT_DOLLO:0.35,   
-  LAT_APCHA:0.20,   
-  HIPW_AMBIG:0.72,  
-
-  SW_FRONT:0.70,
-
-  LAT_HARD_DOLLO:0.70
-};
+const KICK_TYPE={};
 
 function classifyKick(f){
 
@@ -5395,24 +5351,8 @@ function classifyKick(f){
   return (f.hipWRatio<=KICK_TYPE.HIPW_AMBIG) ? 'dollo' : 'apcha';
 }
 
-const V3_HARD={
-  RISE_MIN:1.2,          
-  H_LO:2.4, H_HI:4.4,    
-  CORR:0.27,             
-  C_LO:67, C_HI:120,     
-  CH_REJECT:true,
-  HIP_HI:0.80, HIP_LO:0.50,
-  BASE:48, SPAN:52
-};
-const V3_EASY={
-  RISE_MIN:0.8,
-  H_LO:1.6, H_HI:4.0,
-  CORR:0.70,
-  C_LO:35, C_HI:110,
-  CH_REJECT:false,
-  HIP_HI:0.80, HIP_LO:0.50,
-  BASE:58, SPAN:42
-};
+const V3_HARD={};
+const V3_EASY={};
 
 function V3(){ return (kickLevel==='easy')?V3_EASY:V3_HARD; }
 
@@ -5524,25 +5464,15 @@ function scoreMeasureOnly(f,want){
           hScore:+hScore.toFixed(3), rot:+rot.toFixed(3), factor:+factor.toFixed(3)};
 }
 
-const MEASURE_GATE={
-  YEOP_SW  : 0.70,  
-  DWI_SW   : 0.60,  
-  DWI_KMIN : 105    
-};
+const MEASURE_GATE={};
 
-const DWI_FOOT={ FLAT:25, UP:45, PENALTY:0.15 };
+const DWI_FOOT={};
 
-const DWI_KNEE={ REJECT:8, LO:8, HI:45, PENALTY:0.25 };
+const DWI_KNEE={};
 
-const MEASURE_H={
-  yeop:{H_LO:1.0, H_HI:3.0},   
-  dwi :{H_LO:1.0, H_HI:3.0}    
-};
+const MEASURE_H={};
 
-const MEASURE_H_HARD={
-  yeop:{H_LO:1.2, H_HI:3.8},
-  dwi :{H_LO:1.2, H_HI:3.8}
-};
+const MEASURE_H_HARD={};
 
 function measureHFor(want){
   const t=(kickLevel==='easy') ? MEASURE_H : MEASURE_H_HARD;
@@ -6232,13 +6162,9 @@ function drawDolloGuide(){
   ctx.restore();
 }
 
-const GUIDE_SHAPE={
-  yeop:{ startVX: 0.31, ctrlVX:-0.094, endVX: 0.094, ctrlU:0.30, ty:84, knee:true,  rot:false },
+const GUIDE_SHAPE={};
 
-  dwi :{ startVX:-0.31, ctrlVX: 0.14,  endVX: 0,     ctrlU:0.45, ty:80, knee:false, rot:true  }
-};
-
-const GUIDE_KNEE={ X:0.75, MIDY:0.20, LEN:0.60, HITX:0.42, HITY:0.45 };
+const GUIDE_KNEE={};
 
 const GUIDE_YEOP_LIFT=1.00;
 
@@ -7162,15 +7088,32 @@ function diagLogSpeed(reason, extra){
   diagLogSubmit(entry);
 }
 
-window.downloadDiagLog=function(){
+window.downloadDiagLog=async function(){
   if(!diagLog.length){ alert('아직 기록된 발차기가 없습니다.'); return; }
+  const stamp=new Date().toISOString().slice(0,10).replace(/-/g,'');
+  const name='akm-diag-log-'+stamp+'.json';
   const blob=new Blob([JSON.stringify(diagLog,null,2)],{type:'application/json'});
+
+  let coarse=false;
+  try{ coarse=window.matchMedia&&window.matchMedia('(pointer:coarse)').matches; }catch(e){}
+  if(coarse){
+    try{
+      const file=new File([blob], name, {type:'application/json'});
+      if(navigator.canShare && navigator.canShare({files:[file]})){
+        await navigator.share({files:[file], title:name});
+        return;
+      }
+    }catch(e){
+      if(e && e.name==='AbortError') return;   
+      
+    }
+  }
+
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
-  const stamp=new Date().toISOString().slice(0,10).replace(/-/g,'');
-  a.href=url; a.download='akm-diag-log-'+stamp+'.json';
+  a.href=url; a.download=name;
   document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(()=>URL.revokeObjectURL(url),1000);
+  setTimeout(()=>URL.revokeObjectURL(url),60000);   
 };
 
 window.clearDiagLog=function(){
@@ -7555,10 +7498,7 @@ function footPoint(lm,side){
   return {x:sx/n,y:sy/n,vis:sv/n};
 }
 
-const FOOT_ANG={
-  VIS_MIN:0.5,     
-  LEN_MIN_T:0.06   
-};
+const FOOT_ANG={};
 function footAngleDeg(lm,side,torso){
   const ids=side==='left'?{heel:29,toe:31}:{heel:30,toe:32};
   const h=lm[ids.heel], t=lm[ids.toe];
@@ -8843,7 +8783,7 @@ function liteFxTick(now){
   if(liteFxStreakMs>=LITE_FX_HOLD_MS) setLiteFx(true);
 }
 
-const PERF_LOW_FPS=20, PERF_LOW_HOLD_MS=3000;
+const PERF_LOW_FPS=10, PERF_LOW_HOLD_MS=3000;
 function perfResetMonitor(){ perfLowStreakMs=0; perfLastCheck=0; }
 function perfMonitorTick(now, inferMs){
   if(!perfLastCheck){ perfLastCheck=now; return; }
@@ -8966,6 +8906,36 @@ document.getElementById('kickLevelPanel')?.style.setProperty('display','flex','i
 updateModeBadge();
 updateKickButtonVisibility();
 renderStats(); updateModeBadge();
+
+const AKM_TUNE_KEYS=['ROUND_HARD','ROUND_EASY','V3_HARD','V3_EASY','KICK_TYPE',
+  'MEASURE_GATE','DWI_FOOT','DWI_KNEE','MEASURE_H','MEASURE_H_HARD','FOOT_ANG',
+  'GUIDE_SHAPE','GUIDE_KNEE'];
+
+let _akmTuneReady=false;
+window.akmTuneReady=function(){ return _akmTuneReady; };
+
+function applyAkmTune(t){
+  if(!t || typeof t!=='object') return false;
+  for(const k of AKM_TUNE_KEYS){
+    if(!t[k] || typeof t[k]!=='object') return false;
+  }
+  Object.assign(JUDGE_HARD.ROUND, t.ROUND_HARD);
+  Object.assign(JUDGE_EASY.ROUND, t.ROUND_EASY);
+  Object.assign(V3_HARD,          t.V3_HARD);
+  Object.assign(V3_EASY,          t.V3_EASY);
+  Object.assign(KICK_TYPE,        t.KICK_TYPE);
+  Object.assign(MEASURE_GATE,     t.MEASURE_GATE);
+  Object.assign(DWI_FOOT,         t.DWI_FOOT);
+  Object.assign(DWI_KNEE,         t.DWI_KNEE);
+  Object.assign(MEASURE_H,        t.MEASURE_H);
+  Object.assign(MEASURE_H_HARD,   t.MEASURE_H_HARD);
+  Object.assign(FOOT_ANG,         t.FOOT_ANG);
+  Object.assign(GUIDE_SHAPE,      t.GUIDE_SHAPE);
+  Object.assign(GUIDE_KNEE,       t.GUIDE_KNEE);
+  _akmTuneReady=true;
+  return true;
+}
+window.applyAkmTune = applyAkmTune;
 
 window.__startApp = async function() {
   try{
@@ -9518,6 +9488,68 @@ function _akmGetCache(){ try{ return JSON.parse(localStorage.getItem(_AKM_LS_KEY
 function _akmSetCache(data){ try{ localStorage.setItem(_AKM_LS_KEY, JSON.stringify(data)); }catch(e){} }
 function _akmClearCache(){ try{ localStorage.removeItem(_AKM_LS_KEY); }catch(e){} }
 
+const _AKM_SIGN_PUBKEY = {"kty":"EC","crv":"P-256",
+  "x":"TRVuOcoZYEagtQgi5GRgUOSIkAjiW_aUS4O9U6cfK0I",
+  "y":"IknjHnofBQw-5FhVBgeI2hx9WFT4OIs90G4aPYBNbuc"};
+
+const _AKM_SIGN_REQUIRED_FROM = Date.parse('2026-09-21T00:00:00+09:00');
+
+let _akmVerifyKeyP = null;
+function _akmSignPubKey(){
+  if(!_akmVerifyKeyP){
+    _akmVerifyKeyP = crypto.subtle.importKey('jwk', _AKM_SIGN_PUBKEY,
+      { name:'ECDSA', namedCurve:'P-256' }, false, ['verify']);
+  }
+  return _akmVerifyKeyP;
+}
+
+function _akmB64urlToBytes(s){
+  s = String(s).replace(/-/g,'+').replace(/_/g,'/');
+  while(s.length % 4) s += '=';
+  const bin = atob(s), out = new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+async function _akmCheckToken(cache){
+  if(!cache || !cache.tok) return 'none';
+
+  if(!(window.crypto && window.crypto.subtle)) return 'none';
+  try{
+    const parts = String(cache.tok).split('.');
+    if(parts.length !== 2) return 'bad';
+
+    const key = await _akmSignPubKey();
+    const ok = await crypto.subtle.verify(
+      { name:'ECDSA', hash:'SHA-256' }, key,
+      _akmB64urlToBytes(parts[1]),
+      new TextEncoder().encode(parts[0]));
+    if(!ok) return 'bad';
+
+    const c = JSON.parse(new TextDecoder().decode(_akmB64urlToBytes(parts[0])));
+    if(c.k !== cache.license_key) return 'bad';   
+    if(!c.sxp || Date.now() > c.sxp) return 'bad';   
+    if(c.exp && Date.now() > c.exp) return 'bad';    
+
+    _akmSetCache(Object.assign({}, cache, {
+      dojang_name : c.dj || cache.dojang_name,
+      license_type: c.lt || cache.license_type,
+      is_trial    : !!c.tr,
+      is_beta     : !!c.bt,
+      expires_at  : c.exp ? new Date(c.exp).toISOString() : null
+    }));
+    return 'ok';
+  }catch(e){ return 'bad'; }
+}
+
+async function _akmSignatureAllows(cache){
+  const v = await _akmCheckToken(cache);
+  if(v === 'ok') return true;
+  if(v === 'none' && Date.now() < _AKM_SIGN_REQUIRED_FROM) return true;
+  try{ console.warn('[AKM] 라이선스 도장 확인 실패:', v); }catch(_){}
+  return false;
+}
+
 function _akmIsCacheExpired(cache){
   if(!cache) return true;
   
@@ -9596,6 +9628,43 @@ function _akmLoadContactLinks(){
   }).catch(()=>{  });
 }
 
+let _akmTuneRetried=false;
+async function _akmRefetchTune(dojang_name, version){
+  const cache=_akmGetCache();
+  const fail=(msg)=>{
+
+    try{ console.error('[AKM] 판정 기준값 적용 실패:', msg,
+      { applyAkmTune: typeof window.applyAkmTune,
+        tune: !!((_akmGetCache()||{}).tune) }); }catch(_){}
+    const el=document.getElementById('loginError');
+    if(el) el.textContent=msg;
+    _akmClearCache();
+    const ls=document.getElementById('loginScreen');
+    if(ls) ls.classList.remove('hidden');
+  };
+
+  if(_akmTuneRetried || !cache || !cache.license_key){
+    fail('기준값을 받지 못했습니다. 인터넷 연결을 확인하고 다시 인증해주세요.');
+    return;
+  }
+  _akmTuneRetried=true;
+
+  try{
+    const r=await _akmVerifyWithServer(cache.license_key);
+    if(r && r.valid && r.tune){
+      _akmSetCache(Object.assign({}, cache, {
+        tune         : r.tune,
+        tune_version : r.tune_version || null,
+        cached_at    : Date.now()
+      }));
+      _akmShowAuthedUI(dojang_name, version);   
+      return;
+    }
+  }catch(e){  }
+
+  fail('기준값을 받지 못했습니다. 인터넷에 연결한 뒤 다시 인증해주세요.');
+}
+
 function _akmShowAuthedUI(dojang_name, version){
   const nameEl=document.getElementById('panelDojangName');
   const authEl=document.getElementById('panelAuth');
@@ -9607,6 +9676,12 @@ function _akmShowAuthedUI(dojang_name, version){
   const lbVer =document.getElementById('lbVersion');
   if(lbName) lbName.textContent=dojang_name||'';
   if(lbVer)  lbVer.textContent='v'+(version||_AKM_VERSION);
+
+  const _apply = window.applyAkmTune;
+  if(typeof _apply !== 'function' || !_apply((_akmGetCache()||{}).tune)){
+    _akmRefetchTune(dojang_name, version);
+    return;
+  }
   document.getElementById('loginScreen').classList.add('hidden');
 
   if(window._akmStartHeartbeat) window._akmStartHeartbeat();
@@ -9690,6 +9765,11 @@ async function doLicenseActivate(){
       expires_at: result.expires_at || null,
 
       is_beta: !!result.is_beta,
+
+      tune        : result.tune || null,
+      tune_version: result.tune_version || null,
+      
+      tok         : result.tok || null,
       cached_at:Date.now()
     };
     _akmSetCache(cacheData);
@@ -9760,6 +9840,11 @@ async function _akmRecheckExpired(cache){
       is_trial    : !!result.is_trial,
       expires_at  : result.expires_at || null,
       is_beta     : !!result.is_beta,
+
+      tune        : result.tune || cache.tune || null,
+      tune_version: result.tune_version || cache.tune_version || null,
+
+      tok         : result.tok || cache.tok || null,
       cached_at   : Date.now()
     });
     _akmEnterAuthed(_akmGetCache());
@@ -9772,7 +9857,7 @@ async function _akmRecheckExpired(cache){
   _akmShowTrialExpired(msg, title, '', '');
 }
 
-window.addEventListener('load', function(){
+window.addEventListener('load', async function(){
   const cache=_akmGetCache();
   if(!cache) return;
 
@@ -9783,7 +9868,9 @@ window.addEventListener('load', function(){
   
   if(_akmIsCacheExpired(cache)){ _akmClearCache(); return; }
 
-  _akmEnterAuthed(cache);
+  if(!(await _akmSignatureAllows(cache))){ _akmClearCache(); return; }
+
+  _akmEnterAuthed(_akmGetCache() || cache);
 });
 
 window.logoutLicense=()=>{
@@ -9865,6 +9952,11 @@ async function _akmHeartbeat(){
       is_trial    : !!result.is_trial,
       expires_at  : result.expires_at || null,
       is_beta     : !!result.is_beta,
+
+      tune        : result.tune || cache.tune || null,
+      tune_version: result.tune_version || cache.tune_version || null,
+
+      tok         : result.tok || cache.tok || null,
       cached_at   : Date.now()
     });
     _akmShowTrialBadge(_akmGetCache());
