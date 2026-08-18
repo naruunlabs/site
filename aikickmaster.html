@@ -4294,6 +4294,8 @@ function peakProject(m){
 
 let kickFoot=null;
 
+let lastKickFoot=null;
+
 const DETECT_HOLD_MS=350;
 let holdSaveCount=0;
 function kickHoldAlive(slot){
@@ -5858,6 +5860,11 @@ function analyzeTraj(peakPctValue=null){
     hipVisAvg:+avgOf(trajHipVis).toFixed(2)
   };
 
+  if(isMeasureOnlyMode()){
+    DIAG.kneePre  = kneePreStr();
+    DIAG.kneeTraj = kneeTrajStr(peakIndex);
+  }
+
   const maxDev=Math.max(...xs.map(x=>Math.abs(x-startX)/T));
   DIAG.maxDev=+maxDev.toFixed(3);
 
@@ -7002,6 +7009,28 @@ function trajPathStr(){
   return out.length ? out.join(' ') : null;
 }
 
+function kneePreStr(){
+  if(!kickStartT || !preT.length) return null;
+  const out=[];
+  for(let i=0;i<preT.length;i++){
+    const v=preKneeAngle3D[i];
+    if(!Number.isFinite(v)) continue;
+
+    out.push(Math.round(preT[i]-kickStartT)+':'+Math.round(v));
+  }
+  return out.length ? out.join(' ') : null;
+}
+
+function kneeTrajStr(peakIndex){
+  if(!trajKneeAngle3D.length) return null;
+  const out=[];
+  for(let i=0;i<trajKneeAngle3D.length;i++){
+    const v=trajKneeAngle3D[i];
+    out.push((i===peakIndex?'^':'')+(Number.isFinite(v)?Math.round(v):'-'));
+  }
+  return out.join(' ');
+}
+
 function diagLogPush(result){
   if(!diagMode || !result) return;
   const now=new Date();
@@ -7046,6 +7075,9 @@ function diagLogBase(result){
     mode:currentMode, level:(typeof kickLevel!=='undefined'?kickLevel:'hard'),
     players:(twoPlayerMode?'2인':'1인'),
     player:(twoPlayerMode?(active2pSlot===slot2p.c?'청':active2pSlot===slot2p.h?'홍':'?'):'-'),
+
+    foot:(typeof selectedFoot==='function'? (selectedFoot()||null) : null),
+    footTracked:lastKickFoot,
     result
   };
   const ds=detectStats(); if(ds) Object.assign(entry,ds);
@@ -7479,6 +7511,7 @@ function runKick(pct,m=null){
 
       const stuckMs=isMeasureOnlyMode()?MEASURE_STUCK_MS:SPLIT_STUCK_MS;
       if((footDown && held>=effBelowMs()) || held>=stuckMs){   
+        lastKickFoot=kickFoot;   
         kicking=false; aboveFrames=0; belowFrames=0; nearPeak=0; nearAboveN=0; nearProj=0; kickFoot=null; trajActive=false;
         kickFoot=null;
         kickTopFootY=null; kickRefTorso=null;
