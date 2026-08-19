@@ -514,14 +514,43 @@ table{border-collapse:separate;border-spacing:0}thead th{background:#F7FAFE;colo
     <div id="trialSection" style="display:none;">
       <div class="modal-section">
         <div class="modal-section-title">체험 기간 설정</div>
-        <label>체험 일수</label>
+        <label>체험 일수 <span style="color:#71859d;font-weight:400">(첫 인증일부터 세는 <b>총</b> 일수)</span></label>
         <input id="mTrialDays" class="f-input" type="number" min="1" max="30" value="3" />
         <div class="modal-help">
           발급일이 아니라 <b>고객이 처음 인증에 성공한 날</b>부터 계산됩니다.<br>
           키를 보내놓고 며칠 뒤에 열어도 온전히 이 일수만큼 사용할 수 있습니다.<br>
-          체험판은 기기 <b>1대</b>로 자동 설정됩니다.
+          체험판은 기기 <b>1대</b>로 자동 설정됩니다.<br>
+          ※ <b>추가 일수가 아닙니다.</b> 이미 시작한 고객에게 며칠 더 주려면 아래 '기간 늘려주기'를 쓰세요.
         </div>
         <div id="trialStatusBox" class="modal-help" style="margin-top:10px;"></div>
+      </div>
+
+      <div class="modal-section" id="trialExtendBox" style="display:none;">
+        <div class="modal-section-title">기간 늘려주기</div>
+
+        <label>오늘부터 며칠 더 줄까요?</label>
+        <div style="display:flex;gap:8px;align-items:flex-start;">
+          <input id="mTrialAddDays" class="f-input" type="number" min="1" max="30" placeholder="예) 3"
+                 style="margin-bottom:0;flex:1" oninput="previewTrialAddDays()" />
+          <button type="button" class="btn-sm btn-toggle" style="white-space:nowrap;padding:11px 14px;"
+                  onclick="applyTrialAddDays()">체험 일수에 반영</button>
+        </div>
+        <div id="trialAddPreview" class="modal-help" style="margin-top:8px;"></div>
+        <div class="modal-help">
+          누르면 위 '체험 일수' 칸이 <b>경과일 + 더 줄 일수</b>로 바뀝니다.
+          숫자를 눈으로 확인하신 뒤 아래 <b>저장</b>을 눌러야 실제로 반영됩니다.
+        </div>
+
+        <div style="border-top:1px solid #24354a;margin:16px 0 12px;"></div>
+
+        <button type="button" class="btn-sm btn-toggle" style="width:100%;padding:11px;"
+                onclick="restartTrial()">체험 다시 시작 (즉시 적용)</button>
+        <div class="modal-help" style="margin-top:8px;">
+          시작 기록을 지워서 <b>고객이 다음에 앱을 여는 순간</b>부터 위 '체험 일수'만큼 새로 시작합니다.
+          고객이 바로 안 열어봐도 기간이 안 깎입니다.<br>
+          ※ 이 버튼은 <b>누르는 즉시</b> 서버에 반영됩니다(저장 버튼과 무관).<br>
+          ※ 고객이 브라우저 기록을 지웠다면 위 <b>전체 기기 초기화</b>도 함께 눌러야 합니다.
+        </div>
       </div>
     </div>
     <div class="modal-section">
@@ -790,6 +819,9 @@ function onTypeChange(fromUser) {
   const type = document.getElementById('mLicenseType').value;
   document.getElementById('expireSection').style.display = type === 'package' ? 'block' : 'none';
   document.getElementById('trialSection').style.display = type === 'trial' ? 'block' : 'none';
+
+  const extendBox = document.getElementById('trialExtendBox');
+  if (extendBox) extendBox.style.display = (type === 'trial' && currentEditLicenseId) ? 'block' : 'none';
   
   if (type === 'trial') {
     document.getElementById('mMaxDevices').value = 1;
@@ -811,6 +843,83 @@ function trialStatusText(d) {
   return `체험 중 · 남은 기간 ${leftDays}일 ${leftHours}시간 (종료 ${ends.toLocaleString('ko-KR')})`;
 }
 
+const TRIAL_MAX_DAYS = 30;   
+
+function calcTrialTotalDays(startedAtIso, addDays) {
+  const n = Number(addDays);
+  if (!startedAtIso) {
+    return { ok:false, why:'아직 첫 인증 전입니다. 늘릴 것이 없으니 위 \'체험 일수\'를 그냥 고치세요.' };
+  }
+  const started = new Date(startedAtIso).getTime();
+  if (!isFinite(started)) return { ok:false, why:'첫 인증 시각을 읽지 못했습니다.' };
+  if (!(n >= 1)) return { ok:false, why:'' };
+
+  const total = Math.ceil((Date.now() - started) / 86400000 + n - 1 / 1440);
+  return { ok:true, total, ends:new Date(started + total * 86400000), over: total > TRIAL_MAX_DAYS };
+}
+
+function previewTrialAddDays() {
+  const box = document.getElementById('trialAddPreview');
+  if (!box) return;
+  const r = calcTrialTotalDays(currentEditTrialStartedAt, document.getElementById('mTrialAddDays').value);
+  if (!r.ok) { box.innerHTML = r.why ? `<span style="color:#ffd76b">${escapeHtml(r.why)}</span>` : ''; return; }
+  if (r.over) {
+    box.innerHTML = `<span style="color:#ff687a">총 ${r.total}일이 되어 상한 ${TRIAL_MAX_DAYS}일을 넘습니다.`
+      + ` 첫 인증한 지 오래된 키입니다 → 아래 <b>체험 다시 시작</b>을 쓰세요.</span>`;
+    return;
+  }
+  box.innerHTML = `→ 체험 일수 <b style="color:#4fa3ff">${r.total}일</b>로 바뀝니다`
+    + ` · 종료 <b>${r.ends.toLocaleString('ko-KR')}</b>`;
+}
+
+function applyTrialAddDays() {
+  const r = calcTrialTotalDays(currentEditTrialStartedAt, document.getElementById('mTrialAddDays').value);
+  if (!r.ok) { alert(r.why || '더 줄 일수를 입력해주세요.'); return; }
+  if (r.over) {
+    alert(`총 ${r.total}일이 되어 상한 ${TRIAL_MAX_DAYS}일을 넘습니다.\n\n첫 인증한 지 오래된 키입니다.\n아래 '체험 다시 시작'을 쓰세요.`);
+    return;
+  }
+  document.getElementById('mTrialDays').value = r.total;
+  previewTrialAddDays();
+  document.getElementById('trialStatusBox').textContent =
+    `반영 예정 · 종료 ${r.ends.toLocaleString('ko-KR')} — 아래 저장을 눌러야 실제로 적용됩니다`;
+}
+
+async function restartTrial() {
+  if (!currentEditLicenseId) return;
+  if (document.getElementById('mLicenseType').value !== 'trial') {
+    alert('체험판일 때만 쓸 수 있습니다.'); return;
+  }
+  const days = Math.min(TRIAL_MAX_DAYS, Math.max(1, Number(document.getElementById('mTrialDays').value) || 3));
+  if (!confirm(`체험을 다시 시작할까요?\n\n고객이 다음에 앱을 여는 순간부터 ${days}일이 새로 시작됩니다.\n지금까지의 체험 시작 기록은 지워집니다.\n\n※ 이 작업은 누르는 즉시 반영됩니다.`)) return;
+
+  try {
+    await edgeCall('UPDATE_LICENSE', {
+      id: currentEditLicenseId,
+      trial_days: days,
+      trial_started_at: null,
+      expire_date: null      
+    });
+    await loadLicenses();
+
+    const fresh = LICENSES.find(x => String(x.id) === String(currentEditLicenseId));
+    if (fresh && fresh.trial_started_at) {
+      alert('서버가 체험 시작 기록을 지우지 못했습니다.\n\n대신 위 \'오늘부터 며칠 더\'를 쓰시면 같은 효과를 낼 수 있습니다.\n(고치려면 Supabase 의 clever-worker 함수가 trial_started_at 칸을 받도록 해야 합니다)');
+      return;
+    }
+
+    currentEditTrialStartedAt = null;
+    document.getElementById('mTrialDays').value = days;
+    document.getElementById('mTrialAddDays').value = '';
+    document.getElementById('mExpireDate').value = '';
+    document.getElementById('trialStatusBox').textContent = `아직 시작 전 · 첫 인증 시 ${days}일 시작`;
+    previewTrialAddDays();
+    showToast('체험이 다시 시작되도록 설정했습니다.');
+  } catch (err) {
+    alert('체험 다시 시작 실패: ' + err.message);
+  }
+}
+
 function openAddModal() {
   const productLabel = currentLicenseProduct === 'jump' ? 'AI JUMP MASTER' : 'AI KICK MASTER';
   document.getElementById('modalTitle').innerHTML = `${productLabel} 라이선스 <span>발급</span>`;
@@ -828,6 +937,9 @@ function openAddModal() {
   document.getElementById('mMaxDevices').value = 2;
   document.getElementById('mTrialDays').value = 3;
   document.getElementById('trialStatusBox').textContent = '';
+  document.getElementById('mTrialAddDays').value = '';
+  document.getElementById('trialAddPreview').innerHTML = '';
+  currentEditTrialStartedAt = null;
   currentEditDeviceSlots = [];
   currentEditLicenseId = null;
   document.getElementById('deviceSlotSection').style.display = 'none';
@@ -855,6 +967,9 @@ function openEditModal(encoded) {
   document.getElementById('mMaxDevices').value = d.max_devices || 2;
   document.getElementById('mTrialDays').value = Number(d.trial_days) || 3;
   document.getElementById('trialStatusBox').textContent = trialStatusText(d);
+  document.getElementById('mTrialAddDays').value = '';
+  document.getElementById('trialAddPreview').innerHTML = '';
+  currentEditTrialStartedAt = d.trial_started_at || null;
   currentEditDeviceSlots = Array.isArray(d.device_slots) ? d.device_slots : [];
   currentEditLicenseId = d.id;
   document.getElementById('deviceSlotSection').style.display = 'block';
@@ -868,6 +983,8 @@ function closeModal() { document.getElementById('modalBg').classList.remove('sho
 
 let currentEditDeviceSlots = [];
 let currentEditLicenseId = null;
+
+let currentEditTrialStartedAt = null;
 
 function renderDeviceSlotsUI() {
   const box = document.getElementById('deviceSlotsBox');
