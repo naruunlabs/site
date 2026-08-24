@@ -1614,10 +1614,14 @@ const CUST_COLS = [
 
   { f:'_licIssued',      t:'발급일',     w:92,  v:['money','all'], ro:true },
   { f:'_licExpire',      t:'라이선스 만료', w:104, v:['money','all'], ro:true },
-  { f:'list_price',      t:'정가',       w:84,  v:['money','all'], num:true },
-  { f:'discount',        t:'할인액',     w:82,  v:['money','all'], num:true },
+  
+  { f:'list_price',      t:'정가',       w:88,  v:['money','all'], num:true,
+    h:'할인 전 원래 가격' },
+  { f:'discount',        t:'할인 (−)',   w:88,  v:['money','all'], num:true,
+    h:'깎아준 금액. 정가에서 이만큼 빼면 실수령이 됩니다' },
   { f:'discount_reason', t:'할인 사유',  w:112, v:['money','all'] },
-  { f:'paid_amount',     t:'실수령',     w:90,  v:['money','all'], num:true },
+  { f:'paid_amount',     t:'실수령 (=)', w:96,  v:['money','all'], num:true, calc:true,
+    h:'실제로 받은 돈. 정가와 할인을 적으면 저절로 계산됩니다' },
   { f:'sold_at',         t:'판매일',     w:124, v:['money','all'], date:true },
   { f:'pay_method',      t:'결제수단',   w:88,  v:['money','all'], sel:CUST_PAY },
   { f:'tax_invoice',     t:'계산서',     w:56,  v:['money','all'], chk:true },
@@ -1701,7 +1705,7 @@ function renderCustomers() {
 
   const cols = custColsNow();
   document.getElementById('cgHead').innerHTML =
-    '<tr>' + cols.map(c => `<th class="${c.name?'cg-name':''}" style="min-width:${c.w}px;width:${c.w}px">${c.t}</th>`).join('')
+    '<tr>' + cols.map(c => `<th class="${c.name?'cg-name':''}"${c.h?` title="${escapeHtml(c.h)}"`:''} style="min-width:${c.w}px;width:${c.w}px">${c.t}</th>`).join('')
     + '<th style="min-width:96px;width:96px">관리</th></tr>';
 
   const rows = customerRowsNow();
@@ -1808,6 +1812,30 @@ function updateCustStats() {
   document.getElementById('cstRevenue').textContent = revenue ? (revenue/10000).toLocaleString('ko-KR') + '만' : '0';
 }
 
+function recalcMoney(c, f) {
+  const has = v => v !== null && v !== undefined && v !== '';
+  const n   = v => Number(v) || 0;
+
+  if (f === 'list_price' || f === 'discount') {
+    if (!has(c.list_price)) return false;          
+    const p = n(c.list_price) - n(c.discount);
+    if (p < 0) return false;                        
+    if (n(c.paid_amount) === p && has(c.paid_amount)) return false;
+    c.paid_amount = p;
+    return true;
+  }
+
+  if (f === 'paid_amount') {
+    if (!has(c.list_price) || !has(c.paid_amount)) return false;
+    const d = n(c.list_price) - n(c.paid_amount);
+    if (d < 0) return false;                        
+    if (n(c.discount) === d && has(c.discount)) return false;
+    c.discount = d;
+    return true;
+  }
+  return false;
+}
+
 async function onCustCell(el) {
   const id = el.dataset.id, f = el.dataset.f;
   const c = CUSTOMERS.find(x => x.id === id);
@@ -1819,10 +1847,7 @@ async function onCustCell(el) {
   else v = el.value === '' ? null : el.value;
   c[f] = v;
 
-  if ((f === 'list_price' || f === 'discount') && (c.paid_amount === null || c.paid_amount === undefined || c.paid_amount === '')) {
-    const p = (Number(c.list_price)||0) - (Number(c.discount)||0);
-    if (p > 0) c.paid_amount = p;
-  }
+  const moneyChanged = recalcMoney(c, f);
 
   const tr = el.closest('tr');
   if (tr) { tr.classList.remove('saved','failed'); tr.classList.add('saving'); }
@@ -1832,8 +1857,8 @@ async function onCustCell(el) {
     if (saved && saved.id) Object.assign(c, saved);
     if (tr) { tr.classList.remove('saving'); tr.classList.add('saved'); }
     updateCustStats();
-    
-    if (['status','list_price','discount','paid_amount','extra_amount','next_action_at'].includes(f)) renderCustomers();
+
+    if (moneyChanged || ['status','list_price','discount','paid_amount','extra_amount','next_action_at'].includes(f)) renderCustomers();
   } catch(err) {
     if (tr) { tr.classList.remove('saving'); tr.classList.add('failed'); }
     showToast('저장 실패: ' + err.message);
