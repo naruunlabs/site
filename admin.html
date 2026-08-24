@@ -458,6 +458,17 @@ table.cg tfoot td.num{text-align:right}
   .cg-top{gap:6px}
 }
 
+.ledger-tag{margin-left:7px;padding:2px 8px;border-radius:999px;background:#EAF4FF;
+  color:#0757D8;font-size:10.5px;font-weight:800;vertical-align:1px}
+#mSido,#mSource{cursor:pointer}
+#ledgerHint{margin-top:9px}
+
+.modal-btns{gap:8px}
+.btn-save-ghost{background:var(--panel-soft)!important;color:var(--text)!important;
+  box-shadow:none!important}
+.btn-save-ghost:hover{background:#EAF2FC!important;color:#0757D8!important}
+@media(max-width:560px){ .modal-btns{flex-wrap:wrap} .modal-btns button{flex:1 1 100%} }
+
 .top-title h1{margin:0;font-size:19px;font-weight:900;letter-spacing:-.5px;color:var(--text)}
 .top-title span{display:block;margin-top:3px;font-size:12px;font-weight:700;color:var(--muted2)}
 .top-bar{min-height:0;padding:13px 30px}
@@ -821,10 +832,37 @@ table.cg tfoot td.num{text-align:right}
       <label>메모</label>
       <textarea id="mMemo" class="f-textarea" placeholder="특이사항, 계약 조건 등"></textarea>
     </div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">회원 장부 <span class="ledger-tag">함께 저장됩니다</span></div>
+      <div class="field-row">
+        <div class="field-group">
+          <label>관장님 성함</label>
+          <input id="mOwner" class="f-input" type="text" placeholder="신청하신 분 성함" />
+        </div>
+        <div class="field-group">
+          <label>어떻게 알게 되셨나</label>
+          <select id="mSource" class="f-input"></select>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field-group">
+          <label>시 / 도</label>
+          <select id="mSido" class="f-input"></select>
+        </div>
+        <div class="field-group">
+          <label>시군구 · 읍면동</label>
+          <input id="mSigungu" class="f-input" type="text" placeholder="예) 구미시 산동읍" />
+        </div>
+      </div>
+      <div class="field-hint" id="ledgerHint">저장하면 회원 장부에도 한 줄이 만들어집니다.</div>
+    </div>
+
     <div class="err-msg" id="modalErr"></div>
     <div class="modal-btns">
       <button class="btn-cancel" onclick="closeModal()">취소</button>
-      <button class="btn-save" id="saveBtn" onclick="saveLicense()">발급</button>
+      <button class="btn-save btn-save-ghost" id="saveBtn" onclick="saveLicense(false)">발급</button>
+      <button class="btn-save" id="saveCopyBtn" onclick="saveLicense(true)">발급하고 카톡 복사</button>
     </div>
   </div>
 </div>
@@ -1342,9 +1380,27 @@ function openAddModal() {
   currentEditLicenseId = null;
   document.getElementById('deviceSlotSection').style.display = 'none';
   document.getElementById('saveBtn').textContent = '발급';
+  document.getElementById('saveCopyBtn').textContent = '발급하고 카톡 복사';
+  fillLedgerFields(null);
   document.getElementById('modalErr').textContent = '';
   onTypeChange();
   document.getElementById('modalBg').classList.add('show');
+}
+
+function fillLedgerFields(c) {
+  const sido = document.getElementById('mSido');
+  const src  = document.getElementById('mSource');
+  if (!sido.options.length) {
+    sido.innerHTML = CUST_SIDO.map(v => `<option value="${v}">${v || '— 고르기 —'}</option>`).join('');
+    src.innerHTML  = CUST_SOURCE.map(v => `<option value="${v}">${v || '— 고르기 —'}</option>`).join('');
+  }
+  document.getElementById('mOwner').value   = c ? (c.owner_name || '') : '';
+  document.getElementById('mSigungu').value = c ? (c.sigungu || '') : '';
+  sido.value = c ? (c.sido || '') : '';
+  src.value  = c ? (c.source || '') : '';
+  document.getElementById('ledgerHint').textContent = c
+    ? '이미 장부에 있는 회원입니다. 저장하면 그 줄이 갱신됩니다.'
+    : '저장하면 회원 장부에도 한 줄이 만들어집니다.';
 }
 
 function openEditModal(encoded) {
@@ -1373,6 +1429,8 @@ function openEditModal(encoded) {
   document.getElementById('deviceSlotSection').style.display = 'block';
   renderDeviceSlotsUI();
   document.getElementById('saveBtn').textContent = '저장';
+  document.getElementById('saveCopyBtn').textContent = '저장하고 카톡 복사';
+  fillLedgerFields(customerForLicense(d.license_key));
   document.getElementById('modalErr').textContent = '';
   onTypeChange();
   document.getElementById('modalBg').classList.add('show');
@@ -1492,8 +1550,9 @@ async function resetDeviceSlots() {
   } catch (err) { alert('초기화 실패: ' + err.message); }
 }
 
-async function saveLicense() {
+async function saveLicense(alsoCopy) {
   const saveBtn = document.getElementById('saveBtn');
+  const copyBtn = document.getElementById('saveCopyBtn');
   const errEl = document.getElementById('modalErr');
   const id = document.getElementById('editId').value;
   const dojang_name = document.getElementById('mDojang').value.trim();
@@ -1515,14 +1574,56 @@ async function saveLicense() {
     : null;
   if (!dojang_name) { errEl.textContent = '도장명은 필수입니다.'; return; }
   if (!license_key) { errEl.textContent = '라이선스 키는 필수입니다.'; return; }
-  saveBtn.disabled = true; errEl.textContent = '';
+  saveBtn.disabled = true; copyBtn.disabled = true; errEl.textContent = '';
   try {
     const payload = { dojang_name, license_key, license_type, version, expire_date, pay_amount, pay_date, pay_memo, phone, memo, max_devices, trial_days };
     if (id) { await edgeCall('UPDATE_LICENSE', { id, ...payload }); }
     else { await edgeCall('INSERT_LICENSE', { ...payload, is_active: true }); }
-    closeModal(); await loadLicenses();
+
+    let ledgerNote = '';
+    try { await syncLedgerFromLicense(payload); }
+    catch(e) { ledgerNote = ' (회원 장부 등록은 실패했습니다 — 목록에서 \'장부로\' 를 눌러주세요)'; }
+
+    if (alsoCopy) {
+      
+      await copyLicenseMsg(encodeURIComponent(JSON.stringify(payload)));
+    }
+    closeModal();
+    await loadLicenses();
+    await loadCustomers();
+    if (ledgerNote) showToast('저장했습니다' + ledgerNote);
   } catch(err) { errEl.textContent = '저장 실패: ' + err.message; }
-  finally { saveBtn.disabled = false; }
+  finally { saveBtn.disabled = false; copyBtn.disabled = false; }
+}
+
+async function syncLedgerFromLicense(p) {
+  const owner   = document.getElementById('mOwner').value.trim()   || null;
+  const sido    = document.getElementById('mSido').value           || null;
+  const sigungu = document.getElementById('mSigungu').value.trim() || null;
+  const source  = document.getElementById('mSource').value         || null;
+
+  const found = customerForLicense(p.license_key);
+  const row = {
+    dojang_name : p.dojang_name,
+    phone       : p.phone,
+    license_key : p.license_key,
+    owner_name  : owner,
+    sido, sigungu, source
+  };
+
+  if (found) {
+    row.id = found.id;
+  } else {
+    row.status      = (p.license_type === 'trial') ? 'trial' : 'customer';
+    row.paid_amount = p.pay_amount || null;
+    row.sold_at     = p.pay_date || null;
+    row.memo        = p.memo || null;
+  }
+  const saved = await edgeCall('SAVE_CUSTOMER', row);
+  if (saved && saved.id) {
+    const i = CUSTOMERS.findIndex(c => c.id === saved.id);
+    if (i >= 0) CUSTOMERS[i] = saved; else CUSTOMERS.unshift(saved);
+  }
 }
 
 function regenerateKey(){
