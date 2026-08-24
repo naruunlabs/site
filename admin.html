@@ -410,7 +410,18 @@ tr.cg-row.flash td{background:#FFF3CC !important;transition:background .5s}
 .cg-due-dot{display:inline-block;width:6px;height:6px;border-radius:50%;
   background:#dc2626;margin-right:5px;vertical-align:1px}
 
-tr.cg-notes td{background:#F7FAFE;padding:14px 16px;white-space:normal}
+.btn-sm.is-open{background:#0757D8;color:#fff}
+.btn-sm.is-open:hover{background:#0646AE}
+
+tr.cg-notes td{background:#F7FAFE;padding:0;white-space:normal}
+
+.cg-note-box{position:sticky;left:0;padding:14px 16px;box-sizing:border-box;
+  width:min(100%,860px);max-width:calc(100vw - 60px)}
+.cg-note-head{display:flex;align-items:center;gap:9px;margin-bottom:11px;
+  font-size:13px;font-weight:800;color:var(--muted)}
+.cg-note-head b{color:var(--text);font-weight:900}
+.cg-note-head span{font-size:11.5px;color:var(--muted2);font-weight:800}
+.cg-note-head button{margin-left:auto}
 .cg-note-list{display:flex;flex-direction:column;gap:7px;margin-bottom:11px}
 .cg-note{display:flex;gap:10px;align-items:flex-start;font-size:12.5px;font-weight:700;
   background:#fff;border:1px solid var(--line);border-radius:10px;padding:9px 11px}
@@ -1713,11 +1724,13 @@ function renderCustomers() {
     let html = `<tr class="${cls.join(' ')}" data-id="${c.id}">`
       + cols.map(col => `<td class="${col.name?'cg-name':''}">${custCell(c, col)}</td>`).join('')
       + `<td><div style="display:flex;gap:4px;padding:0 5px">
-           <button class="btn-sm btn-edit" onclick="toggleNotes('${c.id}')">이력</button>
+           <button class="btn-sm ${openNotesFor===c.id?'btn-toggle is-open':'btn-edit'}" onclick="toggleNotes('${c.id}')">${openNotesFor===c.id?'닫기':'이력'}</button>
            <button class="btn-sm btn-del" onclick="deleteCustomer('${c.id}')">삭제</button>
          </div></td></tr>`;
     if (openNotesFor === c.id) {
-      html += `<tr class="cg-notes"><td colspan="${cols.length+1}" id="notes-${c.id}">불러오는 중…</td></tr>`;
+
+      html += `<tr class="cg-notes"><td colspan="${cols.length+1}">
+        <div class="cg-note-box" id="notes-${c.id}">불러오는 중…</div></td></tr>`;
     }
     return html;
   }).join('');
@@ -1863,6 +1876,12 @@ async function loadNotes(id) {
   if (!box) return;
   try {
     const notes = await edgeCall('GET_CUSTOMER_NOTES', { customer_id: id }) || [];
+    const c = CUSTOMERS.find(x => x.id === id);
+    const head = `<div class="cg-note-head">
+        <b>${escapeHtml(c ? c.dojang_name : '')}</b> 상담 이력
+        <span>${notes.length}건</span>
+        <button class="cg-btn" onclick="toggleNotes('${id}')">닫기</button>
+      </div>`;
     const list = notes.length
       ? `<div class="cg-note-list">` + notes.map(n => `<div class="cg-note">
            <b>${escapeHtml(n.noted_at||'')}</b>
@@ -1871,7 +1890,7 @@ async function loadNotes(id) {
            <button title="지우기" onclick="deleteNote('${n.id}','${id}')">×</button>
          </div>`).join('') + `</div>`
       : `<div class="cg-note-empty">아직 기록이 없습니다.</div>`;
-    box.innerHTML = list + `
+    box.innerHTML = head + list + `
       <div class="cg-note-add">
         <input type="date" id="nd-${id}" value="${todayStr()}">
         <select id="nm-${id}"><option>전화</option><option>카톡</option><option>방문</option><option>기타</option></select>
@@ -1928,7 +1947,14 @@ function exportCustomersCsv() {
 
 document.getElementById('pwModalBg').addEventListener('click', e => { if(e.target===e.currentTarget) closePwModal(); });
 document.getElementById('modalBg').addEventListener('click', e => { if(e.target===e.currentTarget) closeModal(); });
-document.addEventListener('keydown', e => { if(e.key==='Escape') { closeModal(); closePwModal(); } });
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  closeModal(); closePwModal();
+
+  const t = e.target;
+  const typing = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA') && t.value;
+  if (openNotesFor && !typing) toggleNotes(openNotesFor);
+});
 
 const savedToken = sessionStorage.getItem('akm_admin_token');
 if (savedToken) {
