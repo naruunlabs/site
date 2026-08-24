@@ -457,6 +457,36 @@ table.cg tfoot td.num{text-align:right}
   .cg-top{gap:6px}
 }
 
+.top-title h1{margin:0;font-size:19px;font-weight:900;letter-spacing:-.5px;color:var(--text)}
+.top-title span{display:block;margin-top:3px;font-size:12px;font-weight:700;color:var(--muted2)}
+.top-bar{min-height:0;padding:13px 30px}
+.btn-sm-act{height:34px;padding:0 13px;font-size:12px}
+
+.sidebar-foot{margin-top:auto;padding:14px 10px 4px;border-top:1px solid rgba(255,255,255,.10);
+  display:flex;flex-direction:column;gap:7px}
+.sidebar-foot .sf-row{display:flex;align-items:center;justify-content:space-between;gap:8px;
+  font-size:11px;font-weight:700;color:rgba(255,255,255,.42)}
+.sidebar-foot .sf-row b{font-size:11.5px;font-weight:900;color:rgba(255,255,255,.78)}
+.sidebar-foot .sf-row b.warn{color:#FFB020}
+@media(max-width:980px){ .sidebar-foot{display:none} }
+
+.stats-row{grid-template-columns:repeat(auto-fit,minmax(122px,1fr));gap:11px;margin-bottom:15px}
+.stats-row.six{grid-template-columns:repeat(6,minmax(0,1fr))}
+.stat-card{padding:13px 15px;border-radius:14px}
+.stat-card .num{font-size:23px;letter-spacing:-.6px}
+.stat-card .label{font-size:11px;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:1180px){ .stats-row.six{grid-template-columns:repeat(3,minmax(0,1fr))} }
+@media(max-width:700px){
+  .stats-row,.stats-row.six{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .stat-card .num{font-size:20px}
+}
+
+.toolbar{grid-template-columns:1fr auto auto auto;padding:10px;margin-bottom:15px}
+.select-filter{height:40px;min-width:112px}
+.toolbar .f-input{height:40px}
+@media(max-width:900px){ .toolbar{grid-template-columns:1fr 1fr} }
+@media(max-width:560px){ .toolbar{grid-template-columns:1fr} }
+
 </style>
 
 </head>
@@ -478,13 +508,13 @@ table.cg tfoot td.num{text-align:right}
 <div id="dashboard">
 
   <div class="top-bar">
-    <div class="top-logo">
-      <div class="top-logo-row"><img class="admin-company-logo" src="naruunlabs_logo.svg" alt="NARUUN LABS"><span class="admin-label">관리자</span></div>
-      <div class="akm-powered">Powered by Google MediaPipe</div>
+    <div class="top-title">
+      <h1 id="pageTitle">라이선스 관리</h1>
+      <span id="pageSub">발급·수정·기기 관리</span>
     </div>
     <div class="top-actions">
-      <button class="btn-sm-act btn-ghost" onclick="openPwModal()">비밀번호 변경</button>
-      <button class="btn-sm-act btn-ghost" onclick="window.open('/','_blank')">NARUUN LABS 미리보기</button>
+      <button class="btn-sm-act btn-ghost" onclick="window.open('/','_blank')">사이트 보기</button>
+      <button class="btn-sm-act btn-ghost" onclick="openPwModal()">비밀번호</button>
       <button class="btn-sm-act btn-danger-soft" onclick="logoutAdmin()">로그아웃</button>
     </div>
   </div>
@@ -494,6 +524,11 @@ table.cg tfoot td.num{text-align:right}
     <button class="tab-btn active" onclick="switchTab('license')">라이선스 관리</button>
     <button class="tab-btn" onclick="switchTab('customer')">회원 관리</button>
     <button class="tab-btn" onclick="switchTab('home')">홈페이지 관리</button>
+    
+    <div class="sidebar-foot">
+      <div class="sf-row"><span>자동 로그아웃</span><b id="sideExpiry">—</b></div>
+      <div class="sf-row"><span>마지막 불러오기</span><b id="sideSync">—</b></div>
+    </div>
   </div>
 
   <div class="tab-content active" id="tab-license">
@@ -505,7 +540,7 @@ table.cg tfoot td.num{text-align:right}
       <button class="btn-add" id="licenseAddBtn" onclick="openAddModal()">+ 라이선스 발급</button>
     </div>
 
-    <div class="stats-row">
+    <div class="stats-row six">
       <div class="stat-card" data-filter="all" onclick="pickStatFilter('all')"><div class="num" id="statTotal">-</div><div class="label">전체 도장</div></div>
       <div class="stat-card" data-filter="active" onclick="pickStatFilter('active')"><div class="num" id="statActive" style="color:var(--green)">-</div><div class="label">활성</div></div>
       <div class="stat-card" data-filter="inactive" onclick="pickStatFilter('inactive')"><div class="num" id="statInactive" style="color:var(--red)">-</div><div class="label">비활성</div></div>
@@ -549,7 +584,7 @@ table.cg tfoot td.num{text-align:right}
 
   <div class="tab-content" id="tab-customer">
 
-    <div class="stats-row" style="grid-template-columns:repeat(4,minmax(0,1fr))">
+    <div class="stats-row">
       <div class="stat-card" data-cfilter="all" onclick="pickCustStat('all')"><div class="num" id="cstTotal">-</div><div class="label">전체 회원</div></div>
       <div class="stat-card" data-cfilter="customer" onclick="pickCustStat('customer')"><div class="num" id="cstPaid" style="color:var(--green)">-</div><div class="label">구매 고객</div></div>
       <div class="stat-card" data-cfilter="due" onclick="pickCustStat('due')"><div class="num" id="cstDue" style="color:var(--red)">-</div><div class="label">오늘 연락할 곳</div></div>
@@ -834,10 +869,41 @@ function switchTab(tab) {
   document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', names[i]===tab));
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
   document.getElementById('tab-'+tab).classList.add('active');
+  setPageTitle(tab);
   if (tab === 'license') loadLicenses();
   if (tab === 'customer') loadCustomers();
   if (tab === 'home') loadHomeFields();
 }
+
+const PAGE_TITLES = {
+  license : ['라이선스 관리', '발급 · 수정 · 기기 관리'],
+  customer: ['회원 관리',   '고객 장부 · 판매 기록 · 상담 이력'],
+  home    : ['홈페이지 관리', 'naruunlabs.kr 에 나가는 문구']
+};
+function setPageTitle(tab) {
+  const t = PAGE_TITLES[tab] || PAGE_TITLES.license;
+  const a = document.getElementById('pageTitle'), b = document.getElementById('pageSub');
+  if (a) a.textContent = t[0];
+  if (b) b.textContent = t[1];
+}
+
+function tickSidebar() {
+  const el = document.getElementById('sideExpiry');
+  if (el) {
+    const exp = Number(String(ADMIN_TOKEN || '').split('.')[0]) || 0;
+    const min = exp ? Math.floor((exp - Date.now()) / 60000) : -1;
+    if (min < 0)       { el.textContent = '—';            el.classList.remove('warn'); }
+    else if (min === 0){ el.textContent = '곧';           el.classList.add('warn'); }
+    else               { el.textContent = min + '분 뒤';  el.classList.toggle('warn', min <= 10); }
+  }
+}
+function markSynced() {
+  const el = document.getElementById('sideSync');
+  if (!el) return;
+  const d = new Date();
+  el.textContent = String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+}
+setInterval(tickSidebar, 30000);
 
 async function adminLogin() {
   const pw = document.getElementById('adminPw').value;
@@ -934,7 +1000,7 @@ async function loadLicenses() {
   try {
     
     LICENSES = await edgeCall('GET_LICENSES', {}) || [];
-    updateStats(); renderTable();
+    updateStats(); renderTable(); markSynced(); tickSidebar();
   } catch(err) {
     tbody.innerHTML = `<tr><td colspan="7" class="empty-msg">불러오기 실패: ${escapeHtml(err.message)}</td></tr>`;
   }
