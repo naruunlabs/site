@@ -289,20 +289,67 @@ table{border-collapse:separate;border-spacing:0}thead th{background:#F7FAFE;colo
 .lab-check{display:flex;align-items:center;gap:9px;padding:14px;border:1px solid var(--line);border-radius:13px;background:var(--panel-soft);font-size:13px;font-weight:800}
 .lab-check input{width:17px;height:17px;accent-color:#FF8A3D}
 
-.exp-intro{margin-bottom:16px}
-.exp-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
-.exp-card{border:1px solid var(--line);border-radius:16px;background:var(--panel-soft);padding:18px;display:flex;flex-direction:column;gap:10px}
-.exp-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
-.exp-name{font-size:15px;font-weight:900;letter-spacing:-.3px}
-.exp-tag{font-size:10.5px;font-weight:800;padding:4px 9px;border-radius:999px;white-space:nowrap}
-.exp-tag.run{background:rgba(18,161,92,.13);color:var(--green)}
-.exp-tag.wait{background:rgba(88,92,102,.13);color:var(--muted2)}
-.exp-desc{font-size:12.5px;line-height:1.65;color:var(--muted2);font-weight:600;flex:1}
-.exp-meta{font-size:11px;color:var(--muted2);font-weight:700;word-break:break-all}
-.exp-act{display:flex;gap:8px;margin-top:2px}
-.exp-act a.btn-add{text-decoration:none}
-.exp-empty{grid-column:1/-1;padding:34px;text-align:center;font-size:13px;font-weight:700;color:var(--muted2);border:1px dashed var(--line);border-radius:16px}
-@media(max-width:800px){.exp-grid{grid-template-columns:1fr}}
+.stat-card{cursor:pointer;transition:.15s;user-select:none}
+.stat-card:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(7,28,73,.10)}
+.stat-card.is-on{border-color:#0757D8;box-shadow:0 0 0 2px rgba(7,87,216,.18)}
+
+td.cell-main{border-left:4px solid transparent}
+tr.st-expired  td.cell-main{border-left-color:#dc2626}
+tr.st-soon     td.cell-main{border-left-color:#f59e0b}
+tr.st-trial    td.cell-main{border-left-color:#4fa3ff}
+tr.st-inactive td.cell-main{border-left-color:#c3cbd6}
+
+tr.row-expiring td,tr.row-expired td{background:transparent}
+tr.row-expiring:hover td,tr.row-expired:hover td{background:#FAFCFF}
+
+.dojang-name{font-size:15px;font-weight:900;letter-spacing:-.3px;color:var(--text)}
+.dojang-line{display:block;color:var(--muted2);font-size:11.5px;font-weight:700;margin-top:5px}
+.dojang-memo{display:block;color:#8a93a0;font-size:11.5px;font-weight:600;margin-top:3px;
+  max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.key-btn{border:0;background:#F3F7FC;color:#475467;font-size:10.5px;font-weight:800;
+  padding:3px 8px;border-radius:7px;margin-left:7px;cursor:pointer;vertical-align:2px}
+.key-btn:hover{background:#EAF2FC;color:#0757D8}
+
+.action-btns{min-width:0;flex-wrap:nowrap;align-items:center}
+.more-wrap{position:relative;display:inline-block}
+.more-btn{width:30px;height:30px;border-radius:9px;border:0;background:var(--panel-soft);
+  color:var(--text);font-size:15px;font-weight:900;cursor:pointer;line-height:1}
+.more-btn:hover{background:#EAF2FC;color:#0757D8}
+.more-menu{display:none;position:absolute;right:0;top:34px;z-index:60;background:#fff;
+  border:1px solid var(--line);border-radius:12px;box-shadow:0 16px 40px rgba(7,28,73,.16);
+  padding:6px;min-width:132px}
+.more-menu.show{display:block}
+.more-menu button{display:block;width:100%;text-align:left;border:0;background:transparent;
+  padding:9px 11px;border-radius:8px;font-size:12px;font-weight:800;color:var(--text);cursor:pointer}
+.more-menu button:hover{background:var(--panel-soft)}
+.more-menu button.danger{color:#dc2626}
+.more-menu button.danger:hover{background:#fdecec}
+
+@media(max-width:900px){
+  .table-wrap{overflow:visible;background:transparent;box-shadow:none;border:0}
+  table{min-width:0;border-spacing:0}
+  thead{display:none}
+  tbody{display:block}
+  tbody tr{display:block;background:var(--panel);border:1px solid var(--line);
+    border-radius:16px;padding:14px 16px;margin-bottom:12px;box-shadow:var(--shadow-sm)}
+  tbody tr:hover td,tbody td{background:transparent!important}
+  tbody td{display:flex;justify-content:space-between;align-items:center;gap:14px;
+    border:0;border-top:1px dashed var(--line);padding:8px 0;font-size:13px}
+  tbody td::before{content:attr(data-label);color:var(--muted2);font-size:11px;
+    font-weight:800;white-space:nowrap}
+  tbody td.cell-main{display:block;border:0;border-left:0;padding:0 0 8px;
+    box-shadow:inset 4px 0 0 -1px transparent}
+  tbody td.cell-main::before{display:none}
+  tr.st-expired  td.cell-main{box-shadow:none}
+  tr.st-expired  {border-left:4px solid #dc2626}
+  tr.st-soon     {border-left:4px solid #f59e0b}
+  tr.st-trial    {border-left:4px solid #4fa3ff}
+  tr.st-inactive {border-left:4px solid #c3cbd6}
+  .dojang-memo{max-width:100%}
+  td.cell-act{padding-top:10px}
+  .action-btns{width:100%;justify-content:flex-end}
+  .empty-msg,.loading{background:var(--panel);border-radius:16px}
+}
 
 </style>
 
@@ -340,7 +387,6 @@ table{border-collapse:separate;border-spacing:0}thead th{background:#F7FAFE;colo
     <div class="sidebar-brand"><img class="sidebar-company-logo" src="naruunlabs_logo.svg" alt="NARUUN LABS"><span>Powered by Google MediaPipe</span></div>
     <button class="tab-btn active" onclick="switchTab('license')">라이선스 관리</button>
     <button class="tab-btn" onclick="switchTab('home')">홈페이지 관리</button>
-    <button class="tab-btn" onclick="switchTab('lab')">실험실</button>
   </div>
 
   <div class="tab-content active" id="tab-license">
@@ -353,23 +399,30 @@ table{border-collapse:separate;border-spacing:0}thead th{background:#F7FAFE;colo
     </div>
 
     <div class="stats-row">
-      <div class="stat-card"><div class="num" id="statTotal">-</div><div class="label">전체 도장</div></div>
-      <div class="stat-card"><div class="num" id="statActive" style="color:var(--green)">-</div><div class="label">활성</div></div>
-      <div class="stat-card"><div class="num" id="statInactive" style="color:var(--red)">-</div><div class="label">비활성</div></div>
-      <div class="stat-card"><div class="num" id="statLifetime" style="color:var(--gold)">-</div><div class="label">영구 라이선스</div></div>
-      <div class="stat-card"><div class="num" id="statExpiring" style="color:var(--amber)">-</div><div class="label">만료 임박 (7일)</div></div>
-      <div class="stat-card"><div class="num" id="statTrial" style="color:#4fa3ff">-</div><div class="label">체험판 진행중</div></div>
+      <div class="stat-card" data-filter="all" onclick="pickStatFilter('all')"><div class="num" id="statTotal">-</div><div class="label">전체 도장</div></div>
+      <div class="stat-card" data-filter="active" onclick="pickStatFilter('active')"><div class="num" id="statActive" style="color:var(--green)">-</div><div class="label">활성</div></div>
+      <div class="stat-card" data-filter="inactive" onclick="pickStatFilter('inactive')"><div class="num" id="statInactive" style="color:var(--red)">-</div><div class="label">비활성</div></div>
+      <div class="stat-card" data-filter="lifetime" onclick="pickStatFilter('lifetime')"><div class="num" id="statLifetime" style="color:var(--gold)">-</div><div class="label">영구 라이선스</div></div>
+      <div class="stat-card" data-filter="expiring" onclick="pickStatFilter('expiring')"><div class="num" id="statExpiring" style="color:var(--amber)">-</div><div class="label">만료 임박 (7일)</div></div>
+      <div class="stat-card" data-filter="trial" onclick="pickStatFilter('trial')"><div class="num" id="statTrial" style="color:#4fa3ff">-</div><div class="label">체험판 진행중</div></div>
     </div>
 
     <div class="toolbar">
       <input id="searchInput" class="f-input" type="search" placeholder="도장명, 라이선스 키, 연락처 검색" oninput="renderTable()" />
-      <select id="statusFilter" class="select-filter" onchange="renderTable()">
+      <select id="statusFilter" class="select-filter" onchange="onFilterChange()">
         <option value="all">전체</option>
         <option value="active">활성</option>
         <option value="inactive">비활성</option>
+        <option value="lifetime">영구</option>
         <option value="expiring">만료 임박</option>
         <option value="expired">만료됨</option>
         <option value="trial">체험판</option>
+      </select>
+      <select id="sortSelect" class="select-filter" onchange="renderTable()">
+        <option value="expire">만료 임박순</option>
+        <option value="name">도장명순</option>
+        <option value="created">최근 등록순</option>
+        <option value="verified">최근 인증순</option>
       </select>
       <button class="btn-add btn-ghost" onclick="clearFilters()">초기화</button>
     </div>
@@ -378,21 +431,13 @@ table{border-collapse:separate;border-spacing:0}thead th{background:#F7FAFE;colo
       <table>
         <thead>
           <tr>
-            <th>도장명 / 연락처</th><th>라이선스 키</th><th>종류</th><th>결제</th><th>만료일</th><th>최근 인증</th><th>상태</th><th>관리</th>
+            <th>도장</th><th>종류</th><th>만료일</th><th>최근 인증</th><th>결제</th><th>상태</th><th>관리</th>
           </tr>
         </thead>
-        <tbody id="dojangsTable"><tr><td colspan="8" class="loading">불러오는 중...</td></tr></tbody>
+        <tbody id="dojangsTable"><tr><td colspan="7" class="loading">불러오는 중...</td></tr></tbody>
       </table>
     </div>
     <div class="footer-note">admin v7 · administrator console</div>
-  </div>
-
-  <div class="tab-content" id="tab-lab">
-    <div class="edit-section exp-intro">
-      <h3 style="margin-bottom:6px">실험실</h3>
-      <div class="field-hint">정식 기능이 되기 전의 시험용 페이지들입니다. 홈페이지 어디에도 링크가 없고 검색에도 잡히지 않습니다. 여기서만 들어갈 수 있습니다.</div>
-    </div>
-    <div class="exp-grid" id="expGrid"></div>
   </div>
 
   <div class="tab-content" id="tab-home">
@@ -619,13 +664,12 @@ function showToast(msg) {
 }
 
 function switchTab(tab) {
-  const names=['license','home','lab'];
+  const names=['license','home'];
   document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', names[i]===tab));
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
   document.getElementById('tab-'+tab).classList.add('active');
   if (tab === 'license') loadLicenses();
   if (tab === 'home') loadHomeFields();
-  if (tab === 'lab') renderExperiments();
 }
 
 async function adminLogin() {
@@ -717,12 +761,12 @@ async function edgeCall(action, payload) {
 
 async function loadLicenses() {
   const tbody = document.getElementById('dojangsTable');
-  tbody.innerHTML = '<tr><td colspan="8" class="loading">불러오는 중...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="7" class="loading">불러오는 중...</td></tr>';
   try {
     LICENSES = await edgeCall('GET_LICENSES', {});
     updateStats(); renderTable();
   } catch(err) {
-    tbody.innerHTML = `<tr><td colspan="8" class="empty-msg">불러오기 실패: ${escapeHtml(err.message)}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" class="empty-msg">불러오기 실패: ${escapeHtml(err.message)}</td></tr>`;
   }
 }
 
@@ -757,13 +801,68 @@ function updateStats() {
 function clearFilters() {
   document.getElementById('searchInput').value = '';
   document.getElementById('statusFilter').value = 'all';
+  document.getElementById('sortSelect').value = 'expire';
+  syncStatCards();
   renderTable();
 }
+
+function pickStatFilter(f) {
+  const sel = document.getElementById('statusFilter');
+  sel.value = (sel.value === f) ? 'all' : f;
+  syncStatCards();
+  renderTable();
+}
+function onFilterChange() { syncStatCards(); renderTable(); }
+
+function syncStatCards() {
+  const cur = document.getElementById('statusFilter').value;
+  document.querySelectorAll('.stat-card').forEach(c => {
+    const f = c.getAttribute('data-filter');
+    c.classList.toggle('is-on', !!f && f === cur && cur !== 'all');
+  });
+}
+
+function sortKeyExpire(d) {
+  const days = daysUntil(d.expire_date);
+  return days === null ? 1e9 : days;
+}
+
+function sortRows(rows, how) {
+  const arr = rows.slice();
+  if (how === 'name') {
+    arr.sort((a,b) => String(a.dojang_name||'').localeCompare(String(b.dojang_name||''), 'ko'));
+  } else if (how === 'created') {
+    arr.sort((a,b) => String(b.created_at||'').localeCompare(String(a.created_at||'')));
+  } else if (how === 'verified') {
+    arr.sort((a,b) => String(b.last_verified_at||'').localeCompare(String(a.last_verified_at||'')));
+  } else {
+    arr.sort((a,b) => sortKeyExpire(a) - sortKeyExpire(b));
+  }
+  return arr;
+}
+
+async function copyKeyOnly(key) {
+  try { await navigator.clipboard.writeText(key); showToast('라이선스 키를 복사했습니다'); }
+  catch(e) { prompt('아래 키를 복사하세요', key); }
+}
+
+function toggleRowMenu(id, ev) {
+  if (ev) ev.stopPropagation();
+  const box = document.getElementById('menu-' + id);
+  const wasOpen = box && box.classList.contains('show');
+  document.querySelectorAll('.more-menu.show').forEach(m => m.classList.remove('show'));
+  if (box && !wasOpen) box.classList.add('show');
+}
+
+document.addEventListener('click', () => {
+  document.querySelectorAll('.more-menu.show').forEach(m => m.classList.remove('show'));
+});
 
 function renderTable() {
   const tbody = document.getElementById('dojangsTable');
   const q = document.getElementById('searchInput').value.trim().toLowerCase();
   const filter = document.getElementById('statusFilter').value;
+  syncStatCards();   
   let rows = licensesForCurrentProduct().filter(d => {
     const hay = [d.dojang_name, d.license_key, d.phone||'', d.memo||''].join(' ').toLowerCase();
     const days = daysUntil(d.expire_date);
@@ -772,12 +871,14 @@ function renderTable() {
     let statusMatch = true;
     if (filter === 'active') statusMatch = d.is_active;
     else if (filter === 'inactive') statusMatch = !d.is_active;
+    else if (filter === 'lifetime') statusMatch = d.license_type === 'lifetime';
     else if (filter === 'expiring') statusMatch = d.is_active && isExpiring;
     else if (filter === 'expired') statusMatch = isExpired;
     else if (filter === 'trial') statusMatch = d.license_type === 'trial';
     return (!q || hay.includes(q)) && statusMatch;
   });
-  if (!rows.length) { tbody.innerHTML = '<tr><td colspan="8" class="empty-msg">표시할 라이선스가 없습니다.</td></tr>'; return; }
+  rows = sortRows(rows, document.getElementById('sortSelect').value);
+  if (!rows.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty-msg">표시할 라이선스가 없습니다.</td></tr>'; return; }
   tbody.innerHTML = rows.map(d => {
     const days = daysUntil(d.expire_date);
     const isExpired = days !== null && days < 0;
@@ -786,30 +887,52 @@ function renderTable() {
     let statusText = d.is_active ? '활성' : '비활성';
     if (d.is_active && isExpired) { statusCls = 'expired'; statusText = '만료됨'; }
     else if (d.is_active && isExpiring) { statusCls = 'soon'; statusText = `D-${days}`; }
-    const rowCls = isExpired ? 'row-expired' : (isExpiring ? 'row-expiring' : '');
     const isTrial = d.license_type === 'trial';
+
+    let stripe = '';
+    if (!d.is_active) stripe = 'st-inactive';
+    else if (isExpired) stripe = 'st-expired';
+    else if (isExpiring) stripe = 'st-soon';
+    else if (isTrial) stripe = 'st-trial';
+
     const typeLabel = isTrial ? `체험 ${Number(d.trial_days)||3}일`
                     : (d.license_type === 'package' ? '패키지' : '영구');
     const lastVerified = d.last_verified_at ? d.last_verified_at.slice(0,10) : '미사용';
-    let expireDisplay = d.expire_date ? `${d.expire_date}<br><span style="font-size:11px;color:${isExpired?'#ff687a':isExpiring?'#ffd76b':'#71859d'}">${isExpired?'만료됨':`D-${days}`}</span>` : '<span style="color:#4f637c">-</span>';
+    let expireDisplay = d.expire_date ? `${d.expire_date}<br><span style="font-size:11px;color:${isExpired?'#dc2626':isExpiring?'#a16207':'#71859d'}">${isExpired?'만료됨':`D-${days}`}</span>` : '<span style="color:#8a93a0">-</span>';
     if (isTrial && !d.trial_started_at) {
-      expireDisplay = '<span style="color:#4fa3ff;font-size:12px">시작 전<br><span style="font-size:11px;color:#71859d">첫 인증 시 시작</span></span>';
+      expireDisplay = '<span style="color:#0757D8;font-size:12px">시작 전<br><span style="font-size:11px;color:#71859d">첫 인증 시 시작</span></span>';
     }
     const payDisplay = d.pay_amount ? `${formatMoney(d.pay_amount)}<span class="sub-text">${d.pay_date||''}</span>` : '-';
     const encoded = encodeURIComponent(JSON.stringify(d));
-    return `<tr class="${rowCls}">
-      <td><strong>${escapeHtml(d.dojang_name)}</strong><span class="sub-text">등록 ${(d.created_at||'').slice(0,10)||'-'}</span>${d.phone?`<span class="sub-text">${escapeHtml(d.phone)}</span>`:''}${d.memo?`<span class="sub-text" title="${escapeHtml(d.memo)}">${escapeHtml(d.memo.length>20?d.memo.slice(0,20)+'…':d.memo)}</span>`:''}<span class="sub-text">기기 ${(d.device_slots||[]).length}/${d.max_devices||2}</span></td>
-      <td><code style="font-size:12px">${escapeHtml(d.license_key)}</code></td>
-      <td>${typeLabel}</td>
-      <td style="font-size:13px">${payDisplay}</td>
-      <td style="font-size:13px">${expireDisplay}</td>
-      <td style="font-size:13px">${escapeHtml(lastVerified)}</td>
-      <td><span class="badge ${statusCls}">${statusText}</span></td>
-      <td><div class="action-btns">
-        <button class="btn-sm btn-copy" onclick="copyLicenseMsg('${encoded}')">카톡복사</button>
+    const slotUsed = (d.device_slots||[]).length, slotMax = d.max_devices||2;
+
+    const line2 = [
+      d.phone ? escapeHtml(d.phone) : '',
+      `기기 ${slotUsed}/${slotMax}`
+    ].filter(Boolean).join(' · ');
+
+    return `<tr class="${stripe}">
+      <td class="cell-main">
+        <span class="dojang-name" title="등록 ${(d.created_at||'').slice(0,10)||'-'} · ${escapeHtml(d.license_key)}">${escapeHtml(d.dojang_name)}</span>
+        <button class="key-btn" title="${escapeHtml(d.license_key)}" onclick="copyKeyOnly('${escapeHtml(d.license_key)}')">키 복사</button>
+        <span class="dojang-line">${line2}</span>
+        ${d.memo?`<span class="dojang-memo" title="${escapeHtml(d.memo)}">${escapeHtml(d.memo)}</span>`:''}
+      </td>
+      <td data-label="종류">${typeLabel}</td>
+      <td data-label="만료일" style="font-size:13px">${expireDisplay}</td>
+      <td data-label="최근 인증" style="font-size:13px">${escapeHtml(lastVerified)}</td>
+      <td data-label="결제" style="font-size:13px">${payDisplay}</td>
+      <td data-label="상태"><span class="badge ${statusCls}">${statusText}</span></td>
+      <td class="cell-act"><div class="action-btns">
         <button class="btn-sm btn-edit" onclick="openEditModal('${encoded}')">수정</button>
-        <button class="btn-sm btn-toggle" onclick="toggleActive('${d.id}',${d.is_active})">${d.is_active?'중지':'활성'}</button>
-        <button class="btn-sm btn-del" onclick="deleteLicense('${d.id}','${escapeHtml(d.dojang_name)}')">삭제</button>
+        <button class="btn-sm btn-copy" onclick="copyLicenseMsg('${encoded}')">카톡</button>
+        <span class="more-wrap">
+          <button class="more-btn" title="더보기" onclick="toggleRowMenu('${d.id}',event)">⋯</button>
+          <div class="more-menu" id="menu-${d.id}">
+            <button onclick="toggleActive('${d.id}',${d.is_active})">${d.is_active?'사용 중지':'다시 활성'}</button>
+            <button class="danger" onclick="deleteLicense('${d.id}','${escapeHtml(d.dojang_name)}')">삭제</button>
+          </div>
+        </span>
       </div></td>
     </tr>`;
   }).join('');
@@ -1260,45 +1383,6 @@ async function saveHomeData(){
   Object.keys(HOME_TARGET_DEFAULTS[t]).forEach(k=>{const el=document.getElementById('f_'+t+'_'+k);if(!el)return;HOME_DATA_BY_TARGET[t][k]=el.type==='checkbox'?el.checked:el.value;});
   try{await edgeCall('UPDATE_HOME_DATA',{target:t,data:HOME_DATA_BY_TARGET[t]});showToast('저장되었습니다.');setHomeStatus('저장 완료. 실제 방문자 페이지에 반영됩니다.');}
   catch(e){showToast('저장 실패');setHomeStatus('저장 실패. 서버에는 반영되지 않았습니다: '+e.message,false);}
-}
-
-const EXPERIMENTS=[
-  {
-    name:'2인 인식 측정실',
-    url:'lab-2p.html',
-    date:'2026-08-01',
-    status:'run',
-    desc:'두 사람을 동시에 인식할 때 몇 fps 가 나오고 관절이 얼마나 흔들리는지 재는 곳. 인원 1·2·3명, 모델 full·lite, GPU·CPU 를 버튼으로 바꿔가며 비교한다. 청·홍 좌우 배정과 발 속도 계산 방식도 함께 확인한다. 라이선스 없이 열린다.'
-  }
-];
-
-function renderExperiments(){
-  const g=document.getElementById('expGrid'); if(!g) return;
-  if(!EXPERIMENTS.length){
-    g.innerHTML='<div class="exp-empty">아직 등록된 실험이 없습니다.</div>';
-    return;
-  }
-  g.innerHTML=EXPERIMENTS.map(x=>{
-    const run = x.status==='run';
-    return `<div class="exp-card">
-      <div class="exp-top">
-        <div class="exp-name">${escapeHtml(x.name)}</div>
-        <span class="exp-tag ${run?'run':'wait'}">${run?'진행 중':'대기'}</span>
-      </div>
-      <div class="exp-desc">${escapeHtml(x.desc)}</div>
-      <div class="exp-meta">${escapeHtml(x.date)} · ${escapeHtml(x.url)}</div>
-      <div class="exp-act">
-        <a class="btn-add" href="${escapeHtml(x.url)}" target="_blank" rel="noopener">열기</a>
-        <button class="btn-add btn-ghost" onclick="copyExpLink('${escapeHtml(x.url)}')">주소 복사</button>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-async function copyExpLink(u){
-  const full=location.origin+'/'+u;
-  try{ await navigator.clipboard.writeText(full); showToast('주소를 복사했습니다'); }
-  catch(e){ prompt('아래 주소를 복사하세요', full); }
 }
 
 document.getElementById('pwModalBg').addEventListener('click', e => { if(e.target===e.currentTarget) closePwModal(); });
