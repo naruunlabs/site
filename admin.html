@@ -460,6 +460,13 @@ table.cg tfoot td.num{text-align:right}
 
 .ledger-tag{margin-left:7px;padding:2px 8px;border-radius:999px;background:#EAF4FF;
   color:#0757D8;font-size:10.5px;font-weight:800;vertical-align:1px}
+
+.m-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.m-row > div{min-width:0}
+.m-row .f-input{margin-bottom:0}
+.m-row + .m-row{margin-top:12px}
+.m-row + label{display:block;margin-top:14px}
+@media(max-width:560px){ .m-row{grid-template-columns:1fr;gap:0} .m-row .f-input{margin-bottom:12px} }
 #mSido,#mSource{cursor:pointer}
 #ledgerHint{margin-top:9px}
 
@@ -739,20 +746,63 @@ table.cg tfoot td.num{text-align:right}
   <div class="modal">
     <h3 id="modalTitle">라이선스 <span>발급</span></h3>
     <input type="hidden" id="editId" />
-    <label>도장명 *</label>
-    <input id="mDojang" class="f-input" type="text" placeholder="예) 구미태권도장" />
-    <label>라이선스 종류 *</label>
-    <select id="mLicenseType" class="f-input" onchange="onTypeChange(true)">
-      <option value="lifetime">영구 (Lifetime)</option>
-      <option value="package">태블릿 패키지</option>
-      <option value="trial">체험판 (Trial)</option>
-    </select>
-    <label>버전</label>
-    <input id="mVersion" class="f-input" type="text" placeholder="예) 1.0.0" value="1.0.0" />
-    <label>라이선스 키 <span style="color:var(--muted);font-weight:400">(직접 수정 가능)</span></label>
-    <div style="display:flex;gap:8px">
-      <input id="mKey" class="f-input" type="text" style="letter-spacing:1px;flex:1" />
-      <button type="button" class="btn-sm btn-toggle" onclick="regenerateKey()">재생성</button>
+
+    <div class="modal-section">
+      <div class="modal-section-title">고객 정보 <span class="ledger-tag">회원 장부에 함께 저장</span></div>
+      <div class="m-row">
+        <div>
+          <label>도장명 *</label>
+          <input id="mDojang" class="f-input" type="text" placeholder="예) 구미태권도장" />
+        </div>
+        <div>
+          <label>관장님 성함</label>
+          <input id="mOwner" class="f-input" type="text" placeholder="신청하신 분 성함" />
+        </div>
+      </div>
+      <div class="m-row">
+        <div>
+          <label>연락처</label>
+          <input id="mPhone" class="f-input" type="tel" placeholder="예) 010-1234-5678" />
+        </div>
+        <div>
+          <label>어떻게 알게 되셨나</label>
+          <select id="mSource" class="f-input"></select>
+        </div>
+      </div>
+      <div class="m-row">
+        <div>
+          <label>시 / 도</label>
+          <select id="mSido" class="f-input"></select>
+        </div>
+        <div>
+          <label>시군구 · 읍면동</label>
+          <input id="mSigungu" class="f-input" type="text" placeholder="예) 구미시 산동읍" />
+        </div>
+      </div>
+      <div class="field-hint" id="ledgerHint">저장하면 회원 장부에도 한 줄이 만들어집니다.</div>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">라이선스</div>
+      <div class="m-row">
+        <div>
+          <label>종류 *</label>
+          <select id="mLicenseType" class="f-input" onchange="onTypeChange(true)">
+            <option value="lifetime">영구 (Lifetime)</option>
+            <option value="package">태블릿 패키지</option>
+            <option value="trial">체험판 (Trial)</option>
+          </select>
+        </div>
+        <div>
+          <label>버전</label>
+          <input id="mVersion" class="f-input" type="text" placeholder="예) 1.0.0" value="1.0.0" />
+        </div>
+      </div>
+      <label>라이선스 키 <span style="color:var(--muted);font-weight:400">(직접 수정 가능)</span></label>
+      <div style="display:flex;gap:8px">
+        <input id="mKey" class="f-input" type="text" style="letter-spacing:1px;flex:1" />
+        <button type="button" class="btn-sm btn-toggle" onclick="regenerateKey()">재생성</button>
+      </div>
     </div>
     <input id="mMaxDevices" type="hidden" value="2" />
     <div class="modal-section" id="deviceSlotSection" style="display:none;">
@@ -826,36 +876,8 @@ table.cg tfoot td.num{text-align:right}
       <input id="mPayMemo" class="f-input" type="text" placeholder="예) 카드결제, 계좌이체 등" />
     </div>
     <div class="modal-section">
-      <div class="modal-section-title">고객 연락처</div>
-      <label>연락처</label>
-      <input id="mPhone" class="f-input" type="tel" placeholder="예) 010-1234-5678" />
-      <label>메모</label>
+      <div class="modal-section-title">메모</div>
       <textarea id="mMemo" class="f-textarea" placeholder="특이사항, 계약 조건 등"></textarea>
-    </div>
-
-    <div class="modal-section">
-      <div class="modal-section-title">회원 장부 <span class="ledger-tag">함께 저장됩니다</span></div>
-      <div class="field-row">
-        <div class="field-group">
-          <label>관장님 성함</label>
-          <input id="mOwner" class="f-input" type="text" placeholder="신청하신 분 성함" />
-        </div>
-        <div class="field-group">
-          <label>어떻게 알게 되셨나</label>
-          <select id="mSource" class="f-input"></select>
-        </div>
-      </div>
-      <div class="field-row">
-        <div class="field-group">
-          <label>시 / 도</label>
-          <select id="mSido" class="f-input"></select>
-        </div>
-        <div class="field-group">
-          <label>시군구 · 읍면동</label>
-          <input id="mSigungu" class="f-input" type="text" placeholder="예) 구미시 산동읍" />
-        </div>
-      </div>
-      <div class="field-hint" id="ledgerHint">저장하면 회원 장부에도 한 줄이 만들어집니다.</div>
     </div>
 
     <div class="err-msg" id="modalErr"></div>
@@ -1638,7 +1660,13 @@ async function toggleActive(id, current) {
 }
 
 async function deleteLicense(id, name) {
-  const input = prompt(`정말 삭제하려면 도장명을 그대로 입력하세요.\n삭제 대상: ${name}`);
+  
+  const d = LICENSES.find(x => String(x.id) === String(id));
+  const inLedger = d && customerForLicense(d.license_key);
+  const note = inLedger
+    ? `\n\n※ 회원 장부의 '${inLedger.dojang_name}' 줄은 남습니다.\n  판매 기록이므로 일부러 지우지 않습니다.`
+    : '';
+  const input = prompt(`정말 삭제하려면 도장명을 그대로 입력하세요.\n삭제 대상: ${name}${note}`);
   if (input !== name) { alert('도장명이 일치하지 않아 삭제하지 않았습니다.'); return; }
   try { await edgeCall('DELETE_LICENSE', { id }); await loadLicenses(); }
   catch(err) { alert('삭제 실패: ' + err.message); }
@@ -2140,7 +2168,14 @@ async function addCustomerRow() {
 async function deleteCustomer(id) {
   const c = CUSTOMERS.find(x => x.id === id);
   if (!c) return;
-  if (!confirm(`'${c.dojang_name}' 을(를) 지울까요?\n상담 이력도 함께 지워집니다. 되돌릴 수 없습니다.`)) return;
+
+  const hasLic = !!c.license_key && LICENSES.some(l => l.license_key === c.license_key);
+  const msg = `'${c.dojang_name}' 을(를) 장부에서 지울까요?\n`
+    + `상담 이력도 함께 지워집니다. 되돌릴 수 없습니다.\n\n`
+    + (hasLic
+        ? `※ 라이선스(${c.license_key})는 지워지지 않습니다.\n  고객은 그대로 프로그램을 쓸 수 있습니다.\n  정말 못 쓰게 하려면 라이선스 관리에서 '중지'를 누르세요.`
+        : `※ 라이선스 관리 탭은 영향을 받지 않습니다.`);
+  if (!confirm(msg)) return;
   try {
     await edgeCall('DELETE_CUSTOMER', { id });
     CUSTOMERS = CUSTOMERS.filter(x => x.id !== id);
