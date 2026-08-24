@@ -371,8 +371,9 @@ tr.row-expiring:hover td,tr.row-expired:hover td{background:#FAFCFF}
   vertical-align:-1px;border:1px solid rgba(0,0,0,.08)}
 
 .cg-scroll{overflow:auto;background:#fff;max-height:calc(100vh - 300px);min-height:320px}
+
 table.cg{border-collapse:separate;border-spacing:0;font-variant-numeric:tabular-nums;
-  font-size:var(--cg-fs,12px)}
+  font-size:var(--cg-fs,12px);table-layout:fixed}
 table.cg th,table.cg td{border-right:1px solid #e8edf3;border-bottom:1px solid #e8edf3;
   padding:0;white-space:nowrap;background:#fff}
 
@@ -383,7 +384,7 @@ table.cg th.cg-name,table.cg td.cg-name{position:sticky;left:0;z-index:2;
 table.cg thead th.cg-name{z-index:5;background:#F7FAFE}
 
 table.cg td{height:33px}
-.cg-in{width:100%;height:31px;border:0;background:transparent;font-family:inherit;
+.cg-in{width:100%;min-width:0;height:31px;border:0;background:transparent;font-family:inherit;
   font-size:inherit;font-weight:700;color:var(--text);padding:0 8px;outline:0;
   border-radius:0;box-sizing:border-box}
 .cg-in:hover{background:#F7FAFE}
@@ -1694,39 +1695,101 @@ const CUST_SIDO   = ['', '서울','부산','대구','인천','광주','대전','
   '경기','강원','충북','충남','전북','전남','경북','경남','제주'];
 
 const CUST_COLS = [
-  { f:'dojang_name',     t:'도장명',     w:150, v:['sales','money','all'], name:true },
-  { f:'owner_name',      t:'관장님',     w:78,  v:['sales','all'] },
-  { f:'phone',           t:'전화',       w:118, v:['sales','all'] },
-  { f:'sido',            t:'시/도',      w:74,  v:['sales','all'], sel:CUST_SIDO },
-  { f:'sigungu',         t:'시군구',     w:82,  v:['sales','all'] },
-  { f:'status',          t:'상태',       w:74,  v:['sales','money','all'], sel:CUST_STATUS },
-  { f:'source',          t:'유입경로',   w:88,  v:['sales','all'], sel:CUST_SOURCE },
-  { f:'referrer',        t:'소개해준 곳', w:100, v:['sales','all'] },
-  { f:'license_key',     t:'라이선스',   w:150, v:['sales','money','all'], lic:true },
+  { f:'dojang_name',     t:'도장명',     v:['sales','money','all'], name:true },
+  { f:'owner_name',      t:'관장님',     v:['sales','all'] },
+  { f:'phone',           t:'전화',       v:['sales','all'] },
+  { f:'sido',            t:'시/도',      v:['sales','all'], sel:CUST_SIDO },
+  { f:'sigungu',         t:'시군구',     v:['sales','all'] },
+  { f:'status',          t:'상태',       v:['sales','money','all'], sel:CUST_STATUS },
+  { f:'source',          t:'유입경로',   v:['sales','all'], sel:CUST_SOURCE },
+  { f:'referrer',        t:'소개해준 곳', v:['sales','all'], wide:true },
+  { f:'license_key',     t:'라이선스',   v:['sales','money','all'], lic:true },
 
-  { f:'_licIssued',      t:'발급일',     w:92,  v:['money','all'], ro:true },
-  { f:'_licExpire',      t:'라이선스 만료', w:104, v:['money','all'], ro:true },
+  { f:'_licIssued',      t:'발급일',     v:['money','all'], ro:true },
+  { f:'_licExpire',      t:'라이선스 만료', v:['money','all'], ro:true },
   
-  { f:'list_price',      t:'정가',       w:88,  v:['money','all'], num:true,
+  { f:'list_price',      t:'정가',       v:['money','all'], num:true,
     h:'할인 전 원래 가격' },
-  { f:'discount',        t:'할인 (−)',   w:88,  v:['money','all'], num:true,
+  { f:'discount',        t:'할인 (−)',   v:['money','all'], num:true,
     h:'깎아준 금액. 정가에서 이만큼 빼면 실수령이 됩니다' },
-  { f:'discount_reason', t:'할인 사유',  w:112, v:['money','all'] },
-  { f:'paid_amount',     t:'실수령 (=)', w:96,  v:['money','all'], num:true, calc:true,
+  { f:'discount_reason', t:'할인 사유',  v:['money','all'], wide:true },
+  { f:'paid_amount',     t:'실수령 (=)', v:['money','all'], num:true, calc:true,
     h:'실제로 받은 돈. 정가와 할인을 적으면 저절로 계산됩니다' },
-  { f:'sold_at',         t:'판매일',     w:124, v:['money','all'], date:true },
-  { f:'pay_method',      t:'결제수단',   w:88,  v:['money','all'], sel:CUST_PAY },
-  { f:'tax_invoice',     t:'계산서',     w:56,  v:['money','all'], chk:true },
-  { f:'biz_no',          t:'사업자번호', w:112, v:['money','all'] },
-  { f:'extra_amount',    t:'추가판매',   w:84,  v:['money','all'], num:true },
-  { f:'extra_at',        t:'추가일',     w:124, v:['money','all'], date:true },
-  { f:'students',        t:'관원수',     w:62,  v:['all'], num:true },
-  { f:'device',          t:'기기',       w:88,  v:['all'] },
-  { f:'next_action',     t:'다음 할 일', w:150, v:['sales','all'] },
-  { f:'next_action_at',  t:'언제',       w:124, v:['sales','all'], date:true },
-  { f:'memo',            t:'메모',       w:180, v:['sales','all'] }
+  { f:'sold_at',         t:'판매일',     v:['money','all'], date:true },
+  { f:'pay_method',      t:'결제수단',   v:['money','all'], sel:CUST_PAY },
+  { f:'tax_invoice',     t:'계산서',     v:['money','all'], chk:true },
+  { f:'biz_no',          t:'사업자번호', v:['money','all'] },
+  { f:'extra_amount',    t:'추가판매',   v:['money','all'], num:true },
+  { f:'extra_at',        t:'추가일',     v:['money','all'], date:true },
+  { f:'students',        t:'관원수',     v:['all'], num:true },
+  { f:'device',          t:'기기',       v:['all'] },
+  { f:'next_action',     t:'다음 할 일', v:['sales','all'], wide:true },
+  { f:'next_action_at',  t:'언제',       v:['sales','all'], date:true },
+  { f:'memo',            t:'메모',       v:['sales','all'], wide:true }
 ];
 function custColsNow(){ return CUST_COLS.filter(c => c.v.includes(custView)); }
+
+function custFontSize(){ return 12 + custZoomLevel; }
+
+let _measCtx;
+function textWidth(s, weight, size) {
+  s = String(s == null ? '' : s);
+  if (_measCtx === undefined) {
+    try { _measCtx = document.createElement('canvas').getContext('2d') || null; }
+    catch(e) { _measCtx = null; }
+  }
+  const fam = (typeof getComputedStyle === 'function'
+    ? getComputedStyle(document.body).fontFamily : '') || 'sans-serif';
+  if (!_measCtx) {
+    
+    let w = 0;
+    for (const ch of s) w += (ch.charCodeAt(0) > 0x1100 ? size : size * 0.58);
+    return w;
+  }
+  _measCtx.font = `${weight} ${size}px ${fam}`;
+  return _measCtx.measureText(s).width;
+}
+
+function custCellText(c, col) {
+  if (col.chk) return '';
+  if (col.ro)  return derivedCust(c, col.f);
+  if (col.sel) {
+    const opts = col.sel.map(o => Array.isArray(o) ? o : [o, o || '—']);
+    const hit = opts.find(o => o[0] === String(c[col.f] ?? ''));
+    return hit ? hit[1] : (c[col.f] ?? '');
+  }
+  return c[col.f] == null ? '' : String(c[col.f]);
+}
+
+function computeCustWidths(rows, cols) {
+  const fs = custFontSize();
+  const out = {};
+  cols.forEach(col => {
+    if (col.chk) { out[col.f] = 58; return; }
+
+    let w = textWidth(col.t, 900, 11);                       
+    rows.forEach(c => {
+      const t = custCellText(c, col);
+      if (t) w = Math.max(w, textWidth(t, 700, fs));
+    });
+    if (col.num) {                                            
+      const sum = rows.reduce((a, c) => a + (Number(c[col.f]) || 0), 0);
+      w = Math.max(w, textWidth(sum.toLocaleString('ko-KR'), 900, fs));
+    }
+
+    let extra = 20;                       
+    let min = 82, max = 200;
+    if (col.name)      { min = 132; max = 230; }
+    else if (col.date) { extra = 48; min = 122; max = 150; }  
+    else if (col.num)  { min = 74;  max = 132; }
+    else if (col.ro)   { min = 78;  max = 132; }
+    else if (col.sel || col.lic) { extra = 24; min = 72; max = 190; }
+    else if (col.wide) { min = 130; max = 250; }              
+
+    out[col.f] = Math.round(Math.min(max, Math.max(min, w + extra)));
+  });
+  return out;
+}
 
 async function loadCustomers() {
   const body = document.getElementById('cgBody');
@@ -1754,7 +1817,8 @@ function pickCustStat(f) {
 }
 function custZoom(d) {
   custZoomLevel = Math.max(-2, Math.min(2, custZoomLevel + d));
-  document.getElementById('cgTable').style.setProperty('--cg-fs', (12 + custZoomLevel) + 'px');
+  document.getElementById('cgTable').style.setProperty('--cg-fs', custFontSize() + 'px');
+  renderCustomers();   
 }
 
 function isDue(c) {
@@ -1796,11 +1860,13 @@ function renderCustomers() {
     c.classList.toggle('is-on', c.dataset.cfilter === custFilter && custFilter !== 'all'));
 
   const cols = custColsNow();
+  const rows = customerRowsNow();
+  
+  const W = computeCustWidths(rows, cols);
   document.getElementById('cgHead').innerHTML =
-    '<tr>' + cols.map(c => `<th class="${c.name?'cg-name':''}"${c.h?` title="${escapeHtml(c.h)}"`:''} style="min-width:${c.w}px;width:${c.w}px">${c.t}</th>`).join('')
+    '<tr>' + cols.map(c => `<th class="${c.name?'cg-name':''}"${c.h?` title="${escapeHtml(c.h)}"`:''} style="min-width:${W[c.f]}px;width:${W[c.f]}px">${c.t}</th>`).join('')
     + '<th style="min-width:96px;width:96px">관리</th></tr>';
 
-  const rows = customerRowsNow();
   updateCustStats();
 
   if (!rows.length) {
