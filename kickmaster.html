@@ -2261,8 +2261,7 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:9999;
       const normalizedBadge = d.badge
         .replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, '')
         .replace(/\uFE0F/g, '')
-        .replace(/태권도장\s*전용/g, '발차기 훈련 프로그램')
-        .replace(/태권도\s*전용/g, '발차기 훈련 프로그램')
+
         .replace(/\s{2,}/g, ' ')
         .trim();
       setText('kickBadge', normalizedBadge);
@@ -2273,13 +2272,14 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:9999;
 
     setText('salePrice', d.sale_price); setText('priceNote', d.price_note);
     for(let i=1;i<=4;i++){setText('feature'+i+'Title',d['feature'+i+'_title']);setText('feature'+i+'Desc',d['feature'+i+'_desc']);setText('benefit'+i+'Title',d['benefit'+i+'_title']);setText('benefit'+i+'Desc',d['benefit'+i+'_desc']);setText('step'+i+'Title',d['step'+i+'_title']);setText('step'+i+'Desc',d['step'+i+'_desc']);}
-    
-    setText('kickBadge','NEW · 2인모드 정식 출시');
-    setText('kickLead','전면 카메라가 작동되는 태블릿/노트북 한 대로 한 명은 물론 두 명의 움직임을 동시에 인식합니다. 혼자 기록에 도전하거나 친구와 함께 발차기·격파·겨루기 대결을 즐겨보세요.');
-    setText('feature2Title','1인·2인 플레이');
-    setText('feature2Desc','개인 기록 도전부터 청과 홍의 실시간 대결까지 수업 목적에 맞게 선택할 수 있습니다.');
-    setText('benefit3Title','개인 훈련이 대결 수업으로 확장됩니다');
-    setText('benefit3Desc','혼자 기록에 도전하거나 두 명이 동시에 참여하는 대결 활동으로 수업을 다양하게 구성할 수 있습니다.');
+
+    const fallback = (id, val, text) => { if (!val) setText(id, text); };
+    fallback('kickBadge', d.badge, 'NEW · 2인모드 정식 출시');
+    fallback('kickLead', d.lead, '전면 카메라가 작동되는 태블릿/노트북 한 대로 한 명은 물론 두 명의 움직임을 동시에 인식합니다. 혼자 기록에 도전하거나 친구와 함께 발차기·격파·겨루기 대결을 즐겨보세요.');
+    fallback('feature2Title', d.feature2_title, '1인·2인 플레이');
+    fallback('feature2Desc', d.feature2_desc, '개인 기록 도전부터 청과 홍의 실시간 대결까지 수업 목적에 맞게 선택할 수 있습니다.');
+    fallback('benefit3Title', d.benefit3_title, '개인 훈련이 대결 수업으로 확장됩니다');
+    fallback('benefit3Desc', d.benefit3_desc, '혼자 기록에 도전하거나 두 명이 동시에 참여하는 대결 활동으로 수업을 다양하게 구성할 수 있습니다.');
     for(let i=1;i<=5;i++){setText('recommend'+i+'Title',d['recommend'+i+'_title']);setText('recommend'+i+'Desc',d['recommend'+i+'_desc']);}
     for(let i=1;i<=11;i++){setText('faq'+i+'Q',d['faq'+i+'_q']);setText('faq'+i+'A',d['faq'+i+'_a']);}
     const setList=(id,val)=>{const el=document.getElementById(id);if(el&&val)el.innerHTML=String(val).split(/\n+/).filter(Boolean).map(x=>'<li>'+x.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))+'</li>').join('');};
