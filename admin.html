@@ -311,6 +311,12 @@ tr.row-expiring:hover td,tr.row-expired:hover td{background:#FAFCFF}
 .key-btn:hover{background:#EAF2FC;color:#0757D8}
 
 .action-btns{min-width:0;flex-wrap:nowrap;align-items:center;gap:5px}
+
+.dev-over{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:6px;
+  background:#fdecec;color:#dc2626;font-size:10px;font-weight:900}
+.admin-slot-card.is-over{border-color:#f0a0a0;background:#fdf3f3}
+.admin-slot-card.is-over .admin-slot-status{color:#dc2626}
+
 .btn-ledger{background:#FFF3E0;color:#B45309}
 .btn-ledger:hover{background:#FFE8C7}
 .btn-ledger.done{background:#E7F8EE;color:#0c8d54}
@@ -1107,9 +1113,10 @@ function renderTable() {
     
     const inLedger = !!customerForLicense(d.license_key);
 
+    const slotOver = slotUsed > slotMax;
     const line2 = [
       d.phone ? escapeHtml(d.phone) : '',
-      `기기 ${slotUsed}/${slotMax}`
+      `기기 ${slotUsed}/${slotMax}${slotOver ? '<span class="dev-over">한도 초과</span>' : ''}`
     ].filter(Boolean).join(' · ');
 
     return `<tr class="${stripe}">
@@ -1150,6 +1157,8 @@ function onTypeChange(fromUser) {
   } else if (fromUser && Number(document.getElementById('mMaxDevices').value) === 1) {
     document.getElementById('mMaxDevices').value = 2;
   }
+
+  if (document.getElementById('deviceSlotSection').style.display === 'block') renderDeviceSlotsUI();
 }
 
 function trialStatusText(d) {
@@ -1312,14 +1321,21 @@ function renderDeviceSlotsUI() {
   const box = document.getElementById('deviceSlotsBox');
   if (!box) return;
   const maxDevices = Number(document.getElementById('mMaxDevices').value) || 2;
+  const isTrial = document.getElementById('mLicenseType').value === 'trial';
+  const used = currentEditDeviceSlots.length;
+
+  const baseMax  = Math.min(maxDevices, 2);      
+  const baseShow = Math.max(baseMax, Math.min(used, 2));
+
   let html = '';
-  for (let i = 0; i < 2; i++) {
+  for (let i = 0; i < baseShow; i++) {
     const slot = currentEditDeviceSlots[i];
+    const over = i >= maxDevices;                
     if (slot) {
       const dateStr = slot.registered_at ? slot.registered_at.slice(0,10) : '-';
-      html += `<div class="admin-slot-card is-used">
-        <div class="admin-slot-status">사용 중</div>
-        <div class="admin-slot-sub">등록일 ${dateStr}</div>
+      html += `<div class="admin-slot-card is-used${over?' is-over':''}">
+        <div class="admin-slot-status">${over ? '한도 초과' : '사용 중'}</div>
+        <div class="admin-slot-sub">등록일 ${dateStr}${over?'<br>한도가 줄기 전에 등록된 기기입니다':''}</div>
         <button type="button" class="btn-sm btn-del" onclick="removeDeviceSlot(${i})">기기 해제</button>
       </div>`;
     } else {
@@ -1329,8 +1345,13 @@ function renderDeviceSlotsUI() {
       </div>`;
     }
   }
-  
-  if (maxDevices >= 3) {
+
+  if (isTrial) {
+    html += `<div class="admin-slot-card is-locked">
+      <div class="admin-slot-status">체험판은 1대 고정</div>
+      <div class="admin-slot-sub">대수를 늘리려면 먼저<br>라이선스 종류를 바꿔주세요</div>
+    </div>`;
+  } else if (maxDevices >= 3) {
     const slot3 = currentEditDeviceSlots[2];
     if (slot3) {
       const dateStr = slot3.registered_at ? slot3.registered_at.slice(0,10) : '-';
@@ -1355,6 +1376,11 @@ function renderDeviceSlotsUI() {
 
 async function toggleSlot3() {
   if (!currentEditLicenseId) return;
+
+  if (document.getElementById('mLicenseType').value === 'trial') {
+    alert('체험판은 기기 1대로 고정입니다.\n대수를 늘리려면 먼저 라이선스 종류를 바꿔주세요.');
+    return;
+  }
   const maxDevices = Number(document.getElementById('mMaxDevices').value) || 2;
   if (maxDevices >= 3) {
     if (!confirm('확장 슬롯을 닫을까요? 3번째로 등록된 기기가 있다면 함께 해제됩니다.')) return;
