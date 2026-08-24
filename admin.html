@@ -310,20 +310,10 @@ tr.row-expiring:hover td,tr.row-expired:hover td{background:#FAFCFF}
   padding:3px 8px;border-radius:7px;margin-left:7px;cursor:pointer;vertical-align:2px}
 .key-btn:hover{background:#EAF2FC;color:#0757D8}
 
-.action-btns{min-width:0;flex-wrap:nowrap;align-items:center}
-.more-wrap{position:relative;display:inline-block}
-.more-btn{width:30px;height:30px;border-radius:9px;border:0;background:var(--panel-soft);
-  color:var(--text);font-size:15px;font-weight:900;cursor:pointer;line-height:1}
-.more-btn:hover{background:#EAF2FC;color:#0757D8}
-.more-menu{display:none;position:absolute;right:0;top:34px;z-index:60;background:#fff;
-  border:1px solid var(--line);border-radius:12px;box-shadow:0 16px 40px rgba(7,28,73,.16);
-  padding:6px;min-width:132px}
-.more-menu.show{display:block}
-.more-menu button{display:block;width:100%;text-align:left;border:0;background:transparent;
-  padding:9px 11px;border-radius:8px;font-size:12px;font-weight:800;color:var(--text);cursor:pointer}
-.more-menu button:hover{background:var(--panel-soft)}
-.more-menu button.danger{color:#dc2626}
-.more-menu button.danger:hover{background:#fdecec}
+.action-btns{min-width:0;flex-wrap:nowrap;align-items:center;gap:5px}
+.btn-ledger{background:#FFF3E0;color:#B45309}
+.btn-ledger:hover{background:#FFE8C7}
+.btn-ledger.done{background:#E7F8EE;color:#0c8d54}
 
 @media(max-width:900px){
   .table-wrap{overflow:visible;background:transparent;box-shadow:none;border:0}
@@ -411,6 +401,12 @@ tr.cg-row.s-churned .cg-in{color:#8a93a0}
 tr.cg-row:hover td{background:#FFFBEB}
 
 tr.cg-row.due td.cg-name{box-shadow:inset 4px 0 0 #dc2626}
+
+tr.cg-row.flash td{background:#FFF3CC !important;transition:background .5s}
+
+.cg-ro{display:flex;align-items:center;height:31px;padding:0 8px;color:var(--muted2);
+  font-weight:700;font-size:inherit;white-space:nowrap}
+.cg-ro.none{color:#c3cbd6}
 .cg-due-dot{display:inline-block;width:6px;height:6px;border-radius:50%;
   background:#dc2626;margin-right:5px;vertical-align:1px}
 
@@ -847,6 +843,8 @@ async function adminLogin() {
     document.getElementById('dashboard').classList.add('show');
     loadLicenses();
     loadHomeFields();
+    
+    loadCustomers();
   } catch(e) {
     errEl.textContent = '서버 연결 실패: ' + e.message;
   }
@@ -917,7 +915,8 @@ async function loadLicenses() {
   const tbody = document.getElementById('dojangsTable');
   tbody.innerHTML = '<tr><td colspan="7" class="loading">불러오는 중...</td></tr>';
   try {
-    LICENSES = await edgeCall('GET_LICENSES', {});
+    
+    LICENSES = await edgeCall('GET_LICENSES', {}) || [];
     updateStats(); renderTable();
   } catch(err) {
     tbody.innerHTML = `<tr><td colspan="7" class="empty-msg">불러오기 실패: ${escapeHtml(err.message)}</td></tr>`;
@@ -1000,17 +999,52 @@ async function copyKeyOnly(key) {
   catch(e) { prompt('아래 키를 복사하세요', key); }
 }
 
-function toggleRowMenu(id, ev) {
-  if (ev) ev.stopPropagation();
-  const box = document.getElementById('menu-' + id);
-  const wasOpen = box && box.classList.contains('show');
-  document.querySelectorAll('.more-menu.show').forEach(m => m.classList.remove('show'));
-  if (box && !wasOpen) box.classList.add('show');
+function customerForLicense(key) {
+  if (!key) return null;
+  return CUSTOMERS.find(c => c.license_key === key) || null;
 }
 
-document.addEventListener('click', () => {
-  document.querySelectorAll('.more-menu.show').forEach(m => m.classList.remove('show'));
-});
+async function sendToLedger(id) {
+  const d = LICENSES.find(x => String(x.id) === String(id));
+  if (!d) return;
+  if (customerForLicense(d.license_key)) { gotoLedger(d.license_key); return; }
+
+  const isTrial = d.license_type === 'trial';
+  const row = {
+    dojang_name : d.dojang_name,
+    phone       : d.phone || null,
+    license_key : d.license_key,
+    memo        : d.memo || null,
+    
+    status      : isTrial ? 'trial' : 'customer',
+    paid_amount : d.pay_amount || null,
+    sold_at     : d.pay_date || null
+  };
+  try {
+    const made = await edgeCall('SAVE_CUSTOMER', row);
+    if (made) CUSTOMERS.unshift(made);
+    renderTable();                 
+    gotoLedger(d.license_key);
+    showToast(`'${d.dojang_name}' 을(를) 장부로 보냈습니다`);
+  } catch(err) { showToast('보내기 실패: ' + err.message); }
+}
+
+function gotoLedger(key) {
+  const c = customerForLicense(key);
+  switchTab('customer');
+  if (!c) return;
+  custFilter = 'all';
+  document.getElementById('cgSearch').value = c.dojang_name;
+  renderCustomers();
+  setTimeout(() => {
+    const tr = document.querySelector(`tr.cg-row[data-id="${c.id}"]`);
+    if (!tr) return;
+    tr.classList.add('flash');
+    
+    if (tr.scrollIntoView) tr.scrollIntoView({ block:'center', behavior:'smooth' });
+    setTimeout(() => tr.classList.remove('flash'), 2200);
+  }, 60);
+}
 
 function renderTable() {
   const tbody = document.getElementById('dojangsTable');
@@ -1059,6 +1093,8 @@ function renderTable() {
     const payDisplay = d.pay_amount ? `${formatMoney(d.pay_amount)}<span class="sub-text">${d.pay_date||''}</span>` : '-';
     const encoded = encodeURIComponent(JSON.stringify(d));
     const slotUsed = (d.device_slots||[]).length, slotMax = d.max_devices||2;
+    
+    const inLedger = !!customerForLicense(d.license_key);
 
     const line2 = [
       d.phone ? escapeHtml(d.phone) : '',
@@ -1080,13 +1116,11 @@ function renderTable() {
       <td class="cell-act"><div class="action-btns">
         <button class="btn-sm btn-edit" onclick="openEditModal('${encoded}')">수정</button>
         <button class="btn-sm btn-copy" onclick="copyLicenseMsg('${encoded}')">카톡</button>
-        <span class="more-wrap">
-          <button class="more-btn" title="더보기" onclick="toggleRowMenu('${d.id}',event)">⋯</button>
-          <div class="more-menu" id="menu-${d.id}">
-            <button onclick="toggleActive('${d.id}',${d.is_active})">${d.is_active?'사용 중지':'다시 활성'}</button>
-            <button class="danger" onclick="deleteLicense('${d.id}','${escapeHtml(d.dojang_name)}')">삭제</button>
-          </div>
-        </span>
+        ${inLedger
+          ? `<button class="btn-sm btn-ledger done" onclick="gotoLedger('${escapeHtml(d.license_key)}')">장부 ✓</button>`
+          : `<button class="btn-sm btn-ledger" onclick="sendToLedger('${d.id}')">장부로</button>`}
+        <button class="btn-sm btn-toggle" onclick="toggleActive('${d.id}',${d.is_active})">${d.is_active?'중지':'활성'}</button>
+        <button class="btn-sm btn-del" onclick="deleteLicense('${d.id}','${escapeHtml(d.dojang_name)}')">삭제</button>
       </div></td>
     </tr>`;
   }).join('');
@@ -1415,11 +1449,14 @@ async function copyLicenseMsg(encoded) {
   const trialDays = Number(d.trial_days) || 3;
   const typeLabel = isTrial ? `${trialDays}일 체험판`
                   : (d.license_type === 'package' ? '태블릿 패키지' : '영구 라이선스');
-  const expireLine = (!isTrial && d.expire_date) ? `만료일: ${d.expire_date}\n` : '';
+  const maxDevices = Number(d.max_devices) || 2;
+  const payAmount = Number(d.pay_amount) || 0;
+  const paymentLine = payAmount > 0 ? `• 결제금액: ${payAmount.toLocaleString('ko-KR')}원\n` : '';
+  const expireLine = (!isTrial && d.expire_date) ? `• 만료일: ${d.expire_date}\n` : '';
 
   const msg = isTrial
     ? `[${productName} ${trialDays}일 체험판 안내]\n\n안녕하세요, ${d.dojang_name} 관장님!\n${productName}를 직접 써보실 수 있는 체험판 키를 보내드립니다.\n\n체험판 라이선스 키\n${d.license_key}\n\n체험 기간: 처음 인증하신 시점부터 ${trialDays}일\n   (키를 받은 날이 아니라, 처음 여신 날부터 계산됩니다)\n사용 기기: 1대\n\n접속 링크: ${loginUrl}\n\n사용 방법\n1. 위 홈페이지로 접속하세요\n2. [${actionLabel}] 버튼을 누르세요\n3. 체험판 키를 입력하세요\n4. 최초 1회 입력 후 자동으로 실행됩니다\n\n편하실 때 여셔도 ${trialDays}일이 그대로 보장되니 부담 없이 사용해보세요.\n체험 후 궁금한 점은 카카오톡으로 편하게 문의 주세요!`
-    : `[${productName} 라이선스 안내]\n\n안녕하세요, ${d.dojang_name} 관장님!\n${productName} 라이선스를 보내드립니다.\n\n라이선스 키\n${d.license_key}\n\n라이선스 종류: ${typeLabel}\n${expireLine}접속 링크: ${loginUrl}\n\n사용 방법\n1. 위 홈페이지로 접속하세요\n2. [${actionLabel}] 버튼을 누르세요\n3. 라이선스 키를 입력하세요\n4. 최초 1회 입력 후 자동으로 실행됩니다\n\n라이선스 키는 소중히 보관해주세요.\n문의사항은 카카오톡으로 연락 주세요.`;
+    : `[${productName} 구매 완료 안내]\n\n안녕하세요, ${d.dojang_name} 관장님!\n${productName} 구매 및 정식 라이선스 발급이 완료되었습니다.\n\n■ 라이선스 키\n${d.license_key}\n\n■ 구매 정보\n• 라이선스 종류: ${typeLabel}\n${paymentLine}• 사용 가능 기기: 최대 ${maxDevices}대\n• 월 구독료: 없음\n${expireLine}\n■ 접속 방법\n1. ${loginUrl}에 접속해 주세요.\n2. [${actionLabel}] 버튼을 눌러주세요.\n3. 위 라이선스 키를 입력해 주세요.\n4. 최초 인증 후에는 자동으로 실행됩니다.\n\n사용설명서도 함께 보내드립니다.\n첫 수업 전 실제 사용하실 기기에서 카메라와 동작 인식을 한 번 확인해 주세요.\n\n라이선스 키는 소중히 보관해 주세요.\n사용 중 궁금한 점은 카카오톡으로 편하게 문의해 주세요.`;
   try { await navigator.clipboard.writeText(msg); showToast('카톡 안내문을 복사했습니다!'); }
   catch { prompt('복사 실패. 아래 내용을 직접 복사하세요.', msg); }
 }
@@ -1563,6 +1600,9 @@ const CUST_COLS = [
   { f:'source',          t:'유입경로',   w:88,  v:['sales','all'], sel:CUST_SOURCE },
   { f:'referrer',        t:'소개해준 곳', w:100, v:['sales','all'] },
   { f:'license_key',     t:'라이선스',   w:150, v:['sales','money','all'], lic:true },
+
+  { f:'_licIssued',      t:'발급일',     w:92,  v:['money','all'], ro:true },
+  { f:'_licExpire',      t:'라이선스 만료', w:104, v:['money','all'], ro:true },
   { f:'list_price',      t:'정가',       w:84,  v:['money','all'], num:true },
   { f:'discount',        t:'할인액',     w:82,  v:['money','all'], num:true },
   { f:'discount_reason', t:'할인 사유',  w:112, v:['money','all'] },
@@ -1587,6 +1627,8 @@ async function loadCustomers() {
   try {
     CUSTOMERS = await edgeCall('GET_CUSTOMERS', {}) || [];
     renderCustomers();
+    
+    if (document.getElementById('dojangsTable').children.length) renderTable();
   } catch(err) {
     body.innerHTML = `<tr><td class="cg-empty">불러오기 실패: ${escapeHtml(err.message)}<br><br>
       <span style="font-weight:600">09번 SQL 을 아직 안 돌리셨다면 그것부터 하셔야 합니다.</span></td></tr>`;
@@ -1610,6 +1652,18 @@ function custZoom(d) {
 
 function isDue(c) {
   return !!c.next_action_at && c.next_action_at <= todayStr() && c.status !== 'churned';
+}
+
+function derivedCust(c, f) {
+  const l = LICENSES.find(x => x.license_key === c.license_key);
+  if (!l) return '';
+  if (f === '_licIssued') return (l.created_at || '').slice(0,10);
+  if (f === '_licExpire') {
+    if (l.license_type === 'lifetime') return '영구';
+    if (l.license_type === 'trial' && !l.trial_started_at) return '시작 전';
+    return l.expire_date || '';
+  }
+  return '';
 }
 
 function customerRowsNow() {
@@ -1684,6 +1738,11 @@ function custCell(c, col) {
   const id = c.id, f = col.f;
   const raw = c[f];
   const at = `data-id="${id}" data-f="${f}" onchange="onCustCell(this)"`;
+
+  if (col.ro) {
+    const v = derivedCust(c, f);
+    return `<div class="cg-ro${v?'':' none'}">${escapeHtml(v || '—')}</div>`;
+  }
 
   if (col.chk) {
     return `<div class="cg-chk"><input type="checkbox" ${raw?'checked':''} ${at}></div>`;
@@ -1852,6 +1911,7 @@ function exportCustomersCsv() {
   const esc = v => `"${String(v ?? '').replace(/"/g,'""')}"`;
   const head = CUST_COLS.map(c => c.t).join(',');
   const body = rows.map(c => CUST_COLS.map(col => {
+    if (col.ro) return esc(derivedCust(c, col.f));   
     if (col.f === 'status') return esc(statusName(c.status));
     if (col.chk) return esc(c[col.f] ? 'O' : '');
     return esc(c[col.f]);
@@ -1877,6 +1937,7 @@ if (savedToken) {
   document.getElementById('dashboard').classList.add('show');
   loadLicenses();
   loadHomeFields();
+  loadCustomers();
 }
 </script>
 
