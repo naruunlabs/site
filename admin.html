@@ -762,7 +762,9 @@ table.cg tfoot td.num{text-align:right}
       <div class="m-row">
         <div>
           <label>연락처</label>
-          <input id="mPhone" class="f-input" type="tel" placeholder="예) 010-1234-5678" />
+          
+          <input id="mPhone" class="f-input" type="tel" placeholder="예) 01012345678"
+                 onblur="this.value=formatPhone(this.value)" />
         </div>
         <div>
           <label>어떻게 알게 되셨나</label>
@@ -917,6 +919,25 @@ function daysUntil(dateStr) {
   return Math.ceil((new Date(dateStr) - new Date(todayStr())) / 86400000);
 }
 function formatMoney(v) { return v ? Number(v).toLocaleString('ko-KR') + '원' : '-'; }
+
+function formatPhone(v) {
+  const raw = String(v ?? '').trim();
+  if (!raw) return '';
+  if (/[^0-9\-\s()]/.test(raw)) return raw;          
+  const d = raw.replace(/[^0-9]/g, '');
+  if (!d) return raw;
+
+  if (d.length === 8 && /^1[5-9]/.test(d)) return d.slice(0,4) + '-' + d.slice(4);
+  
+  if (d.startsWith('02')) {
+    if (d.length === 9)  return `02-${d.slice(2,5)}-${d.slice(5)}`;
+    if (d.length === 10) return `02-${d.slice(2,6)}-${d.slice(6)}`;
+  }
+  if (d.length === 11) return `${d.slice(0,3)}-${d.slice(3,7)}-${d.slice(7)}`;  
+  if (d.length === 10) return `${d.slice(0,3)}-${d.slice(3,6)}-${d.slice(6)}`;  
+  if (d.length === 8)  return `${d.slice(0,4)}-${d.slice(4)}`;
+  return raw;                                         
+}
 function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg || '저장되었습니다!';
@@ -1061,6 +1082,8 @@ async function loadLicenses() {
   try {
     
     LICENSES = await edgeCall('GET_LICENSES', {}) || [];
+
+    LICENSES.forEach(d => { if (d.phone) d.phone = formatPhone(d.phone); });
     updateStats(); renderTable(); markSynced(); tickSidebar();
   } catch(err) {
     tbody.innerHTML = `<tr><td colspan="7" class="empty-msg">불러오기 실패: ${escapeHtml(err.message)}</td></tr>`;
@@ -1195,8 +1218,12 @@ function renderTable() {
   const q = document.getElementById('searchInput').value.trim().toLowerCase();
   const filter = document.getElementById('statusFilter').value;
   syncStatCards();   
+
+  const qd = /^[0-9]{3,}$/.test(q) ? q : '';
   let rows = licensesForCurrentProduct().filter(d => {
     const hay = [d.dojang_name, d.license_key, d.phone||'', d.memo||''].join(' ').toLowerCase();
+    const qHit = !q || hay.includes(q)
+      || (qd && String(d.phone||'').replace(/[^0-9]/g,'').includes(qd));
     const days = daysUntil(d.expire_date);
     const isExpired = days !== null && days < 0;
     const isExpiring = days !== null && days >= 0 && days <= 7;
@@ -1207,7 +1234,7 @@ function renderTable() {
     else if (filter === 'expiring') statusMatch = d.is_active && isExpiring;
     else if (filter === 'expired') statusMatch = isExpired;
     else if (filter === 'trial') statusMatch = d.license_type === 'trial';
-    return (!q || hay.includes(q)) && statusMatch;
+    return qHit && statusMatch;
   });
   rows = sortRows(rows, document.getElementById('sortSelect').value);
   if (!rows.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty-msg">표시할 라이선스가 없습니다.</td></tr>'; return; }
@@ -1588,7 +1615,8 @@ async function saveLicense(alsoCopy) {
   const pay_amount = document.getElementById('mPayAmount').value ? Number(document.getElementById('mPayAmount').value) : null;
   const pay_date = document.getElementById('mPayDate').value || null;
   const pay_memo = document.getElementById('mPayMemo').value.trim() || null;
-  const phone = document.getElementById('mPhone').value.trim() || null;
+  
+  const phone = formatPhone(document.getElementById('mPhone').value) || null;
   const memo = document.getElementById('mMemo').value.trim() || null;
   const max_devices = Number(document.getElementById('mMaxDevices').value) || 2;
   const trial_days = license_type === 'trial'
@@ -1925,6 +1953,7 @@ async function loadCustomers() {
   body.innerHTML = '<tr><td class="cg-empty">불러오는 중…</td></tr>';
   try {
     CUSTOMERS = await edgeCall('GET_CUSTOMERS', {}) || [];
+    CUSTOMERS.forEach(c => { if (c.phone) c.phone = formatPhone(c.phone); });
     renderCustomers();
     
     if (document.getElementById('dojangsTable').children.length) renderTable();
@@ -1968,13 +1997,17 @@ function derivedCust(c, f) {
 
 function customerRowsNow() {
   const q = document.getElementById('cgSearch').value.trim().toLowerCase();
+  
+  const qd = /^[0-9]{3,}$/.test(q) ? q : '';
   return CUSTOMERS.filter(c => {
     const hay = [c.dojang_name, c.owner_name, c.phone, c.sigungu, c.license_key, c.memo, c.next_action]
       .filter(Boolean).join(' ').toLowerCase();
+    const qHit = !q || hay.includes(q)
+      || (qd && String(c.phone||'').replace(/[^0-9]/g,'').includes(qd));
     let m = true;
     if (custFilter === 'due') m = isDue(c);
     else if (custFilter !== 'all') m = (c.status || 'lead') === custFilter;
-    return (!q || hay.includes(q)) && m;
+    return qHit && m;
   });
 }
 
@@ -2132,6 +2165,8 @@ async function onCustCell(el) {
   if (el.type === 'checkbox') v = el.checked;
   else if (el.type === 'number') v = el.value === '' ? null : Number(el.value);
   else v = el.value === '' ? null : el.value;
+  
+  if (f === 'phone' && v) { v = formatPhone(v); el.value = v; }
   c[f] = v;
 
   const moneyChanged = recalcMoney(c, f);
