@@ -351,6 +351,99 @@ tr.row-expiring:hover td,tr.row-expired:hover td{background:#FAFCFF}
   .empty-msg,.loading{background:var(--panel);border-radius:16px}
 }
 
+.cg-wrap{background:var(--panel);border:1px solid var(--line);border-radius:16px;
+  box-shadow:var(--shadow-sm);display:flex;flex-direction:column;overflow:hidden}
+.cg-top{display:flex;align-items:center;gap:8px;padding:11px 13px;
+  border-bottom:1px solid var(--line);flex-wrap:wrap;background:var(--panel)}
+.cg-title{font-size:15px;font-weight:900;color:var(--text);white-space:nowrap}
+.cg-sub{font-size:11.5px;color:var(--muted2);font-weight:700}
+.cg-spacer{flex:1 1 auto}
+.cg-seg{display:inline-flex;background:var(--panel-soft);border-radius:10px;padding:3px;gap:2px}
+.cg-seg button{border:0;background:transparent;font-family:inherit;font-size:12px;font-weight:800;
+  color:var(--muted);padding:6px 12px;border-radius:8px;cursor:pointer;white-space:nowrap}
+.cg-seg button.on{background:#fff;color:#0757D8;box-shadow:0 1px 3px rgba(7,28,73,.14)}
+.cg-btn{height:32px;padding:0 12px;border-radius:9px;border:1px solid var(--line);background:#fff;
+  font-family:inherit;font-size:12px;font-weight:800;color:var(--muted);cursor:pointer;white-space:nowrap}
+.cg-btn:hover{background:#EAF2FC;color:#0757D8}
+.cg-btn.primary{background:#0757D8;color:#fff;border-color:#0757D8}
+.cg-btn.primary:hover{background:#0646AE;color:#fff}
+.cg-search{height:32px;width:160px;padding:0 11px;border-radius:9px;border:1px solid var(--line);
+  font-family:inherit;font-size:12px;font-weight:700;background:#fff;color:var(--text)}
+.cg-legend{display:flex;gap:11px;align-items:center;font-size:11px;font-weight:800;
+  color:var(--muted2);flex-wrap:wrap}
+.cg-legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:4px;
+  vertical-align:-1px;border:1px solid rgba(0,0,0,.08)}
+
+.cg-scroll{overflow:auto;background:#fff;max-height:calc(100vh - 300px);min-height:320px}
+table.cg{border-collapse:separate;border-spacing:0;font-variant-numeric:tabular-nums;
+  font-size:var(--cg-fs,12px)}
+table.cg th,table.cg td{border-right:1px solid #e8edf3;border-bottom:1px solid #e8edf3;
+  padding:0;white-space:nowrap;background:#fff}
+
+table.cg thead th{position:sticky;top:0;z-index:3;background:#F7FAFE;color:#475467;
+  font-size:11px;font-weight:900;height:32px;padding:0 8px;text-align:left}
+table.cg th.cg-name,table.cg td.cg-name{position:sticky;left:0;z-index:2;
+  border-right:2px solid #cbd5e1}
+table.cg thead th.cg-name{z-index:5;background:#F7FAFE}
+
+table.cg td{height:33px}
+.cg-in{width:100%;height:31px;border:0;background:transparent;font-family:inherit;
+  font-size:inherit;font-weight:700;color:var(--text);padding:0 8px;outline:0;
+  border-radius:0;box-sizing:border-box}
+.cg-in:hover{background:#F7FAFE}
+.cg-in:focus{background:#fff;box-shadow:inset 0 0 0 2px #0757D8}
+.cg-in.num{text-align:right;font-variant-numeric:tabular-nums}
+.cg-in::placeholder{color:#c3cbd6;font-weight:600}
+select.cg-in{cursor:pointer;-webkit-appearance:none;appearance:none}
+.cg-chk{display:flex;align-items:center;justify-content:center;height:31px}
+.cg-chk input{width:16px;height:16px;accent-color:#0757D8;cursor:pointer}
+
+tr.cg-row.saving td.cg-name{box-shadow:inset 4px 0 0 #f59e0b}
+tr.cg-row.saved  td.cg-name{box-shadow:inset 4px 0 0 #12A15C}
+tr.cg-row.failed td.cg-name{box-shadow:inset 4px 0 0 #dc2626}
+tr.cg-row.failed td{background:#fdecec}
+
+tr.cg-row.s-lead     td.cg-name{background:#fff}
+tr.cg-row.s-trial    td{background:#F2F8FF}
+tr.cg-row.s-customer td{background:#F2FBF6}
+tr.cg-row.s-churned  td{background:#F6F7F9;color:#8a93a0}
+tr.cg-row.s-churned .cg-in{color:#8a93a0}
+tr.cg-row:hover td{background:#FFFBEB}
+
+tr.cg-row.due td.cg-name{box-shadow:inset 4px 0 0 #dc2626}
+.cg-due-dot{display:inline-block;width:6px;height:6px;border-radius:50%;
+  background:#dc2626;margin-right:5px;vertical-align:1px}
+
+tr.cg-notes td{background:#F7FAFE;padding:14px 16px;white-space:normal}
+.cg-note-list{display:flex;flex-direction:column;gap:7px;margin-bottom:11px}
+.cg-note{display:flex;gap:10px;align-items:flex-start;font-size:12.5px;font-weight:700;
+  background:#fff;border:1px solid var(--line);border-radius:10px;padding:9px 11px}
+.cg-note b{color:#0757D8;font-weight:900;white-space:nowrap}
+.cg-note span.m{color:var(--muted2);font-weight:800;white-space:nowrap}
+.cg-note p{margin:0;flex:1;color:var(--text);font-weight:600;line-height:1.55}
+.cg-note button{border:0;background:transparent;color:#c3cbd6;font-weight:900;cursor:pointer;font-size:13px}
+.cg-note button:hover{color:#dc2626}
+.cg-note-add{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+.cg-note-add input[type=date]{width:140px}
+.cg-note-add select{width:92px}
+.cg-note-add input[type=text]{flex:1;min-width:200px}
+.cg-note-add input,.cg-note-add select{height:34px;border:1px solid var(--line);border-radius:9px;
+  padding:0 10px;font-family:inherit;font-size:12.5px;font-weight:700;background:#fff;color:var(--text)}
+.cg-note-empty{font-size:12px;color:var(--muted2);font-weight:700;margin-bottom:11px}
+
+table.cg tfoot td{position:sticky;bottom:0;z-index:4;background:#F7FAFE;font-weight:900;
+  color:var(--text);height:36px;padding:0 8px;border-top:2px solid #cbd5e1}
+table.cg tfoot td.cg-name{z-index:6}
+table.cg tfoot td.num{text-align:right}
+
+.cg-empty{padding:44px;text-align:center;font-size:13px;font-weight:700;color:var(--muted2)}
+
+@media(max-width:900px){
+  .cg-scroll{max-height:none}
+  .cg-search{width:100%}
+  .cg-top{gap:6px}
+}
+
 </style>
 
 </head>
@@ -386,6 +479,7 @@ tr.row-expiring:hover td,tr.row-expired:hover td{background:#FAFCFF}
   <div class="tab-bar">
     <div class="sidebar-brand"><img class="sidebar-company-logo" src="naruunlabs_logo.svg" alt="NARUUN LABS"><span>Powered by Google MediaPipe</span></div>
     <button class="tab-btn active" onclick="switchTab('license')">라이선스 관리</button>
+    <button class="tab-btn" onclick="switchTab('customer')">회원 관리</button>
     <button class="tab-btn" onclick="switchTab('home')">홈페이지 관리</button>
   </div>
 
@@ -438,6 +532,64 @@ tr.row-expiring:hover td,tr.row-expired:hover td{background:#FAFCFF}
       </table>
     </div>
     <div class="footer-note">admin v7 · administrator console</div>
+  </div>
+
+  <div class="tab-content" id="tab-customer">
+
+    <div class="stats-row" style="grid-template-columns:repeat(4,minmax(0,1fr))">
+      <div class="stat-card" data-cfilter="all" onclick="pickCustStat('all')"><div class="num" id="cstTotal">-</div><div class="label">전체 회원</div></div>
+      <div class="stat-card" data-cfilter="customer" onclick="pickCustStat('customer')"><div class="num" id="cstPaid" style="color:var(--green)">-</div><div class="label">구매 고객</div></div>
+      <div class="stat-card" data-cfilter="due" onclick="pickCustStat('due')"><div class="num" id="cstDue" style="color:var(--red)">-</div><div class="label">오늘 연락할 곳</div></div>
+      <div class="stat-card" data-cfilter="all" onclick="pickCustStat('all')"><div class="num" id="cstRevenue" style="color:var(--gold)">-</div><div class="label">누적 매출</div></div>
+    </div>
+
+    <div class="cg-wrap">
+      <div class="cg-top">
+        <div class="cg-title">회원 장부</div>
+        <div class="cg-sub" id="cgSub">불러오는 중…</div>
+
+        <div class="cg-seg" id="cgView">
+          <button data-v="sales" class="on" onclick="setCustView('sales')">영업</button>
+          <button data-v="money" onclick="setCustView('money')">판매</button>
+          <button data-v="all" onclick="setCustView('all')">전체</button>
+        </div>
+
+        <div class="cg-seg" id="cgStatus">
+          <button data-s="all" class="on" onclick="pickCustStat('all')">전체</button>
+          <button data-s="lead" onclick="pickCustStat('lead')">잠재</button>
+          <button data-s="trial" onclick="pickCustStat('trial')">체험</button>
+          <button data-s="customer" onclick="pickCustStat('customer')">고객</button>
+          <button data-s="churned" onclick="pickCustStat('churned')">이탈</button>
+        </div>
+
+        <input class="cg-search" id="cgSearch" placeholder="도장·관장님·전화 검색" oninput="renderCustomers()">
+
+        <div class="cg-spacer"></div>
+
+        <div class="cg-legend">
+          <span><i style="background:#fff;border-color:#cbd5e1"></i>잠재</span>
+          <span><i style="background:#F2F8FF"></i>체험</span>
+          <span><i style="background:#F2FBF6"></i>고객</span>
+          <span><i style="background:#F6F7F9"></i>이탈</span>
+          <span><i style="background:#dc2626"></i>연락할 때</span>
+        </div>
+
+        <button class="cg-btn" onclick="custZoom(-1)">축소 −</button>
+        <button class="cg-btn" onclick="custZoom(1)">확대 +</button>
+        <button class="cg-btn" onclick="exportCustomersCsv()">엑셀로 저장</button>
+        <button class="cg-btn" onclick="loadCustomers()">새로고침</button>
+        <button class="cg-btn primary" onclick="addCustomerRow()">+ 회원 추가</button>
+      </div>
+
+      <div class="cg-scroll" id="cgScroll">
+        <table class="cg" id="cgTable">
+          <thead id="cgHead"></thead>
+          <tbody id="cgBody"><tr><td class="cg-empty">불러오는 중…</td></tr></tbody>
+          <tfoot id="cgFoot"></tfoot>
+        </table>
+      </div>
+    </div>
+    <div class="footer-note">칸을 눌러 바로 고칩니다 · 칸을 벗어나면 그 줄만 저장됩니다</div>
   </div>
 
   <div class="tab-content" id="tab-home">
@@ -664,11 +816,13 @@ function showToast(msg) {
 }
 
 function switchTab(tab) {
-  const names=['license','home'];
+  
+  const names=['license','customer','home'];
   document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', names[i]===tab));
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
   document.getElementById('tab-'+tab).classList.add('active');
   if (tab === 'license') loadLicenses();
+  if (tab === 'customer') loadCustomers();
   if (tab === 'home') loadHomeFields();
 }
 
@@ -1383,6 +1537,333 @@ async function saveHomeData(){
   Object.keys(HOME_TARGET_DEFAULTS[t]).forEach(k=>{const el=document.getElementById('f_'+t+'_'+k);if(!el)return;HOME_DATA_BY_TARGET[t][k]=el.type==='checkbox'?el.checked:el.value;});
   try{await edgeCall('UPDATE_HOME_DATA',{target:t,data:HOME_DATA_BY_TARGET[t]});showToast('저장되었습니다.');setHomeStatus('저장 완료. 실제 방문자 페이지에 반영됩니다.');}
   catch(e){showToast('저장 실패');setHomeStatus('저장 실패. 서버에는 반영되지 않았습니다: '+e.message,false);}
+}
+
+let CUSTOMERS = [];
+let custView = 'sales';      
+let custFilter = 'all';      
+let custZoomLevel = 0;       
+let openNotesFor = null;     
+
+const CUST_STATUS = [
+  ['lead','잠재'], ['trial','체험'], ['customer','고객'], ['churned','이탈']
+];
+const CUST_SOURCE = ['', '유튜브', '인스타', '지인소개', '검색', '박람회', '기타'];
+const CUST_PAY    = ['', '계좌이체', '카드', '현금'];
+const CUST_SIDO   = ['', '서울','부산','대구','인천','광주','대전','울산','세종',
+  '경기','강원','충북','충남','전북','전남','경북','경남','제주'];
+
+const CUST_COLS = [
+  { f:'dojang_name',     t:'도장명',     w:150, v:['sales','money','all'], name:true },
+  { f:'owner_name',      t:'관장님',     w:78,  v:['sales','all'] },
+  { f:'phone',           t:'전화',       w:118, v:['sales','all'] },
+  { f:'sido',            t:'시/도',      w:74,  v:['sales','all'], sel:CUST_SIDO },
+  { f:'sigungu',         t:'시군구',     w:82,  v:['sales','all'] },
+  { f:'status',          t:'상태',       w:74,  v:['sales','money','all'], sel:CUST_STATUS },
+  { f:'source',          t:'유입경로',   w:88,  v:['sales','all'], sel:CUST_SOURCE },
+  { f:'referrer',        t:'소개해준 곳', w:100, v:['sales','all'] },
+  { f:'license_key',     t:'라이선스',   w:150, v:['sales','money','all'], lic:true },
+  { f:'list_price',      t:'정가',       w:84,  v:['money','all'], num:true },
+  { f:'discount',        t:'할인액',     w:82,  v:['money','all'], num:true },
+  { f:'discount_reason', t:'할인 사유',  w:112, v:['money','all'] },
+  { f:'paid_amount',     t:'실수령',     w:90,  v:['money','all'], num:true },
+  { f:'sold_at',         t:'판매일',     w:124, v:['money','all'], date:true },
+  { f:'pay_method',      t:'결제수단',   w:88,  v:['money','all'], sel:CUST_PAY },
+  { f:'tax_invoice',     t:'계산서',     w:56,  v:['money','all'], chk:true },
+  { f:'biz_no',          t:'사업자번호', w:112, v:['money','all'] },
+  { f:'extra_amount',    t:'추가판매',   w:84,  v:['money','all'], num:true },
+  { f:'extra_at',        t:'추가일',     w:124, v:['money','all'], date:true },
+  { f:'students',        t:'관원수',     w:62,  v:['all'], num:true },
+  { f:'device',          t:'기기',       w:88,  v:['all'] },
+  { f:'next_action',     t:'다음 할 일', w:150, v:['sales','all'] },
+  { f:'next_action_at',  t:'언제',       w:124, v:['sales','all'], date:true },
+  { f:'memo',            t:'메모',       w:180, v:['sales','all'] }
+];
+function custColsNow(){ return CUST_COLS.filter(c => c.v.includes(custView)); }
+
+async function loadCustomers() {
+  const body = document.getElementById('cgBody');
+  body.innerHTML = '<tr><td class="cg-empty">불러오는 중…</td></tr>';
+  try {
+    CUSTOMERS = await edgeCall('GET_CUSTOMERS', {}) || [];
+    renderCustomers();
+  } catch(err) {
+    body.innerHTML = `<tr><td class="cg-empty">불러오기 실패: ${escapeHtml(err.message)}<br><br>
+      <span style="font-weight:600">09번 SQL 을 아직 안 돌리셨다면 그것부터 하셔야 합니다.</span></td></tr>`;
+    document.getElementById('cgSub').textContent = '';
+  }
+}
+
+function setCustView(v) {
+  custView = v;
+  document.querySelectorAll('#cgView button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
+  renderCustomers();
+}
+function pickCustStat(f) {
+  custFilter = (custFilter === f && f !== 'all') ? 'all' : f;
+  renderCustomers();
+}
+function custZoom(d) {
+  custZoomLevel = Math.max(-2, Math.min(2, custZoomLevel + d));
+  document.getElementById('cgTable').style.setProperty('--cg-fs', (12 + custZoomLevel) + 'px');
+}
+
+function isDue(c) {
+  return !!c.next_action_at && c.next_action_at <= todayStr() && c.status !== 'churned';
+}
+
+function customerRowsNow() {
+  const q = document.getElementById('cgSearch').value.trim().toLowerCase();
+  return CUSTOMERS.filter(c => {
+    const hay = [c.dojang_name, c.owner_name, c.phone, c.sigungu, c.license_key, c.memo, c.next_action]
+      .filter(Boolean).join(' ').toLowerCase();
+    let m = true;
+    if (custFilter === 'due') m = isDue(c);
+    else if (custFilter !== 'all') m = (c.status || 'lead') === custFilter;
+    return (!q || hay.includes(q)) && m;
+  });
+}
+
+function renderCustomers() {
+
+  const act = document.activeElement;
+  const keep = (act && act.classList && act.classList.contains('cg-in'))
+    ? { id: act.dataset.id, f: act.dataset.f, pos: act.selectionStart } : null;
+
+  document.querySelectorAll('#cgStatus button').forEach(b => b.classList.toggle('on', b.dataset.s === custFilter));
+  document.querySelectorAll('#tab-customer .stat-card').forEach(c =>
+    c.classList.toggle('is-on', c.dataset.cfilter === custFilter && custFilter !== 'all'));
+
+  const cols = custColsNow();
+  document.getElementById('cgHead').innerHTML =
+    '<tr>' + cols.map(c => `<th class="${c.name?'cg-name':''}" style="min-width:${c.w}px;width:${c.w}px">${c.t}</th>`).join('')
+    + '<th style="min-width:96px;width:96px">관리</th></tr>';
+
+  const rows = customerRowsNow();
+  updateCustStats();
+
+  if (!rows.length) {
+    const msg = CUSTOMERS.length
+      ? '조건에 맞는 회원이 없습니다.'
+      : '아직 회원이 없습니다. 오른쪽 위 회원 추가 버튼을 눌러보세요.';
+    document.getElementById('cgBody').innerHTML =
+      `<tr><td class="cg-empty" colspan="${cols.length+1}">${msg}</td></tr>`;
+    document.getElementById('cgFoot').innerHTML = '';
+    document.getElementById('cgSub').textContent = `${CUSTOMERS.length}명`;
+    return;
+  }
+
+  document.getElementById('cgBody').innerHTML = rows.map(c => {
+    const cls = ['cg-row', 's-' + (c.status || 'lead')];
+    if (isDue(c)) cls.push('due');
+    let html = `<tr class="${cls.join(' ')}" data-id="${c.id}">`
+      + cols.map(col => `<td class="${col.name?'cg-name':''}">${custCell(c, col)}</td>`).join('')
+      + `<td><div style="display:flex;gap:4px;padding:0 5px">
+           <button class="btn-sm btn-edit" onclick="toggleNotes('${c.id}')">이력</button>
+           <button class="btn-sm btn-del" onclick="deleteCustomer('${c.id}')">삭제</button>
+         </div></td></tr>`;
+    if (openNotesFor === c.id) {
+      html += `<tr class="cg-notes"><td colspan="${cols.length+1}" id="notes-${c.id}">불러오는 중…</td></tr>`;
+    }
+    return html;
+  }).join('');
+
+  renderCustFoot(rows, cols);
+  document.getElementById('cgSub').textContent =
+    `${rows.length}명 표시 · 전체 ${CUSTOMERS.length}명`;
+
+  if (openNotesFor) loadNotes(openNotesFor);
+
+  if (keep) {
+    const back = document.querySelector(`.cg-in[data-id="${keep.id}"][data-f="${keep.f}"]`);
+    if (back) { back.focus(); try { back.setSelectionRange(keep.pos, keep.pos); } catch(e) {} }
+  }
+}
+
+function custCell(c, col) {
+  const id = c.id, f = col.f;
+  const raw = c[f];
+  const at = `data-id="${id}" data-f="${f}" onchange="onCustCell(this)"`;
+
+  if (col.chk) {
+    return `<div class="cg-chk"><input type="checkbox" ${raw?'checked':''} ${at}></div>`;
+  }
+  if (col.sel) {
+    const opts = col.sel.map(o => Array.isArray(o) ? o : [o, o || '—']);
+    return `<select class="cg-in" ${at}>` + opts.map(([v,t]) =>
+      `<option value="${escapeHtml(v)}"${String(raw||'')===v?' selected':''}>${escapeHtml(t)}</option>`).join('') + '</select>';
+  }
+  if (col.lic) {
+    
+    const keys = LICENSES.map(l => l.license_key).filter(Boolean);
+    if (raw && !keys.includes(raw)) keys.unshift(raw);   
+    return `<select class="cg-in" ${at}><option value="">—</option>` + keys.map(k =>
+      `<option value="${escapeHtml(k)}"${raw===k?' selected':''}>${escapeHtml(k)}</option>`).join('') + '</select>';
+  }
+  if (col.date) {
+    return `<input type="date" class="cg-in" value="${escapeHtml(raw||'')}" ${at}>`;
+  }
+  if (col.num) {
+    return `<input type="number" class="cg-in num" value="${raw ?? ''}" ${at}>`;
+  }
+  return `<input type="text" class="cg-in" value="${escapeHtml(raw||'')}" ${at}>`;
+}
+
+function renderCustFoot(rows, cols) {
+  const sum = f => rows.reduce((a, c) => a + (Number(c[f]) || 0), 0);
+  const list = sum('list_price'), disc = sum('discount'),
+        paid = sum('paid_amount'), extra = sum('extra_amount');
+  const rate = list ? Math.round(disc / list * 100) : 0;
+
+  const cells = cols.map(col => {
+    if (col.name) return `<td class="cg-name">합계 ${rows.length}명</td>`;
+    if (col.f === 'list_price')   return `<td class="num">${list.toLocaleString('ko-KR')}</td>`;
+    if (col.f === 'discount')     return `<td class="num">${disc.toLocaleString('ko-KR')}<br><span style="font-size:10px;color:#8a93a0">평균 ${rate}%</span></td>`;
+    if (col.f === 'paid_amount')  return `<td class="num" style="color:#12A15C">${paid.toLocaleString('ko-KR')}</td>`;
+    if (col.f === 'extra_amount') return `<td class="num">${extra.toLocaleString('ko-KR')}</td>`;
+    return '<td></td>';
+  }).join('');
+  document.getElementById('cgFoot').innerHTML = `<tr>${cells}<td></td></tr>`;
+}
+
+function updateCustStats() {
+  const paidCnt = CUSTOMERS.filter(c => c.status === 'customer').length;
+  const dueCnt  = CUSTOMERS.filter(isDue).length;
+  const revenue = CUSTOMERS.reduce((a,c) => a + (Number(c.paid_amount)||0) + (Number(c.extra_amount)||0), 0);
+  document.getElementById('cstTotal').textContent = CUSTOMERS.length;
+  document.getElementById('cstPaid').textContent = paidCnt;
+  document.getElementById('cstDue').textContent = dueCnt;
+  document.getElementById('cstRevenue').textContent = revenue ? (revenue/10000).toLocaleString('ko-KR') + '만' : '0';
+}
+
+async function onCustCell(el) {
+  const id = el.dataset.id, f = el.dataset.f;
+  const c = CUSTOMERS.find(x => x.id === id);
+  if (!c) return;
+
+  let v;
+  if (el.type === 'checkbox') v = el.checked;
+  else if (el.type === 'number') v = el.value === '' ? null : Number(el.value);
+  else v = el.value === '' ? null : el.value;
+  c[f] = v;
+
+  if ((f === 'list_price' || f === 'discount') && (c.paid_amount === null || c.paid_amount === undefined || c.paid_amount === '')) {
+    const p = (Number(c.list_price)||0) - (Number(c.discount)||0);
+    if (p > 0) c.paid_amount = p;
+  }
+
+  const tr = el.closest('tr');
+  if (tr) { tr.classList.remove('saved','failed'); tr.classList.add('saving'); }
+  try {
+    const saved = await edgeCall('SAVE_CUSTOMER', c);
+    
+    if (saved && saved.id) Object.assign(c, saved);
+    if (tr) { tr.classList.remove('saving'); tr.classList.add('saved'); }
+    updateCustStats();
+    
+    if (['status','list_price','discount','paid_amount','extra_amount','next_action_at'].includes(f)) renderCustomers();
+  } catch(err) {
+    if (tr) { tr.classList.remove('saving'); tr.classList.add('failed'); }
+    showToast('저장 실패: ' + err.message);
+  }
+}
+
+async function addCustomerRow() {
+  const name = prompt('도장 이름을 적어주세요');
+  if (!name || !name.trim()) return;
+  try {
+    const made = await edgeCall('SAVE_CUSTOMER', { dojang_name: name.trim(), status: 'lead' });
+    if (made) CUSTOMERS.unshift(made);
+    custFilter = 'all';
+    document.getElementById('cgSearch').value = '';
+    renderCustomers();
+    showToast('추가했습니다');
+  } catch(err) { showToast('추가 실패: ' + err.message); }
+}
+
+async function deleteCustomer(id) {
+  const c = CUSTOMERS.find(x => x.id === id);
+  if (!c) return;
+  if (!confirm(`'${c.dojang_name}' 을(를) 지울까요?\n상담 이력도 함께 지워집니다. 되돌릴 수 없습니다.`)) return;
+  try {
+    await edgeCall('DELETE_CUSTOMER', { id });
+    CUSTOMERS = CUSTOMERS.filter(x => x.id !== id);
+    if (openNotesFor === id) openNotesFor = null;
+    renderCustomers();
+    showToast('지웠습니다');
+  } catch(err) { showToast('삭제 실패: ' + err.message); }
+}
+
+function toggleNotes(id) {
+  openNotesFor = (openNotesFor === id) ? null : id;
+  renderCustomers();
+}
+
+async function loadNotes(id) {
+  const box = document.getElementById('notes-' + id);
+  if (!box) return;
+  try {
+    const notes = await edgeCall('GET_CUSTOMER_NOTES', { customer_id: id }) || [];
+    const list = notes.length
+      ? `<div class="cg-note-list">` + notes.map(n => `<div class="cg-note">
+           <b>${escapeHtml(n.noted_at||'')}</b>
+           ${n.method?`<span class="m">${escapeHtml(n.method)}</span>`:''}
+           <p>${escapeHtml(n.body||'')}</p>
+           <button title="지우기" onclick="deleteNote('${n.id}','${id}')">×</button>
+         </div>`).join('') + `</div>`
+      : `<div class="cg-note-empty">아직 기록이 없습니다.</div>`;
+    box.innerHTML = list + `
+      <div class="cg-note-add">
+        <input type="date" id="nd-${id}" value="${todayStr()}">
+        <select id="nm-${id}"><option>전화</option><option>카톡</option><option>방문</option><option>기타</option></select>
+        <input type="text" id="nb-${id}" placeholder="무슨 얘기를 했나요" onkeydown="if(event.key==='Enter')addNote('${id}')">
+        <button class="cg-btn primary" onclick="addNote('${id}')">기록</button>
+      </div>`;
+  } catch(err) {
+    box.innerHTML = `<div class="cg-note-empty">이력을 불러오지 못했습니다: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+async function addNote(id) {
+  const body = document.getElementById('nb-' + id).value.trim();
+  if (!body) return;
+  try {
+    await edgeCall('ADD_CUSTOMER_NOTE', {
+      customer_id: id,
+      noted_at: document.getElementById('nd-' + id).value,
+      method: document.getElementById('nm-' + id).value,
+      body
+    });
+    loadNotes(id);
+    showToast('기록했습니다');
+  } catch(err) { showToast('기록 실패: ' + err.message); }
+}
+
+async function deleteNote(noteId, custId) {
+  if (!confirm('이 기록을 지울까요?')) return;
+  try { await edgeCall('DELETE_CUSTOMER_NOTE', { id: noteId }); loadNotes(custId); }
+  catch(err) { showToast('삭제 실패: ' + err.message); }
+}
+
+function exportCustomersCsv() {
+  const rows = customerRowsNow();
+  if (!rows.length) { showToast('내보낼 것이 없습니다'); return; }
+  const statusName = v => (CUST_STATUS.find(s => s[0] === v) || [,v||''])[1];
+  const esc = v => `"${String(v ?? '').replace(/"/g,'""')}"`;
+  const head = CUST_COLS.map(c => c.t).join(',');
+  const body = rows.map(c => CUST_COLS.map(col => {
+    if (col.f === 'status') return esc(statusName(c.status));
+    if (col.chk) return esc(c[col.f] ? 'O' : '');
+    return esc(c[col.f]);
+  }).join(',')).join('\n');
+
+  const blob = new Blob(['﻿' + head + '\n' + body], { type:'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `회원장부_${todayStr()}.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60000);   
+  showToast('엑셀 파일로 받았습니다');
 }
 
 document.getElementById('pwModalBg').addEventListener('click', e => { if(e.target===e.currentTarget) closePwModal(); });
