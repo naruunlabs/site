@@ -506,6 +506,10 @@ table.cg tfoot td.num{text-align:right}
 @media(max-width:900px){ .toolbar{grid-template-columns:1fr 1fr} }
 @media(max-width:560px){ .toolbar{grid-template-columns:1fr} }
 
+.slot-ip-warn{background:#fff6e8;border:1px solid #f0c987;border-radius:12px;
+  padding:10px 12px;margin-bottom:10px;font-size:12px;font-weight:800;color:#8a5a10;line-height:1.5}
+.slot-ip-warn-sub{display:block;margin-top:4px;font-size:11px;font-weight:600;color:#9b7333}
+.slot-ip-moved{color:#8a5a10;font-weight:700}
 </style>
 
 </head>
@@ -809,6 +813,7 @@ table.cg tfoot td.num{text-align:right}
     <input id="mMaxDevices" type="hidden" value="2" />
     <div class="modal-section" id="deviceSlotSection" style="display:none;">
       <div class="modal-section-title">기기 슬롯</div>
+      <div id="slotIpWarn" class="slot-ip-warn" style="display:none;"></div>
       <div id="deviceSlotsBox" class="admin-slot-grid"></div>
       <button type="button" class="btn-sm btn-toggle" style="margin-top:10px;" onclick="resetDeviceSlots()">전체 기기 초기화 (재발급 시 사용)</button>
     </div>
@@ -1491,6 +1496,42 @@ let currentEditLicenseId = null;
 
 let currentEditTrialStartedAt = null;
 
+function ipPrefix(ip) {
+  if (!ip || typeof ip !== 'string' || ip === 'unknown') return '';
+  if (ip.includes(':')) return ip.split(':').slice(0, 3).join(':');
+  const p = ip.split('.');
+  return p.length === 4 ? p.slice(0, 2).join('.') : '';
+}
+
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"]/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+}
+
+function slotIpLine(slot) {
+  if (!slot) return '';
+  const last = slot.last_ip || slot.first_ip;
+  if (!last) return '';
+  const moved = slot.first_ip && slot.last_ip &&
+                ipPrefix(slot.first_ip) && ipPrefix(slot.last_ip) &&
+                ipPrefix(slot.first_ip) !== ipPrefix(slot.last_ip);
+  return `<br>접속 IP ${esc(last)}` +
+         (moved ? `<br><span class="slot-ip-moved">처음 등록: ${esc(slot.first_ip)}</span>` : '');
+}
+
+function describeSlotIpRisk(slots) {
+  const list = (Array.isArray(slots) ? slots : [])
+    .map(s => ({ ip: s && (s.last_ip || s.first_ip), pre: ipPrefix(s && (s.last_ip || s.first_ip)) }))
+    .filter(x => x.pre);
+  if (list.length < 2) return '';
+  const kinds = [...new Set(list.map(x => x.pre))];
+  if (kinds.length < 2) return '';
+
+  return '※ 기기마다 접속한 인터넷망이 다릅니다 (' + kinds.map(esc).join(' · ') + ')<br>' +
+         '<span class="slot-ip-warn-sub">같은 도장이면 보통 앞자리가 같습니다. ' +
+         '다만 집에서 쓰거나 LTE·핫스팟을 쓰면 달라질 수 있으니, 막지 말고 먼저 통화로 확인해 주세요.</span>';
+}
+
 function renderDeviceSlotsUI() {
   const box = document.getElementById('deviceSlotsBox');
   if (!box) return;
@@ -1501,6 +1542,13 @@ function renderDeviceSlotsUI() {
   const baseMax  = Math.min(maxDevices, 2);      
   const baseShow = Math.max(baseMax, Math.min(used, 2));
 
+  const ipWarn = describeSlotIpRisk(currentEditDeviceSlots);
+  const warnBox = document.getElementById('slotIpWarn');
+  if (warnBox) {
+    warnBox.style.display = ipWarn ? 'block' : 'none';
+    warnBox.innerHTML = ipWarn || '';
+  }
+
   let html = '';
   for (let i = 0; i < baseShow; i++) {
     const slot = currentEditDeviceSlots[i];
@@ -1509,7 +1557,7 @@ function renderDeviceSlotsUI() {
       const dateStr = slot.registered_at ? slot.registered_at.slice(0,10) : '-';
       html += `<div class="admin-slot-card is-used${over?' is-over':''}">
         <div class="admin-slot-status">${over ? '한도 초과' : '사용 중'}</div>
-        <div class="admin-slot-sub">등록일 ${dateStr}${over?'<br>한도가 줄기 전에 등록된 기기입니다':''}</div>
+        <div class="admin-slot-sub">등록일 ${dateStr}${slotIpLine(slot)}${over?'<br>한도가 줄기 전에 등록된 기기입니다':''}</div>
         <button type="button" class="btn-sm btn-del" onclick="removeDeviceSlot(${i})">기기 해제</button>
       </div>`;
     } else {
@@ -1531,7 +1579,7 @@ function renderDeviceSlotsUI() {
       const dateStr = slot3.registered_at ? slot3.registered_at.slice(0,10) : '-';
       html += `<div class="admin-slot-card is-used is-toggle" onclick="toggleSlot3()">
         <div class="admin-slot-status">사용 중</div>
-        <div class="admin-slot-sub">등록일 ${dateStr}<br>클릭하면 슬롯을 닫습니다</div>
+        <div class="admin-slot-sub">등록일 ${dateStr}${slotIpLine(slot3)}<br>클릭하면 슬롯을 닫습니다</div>
       </div>`;
     } else {
       html += `<div class="admin-slot-card is-open is-toggle" onclick="toggleSlot3()">
