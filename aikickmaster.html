@@ -4600,7 +4600,7 @@ function sparringModeLabel(){
   return sparringMode==='practice' ? '연습모드' : sparringMode==='speed' ? '스피드' : '실전모드';
 }
 
-const SPEED_WAIT_MIN=500, SPEED_WAIT_MAX=2000;  
+const SPEED_WAIT_MIN=500, SPEED_WAIT_MAX=2500;
 const SPEED_COUNT_MS=800;                        
 
 const SPEED_LIGHT_LEAD_MS=800;
@@ -4642,7 +4642,13 @@ function speedNewState(){
           rec:{c:null,h:null}, goT:0, tries:0, times:[],
           maxRound:n, winNeed:(n===5?3:2), tries1p:n};
 }
-function speedFmt(ms){ return ms==null ? '—' : (ms/1000).toFixed(1)+'초'; }
+
+const SPEED_SHOW_MS=10;   
+function speedBucket(ms){ return ms==null ? null : Math.round(ms/SPEED_SHOW_MS); }
+function speedFmt(ms){
+  const b=speedBucket(ms);
+  return b==null ? '—' : (b*SPEED_SHOW_MS/1000).toFixed(2)+'초';
+}
 
 function speedPopup(key, text, color, big){
   const dur=1100;
@@ -4836,7 +4842,9 @@ function speedEndRound(reason){
   const c=speedGame.rec.c, h=speedGame.rec.h;
   let winner=null, why=reason||'';
   if(c!=null && h!=null){
-    winner = c===h ? null : (c<h ? 'c' : 'h');
+
+    const cb=speedBucket(c), hb=speedBucket(h);
+    winner = cb===hb ? null : (cb<hb ? 'c' : 'h');
     why = '청 '+speedFmt(c)+' vs 홍 '+speedFmt(h);
   } else if(c!=null){ winner='c'; why='홍 '+(reason||'미기록'); }
   else if(h!=null){ winner='h'; why='청 '+(reason||'미기록'); }
