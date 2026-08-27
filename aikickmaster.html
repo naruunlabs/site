@@ -3679,6 +3679,9 @@ body.hud-v21.akm-ui.sparring-mode .stats-row{
     </div>
 
     <div id="readyOverlay">
+      
+      <div id="f1Flash"></div>
+      <div id="f1Lights"><i></i><i></i><i></i></div>
       <div id="readyNum">3</div>
       <div id="readySub"></div>
     </div>
@@ -4599,6 +4602,8 @@ function sparringModeLabel(){
 
 const SPEED_WAIT_MIN=500, SPEED_WAIT_MAX=2000;  
 const SPEED_COUNT_MS=800;                        
+
+const SPEED_LIGHT_LEAD_MS=800;
 const SPEED_TIMEOUT_MS=6000;                     
 
 const SPEED_WIN_NEED=2;                          
@@ -4669,6 +4674,15 @@ function startSpeed(){
   speedBeginRound();
 }
 
+let f1Box=null;
+function f1Set(n){
+  if(!f1Box) f1Box=document.getElementById('f1Lights');
+  if(!f1Box) return;
+  f1Box.classList.toggle('show', n>=0);
+  const li=f1Box.children;
+  for(let k=0;k<li.length;k++) li[k].classList.toggle('on', k<n);
+}
+
 function speedBeginRound(){
   if(!speedGame || !running) return;
   speedGame.rec={c:null,h:null};
@@ -4676,14 +4690,19 @@ function speedBeginRound(){
   speedPrev={c:null,h:null};
   const token=++readyToken;      
   let i=0;
-  const steps=['3','2','1'];
   setReadyUi(true);
   readyOverlay.classList.add('show');
+  readyOverlay.classList.remove('f1-go');
+  const fl=document.getElementById('f1Flash');
+  if(fl) fl.classList.remove('go');
   readySub.textContent=speedRoundLabel();
-  (function next(){
+
+  readyNum.textContent='';
+  f1Set(0);                          
+  const step=function(){
     if(token!==readyToken || !speedGame) return;
-    if(i>=steps.length){
-      readyNum.textContent='…';   
+    if(i>=3){
+
       const wait=SPEED_WAIT_MIN+Math.random()*(SPEED_WAIT_MAX-SPEED_WAIT_MIN);
       speedTimer=setTimeout(()=>{
         if(token!==readyToken || !speedGame) return;
@@ -4691,9 +4710,11 @@ function speedBeginRound(){
       }, wait);
       return;
     }
-    readyNum.textContent=steps[i]; sndCount(); i++;
-    speedTimer=setTimeout(next, SPEED_COUNT_MS);
-  })();
+    i++; f1Set(i); sndCount();
+    speedTimer=setTimeout(step, SPEED_COUNT_MS);
+  };
+  
+  speedTimer=setTimeout(step, SPEED_LIGHT_LEAD_MS);
 }
 function speedRoundLabel(){
   if(!twoPlayerMode) return (speedGame.tries+1)+' / '+speedTries1p()+' 번째';
@@ -4703,9 +4724,19 @@ function speedRoundLabel(){
 function speedGo(){
   if(!speedGame || !running) return;
   speedGame.phase='go';
-  speedGame.goT=performance.now();
+  f1Set(0);                       
   readyNum.textContent='찻!';
+  const fl=document.getElementById('f1Flash');
+  if(fl){ fl.classList.remove('go'); void fl.offsetWidth; fl.classList.add('go'); }
   sndGo();
+
+  speedGame.goT=performance.now();
+  const goToken=readyToken;
+  requestAnimationFrame(()=>{
+    if(!speedGame || speedGame.phase!=='go' || goToken!==readyToken) return;
+    if(speedGame.rec.c!=null || speedGame.rec.h!=null) return;
+    speedGame.goT=performance.now();
+  });
   
   speedTimer=setTimeout(()=>{
     readyOverlay.classList.remove('show'); setReadyUi(false);
@@ -6729,9 +6760,19 @@ function celebrate(rank,label){
   else if(rank>0&&rank<5){ statusEl.textContent='오늘 '+(rank+1)+'위! '+label; }
   else { statusEl.textContent='완료! '+label; }
 }
-function runReadyCountdown(subText,cb){
+
+function runReadyCountdown(subText,cb,skipCount){
   const token=++readyToken;
   if(readyTimer){ clearTimeout(readyTimer); readyTimer=null; }
+
+  if(typeof f1Set==='function') f1Set(-1);
+  if(skipCount){
+    readyOverlay.classList.remove('show');
+    readyTimer=null;
+    setReadyUi(false);
+    setTimeout(()=>{ if(token===readyToken) cb(); },0);
+    return;
+  }
   const steps=['3','2','1','시작!']; let i=0;
   setReadyUi(true);
   readyOverlay.classList.add('show'); readySub.textContent=subText;
@@ -6849,7 +6890,9 @@ window.startGame=()=>{
     }
     setStartBtn(false,'■ 종료');
     if(!twoPlayerMode) renderStats();
-  });
+  },
+
+  startMode==='sparring' && sparringMode==='speed');
 };
 
 function resetCounters(){
@@ -6916,6 +6959,7 @@ function stopGame(){
   running=false;
   if(gameTimer){ clearInterval(gameTimer); gameTimer=null; }
   timerBadge.classList.remove('show'); readyOverlay.classList.remove('show');
+  if(typeof f1Set==='function') f1Set(-1);   
   clearBalloons();
   if(typeof clearBalloons2p==='function') clearBalloons2p(); 
   if(typeof p2StageResultTimer!=='undefined' && p2StageResultTimer){ clearTimeout(p2StageResultTimer); p2StageResultTimer=null; }
@@ -9459,6 +9503,31 @@ html.akm-phone body.hud-v21.akm-ui .hud-settings-btn{
 
 body.hud-v21 #gameArea .drill-count-row.sparring-round-row{ display:none !important; }
 body.hud-v21.sparring-speed #gameArea .drill-count-row.sparring-round-row{ display:flex !important; }
+
+#f1Lights{ display:none; gap:3.2vmin; margin-bottom:1.6vmin; }
+#f1Lights.show{ display:flex; }
+#f1Lights i{
+  width:11vmin; height:11vmin; max-width:132px; max-height:132px;
+  border-radius:50%;
+  background:#280b10;
+  border:0.7vmin solid rgba(255,255,255,.12);
+  box-shadow:inset 0 0.8vmin 2vmin rgba(0,0,0,.8);
+  
+  transition:background .05s linear, box-shadow .05s linear;
+}
+#f1Lights i.on{
+  background:radial-gradient(circle at 38% 32%, #ff9f8a 0%, #ff2f3f 45%, #a80014 100%);
+  box-shadow:0 0 3.4vmin rgba(255,45,60,.95),
+             0 0 8vmin rgba(255,45,60,.5),
+             inset 0 -0.6vmin 1.4vmin rgba(0,0,0,.4);
+}
+
+#f1Flash{
+  position:absolute; inset:0; z-index:-1; pointer-events:none;
+  opacity:0; background:#4affa0;
+}
+#f1Flash.go{ animation:f1GoFlash .34s ease-out; }
+@keyframes f1GoFlash{ 0%{opacity:.5;} 100%{opacity:0;} }
 
 </style>
 <script id="fix4-start-stop-text-helper">
