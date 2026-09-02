@@ -14,7 +14,7 @@
 
   <url>
     <loc>https://naruunlabs.kr/</loc>
-    <lastmod>2026-08-01</lastmod>
+    <lastmod>2026-09-02</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
@@ -27,10 +27,10 @@
   </url>
 
   <url>
-    <loc>https://naruunlabs.kr/jumpmaster</loc>
-    <lastmod>2026-08-01</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
+    <loc>https://naruunlabs.kr/academyweb</loc>
+    <lastmod>2026-09-02</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
   </url>
 
   <url>
