@@ -3685,6 +3685,13 @@ body.hud-v21.akm-ui.sparring-mode .stats-row{
       <div id="readyNum">3</div>
       <div id="readySub"></div>
     </div>
+    
+    <div id="autoNextOverlay">
+      <div id="autoNextTeam"></div>
+      <div id="autoNextMain">다음 팀 들어오세요</div>
+      <div id="autoNextSub"></div>
+      <div id="autoNextBar"><i></i></div>
+    </div>
     <div id="popOverlay"><div id="popScore"></div></div>
     
     <div id="p2PopC" class="p2-pop p2-pop-c"><div class="p2-pop-score"></div></div>
@@ -3750,12 +3757,17 @@ body.hud-v21.akm-ui.sparring-mode .stats-row{
     <div class="game-area" id="drillCountArea">
       <div class="drill-count-row">
         <label>목표 횟수</label>
+        
         <select id="drillCountSel">
-          <option value="3">3회</option>
-          <option value="5">5회</option>
-          <option value="10" selected>10회</option>
+          <option value="4">4회</option>
+          <option value="6">6회</option>
+          <option value="8" selected>8회</option>
         </select>
       </div>
+      
+      <button id="autoNextBtn1" class="auto-next-toggle" type="button" onclick="toggleAutoNext()">
+        <span class="ant-dot"></span><span class="ant-label">연속 진행</span><span class="ant-state">꺼짐</span>
+      </button>
       <button id="startBtn" class="primary-start" onclick="startGame()">시작!</button>
       <div id="gameResult"></div>
     </div>
@@ -3801,6 +3813,10 @@ body.hud-v21.akm-ui.sparring-mode .stats-row{
           <option value="5">5판 3승</option>
         </select>
       </div>
+      
+      <button id="autoNextBtn2" class="auto-next-toggle" type="button" onclick="toggleAutoNext()">
+        <span class="ant-dot"></span><span class="ant-label">연속 진행</span><span class="ant-state">꺼짐</span>
+      </button>
       <button id="startBtn2" class="primary-start" onclick="startGame()">시작!</button>
       <div id="gameResult2" style="text-align:center;font-size:13px;font-weight:700;color:var(--green);min-height:18px;"></div>
     </div>
@@ -3949,6 +3965,19 @@ body.hud-v21.akm-ui.sparring-mode .stats-row{
         </div>
         <div class="settings-hint">
           꺼두면 경기가 끝나도 "청 승리" 같은 표시 없이 양쪽 점수만 보여줍니다.
+        </div>
+      </div>
+
+      <hr class="settings-divider">
+
+      <div class="settings-section">
+        <div class="settings-row">
+          <div class="settings-label">뒤차기 화살표 방향 바꾸기</div>
+          <button type="button" class="akm-sw" id="dwiArrowSw" onclick="toggleDwiArrowFlip()" aria-label="뒤차기 회전 화살표 방향"></button>
+        </div>
+        <div class="settings-hint">
+          뒤차기 안내에서 몸을 감아 도는 화살표의 방향을 반대로 돌립니다.
+          도장에서 보시고 어색하면 이 스위치를 눌러 바꾸세요. 점수에는 영향이 없습니다.
         </div>
       </div>
     </div>
@@ -4392,7 +4421,7 @@ function beginAutoDrillStage(index, announce=true){
   drillScores=[];
   lastScore=null; lastGrade=''; lastColor='var(--gold)';
   kicking=false; aboveFrames=0; belowFrames=0; nearPeak=0; nearAboveN=0; nearProj=0; kickFoot=null; peakPct=0; kickTopFootY=null; kickRefTorso=null; rearmNeeded=false;  
-  trajX=[]; trajY=[]; trajHipX=[]; trajTorso=[]; trajHipW=[]; trajKneeX=[]; trajKneeAngle=[]; trajHipVis=[]; trajKneeVis=[]; trajKneeAngle3D=[]; trajShoulderW=[]; trajFootAng=[]; trajFootAngVis=[]; trajActive=false; drillSide=0; resetPreRoll();
+  trajX=[]; trajY=[]; trajHipX=[]; trajTorso=[]; trajHipW=[]; trajKneeX=[]; trajKneeAngle=[]; trajHipVis=[]; trajKneeVis=[]; trajKneeAngle3D=[]; trajShoulderW=[]; trajFootAng=[]; trajFootAngVis=[]; trajKneeMark=[]; kmPeakY=null; kmHitBefore=false; kneeMarkFlashArmed=false; trajActive=false; drillSide=0; resetPreRoll();
   updateSelectedKickButtons();
   updateModeBadge();
   renderStats();
@@ -4466,7 +4495,9 @@ function pushPreTraj(m){
     kneeAngle3D:Number.isFinite(m.kneeAngle3D)?m.kneeAngle3D:null,
     shoulderW:shoulderRatioNow(m),
     footAng:Number.isFinite(m.footAng)?m.footAng:null,          
-    footAngVis:Number.isFinite(m.footAngVis)?m.footAngVis:0
+    footAngVis:Number.isFinite(m.footAngVis)?m.footAngVis:0,
+
+    kneeMark:(function(){ const q=kneeMarkProbe(m); return q?q.hit:null; })()
   });
   if(preTraj.length>PRE_TRAJ_MAX) preTraj.shift();
 }
@@ -4486,10 +4517,15 @@ function seedTrajFromPreroll(){
     trajHipVis.push(p.hipVis); trajKneeVis.push(p.kneeVis);
     trajKneeAngle3D.push(p.kneeAngle3D); trajShoulderW.push(p.shoulderW);
     trajFootAng.push(p.footAng ?? null); trajFootAngVis.push(p.footAngVis ?? 0);   
+    trajKneeMark.push(p.kneeMark ?? null);                                          
   }
 }
 
 let trajKneeAngle3D=[], trajShoulderW=[], trajFootAng=[], trajFootAngVis=[];
+
+let trajKneeMark=[];
+
+let kneeMarkFlashT=0, kneeMarkFlashArmed=false, kmPeakY=null, kmHitBefore=false;
 
 const SHOULDER_BASE_MS=10000;   
 let shoulderSamples=[];         
@@ -4889,7 +4925,9 @@ function speedFinish(){
   }
   const winner = s.win.c===s.win.h ? null : (s.win.c>s.win.h ? 'c' : 'h');
   showP2Result('청 승수', s.win.c+'승', '홍 승수', s.win.h+'승', winner,
-    winner==null ? '승수가 같습니다' : (winner==='c'?'청':'홍')+' 선수가 '+Math.max(s.win.c,s.win.h)+'승으로 앞섰습니다');
+    winner==null ? '승수가 같습니다' : (winner==='c'?'청':'홍')+' 선수가 '+Math.max(s.win.c,s.win.h)+'승으로 앞섰습니다',
+    
+    winner!=null && Math.min(s.win.c,s.win.h)===0 && Math.max(s.win.c,s.win.h)>=2);
 }
 
 function speedRender(){
@@ -4909,7 +4947,10 @@ function speedRender(){
 }
 
 let audioCtx=null, sndMaster=null, sndRevBus=null, sndNoiseBuf=null;
-let sndVolume=0.7, sndMuted=false;
+
+const SND_MAKEUP=1.7;
+
+let sndVolume=0.85, sndMuted=false;
 
 function ensureAudio(){
   try{
@@ -4917,9 +4958,13 @@ function ensureAudio(){
       audioCtx=new (window.AudioContext||window.webkitAudioContext)();
 
       const comp=audioCtx.createDynamicsCompressor();
-      comp.threshold.value=-18; comp.knee.value=22;
-      comp.ratio.value=8; comp.attack.value=0.003; comp.release.value=0.18;
-      comp.connect(audioCtx.destination);
+      comp.threshold.value=-12; comp.knee.value=18;
+      comp.ratio.value=4; comp.attack.value=0.003; comp.release.value=0.12;
+
+      const makeup=audioCtx.createGain();
+      makeup.gain.value=SND_MAKEUP;
+      comp.connect(makeup);
+      makeup.connect(audioCtx.destination);
 
       sndMaster=audioCtx.createGain();
       sndMaster.gain.value=sndMuted?0:sndVolume;
@@ -5099,10 +5144,91 @@ function sndCombo(n=0){
   if(!audioCtx) return;
   const semi=Math.min(n,14);
   const f=330*Math.pow(2,semi/12);
-  sndImpact(n>=5?'critical':'body',{rev:0.2+semi*0.02});
-  sOsc({f0:f,type:'square',dur:0.13,vol:0.16,delay:0.03,dist:0.3,send:0.25});
-  sOsc({f0:f*1.5,type:'triangle',dur:0.16,vol:0.10,delay:0.03,send:0.25});
+  sOsc({f0:f,type:'square',dur:0.13,vol:0.20,delay:0.03,dist:0.3,send:0.25});
+  sOsc({f0:f*1.5,type:'triangle',dur:0.16,vol:0.13,delay:0.03,send:0.25});
+  
+  if(n>=5) sOsc({f0:f*2,type:'triangle',dur:0.22,vol:0.10,delay:0.05,send:0.45});
 }
+
+function sndHit(zone,combo=1,dmg=0,who=null){
+  if(!audioCtx) return;
+  const p=Math.max(0.9, Math.min(1.35, 0.9 + (dmg-6)/40));   
+  const heavy = (zone==='head') || dmg>=22;
+
+  const tone = who==='c' ? 1.05 : who==='h' ? 0.95 : 1.0;
+  sndImpact(heavy?'critical':'body',{rev:(zone==='head'?0.42:0.28)*p, dist:0.6});
+  if(zone==='head'){
+    
+    sNoise({f0:4200*tone,f1:1200,q:1.3,dur:0.13,vol:0.22*p,send:0.35});
+    sOsc({f0:900*tone,f1:320,type:'triangle',dur:0.12,vol:0.16*p,delay:0.01,send:0.3});
+  }else{
+    sOsc({f0:120*tone,f1:52,type:'sine',dur:0.20,vol:0.55*p,attack:0.001,send:0.2});
+  }
+  if(combo>=2) sndCombo(combo-1);
+}
+
+function sndKO(){
+  if(!audioCtx) return;
+  sndImpact('critical',{rev:0.7,dist:0.7});
+  sOsc({f0:90,f1:34,type:'sine',dur:0.9,vol:0.85,attack:0.001,send:0.35});
+  sOsc({f0:220,f1:70,type:'sawtooth',dur:0.55,vol:0.22,delay:0.02,dist:0.5,send:0.5});
+  sNoise({f0:2600,f1:400,q:0.9,dur:0.45,vol:0.20,delay:0.02,send:0.5});
+}
+
+function sndVictory(winnerKey,big=false){
+  if(!audioCtx) return;
+  
+  if(winnerKey==null){
+    sndImpact('body',{rev:0.35});
+    [523,523].forEach((f,i)=>sOsc({f0:f,type:'triangle',dur:0.30,vol:0.22,delay:0.06+i*0.16,send:0.4}));
+    return;
+  }
+  const blue = (winnerKey==='c');
+
+  const root = blue ? 587.33 : 415.30;
+  const M = [1, 1.25, 1.5, 2];        
+
+  sndImpact('critical',{rev:0.75,dist:0.65});
+  sOsc({f0:blue?110:82,f1:blue?46:34,type:'sine',dur:1.0,vol:0.80,attack:0.001,send:0.35});
+  sNoise({f0:blue?5200:3600,f1:900,q:0.7,dur:0.5,vol:0.14,delay:0.01,send:0.6});
+
+  M.forEach(function(mul,i){
+    const f=root*mul, d=0.16+i*0.11;
+    sOsc({f0:f,type:'triangle',dur:0.50,vol:0.26,delay:d,send:0.45});
+    
+    sOsc({f0:f,type:'sawtooth',dur:0.42,vol:0.085,delay:d,detune:+11,dist:0.28,send:0.45});
+    sOsc({f0:f,type:'sawtooth',dur:0.42,vol:0.085,delay:d,detune:-11,dist:0.28,send:0.45});
+  });
+
+  const hold=0.16+M.length*0.11;
+  [1,1.5,2,2.5].forEach(function(mul){
+    sOsc({f0:root*mul,type:'triangle',dur:1.25,vol:0.17,delay:hold,send:0.75});
+  });
+  sNoise({f0:6500,f1:13000,q:0.6,dur:1.0,vol:0.10,delay:hold,attack:0.3,send:0.9});
+  sOsc({f0:blue?73:61,f1:blue?40:33,type:'sine',dur:1.1,vol:0.55,delay:hold,send:0.3});
+
+  if(big){
+    [2,2.5,3].forEach(function(mul,i){
+      sOsc({f0:root*mul,type:'triangle',dur:0.7,vol:0.14,delay:hold+0.18+i*0.07,send:0.8});
+    });
+  }
+}
+
+function sndStageWin(winnerKey){
+  if(!audioCtx) return;
+  const root=(winnerKey==='h')?466.16:659.25;
+  sndImpact('body',{rev:0.3});
+  sOsc({f0:root,type:'triangle',dur:0.28,vol:0.26,delay:0.03,send:0.35});
+  sOsc({f0:root*1.5,type:'triangle',dur:0.34,vol:0.16,delay:0.10,send:0.4});
+}
+
+let dwiArrowFlip=false;
+function applyDwiArrowFlip(){
+  const b=document.getElementById('dwiArrowSw');
+  if(b) b.classList.toggle('on',dwiArrowFlip);
+  try{ localStorage.setItem('akm_dwiarrow_v1', dwiArrowFlip?'1':'0'); }catch(e){}
+}
+window.toggleDwiArrowFlip=function(){ dwiArrowFlip=!dwiArrowFlip; applyDwiArrowFlip(); };
 
 function applySndVolume(){
   if(sndMaster) sndMaster.gain.value=sndMuted?0:sndVolume;
@@ -5382,6 +5508,8 @@ const JUDGE_EASY={
 
 const KICK_TYPE={};
 
+const KIND_STRICT={ LAT:0.25, SW:0.70 };
+
 function classifyKick(f){
 
   if(Number.isFinite(f.shoulderWRatio) &&
@@ -5407,11 +5535,20 @@ function scoreKick(f,want){
   const got=classifyKick(f);
 
   if(!want) want=got;
+  let kindLenient=false;
   if(got!==want){
-    return (want==='apcha')
 
-      ? {ok:false,score:null,reason:'wrong_kind_round',msg:'앞차기로 곧게 차주세요'}
-      : {ok:false,score:null,reason:'wrong_kind_front',msg:'발을 옆으로 돌려 차보세요'};
+    const swF  = Number.isFinite(f.shoulderWRatio) ? f.shoulderWRatio : null;
+    const clearlyFront = (f.latT < KIND_STRICT.LAT) &&
+                         (swF !== null && swF >= KIND_STRICT.SW);
+    if(want==='apcha' || clearlyFront){
+      return (want==='apcha')
+
+        ? {ok:false,score:null,reason:'wrong_kind_round',msg:'앞차기로 곧게 차주세요'}
+        : {ok:false,score:null,reason:'wrong_kind_front',msg:'발을 옆으로 돌려 차보세요'};
+    }
+
+    kindLenient=true;
   }
 
   const ch=Number.isFinite(f.kneeChamber3D)?f.kneeChamber3D:null;
@@ -5447,7 +5584,9 @@ function scoreKick(f,want){
             lateral:'더 크게 돌려차보세요!'}[worst]||'좋아요!';
 
   return {ok:true,score,reason:(want==='apcha')?'front_ok':'round_ok',msg,
-          hScore:+hScore.toFixed(3),cScore:+cScore.toFixed(3),factor:+factor.toFixed(3)};
+          hScore:+hScore.toFixed(3),cScore:+cScore.toFixed(3),factor:+factor.toFixed(3),
+
+          kindLenient:kindLenient||undefined};
 }
 
 function scoreMeasureOnly(f,want){
@@ -5460,7 +5599,7 @@ function scoreMeasureOnly(f,want){
 
   const sw = Number.isFinite(f.shoulderWRatio) ? f.shoulderWRatio : null;
 
-  if(want==='yeop' && sw!==null && sw>MEASURE_GATE.YEOP_SW)
+  if(want==='yeop' && sw!==null && sw>MEASURE_GATE.YEOP_SW && !f.kneeMarkPre)
     
     return {ok:false,score:null,reason:'wrong_kind_yeop',msg:'몸을 옆으로 돌려서 차보세요'};
 
@@ -5474,10 +5613,14 @@ function scoreMeasureOnly(f,want){
   const hScore=c01((f.riseTFront-B.H_LO)/(B.H_HI-B.H_LO));
   const rot = (sw===null) ? 0.5 : c01(1 - sw/0.85);
   let factor = 0.70 + 0.30*rot;
+  let kneeMarkGrade=0;   
   if(want==='yeop'){
     const ch=Number.isFinite(f.kneeChamber3D)?f.kneeChamber3D:null;
     const cScore=(ch===null)?0.5:c01((ch-20)/(75-20)); 
     factor *= (0.78 + 0.22*cScore);
+
+    if(f.kneeMarkPre && f.kneeMarkPost){ factor *= KNEE_MARK.BONUS_BOTH; kneeMarkGrade=2; }
+    else if(f.kneeMarkPre)             { factor *= KNEE_MARK.BONUS_PRE;  kneeMarkGrade=1; }
   }
 
   if(want==='dwi' && Number.isFinite(f.footAng)){
@@ -5496,14 +5639,19 @@ function scoreMeasureOnly(f,want){
   if(score>=95)      msg=(want==='dwi')?'완벽한 뒤차기!':'완벽한 옆차기!';
   else if(score>=85) msg='아주 좋아요!';
   else if(score>=72) msg='좋아요!';
+
+  else if(want==='yeop' && kneeMarkGrade===1) msg='내리면서 무릎을 한 번 더 찍어보세요!';
   else if(rot<0.45)  msg=(want==='dwi')?'등을 더 보이며 차보세요!':'몸을 더 옆으로 돌려보세요!';
   
   else if(want==='dwi' && dch!==null && dch<DWI_KNEE.HI*0.5) msg='무릎을 더 접었다 펴세요!';
   else               msg='더 높이 차보세요!';
 
   return {ok:true,score,reason:'measure_only',msg,
-          hScore:+hScore.toFixed(3), rot:+rot.toFixed(3), factor:+factor.toFixed(3)};
+          hScore:+hScore.toFixed(3), rot:+rot.toFixed(3), factor:+factor.toFixed(3),
+          kneeMarkGrade};   
 }
+
+const KNEE_MARK={ BONUS_PRE:1.05, BONUS_BOTH:1.15 };
 
 const MEASURE_GATE={};
 
@@ -5666,9 +5814,11 @@ function analyzeTrajShort(peakPctValue=null){
   const rot=c01(1-shoulderWRatio/0.85);
   const hipScore=c01((P.HIP_HI-hipWRatio)/(P.HIP_HI-P.HIP_LO));
 
+  const shortKneeMark=trajKneeMark.some(v=>v===true);
   let factor, worst;
   if(want==='dwi'){        factor=0.70+0.30*rot;                              worst=(rot<0.45)?'rot':'height'; }
-  else if(want==='yeop'){  factor=(0.70+0.30*rot)*(0.78+0.22*cScore);         worst=(rot<0.45)?'rot':'height'; }
+  else if(want==='yeop'){  factor=(0.70+0.30*rot)*(0.78+0.22*cScore)*(shortKneeMark?KNEE_MARK.BONUS_PRE:1);
+                                                                             worst=(rot<0.45)?'rot':'height'; }
   else if(want==='dollo'){ factor=(0.70+0.30*cScore)*(0.62+0.38*hipScore);    worst=(hipScore<0.35)?'hip':((cScore<0.35)?'knee':'height'); }
   else {                   factor=0.62+0.38*cScore;                           worst=(cScore<0.35)?'knee':'height'; }
 
@@ -5699,6 +5849,10 @@ function analyzeTrajShort(peakPctValue=null){
       torsoRef:+T.toFixed(4),
       hScore:+hScore.toFixed(3), cScore:+cScore.toFixed(3), factor:+factor.toFixed(3),
       rot:+rot.toFixed(3),
+      
+      kneeMarkGrade:(shortKneeMark?1:0),
+      kneeMarkFrames:trajKneeMark.filter(v=>v===true).length,
+      kneeMarkSeen:trajKneeMark.filter(v=>v!==null).length,
       want:want||'', kind:'short'        
     }
   };
@@ -5907,13 +6061,28 @@ function analyzeTraj(peakPctValue=null){
   const maxDev=Math.max(...xs.map(x=>Math.abs(x-startX)/T));
   DIAG.maxDev=+maxDev.toFixed(3);
 
+  let kneeMarkPre=false, kneeMarkPost=false, kneeMarkFrames=0;
+  {
+    const pk=Math.max(0,Math.min(peakIndex, trajKneeMark.length-1));
+    for(let i=0;i<trajKneeMark.length;i++){
+      if(trajKneeMark[i]!==true) continue;
+      kneeMarkFrames++;
+      if(i<=pk) kneeMarkPre=true; else kneeMarkPost=true;
+    }
+  }
+  DIAG.kneeMarkPre=kneeMarkPre;
+  DIAG.kneeMarkPost=kneeMarkPost;
+  DIAG.kneeMarkFrames=kneeMarkFrames;
+  DIAG.kneeMarkSeen=trajKneeMark.filter(v=>v!==null).length;  
+
   const feat={
     riseTFront, maxDev, latT, netT, hipWRatio,
     kneeChamber3D:(kneeChamber3D==null)?null:kneeChamber3D,
 
     shoulderWRatio,
     kneeMin3D:(kneeMin3D==null)?null:kneeMin3D,
-    footAng:footAngPeak    
+    footAng:footAngPeak,   
+    kneeMarkPre, kneeMarkPost   
   };
   const want=drillKickType();               
 
@@ -5921,6 +6090,10 @@ function analyzeTraj(peakPctValue=null){
   DIAG.kind=classifyKick(feat);             
   DIAG.want=want||'';                       
   if(r.hScore!==undefined){ DIAG.hScore=r.hScore; DIAG.cScore=r.cScore; DIAG.factor=r.factor; }
+
+  if(r.kindLenient) DIAG.kindLenient=true;
+
+  if(r.kneeMarkGrade!==undefined) DIAG.kneeMarkGrade=r.kneeMarkGrade;
 
   return {
     score:r.score, ok:r.ok, msg:r.msg, reason:r.reason,
@@ -6300,6 +6473,27 @@ function drawYeopDwiGuide(kind, m){
   ctx.restore();
 }
 
+function kneeMarkProbe(m){
+  if(!m || smHipY==null || smHipX==null || !(smTorso>0)) return null;
+  if(!Number.isFinite(GUIDE_KNEE.X)) return null;   
+  const H=canvas.height, W=canvas.width;
+  if(!(W>0&&H>0)) return null;
+  const TP=smTorso*H;
+  if(!(TP>0)) return null;
+  const mirrored=camWrap.classList.contains('mirrored');
+  const rawBodyX=smHipX*W;
+  const visualBodyX=mirrored ? W-rawBodyX : rawBodyX;
+  const toCanvasX=(vx)=> mirrored ? W-vx : vx;
+  const visualSide=(selectedFoot()==='right') ? 1 : -1;
+  const vx=visualBodyX - visualSide*GUIDE_KNEE.X*TP;     
+  const x=toCanvasX(Math.max(W*0.03,Math.min(W*0.97,vx)));
+  const midY=smHipY*H - GUIDE_KNEE.MIDY*TP;
+  if(!(Number.isFinite(m.kneeX) && Number.isFinite(m.kneeY) && (m.kneeVis??0)>=0.5)) return null;
+  const dx=Math.abs(m.kneeX*W - x)/TP;
+  const dy=Math.abs(m.kneeY*H - midY)/TP;
+  return { hit:(dx<=GUIDE_KNEE.HITX && dy<=GUIDE_KNEE.HITY), dist:Math.hypot(dx,dy) };
+}
+
 function drawKneeMark(m,visualBodyX,toCanvasX,visualSide,TP,footStyle){
   const H=canvas.height, W=canvas.width;
   const vx=visualBodyX - visualSide*GUIDE_KNEE.X*TP;      
@@ -6307,11 +6501,23 @@ function drawKneeMark(m,visualBodyX,toCanvasX,visualSide,TP,footStyle){
   const midY=smHipY*H - GUIDE_KNEE.MIDY*TP;
   const half=GUIDE_KNEE.LEN*TP/2;
 
-  let hit=false;
-  if(m && Number.isFinite(m.kneeX) && Number.isFinite(m.kneeY) && (m.kneeVis??0)>=0.5){
-    hit = Math.abs(m.kneeX*W - x) <= GUIDE_KNEE.HITX*TP
-       && Math.abs(m.kneeY*H - midY) <= GUIDE_KNEE.HITY*TP;
+  const probe=kneeMarkProbe(m);
+  const hit=!!(probe && probe.hit);
+
+  const nowT=performance.now();
+  if(kneeMarkFlashArmed && hit){ kneeMarkFlashT=nowT; kneeMarkFlashArmed=false; }
+  const flash=Math.max(0,1-(nowT-kneeMarkFlashT)/420);   
+
+  ctx.save();
+  if(flash>0){
+    ctx.shadowColor='rgba(120,255,170,1)'; ctx.shadowBlur=22+40*flash;
+    ctx.strokeStyle='rgba(255,255,255,'+(0.35*flash)+')';
+    ctx.lineWidth=(11+26*flash);
+    ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(x,midY-half*(1+0.35*flash)); ctx.lineTo(x,midY+half*(1+0.35*flash)); ctx.stroke();
   }
+  ctx.restore();
+
   ctx.save();
   ctx.lineCap='round';
   ctx.shadowColor=hit?'rgba(120,255,170,1)':'rgba('+footStyle.rgb+',1)';
@@ -6338,7 +6544,7 @@ function drawTurnArrow(visualBodyX,toCanvasX,visualSide,TP){
   ctx.translate(x,y);
   if(mirrored) ctx.scale(-1,1);
 
-  if(visualSide<=0) ctx.scale(-1,1);
+  if((visualSide>0) !== dwiArrowFlip) ctx.scale(-1,1);
   ctx.lineCap='round';
   ctx.shadowColor='rgba(255,209,102,0.65)'; ctx.shadowBlur=9;
 
@@ -6385,7 +6591,7 @@ function onDrillKick(peak, traj){
     sndFail();
     
     popup(result.msg,'#FFB14A');
-    trajX=[]; trajY=[]; trajHipX=[]; trajTorso=[]; trajHipW=[]; trajKneeX=[]; trajKneeAngle=[]; trajHipVis=[]; trajKneeVis=[]; trajKneeAngle3D=[]; trajShoulderW=[]; trajFootAng=[]; trajFootAngVis=[]; trajActive=false; drillSide=0; resetPreRoll();
+    trajX=[]; trajY=[]; trajHipX=[]; trajTorso=[]; trajHipW=[]; trajKneeX=[]; trajKneeAngle=[]; trajHipVis=[]; trajKneeVis=[]; trajKneeAngle3D=[]; trajShoulderW=[]; trajFootAng=[]; trajFootAngVis=[]; trajKneeMark=[]; kmPeakY=null; kmHitBefore=false; kneeMarkFlashArmed=false; trajActive=false; drillSide=0; resetPreRoll();
     return;
   }
 
@@ -6401,7 +6607,7 @@ function onDrillKick(peak, traj){
   popup(result.score+'점','#4caf50');
   if(!twoPlayerMode) renderStats();
 
-  trajX=[]; trajY=[]; trajHipX=[]; trajTorso=[]; trajHipW=[]; trajKneeX=[]; trajKneeAngle=[]; trajHipVis=[]; trajKneeVis=[]; trajKneeAngle3D=[]; trajShoulderW=[]; trajFootAng=[]; trajFootAngVis=[]; trajActive=false; drillSide=0; resetPreRoll();
+  trajX=[]; trajY=[]; trajHipX=[]; trajTorso=[]; trajHipW=[]; trajKneeX=[]; trajKneeAngle=[]; trajHipVis=[]; trajKneeVis=[]; trajKneeAngle3D=[]; trajShoulderW=[]; trajFootAng=[]; trajFootAngVis=[]; trajKneeMark=[]; kmPeakY=null; kmHitBefore=false; kneeMarkFlashArmed=false; trajActive=false; drillSide=0; resetPreRoll();
 
   if(drillDone>=drillTarget){
     if(twoPlayerMode){  }
@@ -6530,7 +6736,7 @@ function handleSparringPracticeKick(peak){
   sndScore(score);
   flashEdge(null);
   nextSparringMission();
-  trajX=[]; trajY=[]; trajHipX=[]; trajTorso=[]; trajHipW=[]; trajKneeX=[]; trajKneeAngle=[]; trajHipVis=[]; trajKneeVis=[]; trajKneeAngle3D=[]; trajShoulderW=[]; trajFootAng=[]; trajFootAngVis=[]; trajActive=false; drillSide=0; resetPreRoll();
+  trajX=[]; trajY=[]; trajHipX=[]; trajTorso=[]; trajHipW=[]; trajKneeX=[]; trajKneeAngle=[]; trajHipVis=[]; trajKneeVis=[]; trajKneeAngle3D=[]; trajShoulderW=[]; trajFootAng=[]; trajFootAngVis=[]; trajKneeMark=[]; kmPeakY=null; kmHitBefore=false; kneeMarkFlashArmed=false; trajActive=false; drillSide=0; resetPreRoll();
 }
 function updateSparringHud(){
   if(enemyHpFill) enemyHpFill.style.width=Math.max(0,(sparringHp/250)*100)+'%';
@@ -6635,10 +6841,10 @@ function handleSparringKick(peak){
   enemyHitMotion(zone);
   flashEdge(null);
 
-  if(sparringCombo>=2) sndCombo(sparringCombo-1); else sndImpact(zone);
+  sndHit(zone, sparringCombo, dmg);
   
-  trajX=[]; trajY=[]; trajHipX=[]; trajTorso=[]; trajHipW=[]; trajKneeX=[]; trajKneeAngle=[]; trajHipVis=[]; trajKneeVis=[]; trajKneeAngle3D=[]; trajShoulderW=[]; trajFootAng=[]; trajFootAngVis=[]; trajActive=false; drillSide=0; resetPreRoll();
-  if(sparringHp<=0) setTimeout(finishSparring,500);
+  trajX=[]; trajY=[]; trajHipX=[]; trajTorso=[]; trajHipW=[]; trajKneeX=[]; trajKneeAngle=[]; trajHipVis=[]; trajKneeVis=[]; trajKneeAngle3D=[]; trajShoulderW=[]; trajFootAng=[]; trajFootAngVis=[]; trajKneeMark=[]; kmPeakY=null; kmHitBefore=false; kneeMarkFlashArmed=false; trajActive=false; drillSide=0; resetPreRoll();
+  if(sparringHp<=0){ sndKO(); setTimeout(finishSparring,500); }   
 }
 function startSparring(){
   if(sparringMode==='speed'){ startSpeed(); return; }
@@ -6825,6 +7031,8 @@ function setGrResult(text){ gameResult.textContent=text; gameResult2.textContent
 window.startGame=()=>{
   if(twoPlayerMode) closeP2Result();
   if(running){
+
+    autoNextManualStop=true; autoNextArmed=false; autoNextReset();
     stopGame();
     setStartBtn(false,'시작!');
     setGrResult('중단됨');
@@ -6915,7 +7123,7 @@ function resetCounters(){
   sparringHp=250; sparringDamage=0; sparringCombo=0; sparringMaxCombo=0; sparringLastHitT=0;
   updateSparringHud();
   kicking=false; aboveFrames=0; belowFrames=0; nearPeak=0; nearAboveN=0; nearProj=0; kickFoot=null; peakPct=0; lastRankTs=null; kickTopFootY=null; kickRefTorso=null; rearmNeeded=false;  
-  trajX=[]; trajY=[]; trajHipX=[]; trajTorso=[]; trajHipW=[]; trajKneeX=[]; trajKneeAngle=[]; trajHipVis=[]; trajKneeVis=[]; trajKneeAngle3D=[]; trajShoulderW=[]; trajFootAng=[]; trajFootAngVis=[]; trajActive=false; drillSide=0; resetPreRoll();
+  trajX=[]; trajY=[]; trajHipX=[]; trajTorso=[]; trajHipW=[]; trajKneeX=[]; trajKneeAngle=[]; trajHipVis=[]; trajKneeVis=[]; trajKneeAngle3D=[]; trajShoulderW=[]; trajFootAng=[]; trajFootAngVis=[]; trajKneeMark=[]; kmPeakY=null; kmHitBefore=false; kneeMarkFlashArmed=false; trajActive=false; drillSide=0; resetPreRoll();
   popOverlay.classList.remove('show');
   if(typeof clearP2Popups==='function') clearP2Popups(); 
   drillResult.classList.remove('show','auto-summary','final-result'); sparringHud?.classList.remove('show');
@@ -7525,7 +7733,7 @@ function runKick(pct,m=null){
         if(m){
           kickFoot=m.side||null;  
           drillSide=(m.footX < m.hipX)?-1:1;
-          trajX=[]; trajY=[]; trajHipX=[]; trajTorso=[]; trajHipW=[]; trajKneeX=[]; trajKneeAngle=[]; trajHipVis=[]; trajKneeVis=[]; trajKneeAngle3D=[]; trajShoulderW=[]; trajFootAng=[]; trajFootAngVis=[];
+          trajX=[]; trajY=[]; trajHipX=[]; trajTorso=[]; trajHipW=[]; trajKneeX=[]; trajKneeAngle=[]; trajHipVis=[]; trajKneeVis=[]; trajKneeAngle3D=[]; trajShoulderW=[]; trajFootAng=[]; trajFootAngVis=[]; trajKneeMark=[]; kmPeakY=null; kmHitBefore=false; kneeMarkFlashArmed=false;
           
           if(isMeasureOnlyMode()) seedTrajFromPreroll();
         }
@@ -8190,7 +8398,9 @@ function showP2AutoFinal(rows,cAvg,hAvg,winnerKey,reason){
   document.getElementById('p2Result')?.classList.add('show');
   setStartBtn(false,'다시 시작');
   confetti(Math.max(cAvg,hAvg)>=90);
-  sndRecord();
+
+  ensureAudio();
+  sndVictory(twoPlayerShowResult?winnerKey:null, Math.max(cAvg,hAvg)>=90);
 }
 
 function showP2StageResult(stageLabel,cAvg,hAvg,winnerKey,onDone,isLast=false){
@@ -8202,6 +8412,8 @@ function showP2StageResult(stageLabel,cAvg,hAvg,winnerKey,onDone,isLast=false){
   const actionRow=document.getElementById('p2ResultActions');
   if(actionRow) actionRow.style.display='none';
   document.getElementById('p2Result')?.classList.add('show');
+
+  ensureAudio(); sndStageWin(twoPlayerShowResult?winnerKey:null);
   if(p2StageResultTimer) clearTimeout(p2StageResultTimer);
   p2StageResultTimer=setTimeout(()=>{
     p2StageResultTimer=null;
@@ -8211,8 +8423,12 @@ function showP2StageResult(stageLabel,cAvg,hAvg,winnerKey,onDone,isLast=false){
   },isLast?AUTO_FINAL.STAGE_HOLD_MS:1800);
 }
 
-function showP2Result(cLabel,cVal,hLabel,hVal,winnerKey,reason=''){
+function showP2Result(cLabel,cVal,hLabel,hVal,winnerKey,reason='',big=false){
   running=false; setPlayingUi(false);
+
+  ensureAudio();
+  sndVictory(twoPlayerShowResult?winnerKey:null, big);
+  if(winnerKey!=null) confetti(big);
   let title;
   if(twoPlayerShowResult){
     title = winnerKey==null ? '무승부' : (winnerKey==='c' ? '청 승리!' : '홍 승리!');
@@ -8374,8 +8590,9 @@ function finishBalloon2p(){
   running=false; setPlayingUi(false); timerBadge.classList.remove('show'); clearBalloons2p();
   const cCnt=balloonCount2p.c, hCnt=balloonCount2p.h;
   const winner = cCnt===hCnt ? null : (cCnt>hCnt?'c':'h');
-  if(cCnt>=10 || hCnt>=10) confetti(Math.max(cCnt,hCnt)>=20);
-  showP2Result('격파',cCnt+'개','격파',hCnt+'개',winner,'제한시간 내 격파 개수');
+
+  showP2Result('격파',cCnt+'개','격파',hCnt+'개',winner,'제한시간 내 격파 개수',
+    Math.max(cCnt,hCnt)>=20);
 }
 
 function makeSparringSlot(){ return {hp:250,damage:0,combo:0,maxCombo:0,lastHitT:0}; }
@@ -8434,7 +8651,7 @@ function handleSparringPracticeKick2p(peak){
   popup(String(score), lastColor);
   newMissionFor(key); 
   render2pScoreSparringPractice(key);
-  trajX=[]; trajY=[]; trajHipX=[]; trajTorso=[]; trajHipW=[]; trajKneeX=[]; trajKneeAngle=[]; trajHipVis=[]; trajKneeVis=[]; trajKneeAngle3D=[]; trajShoulderW=[]; trajFootAng=[]; trajFootAngVis=[]; trajActive=false; drillSide=0; resetPreRoll();
+  trajX=[]; trajY=[]; trajHipX=[]; trajTorso=[]; trajHipW=[]; trajKneeX=[]; trajKneeAngle=[]; trajHipVis=[]; trajKneeVis=[]; trajKneeAngle3D=[]; trajShoulderW=[]; trajFootAng=[]; trajFootAngVis=[]; trajKneeMark=[]; kmPeakY=null; kmHitBefore=false; kneeMarkFlashArmed=false; trajActive=false; drillSide=0; resetPreRoll();
 }
 function handleSparringKick2p(peak){
   if(sparringMode==='speed') return;   
@@ -8459,7 +8676,9 @@ function handleSparringKick2p(peak){
   oppSt.hp=Math.max(0,oppSt.hp-dmg);
   st.damage+=dmg;
   render2pScoreSparring('c'); render2pScoreSparring('h');
-  if(st.combo>=2) sndCombo(st.combo-1); else sndImpact(zone);
+  sndHit(zone, st.combo, dmg, key);   
+
+  if(oppSt.hp<=0) sndKO();
   flashEdge(key);
 
   showP2Float(key, '-'+dmg, zone,
@@ -8540,7 +8759,9 @@ function finishSparring2p(){
   else if(h.hp<=0) winner='c';
   else winner = c.hp===h.hp ? null : (c.hp>h.hp?'c':'h');
 
-  showP2Result('남은 체력',(c.hp<=0?'K.O. 패':c.hp),'남은 체력',(h.hp<=0?'K.O. 패':h.hp),winner,'체력이 더 많이 남은 쪽이 승리');
+  showP2Result('남은 체력',(c.hp<=0?'K.O. 패':c.hp),'남은 체력',(h.hp<=0?'K.O. 패':h.hp),winner,'체력이 더 많이 남은 쪽이 승리',
+    
+    winner!=null && (c.hp<=0 || h.hp<=0));
 }
 
 function processPersonFrame(lm, wlm){
@@ -8614,7 +8835,19 @@ function processPersonFrame(lm, wlm){
         trajShoulderW.push(shoulderRatioNow(m));
         trajFootAng.push(Number.isFinite(m.footAng)?m.footAng:null);          
         trajFootAngVis.push(Number.isFinite(m.footAngVis)?m.footAngVis:0);
-        if(trajX.length>MAX_TRAJ){ trajX.shift(); trajY.shift(); trajHipX.shift(); trajTorso.shift(); trajHipW.shift(); trajKneeX.shift(); trajKneeAngle.shift(); trajHipVis.shift(); trajKneeVis.shift(); trajKneeAngle3D.shift(); trajShoulderW.shift(); trajFootAng.shift(); trajFootAngVis.shift(); }
+
+        {
+          const q=kneeMarkProbe(m);
+          trajKneeMark.push(q?q.hit:null);
+
+          if(q&&q.hit) kmHitBefore=true;
+          if(Number.isFinite(m.footY)){
+            if(kmPeakY===null || m.footY<kmPeakY) kmPeakY=m.footY;
+            const T=(m.torso||smTorso||0.21);
+            if(kmHitBefore && !kneeMarkFlashArmed && m.footY > kmPeakY + 0.15*T) kneeMarkFlashArmed=true;
+          }
+        }
+        if(trajX.length>MAX_TRAJ){ trajX.shift(); trajY.shift(); trajHipX.shift(); trajTorso.shift(); trajHipW.shift(); trajKneeX.shift(); trajKneeAngle.shift(); trajHipVis.shift(); trajKneeVis.shift(); trajKneeAngle3D.shift(); trajShoulderW.shift(); trajFootAng.shift(); trajFootAngVis.shift(); trajKneeMark.shift(); }
       }
 
       if((isDrillMode() || (currentMode==='sparring' && sparringMode==='practice')) && drillKickType()==='apcha') drawApchaGuide();
@@ -8636,6 +8869,155 @@ function processPersonFrame(lm, wlm){
     if(!kickHoldAlive(active2pSlot)){
       kicking=false; aboveFrames=0; belowFrames=0; nearPeak=0; nearAboveN=0; nearProj=0; kickFoot=null; kickTopFootY=null; kickRefTorso=null; rearmNeeded=false;  
     }
+  }
+}
+
+const AUTO_NEXT={
+  RESULT_MS : 5000,   
+  CLEAR_MS  :  300,   
+
+  STABLE_MS : 2000,   
+
+  SAFETY_MS : 8000,   
+
+  EDGE      : 0.10,   
+
+  MOVE_T    : 0.06,   
+
+  COUNT_MS  : 1200    
+};
+let autoNextOn=false;          
+let autoNextPhase='off';       
+let autoNextTeam=0;            
+let autoNextT0=0;              
+let autoNextClearT=0;          
+let autoNextStableT=0;         
+let autoNextAnchor=null;       
+let autoNextArmed=false;       
+let autoNextManualStop=false;  
+
+function autoNextEls(){
+  return {
+    ov  : document.getElementById('autoNextOverlay'),
+    team: document.getElementById('autoNextTeam'),
+    main: document.getElementById('autoNextMain'),
+    sub : document.getElementById('autoNextSub'),
+    bar : document.querySelector('#autoNextBar > i')
+  };
+}
+function autoNextSyncBtn(){
+  ['autoNextBtn1','autoNextBtn2'].forEach(id=>{
+    const b=document.getElementById(id); if(!b) return;
+    b.classList.toggle('on',autoNextOn);
+    const st=b.querySelector('.ant-state');
+    if(st) st.textContent=autoNextOn?(autoNextTeam?autoNextTeam+'팀째':'켜짐'):'꺼짐';
+  });
+}
+window.toggleAutoNext=function(){
+  autoNextOn=!autoNextOn;
+  if(!autoNextOn) autoNextReset();
+  else { autoNextTeam=0; autoNextManualStop=false; }
+  try{ localStorage.setItem('akm_autonext_v1', autoNextOn?'1':'0'); }catch(e){}
+  autoNextSyncBtn();
+};
+function autoNextReset(){
+  autoNextPhase='off'; autoNextClearT=0; autoNextStableT=0; autoNextAnchor=null;
+  const E=autoNextEls();
+  if(E.ov) E.ov.classList.remove('show');
+  if(E.bar) E.bar.style.width='0%';
+}
+
+function autoNextBegin(){
+  autoNextPhase='result';
+  autoNextT0=performance.now();
+  autoNextClearT=0; autoNextStableT=0; autoNextAnchor=null;
+}
+
+function autoNextCloseResult(){
+  try{
+    if(twoPlayerMode && typeof window.closeP2Result==='function') window.closeP2Result();
+    const dr=document.getElementById('drillResult');
+    if(dr) dr.classList.remove('show','auto-summary','final-result');
+  }catch(e){}
+  autoNextPhase='wait';
+  autoNextT0=performance.now();
+  autoNextClearT=0; autoNextStableT=0; autoNextAnchor=null;
+}
+
+function autoNextObserve(seen,pos){
+  if(!autoNextOn){ if(autoNextPhase!=='off') autoNextReset(); return; }
+  const now=performance.now();
+  const E=autoNextEls();
+
+  if(running){
+    autoNextArmed=true; autoNextManualStop=false;
+    if(autoNextPhase!=='off') autoNextReset();
+    return;
+  }
+
+  if(autoDrillTransitioning || auto2pTransitioning || p2StageResultTimer) return;
+
+  if(autoNextPhase==='off'){
+    if(autoNextArmed && !autoNextManualStop){ autoNextArmed=false; autoNextBegin(); }
+    else return;
+  }
+
+  if(autoNextPhase==='result'){
+    if(now-autoNextT0>=AUTO_NEXT.RESULT_MS) autoNextCloseResult();
+    return;
+  }
+
+  const need2=!!twoPlayerMode;
+  const haveC=!!seen.c, haveH=!!seen.h;
+  const allHere = need2 ? (haveC&&haveH) : haveC;
+
+  const someoneGone = !allHere;
+
+  if(autoNextPhase==='wait'){
+    if(E.ov) E.ov.classList.add('show');
+    if(E.team) E.team.textContent=(autoNextTeam?autoNextTeam+'팀 완료':'연속 진행');
+    if(E.main) E.main.textContent='다음 팀 들어오세요';
+    if(E.sub)  E.sub.textContent = need2?'두 사람이 자리에 서면 시작합니다':'자리에 서면 시작합니다';
+    if(E.bar)  E.bar.style.width='0%';
+
+    if(someoneGone){ if(!autoNextClearT) autoNextClearT=now; }
+    else autoNextClearT=0;
+
+    const cleared = autoNextClearT && (now-autoNextClearT>=AUTO_NEXT.CLEAR_MS);
+    const safety  = (now-autoNextT0>=AUTO_NEXT.SAFETY_MS);
+    if((cleared||safety) && (now-autoNextT0>=AUTO_NEXT.COUNT_MS)){
+      autoNextPhase='ready'; autoNextStableT=0; autoNextAnchor=null;
+    }
+    return;
+  }
+
+  if(autoNextPhase==='ready'){
+    if(E.ov) E.ov.classList.add('show');
+    if(E.main) E.main.textContent = allHere?'준비!':'다음 팀 들어오세요';
+    if(E.sub)  E.sub.textContent = allHere?'가만히 서 있으면 시작합니다'
+                                 : (need2?'두 사람이 자리에 서 주세요':'자리에 서 주세요');
+    if(!allHere){
+      autoNextStableT=0; autoNextAnchor=null;
+      if(E.bar) E.bar.style.width='0%';
+      return;
+    }
+
+    const p={c:(pos.c==null?0:pos.c), h:(pos.h==null?0:pos.h)};
+    if(!autoNextAnchor){ autoNextAnchor=p; autoNextStableT=now; }
+    else{
+      const moved=Math.abs(p.c-autoNextAnchor.c) + (need2?Math.abs(p.h-autoNextAnchor.h):0);
+      if(moved>AUTO_NEXT.MOVE_T){ autoNextAnchor=p; autoNextStableT=now; }
+    }
+    const held=now-autoNextStableT;
+    if(E.bar) E.bar.style.width=Math.max(0,Math.min(100,held/AUTO_NEXT.STABLE_MS*100))+'%';
+    if(held>=AUTO_NEXT.STABLE_MS){
+      autoNextTeam++;
+      autoNextReset();
+      autoNextSyncBtn();
+
+      try{ window.startGame(); }catch(e){ autoNextOn=false; autoNextSyncBtn(); }
+    }
+    return;
   }
 }
 
@@ -8709,6 +9091,12 @@ function run2pFrame(result){
                      : (cOn&&hOn) ? p2RunningStatusText(base) : '두 선수 인식 대기');
     }
   }
+
+  const inSlot=(p)=> !!p && p.screenX>=AUTO_NEXT.EDGE && p.screenX<=1-AUTO_NEXT.EDGE;
+  autoNextObserve(
+    { c:inSlot(cPerson), h:inSlot(hPerson) },
+    { c:cPerson?cPerson.screenX:null, h:hPerson?hPerson.screenX:null }
+  );
 }
 
 let idleFrameCounter=0;
@@ -8910,14 +9298,23 @@ function loop(){
     if(skelDrawThisFrame) ctx.clearRect(0,0,canvas.width,canvas.height);
 
     if(twoPlayerMode){
-      run2pFrame(result);
+      run2pFrame(result);         
     } else if(result.landmarks && result.landmarks.length>0){
       pushDetect(true,false);     
       const lm=result.landmarks[0];
       const wlm=(result.worldLandmarks && result.worldLandmarks.length>0)?result.worldLandmarks[0]:null;
       processPersonFrame(lm,wlm);
+
+      {
+        const mir=camWrap.classList.contains('mirrored');
+        const hx=hipXOf(lm);
+        const sx=(hx==null)?null:(mir?1-hx:hx);
+        const inSlot = sx!=null && sx>=AUTO_NEXT.EDGE && sx<=1-AUTO_NEXT.EDGE;
+        autoNextObserve({c:inSlot,h:false},{c:sx,h:null});
+      }
     } else {
       pushDetect(false,false);    
+      autoNextObserve({c:false,h:false},{c:null,h:null});   
       barFill.style.width='0%';
       if(!running){ statusEl.style.opacity='1'; statusEl.textContent='사람을 찾는 중…'; }
       kicking=false; aboveFrames=0; belowFrames=0; nearPeak=0; nearAboveN=0; nearProj=0; kickFoot=null; smHipY=null; smTorso=null; smHipX=null; smHipW=null; shoulderSamples=[]; kickTopFootY=null; kickRefTorso=null; rearmNeeded=false;  
@@ -8984,6 +9381,16 @@ initBackdropFx();
 syncAutoDrillSequence();
 initDrillRunMode();
 initSparringMode();
+
+(function initDwiArrow(){
+  try{ dwiArrowFlip = localStorage.getItem('akm_dwiarrow_v1')==='1'; }catch(e){ dwiArrowFlip=false; }
+  applyDwiArrowFlip();
+})();
+(function initAutoNext(){
+  try{ autoNextOn = localStorage.getItem('akm_autonext_v1')==='1'; }catch(e){ autoNextOn=false; }
+  autoNextTeam=0; autoNextManualStop=false; autoNextArmed=false;
+  autoNextSyncBtn();
+})();
 document.getElementById('sparringTypePanel')?.style.setProperty('display','none','important');
 document.getElementById('difficultyPanel')?.style.setProperty('display','none','important');
 document.getElementById('drillModePanel')?.style.setProperty('display','flex','important');
@@ -9021,6 +9428,8 @@ function applyAkmTune(t){
   return true;
 }
 window.applyAkmTune = applyAkmTune;
+
+window.__akmIsPlaying = function(){ try{ return !!running; }catch(e){ return false; } };
 
 window.__startApp = async function() {
   try{
@@ -9537,6 +9946,65 @@ body.hud-v21.sparring-speed #gameArea .drill-count-row.sparring-round-row{ displ
 #f1Flash.go{ animation:f1GoFlash .34s ease-out; }
 @keyframes f1GoFlash{ 0%{opacity:.5;} 100%{opacity:0;} }
 
+.auto-next-toggle{
+  display:flex; align-items:center; gap:8px; width:100%;
+  margin:0 0 8px; padding:9px 12px; cursor:pointer;
+  background:var(--s-tile,#1a1c22); color:var(--s-dim,#9aa0ab);
+  border:1.5px solid var(--s-line,#2c2f38); border-radius:12px;
+  font-size:13px; font-weight:800; letter-spacing:-.2px;
+  transition:border-color .15s, color .15s, background .15s;
+}
+.auto-next-toggle .ant-dot{
+  width:9px; height:9px; border-radius:50%; flex:0 0 auto;
+  background:var(--s-line,#3a3d47);
+}
+.auto-next-toggle .ant-label{ flex:1 1 auto; text-align:left; }
+.auto-next-toggle .ant-state{ font-size:12px; font-weight:800; opacity:.85; }
+
+.auto-next-toggle.on{
+  background:rgba(255,106,26,.12); color:var(--gold,#FF6A1A);
+  border-color:var(--gold,#FF6A1A);
+}
+.auto-next-toggle.on .ant-dot{
+  background:var(--gold,#FF6A1A); box-shadow:0 0 0 0 rgba(255,106,26,.7);
+  animation:antPulse 1.6s ease-out infinite;
+}
+@keyframes antPulse{
+  0%{ box-shadow:0 0 0 0 rgba(255,106,26,.65); }
+  70%{ box-shadow:0 0 0 7px rgba(255,106,26,0); }
+  100%{ box-shadow:0 0 0 0 rgba(255,106,26,0); }
+}
+
+#autoNextOverlay{
+  position:absolute; inset:0; z-index:60; display:none;
+  flex-direction:column; align-items:center; justify-content:center;
+  gap:1.6vmin; pointer-events:none; text-align:center;
+  background:rgba(6,8,12,.62);
+}
+#autoNextOverlay.show{ display:flex; }
+#autoNextTeam{
+  font-size:3.2vmin; font-weight:900; letter-spacing:.4px;
+  color:var(--gold,#FF6A1A); text-shadow:0 2px 10px rgba(0,0,0,.9);
+}
+#autoNextMain{
+  font-size:9vmin; font-weight:900; line-height:1.05; color:#fff;
+  text-shadow:0 3px 18px rgba(0,0,0,.95), 0 0 30px rgba(255,106,26,.35);
+}
+#autoNextSub{
+  font-size:3.4vmin; font-weight:800; color:#cfd4dd;
+  text-shadow:0 2px 10px rgba(0,0,0,.9);
+}
+
+#autoNextBar{
+  width:44vmin; height:1.4vmin; min-height:8px; border-radius:99px;
+  background:rgba(255,255,255,.16); overflow:hidden;
+}
+#autoNextBar > i{
+  display:block; height:100%; width:0%; border-radius:99px;
+  background:linear-gradient(90deg,#FF6A1A,#ffd166);
+  transition:width .12s linear;
+}
+
 </style>
 <script id="fix4-start-stop-text-helper">
 (function(){
@@ -9991,6 +10459,8 @@ window.logoutLicense=()=>{
 };
 
 const _AKM_HEARTBEAT_MS  = 30 * 60 * 1000;  
+
+const _AKM_TUNE_CHECK_MS = 5 * 1000;
 const _AKM_BLOCK_WATCH_MS = 15 * 1000;      
 const _AKM_BLOCK_MSG_KEY = 'akm_block_msg';
 
@@ -10070,6 +10540,14 @@ async function _akmHeartbeat(){
       cached_at   : Date.now()
     });
     _akmShowTrialBadge(_akmGetCache());
+
+    try{
+      const _t=(_akmGetCache()||{}).tune;
+      const _busy = (typeof window.__akmIsPlaying==='function') ? window.__akmIsPlaying() : false;
+      if(_t && typeof window.applyAkmTune==='function' && !_busy){
+        window.applyAkmTune(_t);
+      }
+    }catch(e){}
     return;
   }
 
@@ -10082,6 +10560,15 @@ async function _akmHeartbeat(){
 
 function _akmStartHeartbeat(){
   if(_akmHeartbeatTimer) return;
+
+  setTimeout(function(){
+    try{
+      const c=_akmGetCache();
+      if(!c || !c.license_key) return;
+      if(c.cached_at && (Date.now()-c.cached_at) < 60*1000) return;  
+      _akmHeartbeat();
+    }catch(e){}
+  }, _AKM_TUNE_CHECK_MS);
   _akmHeartbeatTimer  = setInterval(_akmHeartbeat, _AKM_HEARTBEAT_MS);
   
   _akmBlockWatchTimer = setInterval(function(){
