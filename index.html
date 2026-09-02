@@ -54,16 +54,16 @@ src="https://www.facebook.com/tr?id=1364933702413818&ev=PageView&noscript=1"
 <meta property="og:locale" content="ko_KR">
 <meta property="og:url" content="https://naruunlabs.kr/">
 <meta property="og:title" content="나른랩스 NARUUN LABS | 움직임을 성장으로">
-<meta property="og:description" content="카메라 한 대로 혼자 또는 둘이 함께 즐기는 AI 스포츠 교육 프로그램. AI 킥마스터 2인모드 출시.">
+<meta property="og:description" content="AI 킥마스터와 태권도장 홈페이지 제작. 검색엔진과 AI가 도장의 강점을 이해하고 실제 상담으로 이어지도록 설계합니다.">
 <meta property="og:image" content="https://naruunlabs.kr/og-naruunlabs.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="NARUUN LABS | 움직임을 성장으로">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="나른랩스 NARUUN LABS | 움직임을 성장으로">
-<meta name="twitter:description" content="카메라 한 대로 혼자 또는 둘이 함께 즐기는 AI 스포츠 교육 프로그램. AI 킥마스터 2인모드 출시.">
+<meta name="twitter:description" content="AI 킥마스터와 태권도장 홈페이지 제작. 검색엔진과 AI가 도장의 강점을 이해하고 실제 상담으로 이어지도록 설계합니다.">
 <meta name="twitter:image" content="https://naruunlabs.kr/og-naruunlabs.jpg">
-<meta name="description" content="나른랩스(NARUUN LABS)는 AI 기반 스포츠 교육 프로그램으로 수련을 더 즐겁고 직관적인 성장 경험으로 만듭니다. 카메라 한 대로 혼자 또는 둘이 함께 즐기는 AI 킥마스터 2인모드 출시.">
+<meta name="description" content="나른랩스(NARUUN LABS)는 AI 킥마스터를 개발·운영하며, 태권도장의 전문성이 네이버·구글 검색과 AI 검색에 명확하게 전달되는 홈페이지를 제작합니다.">
 
 <script type="application/ld+json">
 {
@@ -84,7 +84,7 @@ src="https://www.facebook.com/tr?id=1364933702413818&ev=PageView&noscript=1"
   },
   "makesOffer": [
     { "@type": "Offer", "itemOffered": { "@type": "SoftwareApplication", "name": "AI 킥마스터", "alternateName": ["AI KICK MASTER", "에이아이 킥마스터", "킥마스터", "aikickmaster"], "description": "카메라 한 대로 1인 훈련과 2인 실시간 대결을 지원하는 AI 발차기 훈련 프로그램" } },
-    { "@type": "Offer", "itemOffered": { "@type": "SoftwareApplication", "name": "AI 점프마스터", "alternateName": ["AI JUMP MASTER", "에이아이 점프마스터", "점프마스터", "aijumpmaster"] } }
+    { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "태권도장 홈페이지 제작", "serviceType": "홈페이지 제작 및 AI 검색 대응 정보 구조 설계", "areaServed": "KR", "description": "태권도장의 지역, 프로그램, 운영 정보와 전문성을 검색엔진과 AI가 이해하기 쉽게 구성하고 상담 문의로 연결하는 홈페이지 제작 서비스" } }
   ]
 }
 </script>
@@ -341,7 +341,7 @@ footer{padding:34px 0;border-top:1px solid rgba(255,255,255,.08);background:var(
   pointer-events:none;
 }
 .legacy-product.kick::before{background:var(--kick)}
-.legacy-product.jump::before{background:var(--jump)}
+.legacy-product.web-service::before{background:var(--brand2)}
 .legacy-product > div{position:relative;z-index:1}
 .legacy-tag{
   display:inline-flex;
@@ -352,7 +352,7 @@ footer{padding:34px 0;border-top:1px solid rgba(255,255,255,.08);background:var(
   text-transform:uppercase;
 }
 .legacy-tag.available{color:var(--kick)}
-.legacy-tag.soon{color:var(--jump)}
+.legacy-tag.service{color:var(--brand)}
 .legacy-product h3{
   font-size:clamp(46px,7.4vw,92px);
   line-height:.88;
@@ -417,54 +417,24 @@ footer{padding:34px 0;border-top:1px solid rgba(255,255,255,.08);background:var(
   transition:.2s ease;
 }
 .legacy-product .legacy-link:hover::after{transform:scaleX(1);opacity:1}
-.legacy-product.jump{
-  background:
-    radial-gradient(circle at 88% 12%,rgba(20,184,166,.12),transparent 24%),
-    linear-gradient(180deg,#fff 0%,#F7FCFB 100%);
-}
-.legacy-product.jump .legacy-link{color:var(--jump)}
-.coming-marquee{
-  position:absolute!important;
-  left:0;
-  top:50%;
-  transform:translateY(-50%) rotate(-5deg);
-  z-index:0!important;
-  font-size:clamp(44px,9.5vw,126px);
-  font-weight:900;
-  letter-spacing:-.08em;
-  white-space:nowrap;
-  line-height:.8;
-  color:transparent;
-  -webkit-text-stroke:1.5px rgba(20,184,166,.20);
-  opacity:.72;
-  pointer-events:none;
-}
-.coming-marquee strong{
-  display:block;
-  color:rgba(20,184,166,.08);
-  -webkit-text-stroke:0;
-}
-.coming-badge{
-  position:absolute!important;
-  right:0;
-  top:46px;
-  z-index:2!important;
-  min-width:min(560px,52%);
-  padding:11px 20px;
-  border-radius:999px;
-  background:linear-gradient(135deg,var(--jump),#4F76E8);
-  color:#fff;
-  font-size:clamp(14px,1.7vw,22px);
-  font-weight:900;
-  letter-spacing:.1em;
-  text-transform:uppercase;
-  box-shadow:0 18px 44px rgba(20,184,166,.24);
-}
+.legacy-product.web-service{margin:28px 0;padding:54px 38px;border:1px solid #D9E7FB;border-radius:32px;background:linear-gradient(135deg,#F8FAFF 0%,#EDF5FF 100%);align-items:center}
+.legacy-product.web-service h3{font-size:clamp(46px,5.8vw,72px);line-height:.96;text-transform:none;letter-spacing:-.065em;margin:12px 0 22px}
+.legacy-product.web-service h3 em{display:block;color:var(--brand2);font-style:normal}
+.legacy-product.web-service .legacy-link{color:var(--brand)}
+.web-search-preview{position:relative;height:310px;padding:20px;border-radius:25px;background:#071C49;box-shadow:0 28px 60px rgba(7,28,73,.22);color:#fff}
+.web-preview-frame{height:100%;overflow:hidden;border:1px solid rgba(255,255,255,.13);border-radius:17px;background:linear-gradient(160deg,#0D2858,#081A3D)}
+.web-preview-top{height:46px;display:flex;align-items:center;gap:7px;padding:0 15px;border-bottom:1px solid rgba(255,255,255,.1)}
+.web-preview-top i{width:7px;height:7px;border-radius:50%;background:#FF6A1A}.web-preview-top i:nth-child(2){background:#FFCF4A}.web-preview-top i:nth-child(3){background:#4BD69B}
+.web-preview-query{margin:15px;padding:11px 14px;border-radius:11px;background:rgba(255,255,255,.09);font-size:11px;color:#D9E8FF}
+.web-preview-answer{margin:0 15px;padding:16px;border-radius:13px;background:#fff;color:#17233B}
+.web-preview-answer small{display:block;color:var(--brand);font-size:9px;font-weight:900;letter-spacing:.08em}.web-preview-answer b{display:block;margin:6px 0;font-size:16px}.web-preview-answer p{margin:0;color:#667085;font-size:10.5px;line-height:1.55}
+.web-preview-flow{display:flex;align-items:center;justify-content:center;gap:7px;margin:13px 15px 0}.web-preview-flow span{padding:7px 8px;border-radius:9px;background:rgba(255,255,255,.09);font-size:9px;font-weight:800;color:#DCEAFF}.web-preview-flow b{color:#55B6FF}
+.web-preview-badge{position:absolute;right:32px;top:31px;padding:8px 12px;border-radius:999px;background:linear-gradient(135deg,var(--brand),#7B61FF);font-size:10px;font-weight:900;letter-spacing:.08em}
 
 @media(max-width:980px){
   .legacy-products-section .legacy-section-head{grid-template-columns:1fr;gap:22px}
   .legacy-product{grid-template-columns:1fr;align-items:start}
-  .coming-badge{position:relative!important;right:auto;top:auto;min-width:0;width:max-content;margin:0 0 28px}
+  .legacy-product.web-service{padding:38px 28px}
 }
 @media(max-width:680px){
   .legacy-hero{min-height:auto;padding:112px 0 72px}
@@ -472,7 +442,7 @@ footer{padding:34px 0;border-top:1px solid rgba(255,255,255,.08);background:var(
   .legacy-hero h1{font-size:clamp(48px,15vw,72px)}
   .legacy-hero .legacy-actions{gap:22px}
   .legacy-products-section{padding:82px 0}
-  .legacy-product{min-height:0;padding:46px 0;gap:28px}
+  .legacy-product{min-height:0;padding:46px 0;gap:28px}.legacy-product.web-service{margin:18px 0;padding:34px 22px}.web-search-preview{height:290px}
   .legacy-product h3{font-size:clamp(50px,16vw,70px)}
   .legacy-chips{gap:10px 14px}
 }
@@ -609,7 +579,7 @@ footer{padding:34px 0;border-top:1px solid rgba(255,255,255,.08);background:var(
       <img class="brand-logo-img" id="adminTrigger" src="NARUUN_LABS_logo2.svg" alt="NARUUN LABS">
     </a>
     <nav class="nav-links" aria-label="주요 메뉴">
-      <a href="#about">브랜드</a><a href="#products">제품</a><a href="#how">사용 방식</a><a href="#faq">FAQ</a>
+      <a href="#about">브랜드</a><a href="#products">제품·서비스</a><a href="#how">사용 방식</a><a href="#faq">FAQ</a>
       <a class="nav-cta js-kakao-link" href="#contact">카카오톡 1:1 상담</a>
     </nav>
   </div>
@@ -650,10 +620,10 @@ footer{padding:34px 0;border-top:1px solid rgba(255,255,255,.08);background:var(
   <div class="wrap">
     <div class="legacy-section-head reveal">
       <div>
-        <div class="legacy-kicker">PRODUCTS</div>
-        <h2>NARUUN LABS의<br>AI 스포츠 제품군</h2>
+        <div class="legacy-kicker">PRODUCTS &amp; SERVICES</div>
+        <h2>NARUUN LABS가<br>사업의 다음을 만듭니다.</h2>
       </div>
-      <p class="legacy-sub">현재 NARUUN LABS의 첫 번째 제품인 AI KICK MASTER를 만나보세요. 발차기 수업에 즉각적인 반응과 게임형 몰입을 더합니다.</p>
+      <p class="legacy-sub">현장에서 실제로 쓰이는 AI 제품을 만들고, 태권도장의 강점이 검색과 AI에 명확하게 전달되는 홈페이지를 제작합니다.</p>
     </div>
 
     <div class="legacy-products">
@@ -674,22 +644,27 @@ footer{padding:34px 0;border-top:1px solid rgba(255,255,255,.08);background:var(
         </div>
       </article>
 
-      <article class="legacy-product jump reveal" id="jumpProductBanner" hidden>
-        <div class="coming-marquee"><strong>COMING</strong>SOON</div>
-        <div class="coming-badge">COMING SOON</div>
+      <article class="legacy-product web-service reveal">
         <div>
-          <span class="legacy-tag soon">PREPARING NEXT EXPERIENCE</span>
-          <img class="legacy-product-logo" src="jump2.svg" alt="AI JUMP MASTER">
-        </div>
-        <div>
-          <p>줄넘기 훈련을 리듬감 있고 직관적인 AI 측정 경험으로 바꾸는 프로그램입니다. 현재는 내부 테스트와 UI 보완을 진행 중입니다.</p>
+          <span class="legacy-tag service">AI SEARCH READY WEB</span>
+          <h3>태권도장도<em>홈페이지가</em>있어야 합니다.</h3>
+          <p>네이버·구글 검색은 물론 ChatGPT 같은 AI 검색에서도 도장의 전문성과 프로그램이 명확하게 이해되도록 콘텐츠와 홈페이지 구조를 함께 설계합니다.</p>
           <div class="legacy-chips">
-            <span class="legacy-chip">줄넘기 측정</span>
-            <span class="legacy-chip">스피드</span>
-            <span class="legacy-chip">릴레이</span>
-            <span class="legacy-chip">리듬 훈련</span>
+            <span class="legacy-chip">모바일 최적화</span>
+            <span class="legacy-chip">검색 기본 설정</span>
+            <span class="legacy-chip">AI가 이해하기 쉬운 구조</span>
+            <span class="legacy-chip">상담·문의 연결</span>
           </div>
-          
+          <a class="legacy-link js-kakao-link" href="#contact">홈페이지 제작 상담하기</a>
+        </div>
+        <div class="web-search-preview" aria-label="검색에서 상담 문의로 이어지는 홈페이지 구조 예시">
+          <div class="web-preview-badge">AI SEARCH READY</div>
+          <div class="web-preview-frame">
+            <div class="web-preview-top"><i></i><i></i><i></i></div>
+            <div class="web-preview-query">우리 지역에서 믿을 만한 태권도장 찾기</div>
+            <div class="web-preview-answer"><small>BUSINESS ANSWER</small><b>도장의 강점이 한눈에 이해되도록</b><p>지역 · 교육 철학 · 프로그램 · 운영 정보 · 자주 묻는 질문을 명확하게 구성합니다.</p></div>
+            <div class="web-preview-flow"><span>검색에서 발견</span><b>→</b><span>신뢰 형성</span><b>→</b><span>상담 문의</span></div>
+          </div>
         </div>
       </article>
     </div>
@@ -764,7 +739,7 @@ footer{padding:34px 0;border-top:1px solid rgba(255,255,255,.08);background:var(
   const trigger=document.getElementById('adminTrigger'); let count=0,timer;
   trigger?.addEventListener('click',e=>{e.preventDefault();count++;clearTimeout(timer);timer=setTimeout(()=>count=0,1500);if(count>=5){count=0;location.href=adminUrl||'admin.html';}});
   fetch(ADMIN_EDGE_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'GET_HOME_DATA',payload:{target:'index'}})})
-    .then(r=>r.json()).then(res=>{const d=res&&res.data;if(!d)return;if(d.admin_url)adminUrl=d.admin_url;const setText=(id,v)=>{const el=document.getElementById(id);if(el&&v)el.textContent=v};const setHtml=(id,v)=>{const el=document.getElementById(id);if(el&&v)el.innerHTML=v};setText('heroEyebrow',d.hero_eyebrow);setHtml('heroTitle',d.hero_title);setText('heroLead',d.hero_desc);setText('contactDesc',d.contact_desc);setText('copyrightText',d.copyright);const jb=document.getElementById('jumpProductBanner');if(jb)jb.hidden=d.jump_enabled!==true;
+    .then(r=>r.json()).then(res=>{const d=res&&res.data;if(!d)return;if(d.admin_url)adminUrl=d.admin_url;const setText=(id,v)=>{const el=document.getElementById(id);if(el&&v)el.textContent=v};const setHtml=(id,v)=>{const el=document.getElementById(id);if(el&&v)el.innerHTML=v};setText('heroEyebrow',d.hero_eyebrow);setHtml('heroTitle',d.hero_title);setText('heroLead',d.hero_desc);setText('contactDesc',d.contact_desc);setText('copyrightText',d.copyright);
       const kakao=(d.kakao_url||'').trim(); const tel=(d.tel_url||'tel:01076573579').trim(); const phone=(d.phone||'010-7657-3579').trim();
       document.querySelectorAll('.js-kakao-link').forEach(a=>{if(kakao&&kakao!=='#'){a.href=kakao;a.target='_blank';a.rel='noopener';}else{a.href='#contact';}});
       const cp=document.getElementById('contactPhone'); if(cp){cp.href=tel;cp.textContent='전화 문의 '+phone;}
