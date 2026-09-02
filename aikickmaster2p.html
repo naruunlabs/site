@@ -9429,6 +9429,8 @@ function applyAkmTune(t){
 }
 window.applyAkmTune = applyAkmTune;
 
+window.__akmIsPlaying = function(){ try{ return !!running; }catch(e){ return false; } };
+
 window.__startApp = async function() {
   try{
     await initModel();
@@ -10457,6 +10459,8 @@ window.logoutLicense=()=>{
 };
 
 const _AKM_HEARTBEAT_MS  = 30 * 60 * 1000;  
+
+const _AKM_TUNE_CHECK_MS = 5 * 1000;
 const _AKM_BLOCK_WATCH_MS = 15 * 1000;      
 const _AKM_BLOCK_MSG_KEY = 'akm_block_msg';
 
@@ -10536,6 +10540,14 @@ async function _akmHeartbeat(){
       cached_at   : Date.now()
     });
     _akmShowTrialBadge(_akmGetCache());
+
+    try{
+      const _t=(_akmGetCache()||{}).tune;
+      const _busy = (typeof window.__akmIsPlaying==='function') ? window.__akmIsPlaying() : false;
+      if(_t && typeof window.applyAkmTune==='function' && !_busy){
+        window.applyAkmTune(_t);
+      }
+    }catch(e){}
     return;
   }
 
@@ -10548,6 +10560,15 @@ async function _akmHeartbeat(){
 
 function _akmStartHeartbeat(){
   if(_akmHeartbeatTimer) return;
+
+  setTimeout(function(){
+    try{
+      const c=_akmGetCache();
+      if(!c || !c.license_key) return;
+      if(c.cached_at && (Date.now()-c.cached_at) < 60*1000) return;  
+      _akmHeartbeat();
+    }catch(e){}
+  }, _AKM_TUNE_CHECK_MS);
   _akmHeartbeatTimer  = setInterval(_akmHeartbeat, _AKM_HEARTBEAT_MS);
   
   _akmBlockWatchTimer = setInterval(function(){
