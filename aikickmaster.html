@@ -3602,7 +3602,7 @@ body.hud-v21.akm-ui.sparring-mode .stats-row{
       <div class="te-desc" id="teDesc">
         AI KICK MASTER를 사용해 주셔서 감사합니다.<br>
         계속 사용하시려면 <b>정식 라이선스</b>가 필요합니다.<br>
-        월 구독료 없는 <b>영구 라이선스</b>로 제공됩니다.
+        월 구독료 없이, <b>한 번 구매로 계속 사용</b>하실 수 있습니다.
       </div>
       <div class="te-actions">
         <a class="te-btn te-btn-primary" id="teKakaoBtn" href="https://naruunlabs.kr/kickmaster" target="_blank" rel="noopener">카카오톡으로 구매 문의</a>
@@ -9842,7 +9842,7 @@ async function doLicenseActivate(){
         _akmShowTrialExpired(
           `<b>${result.trial_days||3}일 체험 기간</b>이 모두 사용되었습니다.<br>` +
           `계속 사용하시려면 <b>정식 라이선스</b>가 필요합니다.<br>` +
-          `월 구독료 없는 <b>영구 라이선스</b>로 제공됩니다.`,
+          `월 구독료 없이, <b>한 번 구매로 계속 사용</b>하실 수 있습니다.`,
           '체험 기간이 끝났습니다', ''
         );
         return;
@@ -9927,7 +9927,7 @@ function _akmEnterAuthed(cache){
 function _akmExpiredMessage(cache){
   return [
     cache.is_trial
-      ? `<b>체험 기간</b>이 모두 사용되었습니다.<br>계속 사용하시려면 <b>정식 라이선스</b>가 필요합니다.<br>월 구독료 없는 <b>영구 라이선스</b>로 제공됩니다.`
+      ? `<b>체험 기간</b>이 모두 사용되었습니다.<br>계속 사용하시려면 <b>정식 라이선스</b>가 필요합니다.<br>월 구독료 없이, <b>한 번 구매로 계속 사용</b>하실 수 있습니다.`
       : `라이선스 <b>사용 기간이 종료</b>되었습니다.<br>연장 또는 재발급은 아래로 문의해 주세요.`,
     cache.is_trial ? '체험 기간이 끝났습니다' : '라이선스 기간이 끝났습니다'
   ];
@@ -10015,7 +10015,7 @@ function _akmBlockMessage(result){
   const r = result && result.reason;
   if(r === 'trial_expired')
     return { title:'체험 기간이 끝났습니다', icon:'',
-      msg:`<b>체험 기간</b>이 모두 사용되었습니다.<br>계속 사용하시려면 <b>정식 라이선스</b>가 필요합니다.<br>월 구독료 없는 <b>영구 라이선스</b>로 제공됩니다.` };
+      msg:`<b>체험 기간</b>이 모두 사용되었습니다.<br>계속 사용하시려면 <b>정식 라이선스</b>가 필요합니다.<br>월 구독료 없이, <b>한 번 구매로 계속 사용</b>하실 수 있습니다.` };
   if(r === 'expired')
     return { title:'라이선스 기간이 끝났습니다', icon:'',
       msg:`라이선스 <b>사용 기간이 종료</b>되었습니다.<br>연장 또는 재발급은 아래로 문의해 주세요.` };

@@ -17,7 +17,7 @@
 //    그러면 예전 캐시가 통째로 비워집니다.
 // =========================================================
 
-const CACHE_NAME = 'naruunlabs-2026-08-27-f1start';
+const CACHE_NAME = 'naruunlabs-2026-09-02-autonext';
 
 const APP_SHELL = [
   './',
