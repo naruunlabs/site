@@ -180,6 +180,15 @@ tr.row-expired td{background:#fdecec}
 .modal-btns button{flex:1;height:48px;border-radius:14px;font-size:14px;font-weight:800}
 .input-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .input-row .f-input{margin-bottom:0}
+.aw-add-modal{width:650px}
+.aw-mode{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px}
+.aw-mode button{height:42px;border:1px solid var(--line);border-radius:12px;background:var(--panel-soft);color:var(--muted);font-family:inherit;font-weight:800;cursor:pointer}
+.aw-mode button.on{background:#EAF2FC;border-color:#0757D8;color:#0757D8;box-shadow:inset 0 0 0 1px #0757D8}
+.aw-add-pane{display:none}.aw-add-pane.show{display:block}
+.aw-add-note{font-size:12px;line-height:1.55;color:var(--muted2);font-weight:650;margin:-5px 0 14px}
+.aw-modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}
+.aw-modal-grid .full{grid-column:1/-1}
+@media(max-width:560px){.aw-modal-grid{grid-template-columns:1fr}.aw-modal-grid .full{grid-column:auto}}
 
 .admin-slot-grid{display:flex;gap:8px;flex-wrap:wrap}
 .admin-slot-card{flex:1 1 130px;min-width:130px;border-radius:14px;padding:12px;background:var(--panel-soft)}
@@ -679,8 +688,7 @@ table.cg tfoot td.num{text-align:right}
         <input class="cg-search" id="awSearch" placeholder="도장·관장님·도메인 검색" oninput="renderAcademyProjects()">
         <div class="cg-spacer"></div>
         <button class="cg-btn" onclick="loadAcademyProjects()">새로고침</button>
-        <select class="cg-btn" id="awNewCustomer" aria-label="제작 고객 선택"><option value="">고객 선택</option></select>
-        <button class="cg-btn primary" onclick="addAcademyProject()">+ 제작 고객 추가</button>
+        <button class="cg-btn primary" onclick="openAcademyAddModal()">+ 제작 고객 추가</button>
       </div>
       <div class="cg-scroll"><table class="cg aw-table"><thead><tr><th>고객</th><th>진행 상태</th><th>견적</th><th>받은 금액</th><th>시작일</th><th>공개 예정</th><th>공개일</th><th>도메인</th><th>홈페이지 주소</th><th>다음 할 일</th><th>언제</th><th>메모</th><th>관리</th></tr></thead><tbody id="awBody"><tr><td colspan="13" class="cg-empty">불러오는 중…</td></tr></tbody></table></div>
     </div>
@@ -749,6 +757,43 @@ table.cg tfoot td.num{text-align:right}
     <div class="edit-section"><h3>연결 상태</h3><div class="field-hint" id="homeSaveStatus">서버 데이터를 불러오거나 저장하면 여기에 결과가 표시됩니다.</div></div>
   </div>
 
+</div>
+
+<div class="modal-bg" id="awModalBg">
+  <div class="modal aw-add-modal">
+    <h3>아카데미웹 <span>제작 고객 추가</span></h3>
+    <div class="aw-mode">
+      <button type="button" id="awModeNew" class="on" onclick="setAcademyAddMode('new')">새 고객 직접 입력</button>
+      <button type="button" id="awModeExisting" onclick="setAcademyAddMode('existing')">기존 고객 선택</button>
+    </div>
+    <div id="awPaneNew" class="aw-add-pane show">
+      <div class="aw-add-note">새 고객은 고객 관리 장부에도 함께 등록됩니다.</div>
+      <div class="aw-modal-grid">
+        <div><label>도장명 *</label><input id="awNewDojang" class="f-input" placeholder="예) 나른태권도장"></div>
+        <div><label>관장님 성함</label><input id="awNewOwner" class="f-input" placeholder="예) 김관장"></div>
+        <div class="full"><label>전화번호</label><input id="awNewPhone" class="f-input" type="tel" placeholder="예) 01012345678" onblur="this.value=formatPhone(this.value)"></div>
+      </div>
+    </div>
+    <div id="awPaneExisting" class="aw-add-pane">
+      <div class="aw-add-note">고객 관리 장부에 있는 도장을 선택해 제작 건을 연결합니다.</div>
+      <label>기존 고객 *</label><select id="awExistingCustomer" class="f-input"><option value="">고객을 선택하세요</option></select>
+    </div>
+    <div class="modal-section"><div class="modal-section-title">첫 제작 정보</div>
+      <div class="aw-modal-grid">
+        <div><label>진행 상태</label><select id="awAddStatus" class="f-input"></select></div>
+        <div><label>도메인</label><input id="awAddDomain" class="f-input" placeholder="예) sampletkd.com"></div>
+        <div><label>견적 금액</label><input id="awAddQuote" class="f-input" type="number" min="0" placeholder="0"></div>
+        <div><label>받은 금액</label><input id="awAddPaid" class="f-input" type="number" min="0" placeholder="0"></div>
+        <div><label>시작일</label><input id="awAddStart" class="f-input" type="date"></div>
+        <div><label>공개 예정일</label><input id="awAddDue" class="f-input" type="date"></div>
+        <div><label>다음 할 일</label><input id="awAddNext" class="f-input" placeholder="예) 사진 자료 받기"></div>
+        <div><label>연락 예정일</label><input id="awAddNextAt" class="f-input" type="date"></div>
+        <div class="full"><label>메모</label><textarea id="awAddMemo" class="f-textarea" placeholder="제작에 필요한 내용을 적어두세요"></textarea></div>
+      </div>
+    </div>
+    <div class="err-msg" id="awAddErr"></div>
+    <div class="modal-btns"><button class="btn-cancel" onclick="closeAcademyAddModal()">취소</button><button class="btn-save" id="awAddSaveBtn" onclick="saveNewAcademyProject()">고객 및 제작 건 등록</button></div>
+  </div>
 </div>
 
 <div class="modal-bg" id="pwModalBg">
@@ -2367,9 +2412,9 @@ async function loadAcademyProjects() {
 }
 
 function refreshAcademyCustomerPicker() {
-  const sel=document.getElementById('awNewCustomer'); if(!sel)return;
+  const sel=document.getElementById('awExistingCustomer'); if(!sel)return;
   const keep=sel.value;
-  sel.innerHTML='<option value="">고객 선택</option>'+CUSTOMERS.map(c=>`<option value="${c.id}">${escapeHtml(c.dojang_name)}${c.owner_name?' · '+escapeHtml(c.owner_name):''}</option>`).join('');
+  sel.innerHTML='<option value="">고객을 선택하세요</option>'+CUSTOMERS.map(c=>`<option value="${c.id}">${escapeHtml(c.dojang_name)}${c.owner_name?' · '+escapeHtml(c.owner_name):''}</option>`).join('');
   if ([...sel.options].some(o=>o.value===keep)) sel.value=keep;
 }
 
@@ -2413,18 +2458,59 @@ function renderAcademyProjects() {
     <td><button class="btn-sm btn-del" onclick="deleteAcademyProject('${p.id}')">삭제</button></td></tr>`).join('');
 }
 
-async function addAcademyProject() {
+let academyAddMode = 'new';
+function setAcademyAddMode(mode) {
+  academyAddMode = mode;
+  document.getElementById('awModeNew').classList.toggle('on', mode === 'new');
+  document.getElementById('awModeExisting').classList.toggle('on', mode === 'existing');
+  document.getElementById('awPaneNew').classList.toggle('show', mode === 'new');
+  document.getElementById('awPaneExisting').classList.toggle('show', mode === 'existing');
+  document.getElementById('awAddErr').textContent = '';
+}
+async function openAcademyAddModal() {
   if (!CUSTOMERS.length) await loadCustomers();
-  if (!CUSTOMERS.length) { showToast('고객 관리에서 고객을 먼저 추가해주세요'); return; }
   refreshAcademyCustomerPicker();
-  const customerId=document.getElementById('awNewCustomer').value;
-  if(!customerId){showToast('추가할 고객을 먼저 선택해주세요');return;}
+  ['awNewDojang','awNewOwner','awNewPhone','awAddDomain','awAddQuote','awAddPaid','awAddDue','awAddNext','awAddNextAt','awAddMemo'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('awExistingCustomer').value = '';
+  document.getElementById('awAddStart').value = todayStr();
+  document.getElementById('awAddStatus').innerHTML = ACADEMY_STATUS.map(x => `<option value="${x[0]}">${x[1]}</option>`).join('');
+  document.getElementById('awAddStatus').value = 'inquiry';
+  document.getElementById('awAddErr').textContent = '';
+  setAcademyAddMode('new');
+  document.getElementById('awModalBg').classList.add('show');
+  setTimeout(() => document.getElementById('awNewDojang').focus(), 50);
+}
+function closeAcademyAddModal() { document.getElementById('awModalBg').classList.remove('show'); }
+async function saveNewAcademyProject() {
+  const err = document.getElementById('awAddErr');
+  const btn = document.getElementById('awAddSaveBtn');
+  err.textContent = '';
+  let customerId = '';
+  let madeCustomer = false;
+  if (academyAddMode === 'existing') {
+    customerId = document.getElementById('awExistingCustomer').value;
+    if (!customerId) { err.textContent = '기존 고객을 선택해주세요.'; return; }
+  } else {
+    const dojang = document.getElementById('awNewDojang').value.trim();
+    if (!dojang) { err.textContent = '도장명을 입력해주세요.'; document.getElementById('awNewDojang').focus(); return; }
+  }
+  btn.disabled = true; btn.textContent = '등록 중…';
   try {
-    const made = await edgeCall('SAVE_ACADEMY_PROJECT', {customer_id:customerId,status:'inquiry'});
+    if (academyAddMode === 'new') {
+      const customer = await edgeCall('SAVE_CUSTOMER', {dojang_name:document.getElementById('awNewDojang').value.trim(),owner_name:document.getElementById('awNewOwner').value.trim()||null,phone:formatPhone(document.getElementById('awNewPhone').value)||null,status:'lead',source:'기타'});
+      if (!customer || !customer.id) throw new Error('고객 장부 저장 결과를 확인할 수 없습니다.');
+      customerId = customer.id; madeCustomer = true;
+      const i = CUSTOMERS.findIndex(c => c.id === customer.id);
+      if (i >= 0) CUSTOMERS[i] = customer; else CUSTOMERS.unshift(customer);
+    }
+    const numOrNull = id => { const v=document.getElementById(id).value; return v===''?null:Number(v); };
+    const valOrNull = id => document.getElementById(id).value.trim() || null;
+    const made = await edgeCall('SAVE_ACADEMY_PROJECT', {customer_id:customerId,status:document.getElementById('awAddStatus').value,quoted_amount:numOrNull('awAddQuote'),paid_amount:numOrNull('awAddPaid'),started_at:valOrNull('awAddStart'),due_at:valOrNull('awAddDue'),domain:valOrNull('awAddDomain'),next_action:valOrNull('awAddNext'),next_action_at:valOrNull('awAddNextAt'),memo:valOrNull('awAddMemo')});
     if (made) ACADEMY_PROJECTS.unshift(made);
-    document.getElementById('awNewCustomer').value='';
-    renderAcademyProjects(); showToast('제작 고객을 추가했습니다.');
-  } catch(err) { showToast('추가 실패: '+err.message); }
+    closeAcademyAddModal(); renderAcademyProjects(); showToast('제작 고객을 등록했습니다.');
+  } catch(e) {
+    err.textContent = madeCustomer ? '고객 장부에는 저장됐지만 제작 건 등록에 실패했습니다. 기존 고객 선택으로 다시 등록해주세요. ('+e.message+')' : '등록 실패: '+e.message;
+  } finally { btn.disabled = false; btn.textContent = '고객 및 제작 건 등록'; }
 }
 
 async function saveAcademyCell(el) {
@@ -2470,9 +2556,10 @@ function exportCustomersCsv() {
 
 document.getElementById('pwModalBg').addEventListener('click', e => { if(e.target===e.currentTarget) closePwModal(); });
 document.getElementById('modalBg').addEventListener('click', e => { if(e.target===e.currentTarget) closeModal(); });
+document.getElementById('awModalBg').addEventListener('click', e => { if(e.target===e.currentTarget) closeAcademyAddModal(); });
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
-  closeModal(); closePwModal();
+  closeModal(); closePwModal(); closeAcademyAddModal();
 
   const t = e.target;
   const typing = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA') && t.value;
