@@ -510,6 +510,7 @@ table.cg tfoot td.num{text-align:right}
   padding:10px 12px;margin-bottom:10px;font-size:12px;font-weight:800;color:#8a5a10;line-height:1.5}
 .slot-ip-warn-sub{display:block;margin-top:4px;font-size:11px;font-weight:600;color:#9b7333}
 .slot-ip-moved{color:#8a5a10;font-weight:700}
+.aw-table{min-width:1850px}.aw-table th{white-space:nowrap}.aw-table td{padding:5px}.aw-in{width:100%;min-width:92px;height:34px;border:1px solid transparent;border-radius:7px;background:transparent;padding:0 8px;font:inherit;color:var(--text)}.aw-in:hover{border-color:#d9dee8;background:#fff}.aw-in:focus{outline:0;border-color:#4f7cff;background:#fff;box-shadow:0 0 0 3px rgba(79,124,255,.12)}.aw-customer{min-width:180px}.aw-url{min-width:190px}.aw-wide{min-width:170px}.aw-row.s-launched td,.aw-row.s-maintenance td{background:#F2FBF6}.aw-row.s-building td,.aw-row.s-materials td{background:#F2F8FF}.aw-row.s-review td{background:#FFF8E8}.aw-row.due td:first-child{box-shadow:inset 4px 0 #dc2626}
 </style>
 
 </head>
@@ -545,7 +546,8 @@ table.cg tfoot td.num{text-align:right}
   <div class="tab-bar">
     <div class="sidebar-brand"><img class="sidebar-company-logo" src="naruunlabs_logo.svg" alt="NARUUN LABS"><span>Powered by Google MediaPipe</span></div>
     <button class="tab-btn active" onclick="switchTab('license')">라이선스 관리</button>
-    <button class="tab-btn" onclick="switchTab('customer')">회원 관리</button>
+    <button class="tab-btn" onclick="switchTab('customer')">고객 관리</button>
+    <button class="tab-btn" onclick="switchTab('academy')">아카데미웹</button>
     <button class="tab-btn" onclick="switchTab('home')">홈페이지 관리</button>
     
     <div class="sidebar-foot">
@@ -661,6 +663,28 @@ table.cg tfoot td.num{text-align:right}
       </div>
     </div>
     <div class="footer-note">칸을 눌러 바로 고칩니다 · 칸을 벗어나면 그 줄만 저장됩니다</div>
+  </div>
+
+  <div class="tab-content" id="tab-academy">
+    <div class="stats-row">
+      <div class="stat-card"><div class="num" id="awTotal">-</div><div class="label">전체 제작 건</div></div>
+      <div class="stat-card"><div class="num" id="awActive" style="color:#4f7cff">-</div><div class="label">제작 진행 중</div></div>
+      <div class="stat-card"><div class="num" id="awReview" style="color:var(--amber)">-</div><div class="label">확인 기다리는 곳</div></div>
+      <div class="stat-card"><div class="num" id="awDue" style="color:var(--red)">-</div><div class="label">오늘 연락할 곳</div></div>
+      <div class="stat-card"><div class="num" id="awRevenue" style="color:var(--gold)">-</div><div class="label">누적 수금</div></div>
+    </div>
+    <div class="cg-wrap">
+      <div class="cg-top">
+        <div class="cg-title">아카데미웹 제작 장부</div><div class="cg-sub" id="awSub">불러오는 중…</div>
+        <input class="cg-search" id="awSearch" placeholder="도장·관장님·도메인 검색" oninput="renderAcademyProjects()">
+        <div class="cg-spacer"></div>
+        <button class="cg-btn" onclick="loadAcademyProjects()">새로고침</button>
+        <select class="cg-btn" id="awNewCustomer" aria-label="제작 고객 선택"><option value="">고객 선택</option></select>
+        <button class="cg-btn primary" onclick="addAcademyProject()">+ 제작 고객 추가</button>
+      </div>
+      <div class="cg-scroll"><table class="cg aw-table"><thead><tr><th>고객</th><th>진행 상태</th><th>견적</th><th>받은 금액</th><th>시작일</th><th>공개 예정</th><th>공개일</th><th>도메인</th><th>홈페이지 주소</th><th>다음 할 일</th><th>언제</th><th>메모</th><th>관리</th></tr></thead><tbody id="awBody"><tr><td colspan="13" class="cg-empty">불러오는 중…</td></tr></tbody></table></div>
+    </div>
+    <div class="footer-note">기존 고객을 선택해 홈페이지 제작 건을 연결합니다 · 라이선스와 기존 고객 장부는 그대로 유지됩니다</div>
   </div>
 
   <div class="tab-content" id="tab-home">
@@ -947,19 +971,21 @@ function showToast(msg) {
 
 function switchTab(tab) {
   
-  const names=['license','customer','home'];
+  const names=['license','customer','academy','home'];
   document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', names[i]===tab));
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
   document.getElementById('tab-'+tab).classList.add('active');
   setPageTitle(tab);
   if (tab === 'license') loadLicenses();
   if (tab === 'customer') loadCustomers();
+  if (tab === 'academy') { loadCustomers().then(loadAcademyProjects); }
   if (tab === 'home') loadHomeFields();
 }
 
 const PAGE_TITLES = {
   license : ['라이선스 관리', '발급 · 수정 · 기기 관리'],
-  customer: ['회원 관리',   '고객 장부 · 판매 기록 · 상담 이력'],
+  customer: ['고객 관리',   '고객 장부 · 판매 기록 · 상담 이력'],
+  academy : ['아카데미웹',  '홈페이지 제작 고객 · 진행 · 일정 · 수금'],
   home    : ['홈페이지 관리', 'naruunlabs.kr 에 나가는 문구']
 };
 function setPageTitle(tab) {
@@ -1010,6 +1036,7 @@ async function adminLogin() {
     loadHomeFields();
     
     loadCustomers();
+    loadAcademyProjects();
   } catch(e) {
     errEl.textContent = '서버 연결 실패: ' + e.message;
   }
@@ -2319,6 +2346,106 @@ async function deleteNote(noteId, custId) {
   catch(err) { showToast('삭제 실패: ' + err.message); }
 }
 
+let ACADEMY_PROJECTS = [];
+const ACADEMY_STATUS = [
+  ['inquiry','상담'],['quoted','견적 전달'],['contracted','계약'],['materials','자료 요청'],
+  ['building','제작 중'],['review','확인 중'],['launched','공개 완료'],
+  ['maintenance','유지관리'],['cancelled','취소']
+];
+
+async function loadAcademyProjects() {
+  const body = document.getElementById('awBody');
+  if (!body || !ADMIN_TOKEN) return;
+  body.innerHTML = '<tr><td colspan="13" class="cg-empty">불러오는 중…</td></tr>';
+  try {
+    ACADEMY_PROJECTS = await edgeCall('GET_ACADEMY_PROJECTS', {}) || [];
+    refreshAcademyCustomerPicker();
+    renderAcademyProjects();
+  } catch(err) {
+    body.innerHTML = `<tr><td colspan="13" class="cg-empty">불러오기 실패: ${escapeHtml(err.message)}</td></tr>`;
+  }
+}
+
+function refreshAcademyCustomerPicker() {
+  const sel=document.getElementById('awNewCustomer'); if(!sel)return;
+  const keep=sel.value;
+  sel.innerHTML='<option value="">고객 선택</option>'+CUSTOMERS.map(c=>`<option value="${c.id}">${escapeHtml(c.dojang_name)}${c.owner_name?' · '+escapeHtml(c.owner_name):''}</option>`).join('');
+  if ([...sel.options].some(o=>o.value===keep)) sel.value=keep;
+}
+
+function academyDue(p) {
+  return !!p.next_action_at && p.next_action_at <= todayStr() && p.status !== 'cancelled';
+}
+
+function academyCustomerName(p) {
+  const c = p.customers || CUSTOMERS.find(x => x.id === p.customer_id);
+  return c ? c.dojang_name : '고객 미지정';
+}
+
+function renderAcademyProjects() {
+  const body = document.getElementById('awBody'); if (!body) return;
+  const q = (document.getElementById('awSearch')?.value || '').trim().toLowerCase();
+  const rows = ACADEMY_PROJECTS.filter(p => {
+    const c = p.customers || CUSTOMERS.find(x => x.id === p.customer_id) || {};
+    return !q || [c.dojang_name,c.owner_name,c.phone,p.domain,p.site_url,p.next_action,p.memo].filter(Boolean).join(' ').toLowerCase().includes(q);
+  });
+  document.getElementById('awSub').textContent = `${rows.length}건 표시 · 전체 ${ACADEMY_PROJECTS.length}건`;
+  document.getElementById('awTotal').textContent = ACADEMY_PROJECTS.length;
+  document.getElementById('awActive').textContent = ACADEMY_PROJECTS.filter(p => ['contracted','materials','building'].includes(p.status)).length;
+  document.getElementById('awReview').textContent = ACADEMY_PROJECTS.filter(p => p.status === 'review').length;
+  document.getElementById('awDue').textContent = ACADEMY_PROJECTS.filter(academyDue).length;
+  const revenue = ACADEMY_PROJECTS.reduce((s,p) => s + (Number(p.paid_amount)||0), 0);
+  document.getElementById('awRevenue').textContent = revenue ? (revenue/10000).toLocaleString('ko-KR')+'만' : '0';
+  if (!rows.length) {
+    body.innerHTML = `<tr><td colspan="13" class="cg-empty">${ACADEMY_PROJECTS.length?'검색 결과가 없습니다.':'아직 제작 건이 없습니다. 오른쪽 위 제작 고객 추가를 눌러보세요.'}</td></tr>`;
+    return;
+  }
+  const statusOptions = v => ACADEMY_STATUS.map(x => `<option value="${x[0]}" ${x[0]===v?'selected':''}>${x[1]}</option>`).join('');
+  const customerOptions = id => CUSTOMERS.map(c => `<option value="${c.id}" ${c.id===id?'selected':''}>${escapeHtml(c.dojang_name)}${c.owner_name?' · '+escapeHtml(c.owner_name):''}</option>`).join('');
+  const inp = (p,f,type='',cls='') => `<input class="aw-in ${cls}" data-id="${p.id}" data-f="${f}" ${type?`type="${type}"`:''} value="${escapeHtml(p[f]??'')}" onchange="saveAcademyCell(this)">`;
+  body.innerHTML = rows.map(p => `<tr class="aw-row s-${p.status}${academyDue(p)?' due':''}" data-id="${p.id}">
+    <td><select class="aw-in aw-customer" data-id="${p.id}" data-f="customer_id" onchange="saveAcademyCell(this)">${customerOptions(p.customer_id)}</select></td>
+    <td><select class="aw-in" data-id="${p.id}" data-f="status" onchange="saveAcademyCell(this)">${statusOptions(p.status)}</select></td>
+    <td>${inp(p,'quoted_amount','number')}</td><td>${inp(p,'paid_amount','number')}</td>
+    <td>${inp(p,'started_at','date')}</td><td>${inp(p,'due_at','date')}</td><td>${inp(p,'launched_at','date')}</td>
+    <td>${inp(p,'domain','','aw-wide')}</td><td>${inp(p,'site_url','url','aw-url')}</td>
+    <td>${inp(p,'next_action','','aw-wide')}</td><td>${inp(p,'next_action_at','date')}</td><td>${inp(p,'memo','','aw-wide')}</td>
+    <td><button class="btn-sm btn-del" onclick="deleteAcademyProject('${p.id}')">삭제</button></td></tr>`).join('');
+}
+
+async function addAcademyProject() {
+  if (!CUSTOMERS.length) await loadCustomers();
+  if (!CUSTOMERS.length) { showToast('고객 관리에서 고객을 먼저 추가해주세요'); return; }
+  refreshAcademyCustomerPicker();
+  const customerId=document.getElementById('awNewCustomer').value;
+  if(!customerId){showToast('추가할 고객을 먼저 선택해주세요');return;}
+  try {
+    const made = await edgeCall('SAVE_ACADEMY_PROJECT', {customer_id:customerId,status:'inquiry'});
+    if (made) ACADEMY_PROJECTS.unshift(made);
+    document.getElementById('awNewCustomer').value='';
+    renderAcademyProjects(); showToast('제작 고객을 추가했습니다.');
+  } catch(err) { showToast('추가 실패: '+err.message); }
+}
+
+async function saveAcademyCell(el) {
+  const p = ACADEMY_PROJECTS.find(x => x.id === el.dataset.id); if (!p) return;
+  let value = el.value;
+  if (el.type === 'number') value = value === '' ? null : Number(value);
+  p[el.dataset.f] = value === '' ? null : value;
+  try {
+    const saved = await edgeCall('SAVE_ACADEMY_PROJECT', {id:p.id,[el.dataset.f]:p[el.dataset.f]});
+    if (saved) Object.assign(p,saved);
+    renderAcademyProjects(); showToast('저장되었습니다');
+  } catch(err) { showToast('저장 실패: '+err.message); loadAcademyProjects(); }
+}
+
+async function deleteAcademyProject(id) {
+  const p=ACADEMY_PROJECTS.find(x=>x.id===id); if(!p)return;
+  if(!confirm(`'${academyCustomerName(p)}'의 홈페이지 제작 기록을 지울까요?\n고객 장부와 라이선스는 지워지지 않습니다.`))return;
+  try { await edgeCall('DELETE_ACADEMY_PROJECT',{id}); ACADEMY_PROJECTS=ACADEMY_PROJECTS.filter(x=>x.id!==id); renderAcademyProjects(); showToast('제작 기록을 지웠습니다'); }
+  catch(err){showToast('삭제 실패: '+err.message);}
+}
+
 function exportCustomersCsv() {
   const rows = customerRowsNow();
   if (!rows.length) { showToast('내보낼 것이 없습니다'); return; }
@@ -2360,6 +2487,7 @@ if (savedToken) {
   loadLicenses();
   loadHomeFields();
   loadCustomers();
+  loadAcademyProjects();
 }
 </script>
 
