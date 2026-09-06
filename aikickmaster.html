@@ -7029,6 +7029,15 @@ function setReadyUi(on){
 function setGrResult(text){ gameResult.textContent=text; gameResult2.textContent=text; }
 
 window.startGame=()=>{
+  if(modelLoading || modelPreparing || readyTimer) return;
+  if(!running && (!poseLandmarker || video.readyState<2)){
+    statusEl.textContent='카메라와 AI 모델 준비가 끝난 뒤 시작해주세요.'; return;
+  }
+  if(!running && modelSelectedKey!==modelProfileKey()){
+    prepareDeviceModel().then(()=>{ statusEl.textContent='준비되었습니다. 시작 버튼을 눌러주세요.'; })
+      .catch(e=>{ console.error(e); statusEl.textContent='기기 측정을 완료하지 못했습니다. 카메라를 확인한 뒤 시작을 다시 눌러주세요.'; });
+    return;
+  }
   if(twoPlayerMode) closeP2Result();
   if(running){
 
@@ -7875,7 +7884,40 @@ const MODEL_URLS={
   lite:"https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task"
 };
 let visionResolver=null, currentModelKind='full', currentDelegate='GPU';
-async function initModel(numPoses=1, modelKind='full'){
+let modelLoading=false, modelPreparing=false, modelSelectedKey='';
+const MODEL_PROFILE_VERSION='akm-mp0.10.14-pose1-select1';
+const MODEL_PROFILE_MAX_AGE=7*24*60*60*1000;
+function modelProfileKey(){ return twoPlayerMode?(crop2pEnabled?'2-crop':'2-whole'):'1'; }
+function readModelProfile(){
+  try{
+    const p=JSON.parse(localStorage.getItem(MODEL_PROFILE_VERSION+':'+modelProfileKey()));
+    if(p && p.agent===navigator.userAgent && ['full','lite'].includes(p.kind)
+       && Number.isFinite(p.at) && Date.now()>=p.at && Date.now()-p.at<MODEL_PROFILE_MAX_AGE) return p;
+  }catch(e){}
+  return null;
+}
+function writeModelProfile(kind,stats){
+  try{ localStorage.setItem(MODEL_PROFILE_VERSION+':'+modelProfileKey(),JSON.stringify({kind,at:Date.now(),agent:navigator.userAgent,...stats})); }catch(e){}
+}
+async function initModel(numPoses=twoPlayerMode?(crop2pEnabled?1:2):1, modelKind=readModelProfile()?.kind||'full'){
+  if(modelLoading || running || readyTimer) throw new Error('AI 모델을 변경할 수 없는 상태입니다.');
+  modelLoading=true;
+  modelSelectedKey='';
+  try{
+    try{ await loadModel(numPoses,modelKind); }
+    catch(e){
+      if(modelKind!=='full') throw e;
+      await loadModel(numPoses,'lite');
+    }
+  }catch(e){
+    closeCropModels();
+    if(poseLandmarker){ try{ poseLandmarker.close(); }catch(ignore){} poseLandmarker=null; }
+    showStartupRecovery('model','AI 모델을 불러오지 못했습니다','인터넷 연결을 확인한 뒤 다시 시도해주세요.');
+    throw e;
+  }
+  finally{ modelLoading=false; }
+}
+async function loadModel(numPoses, modelKind){
   statusEl.textContent='AI 모델 로딩 중…';
   if(!visionResolver) visionResolver=await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm");
   const vision=visionResolver;
@@ -8155,6 +8197,7 @@ function showP2Notice(text){
 }
 
 window.setPlayerCount=async function(n){
+  if(modelLoading || modelPreparing || readyTimer) return;
   const want=(n===2)?2:1;
   if((want===2)===twoPlayerMode) return;
   if(running){ statusEl.textContent='경기/연습을 먼저 종료한 뒤 인원을 바꿔주세요'; return; }
@@ -8173,7 +8216,8 @@ window.setPlayerCount=async function(n){
   try{
 
     const np = twoPlayerMode ? (crop2pEnabled?1:2) : 1;
-    await initModel(np, twoPlayerMode?'lite':'full');
+    await initModel(np);
+    await prepareDeviceModel();
   }catch(e){ console.error('2인 모드 전환 중 모델 재초기화 실패',e); }
 };
 
@@ -8188,6 +8232,7 @@ function paintCrop2pBtns(){
 }
 window.toggleCrop2p=()=>setCrop2p(!crop2pEnabled);
 window.setCrop2p=async function(on){
+  if(modelLoading || modelPreparing || readyTimer || running) return;
   const next=!!on;
   if(next===crop2pEnabled){ paintCrop2pBtns(); return; }
   
@@ -8199,7 +8244,8 @@ window.setCrop2p=async function(on){
   try{
     if(twoPlayerMode){
 
-      await initModel(crop2pEnabled?1:2, currentModelKind);
+      await initModel(crop2pEnabled?1:2);
+      await prepareDeviceModel();
     }else{
       closeCropModels();
     }
@@ -9258,21 +9304,71 @@ function liteFxTick(now){
 
 const PERF_LOW_FPS=10, PERF_LOW_HOLD_MS=3000;
 function perfResetMonitor(){ perfLowStreakMs=0; perfLastCheck=0; }
+
 function perfMonitorTick(now, inferMs){
-  if(!perfLastCheck){ perfLastCheck=now; return; }
-  const dt=now-perfLastCheck; perfLastCheck=now;
-  const estFps=inferMs>0?Math.min(60,1000/Math.max(inferMs,1)):60;
-  if(estFps<PERF_LOW_FPS) perfLowStreakMs+=dt; else perfLowStreakMs=0;
+  if(document.hidden || !running || !Number.isFinite(inferMs) || inferMs<=0){ perfResetMonitor(); return; }
+  const dt=perfLastCheck?now-perfLastCheck:0; perfLastCheck=now;
+  if(dt<=0 || dt>1000){ perfLowStreakMs=0; return; }
+  if(1000/inferMs<PERF_LOW_FPS) perfLowStreakMs+=dt; else perfLowStreakMs=0;
   if(!perfDowngraded && currentModelKind==='full' && perfLowStreakMs>=PERF_LOW_HOLD_MS){
     perfDowngraded=true;
-    console.warn('성능 저하 감지 → lite 모델로 자동 전환합니다.');
-    const keepNum=twoPlayerMode?2:1;
-    initModel(keepNum,'lite').catch(e=>console.error('lite 전환 실패',e));
+    writeModelProfile('lite',{reason:'sustained-slow',inferMs});
   }
+}
+async function prepareDeviceModel(){
+  if(modelPreparing || modelLoading) return;
+  const key=modelProfileKey();
+  if(modelSelectedKey===key) return;
+  modelPreparing=true;
+  try{
+    const saved=readModelProfile();
+    let kind=saved?.kind, stats=null;
+    if(!kind){
+      statusEl.textContent='기기 성능 확인 중… 약 5초 동안 화면 안에 서 주세요.';
+      const samples=[]; let previous=-1, warmUntil=0, first=0, last=0, errors=0, seenFrames=0;
+      const deadline=performance.now()+8000;
+      while(performance.now()<deadline){
+        await new Promise(resolve=>setTimeout(resolve,16));
+        if(document.hidden || video.readyState<2 || !video.videoWidth){
+          samples.length=0; warmUntil=0; first=0; last=0; continue;
+        }
+        if(video.currentTime===previous) continue;
+        previous=video.currentTime;
+        const t=performance.now();
+        if(!warmUntil) warmUntil=t+700;
+        let result;
+        try{ result=cropReady()?detectCrop2p(t):poseLandmarker.detectForVideo(video,t); }
+        catch(e){ errors++; continue; }
+        seenFrames++;
+        const elapsed=performance.now()-t;
+        if(t<warmUntil) continue;
+        if(!first) first=t;
+        last=performance.now();
+
+        if((result.landmarks?.length||0)>=(twoPlayerMode?2:1)) samples.push(elapsed);
+        if(last-first>=3500) break;
+      }
+      if(!seenFrames || document.hidden || video.readyState<2) throw new Error('카메라 측정 대기');
+      const sorted=samples.slice().sort((a,b)=>a-b);
+      const p90=sorted[Math.floor((sorted.length-1)*0.9)];
+      const median=sorted[Math.floor(sorted.length/2)];
+
+      const valid=samples.length>=10 && last-first>=3000 && errors===0;
+      const fps=samples.length*1000/Math.max(1,last-first);
+      kind=currentModelKind==='full' && valid && p90<=1000/PERF_LOW_FPS && fps>=PERF_LOW_FPS?'full':'lite';
+      if(valid) stats={median,p90,fps,samples:samples.length,errors,reason:'startup-measurement'};
+    }
+    if(currentModelKind!==kind) await initModel(twoPlayerMode?(crop2pEnabled?1:2):1,kind);
+    kind=currentModelKind;
+    if(stats) writeModelProfile(kind,stats);
+    modelSelectedKey=key;
+    perfDowngraded=false; perfResetMonitor();
+    statusEl.textContent='AI 준비 완료 · '+(kind==='full'?'정밀 모델':'경량 모델');
+  }finally{ modelPreparing=false; }
 }
 
 function loop(){
-  if(poseLandmarker && video.readyState>=2 && video.currentTime!==lastVideoTime){
+  if(!modelLoading && !modelPreparing && poseLandmarker && video.readyState>=2 && video.currentTime!==lastVideoTime){
     lastVideoTime=video.currentTime;
     
     if(!running){
@@ -9347,14 +9443,14 @@ function startMainLoopOnce(){
   loop();
 }
 window.retryStartup=async function(){
-  if(startupRetrying) return;
+  if(startupRetrying || modelLoading || modelPreparing || running || readyTimer) return;
   startupRetrying=true;
   const retryBtn=document.getElementById('startupRetryBtn');
   if(retryBtn){ retryBtn.disabled=true; retryBtn.textContent='연결 중...'; }
   try{
     if(startupRecoveryStage==='model' || !poseLandmarker) await initModel();
     const cameraOk=await startCamera();
-    if(cameraOk){ hideStartupRecovery(); startMainLoopOnce(); }
+    if(cameraOk){ hideStartupRecovery(); startMainLoopOnce(); await prepareDeviceModel(); }
   }catch(e){
     console.error('복구 시도 실패:',e);
     statusEl.textContent='AI 모델 연결 실패';
@@ -9432,10 +9528,11 @@ window.applyAkmTune = applyAkmTune;
 window.__akmIsPlaying = function(){ try{ return !!running; }catch(e){ return false; } };
 
 window.__startApp = async function() {
+  if(modelLoading || modelPreparing || running || readyTimer) return;
   try{
     await initModel();
     const cameraOk=await startCamera();
-    if(cameraOk) startMainLoopOnce();
+    if(cameraOk){ startMainLoopOnce(); await prepareDeviceModel(); }
   }catch(e){
     console.error('앱 시작 실패:',e);
     statusEl.textContent='AI 모델 연결 실패';
