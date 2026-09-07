@@ -312,6 +312,9 @@ tr.row-expiring td,tr.row-expired td{background:transparent}
 tr.row-expiring:hover td,tr.row-expired:hover td{background:#FAFCFF}
 
 .dojang-name{font-size:15px;font-weight:900;letter-spacing:-.3px;color:var(--text)}
+
+.dojang-who{font-size:12px;font-weight:700;color:var(--muted2);margin-left:6px;white-space:nowrap}
+.dojang-sido{color:#0757D8;background:#EEF3FE;border-radius:5px;padding:1px 5px;margin-left:4px;font-size:11px}
 .dojang-line{display:block;color:var(--muted2);font-size:11.5px;font-weight:700;margin-top:5px}
 .dojang-memo{display:block;color:#8a93a0;font-size:11.5px;font-weight:600;margin-top:3px;
   max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -1361,6 +1364,16 @@ function renderTable() {
     const inLedger = !!customerForLicense(d.license_key);
 
     const slotOver = slotUsed > slotMax;
+
+    const led = customerForLicense(d.license_key);
+    const whoBits = [];
+    if (led && led.owner_name) whoBits.push(escapeHtml(String(led.owner_name).slice(0, 20)));
+
+    const sidoTag = (led && led.sido)
+      ? `<span class="dojang-sido">${escapeHtml(String(led.sido).slice(0, 6))}</span>` : '';
+    const whoLine = (whoBits.length || sidoTag)
+      ? `<span class="dojang-who">${whoBits.join('')}${sidoTag}</span>` : '';
+
     const line2 = [
       d.phone ? escapeHtml(d.phone) : '',
       `기기 ${slotUsed}/${slotMax}${slotOver ? '<span class="dev-over">한도 초과</span>' : ''}`
@@ -1368,7 +1381,7 @@ function renderTable() {
 
     return `<tr class="${stripe}">
       <td class="cell-main">
-        <span class="dojang-name" title="등록 ${(d.created_at||'').slice(0,10)||'-'} · ${escapeHtml(d.license_key)}">${escapeHtml(d.dojang_name)}</span>
+        <span class="dojang-name" title="등록 ${(d.created_at||'').slice(0,10)||'-'} · ${escapeHtml(d.license_key)}">${escapeHtml(d.dojang_name)}</span>${whoLine}
         <button class="key-btn" title="${escapeHtml(d.license_key)}" onclick="copyKeyOnly('${escapeHtml(d.license_key)}')">키 복사</button>
         <span class="dojang-line">${line2}</span>
         ${d.memo?`<span class="dojang-memo" title="${escapeHtml(d.memo)}">${escapeHtml(d.memo)}</span>`:''}
