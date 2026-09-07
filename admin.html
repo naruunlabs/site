@@ -519,6 +519,21 @@ table.cg tfoot td.num{text-align:right}
   padding:10px 12px;margin-bottom:10px;font-size:12px;font-weight:800;color:#8a5a10;line-height:1.5}
 .slot-ip-warn-sub{display:block;margin-top:4px;font-size:11px;font-weight:600;color:#9b7333}
 .slot-ip-moved{color:#8a5a10;font-weight:700}
+
+.use-sum{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.use-card{flex:1;min-width:96px;background:#f6f8fc;border:1px solid #e3e8f0;border-radius:10px;padding:9px 10px}
+.use-card b{display:block;font-size:17px;font-weight:800;color:var(--text);line-height:1.25}
+.use-card span{font-size:11px;color:var(--muted2);font-weight:700}
+.use-cal{display:grid;grid-template-columns:repeat(15,1fr);gap:3px}
+.use-cell{aspect-ratio:1;border-radius:3px;background:#eef1f6}
+.use-cell.l1{background:#c9dcff}.use-cell.l2{background:#7ea6f7}
+.use-cell.l3{background:#3f6fe0}.use-cell.l4{background:#1b3fa8}
+.use-cell.future{background:transparent}
+.use-legend{display:flex;align-items:center;gap:5px;margin-top:9px;font-size:11px;color:var(--muted2);font-weight:700}
+.use-legend i{width:11px;height:11px;border-radius:3px;display:inline-block}
+.use-note{font-size:12px;color:var(--muted2);font-weight:600;line-height:1.5;margin-top:10px}
+.use-cold{background:#fff6e8;border:1px solid #f0c987;border-radius:10px;padding:9px 11px;
+  font-size:12px;font-weight:800;color:#8a5a10;line-height:1.5;margin-bottom:10px}
 .aw-table{min-width:1850px}.aw-table th{white-space:nowrap}.aw-table td{padding:5px}.aw-in{width:100%;min-width:92px;height:34px;border:1px solid transparent;border-radius:7px;background:transparent;padding:0 8px;font:inherit;color:var(--text)}.aw-in:hover{border-color:#d9dee8;background:#fff}.aw-in:focus{outline:0;border-color:#4f7cff;background:#fff;box-shadow:0 0 0 3px rgba(79,124,255,.12)}.aw-customer{min-width:180px}.aw-url{min-width:190px}.aw-wide{min-width:170px}.aw-row.s-launched td,.aw-row.s-maintenance td{background:#F2FBF6}.aw-row.s-building td,.aw-row.s-materials td{background:#F2F8FF}.aw-row.s-review td{background:#FFF8E8}.aw-row.due td:first-child{box-shadow:inset 4px 0 #dc2626}
 </style>
 
@@ -881,6 +896,12 @@ table.cg tfoot td.num{text-align:right}
       <div id="deviceSlotsBox" class="admin-slot-grid"></div>
       <button type="button" class="btn-sm btn-toggle" style="margin-top:10px;" onclick="resetDeviceSlots()">전체 기기 초기화 (재발급 시 사용)</button>
     </div>
+
+    <div class="modal-section" id="usageSection" style="display:none;">
+      <div class="modal-section-title">사용 기록</div>
+      <div id="usageBox" class="use-note">불러오는 중…</div>
+    </div>
+
 <div id="expireSection">
       <div class="modal-section">
         <div class="modal-section-title">만료일 설정</div>
@@ -1358,7 +1379,7 @@ function renderTable() {
       <td data-label="결제" style="font-size:13px">${payDisplay}</td>
       <td data-label="상태"><span class="badge ${statusCls}">${statusText}</span></td>
       <td class="cell-act"><div class="action-btns">
-        <button class="btn-sm btn-edit" onclick="openEditModal('${encoded}')">수정</button>
+        <button class="btn-sm btn-edit" onclick="openEditModal('${encoded}')">회원정보</button>
         <button class="btn-sm btn-copy" onclick="copyLicenseMsg('${encoded}')">카톡</button>
         ${inLedger
           ? `<button class="btn-sm btn-ledger done" onclick="gotoLedger('${escapeHtml(d.license_key)}')">장부 ✓</button>`
@@ -1500,6 +1521,7 @@ function openAddModal() {
   currentEditDeviceSlots = [];
   currentEditLicenseId = null;
   document.getElementById('deviceSlotSection').style.display = 'none';
+  document.getElementById('usageSection').style.display = 'none';
   document.getElementById('saveBtn').textContent = '발급';
   document.getElementById('saveCopyBtn').textContent = '발급하고 카톡 복사';
   fillLedgerFields(null);
@@ -1527,7 +1549,8 @@ function fillLedgerFields(c) {
 function openEditModal(encoded) {
   const d = JSON.parse(decodeURIComponent(encoded));
   const productLabel = (d.license_key||'').startsWith('JMP-') ? 'AI JUMP MASTER' : 'AI KICK MASTER';
-  document.getElementById('modalTitle').innerHTML = `${productLabel} 라이선스 <span>수정</span>`;
+
+  document.getElementById('modalTitle').innerHTML = `${productLabel} <span>회원정보</span>`;
   document.getElementById('editId').value = d.id;
   document.getElementById('mDojang').value = d.dojang_name || '';
   document.getElementById('mLicenseType').value = d.license_type || 'lifetime';
@@ -1549,6 +1572,7 @@ function openEditModal(encoded) {
   currentEditLicenseId = d.id;
   document.getElementById('deviceSlotSection').style.display = 'block';
   renderDeviceSlotsUI();
+  showUsage(d.license_key);
   document.getElementById('saveBtn').textContent = '저장';
   document.getElementById('saveCopyBtn').textContent = '저장하고 카톡 복사';
   fillLedgerFields(customerForLicense(d.license_key));
@@ -1557,6 +1581,109 @@ function openEditModal(encoded) {
   document.getElementById('modalBg').classList.add('show');
 }
 function closeModal() { document.getElementById('modalBg').classList.remove('show'); }
+
+const USE_CAL_DAYS = 90;      
+
+function useLevel(hits) {
+  const h = Number(hits) || 0;
+  if (h <= 0) return '';
+  if (h <= 2)  return 'l1';   
+  if (h <= 6)  return 'l2';   
+  if (h <= 14) return 'l3';   
+  return 'l4';                
+}
+
+function ymdLocal(dt) {
+  const p = n => String(n).padStart(2, '0');
+  return dt.getFullYear() + '-' + p(dt.getMonth() + 1) + '-' + p(dt.getDate());
+}
+
+function daysAgo(ymd) {
+  if (!ymd) return null;
+  const a = new Date(ymd + 'T00:00:00');
+  const b = new Date(ymdLocal(new Date()) + 'T00:00:00');
+  return Math.round((b - a) / 86400000);
+}
+
+async function showUsage(licenseKey) {
+  const sec = document.getElementById('usageSection');
+  const box = document.getElementById('usageBox');
+  if (!sec || !box) return;
+  sec.style.display = 'block';
+  box.innerHTML = '불러오는 중…';
+
+  if (!licenseKey || !ADMIN_TOKEN) { box.innerHTML = '기록을 불러올 수 없습니다.'; return; }
+
+  let rows = [];
+  try {
+    rows = await edgeCall('GET_USAGE', { license_key: licenseKey, days: 120 }) || [];
+  } catch (err) {
+    
+    box.innerHTML = '<span class="use-note">사용 기록을 아직 불러올 수 없습니다.<br>'
+      + '(supabase 15_사용기록_테이블.sql 을 실행했는지 확인해 주세요)</span>';
+    return;
+  }
+  if (!Array.isArray(rows)) rows = [];
+
+  const byDate = {};
+  rows.forEach(r => { byDate[String(r.use_date)] = r; });
+
+  const today = new Date(ymdLocal(new Date()) + 'T00:00:00');
+  let cells = '', used30 = 0, used90 = 0, hits90 = 0;
+  for (let i = USE_CAL_DAYS - 1; i >= 0; i--) {
+    const d = new Date(today.getTime() - i * 86400000);
+    const key = ymdLocal(d);
+    const row = byDate[key];
+    const hits = row ? (Number(row.hits) || 0) : 0;
+    if (hits > 0) {
+      used90++; hits90 += hits;
+      if (i < 30) used30++;
+    }
+    const tip = hits > 0
+      ? `${key} · 인증 ${hits}회${row && Array.isArray(row.devices) && row.devices.length ? ` · 기기 ${row.devices.length}대` : ''}`
+      : `${key} · 사용 없음`;
+    cells += `<div class="use-cell ${useLevel(hits)}" title="${tip}"></div>`;
+  }
+
+  const lastDate = rows.length ? String(rows[0].use_date) : '';   
+  const ago = daysAgo(lastDate);
+  const lastText = !lastDate ? '기록 없음'
+                 : ago === 0 ? '오늘'
+                 : ago === 1 ? '어제'
+                 : `${ago}일 전`;
+
+  let cold = '';
+  if (lastDate && ago >= 14) {
+    cold = `<div class="use-cold">※ ${ago}일째 사용 기록이 없습니다.`
+         + `<span class="slot-ip-warn-sub">한 번 연락해 보실 때입니다. `
+         + `방학이거나 태블릿을 바꾸셨을 수도 있습니다.</span></div>`;
+  }
+
+  const emptyNote = rows.length ? '' :
+    '<div class="use-note">아직 쌓인 기록이 없습니다. 기록은 2026-09-07 부터 남기기 시작했습니다.</div>';
+
+  box.innerHTML = cold + `
+    <div class="use-sum">
+      <div class="use-card"><b>${escapeHtml(lastText)}</b><span>마지막 사용</span></div>
+      <div class="use-card"><b>${used30}일</b><span>최근 30일 중</span></div>
+      <div class="use-card"><b>${used90}일</b><span>최근 90일 중</span></div>
+      <div class="use-card"><b>${hits90}회</b><span>90일 인증 횟수</span></div>
+    </div>
+    <div class="use-cal">${cells}</div>
+    <div class="use-legend">
+      <span>적게</span>
+      <i class="use-cell" style="background:#eef1f6"></i>
+      <i class="use-cell l1"></i><i class="use-cell l2"></i>
+      <i class="use-cell l3"></i><i class="use-cell l4"></i>
+      <span>많이</span>
+      <span style="margin-left:auto">왼쪽 위가 90일 전, 오른쪽 아래가 오늘</span>
+    </div>
+    <div class="use-note">
+      칸에 마우스를 올리면 그날 날짜와 인증 횟수가 나옵니다.
+      태블릿은 앱을 열 때와 그 뒤 30분마다 한 번씩 인증을 보냅니다.
+      색이 진할수록 그날 오래 켜져 있었다는 뜻입니다.
+    </div>` + emptyNote;
+}
 
 let currentEditDeviceSlots = [];
 let currentEditLicenseId = null;

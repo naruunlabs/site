@@ -9344,7 +9344,7 @@ async function prepareDeviceModel(){
         if(t<warmUntil) continue;
         if(!first) first=t;
         last=performance.now();
-
+        
         if((result.landmarks?.length||0)>=(twoPlayerMode?2:1)) samples.push(elapsed);
         if(last-first>=3500) break;
       }
@@ -9352,14 +9352,14 @@ async function prepareDeviceModel(){
       const sorted=samples.slice().sort((a,b)=>a-b);
       const p90=sorted[Math.floor((sorted.length-1)*0.9)];
       const median=sorted[Math.floor(sorted.length/2)];
-
+      
       const valid=samples.length>=10 && last-first>=3000 && errors===0;
       const fps=samples.length*1000/Math.max(1,last-first);
       kind=currentModelKind==='full' && valid && p90<=1000/PERF_LOW_FPS && fps>=PERF_LOW_FPS?'full':'lite';
       if(valid) stats={median,p90,fps,samples:samples.length,errors,reason:'startup-measurement'};
     }
     if(currentModelKind!==kind) await initModel(twoPlayerMode?(crop2pEnabled?1:2):1,kind);
-    kind=currentModelKind;
+    kind=currentModelKind; 
     if(stats) writeModelProfile(kind,stats);
     modelSelectedKey=key;
     perfDowngraded=false; perfResetMonitor();
