@@ -313,8 +313,15 @@ tr.row-expiring:hover td,tr.row-expired:hover td{background:#FAFCFF}
 
 .dojang-name{font-size:15px;font-weight:900;letter-spacing:-.3px;color:var(--text)}
 
-.dojang-who{font-size:12px;font-weight:700;color:var(--muted2);margin-left:6px;white-space:nowrap}
-.dojang-sido{color:#0757D8;background:#EEF3FE;border-radius:5px;padding:1px 5px;margin-left:4px;font-size:11px}
+#tab-license thead th,#tab-license tbody td{padding-left:10px;padding-right:10px}
+#tab-license td.cell-main,#tab-license thead th:first-child{padding-left:14px}
+#tab-license td.cell-act,#tab-license thead th:last-child{padding-right:14px}
+
+#tab-license th.col-who,#tab-license td.cell-who{width:1%;white-space:nowrap}
+.who-name{font-size:13.5px;font-weight:800;color:var(--text)}
+.who-sido{display:inline-block;margin-left:6px;padding:2px 7px;border-radius:6px;
+  font-size:11.5px;font-weight:800;color:#0757D8;background:#EEF3FE;vertical-align:1px}
+.who-none{color:#c3cbd6;font-weight:800}
 .dojang-line{display:block;color:var(--muted2);font-size:11.5px;font-weight:700;margin-top:5px}
 .dojang-memo{display:block;color:#8a93a0;font-size:11.5px;font-weight:600;margin-top:3px;
   max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -625,10 +632,10 @@ table.cg tfoot td.num{text-align:right}
       <table>
         <thead>
           <tr>
-            <th>도장</th><th>종류</th><th>만료일</th><th>최근 인증</th><th>결제</th><th>상태</th><th>관리</th>
+            <th>도장</th><th class="col-who">관장님 · 지역</th><th>종류</th><th>만료일</th><th>최근 인증</th><th>결제</th><th>상태</th><th>관리</th>
           </tr>
         </thead>
-        <tbody id="dojangsTable"><tr><td colspan="7" class="loading">불러오는 중...</td></tr></tbody>
+        <tbody id="dojangsTable"><tr><td colspan="8" class="loading">불러오는 중...</td></tr></tbody>
       </table>
     </div>
     <div class="footer-note">admin v7 · administrator console</div>
@@ -1174,7 +1181,7 @@ async function edgeCall(action, payload) {
 
 async function loadLicenses() {
   const tbody = document.getElementById('dojangsTable');
-  tbody.innerHTML = '<tr><td colspan="7" class="loading">불러오는 중...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="8" class="loading">불러오는 중...</td></tr>';
   try {
     
     LICENSES = await edgeCall('GET_LICENSES', {}) || [];
@@ -1182,7 +1189,7 @@ async function loadLicenses() {
     LICENSES.forEach(d => { if (d.phone) d.phone = formatPhone(d.phone); });
     updateStats(); renderTable(); markSynced(); tickSidebar();
   } catch(err) {
-    tbody.innerHTML = `<tr><td colspan="7" class="empty-msg">불러오기 실패: ${escapeHtml(err.message)}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" class="empty-msg">불러오기 실패: ${escapeHtml(err.message)}</td></tr>`;
   }
 }
 
@@ -1333,7 +1340,7 @@ function renderTable() {
     return qHit && statusMatch;
   });
   rows = sortRows(rows, document.getElementById('sortSelect').value);
-  if (!rows.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty-msg">표시할 라이선스가 없습니다.</td></tr>'; return; }
+  if (!rows.length) { tbody.innerHTML = '<tr><td colspan="8" class="empty-msg">표시할 라이선스가 없습니다.</td></tr>'; return; }
   tbody.innerHTML = rows.map(d => {
     const days = daysUntil(d.expire_date);
     const isExpired = days !== null && days < 0;
@@ -1366,13 +1373,14 @@ function renderTable() {
     const slotOver = slotUsed > slotMax;
 
     const led = customerForLicense(d.license_key);
-    const whoBits = [];
-    if (led && led.owner_name) whoBits.push(escapeHtml(String(led.owner_name).slice(0, 20)));
+    const whoName = (led && led.owner_name)
+      ? `<span class="who-name">${escapeHtml(String(led.owner_name).slice(0, 20))}</span>` : '';
 
-    const sidoTag = (led && led.sido)
-      ? `<span class="dojang-sido">${escapeHtml(String(led.sido).slice(0, 6))}</span>` : '';
-    const whoLine = (whoBits.length || sidoTag)
-      ? `<span class="dojang-who">${whoBits.join('')}${sidoTag}</span>` : '';
+    const whoSido = (led && led.sido)
+      ? `<span class="who-sido">${escapeHtml(String(led.sido).slice(0, 6))}</span>` : '';
+    
+    const whoCell = (whoName || whoSido)
+      ? whoName + whoSido : '<span class="who-none">-</span>';
 
     const line2 = [
       d.phone ? escapeHtml(d.phone) : '',
@@ -1381,11 +1389,12 @@ function renderTable() {
 
     return `<tr class="${stripe}">
       <td class="cell-main">
-        <span class="dojang-name" title="등록 ${(d.created_at||'').slice(0,10)||'-'} · ${escapeHtml(d.license_key)}">${escapeHtml(d.dojang_name)}</span>${whoLine}
+        <span class="dojang-name" title="등록 ${(d.created_at||'').slice(0,10)||'-'} · ${escapeHtml(d.license_key)}">${escapeHtml(d.dojang_name)}</span>
         <button class="key-btn" title="${escapeHtml(d.license_key)}" onclick="copyKeyOnly('${escapeHtml(d.license_key)}')">키 복사</button>
         <span class="dojang-line">${line2}</span>
         ${d.memo?`<span class="dojang-memo" title="${escapeHtml(d.memo)}">${escapeHtml(d.memo)}</span>`:''}
       </td>
+      <td class="cell-who" data-label="관장님 · 지역">${whoCell}</td>
       <td data-label="종류">${typeLabel}</td>
       <td data-label="만료일" style="font-size:13px">${expireDisplay}</td>
       <td data-label="최근 인증" style="font-size:13px">${escapeHtml(lastVerified)}</td>
