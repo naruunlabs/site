@@ -2863,12 +2863,15 @@ if (savedToken) {
 .stat-card[data-filter="expired"].is-on{border-color:var(--st-expired);box-shadow:0 0 0 2px rgba(220,38,38,.18)}
 .stat-card[data-filter="off"].is-on{border-color:var(--st-off);box-shadow:0 0 0 2px rgba(132,148,168,.24)}
 
-#tab-license td.cell-main{box-shadow:inset 4px 0 0 transparent}
-tr.st-live    td.cell-main{box-shadow:inset 4px 0 0 var(--st-live)}
-tr.st-trial   td.cell-main{box-shadow:inset 4px 0 0 var(--st-trial)}
-tr.st-soon    td.cell-main{box-shadow:inset 4px 0 0 var(--st-soon)}
-tr.st-expired td.cell-main{box-shadow:inset 4px 0 0 var(--st-expired)}
-tr.st-off     td.cell-main{box-shadow:inset 4px 0 0 var(--st-off)}
+#tab-license td.cell-main{position:relative}
+#tab-license td.cell-main::after{
+  content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:transparent
+}
+tr.st-live    td.cell-main::after{background:var(--st-live)}
+tr.st-trial   td.cell-main::after{background:var(--st-trial)}
+tr.st-soon    td.cell-main::after{background:var(--st-soon)}
+tr.st-expired td.cell-main::after{background:var(--st-expired)}
+tr.st-off     td.cell-main::after{background:var(--st-off)}
 
 #tab-license tr.st-live td,
 #tab-license tr.st-trial td,
@@ -2918,6 +2921,7 @@ tr.cg-row.flash td{background:#FFF3CC !important;transition:background .5s}
 
 @media(max-width:900px){
   #tab-license tbody td.cell-main{border-left:0;box-shadow:none}
+  #tab-license tbody td.cell-main::after{display:none}
   tr.st-live    {border-left:4px solid var(--st-live)}
   tr.st-trial   {border-left:4px solid var(--st-trial)}
   tr.st-soon    {border-left:4px solid var(--st-soon)}
