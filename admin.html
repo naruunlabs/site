@@ -1966,10 +1966,10 @@ async function syncLedgerFromLicense(p) {
     row.id = found.id;
     const cur = found.status || 'lead';
 
-    if (!isTrial && cur !== 'customer' && cur !== 'churned') {
+    if (!isTrial && cur !== 'customer') {
       row.status = 'customer';
       becameCustomer = true;
-    } else if (isTrial && cur === 'lead') {
+    } else if (isTrial && cur !== 'trial') {
       row.status = 'trial';
     }
 
@@ -2317,6 +2317,14 @@ function derivedCust(c, f) {
   return '';
 }
 
+function customerLicenseState(c) {
+  const l = LICENSES.find(x => x.license_key === c.license_key);
+  if (l) return licenseState(l);
+  if (c.status === 'trial') return 'trial';
+  if (c.status === 'customer') return 'live';
+  return 'off';
+}
+
 function customerRowsNow() {
   const q = document.getElementById('cgSearch').value.trim().toLowerCase();
   
@@ -2365,7 +2373,7 @@ function renderCustomers() {
   }
 
   document.getElementById('cgBody').innerHTML = rows.map(c => {
-    const cls = ['cg-row', 's-' + (c.status || 'lead')];
+    const cls = ['cg-row', 's-' + (c.status || 'lead'), 'lic-' + customerLicenseState(c)];
     if (isDue(c)) cls.push('due');
     let html = `<tr class="${cls.join(' ')}" data-id="${c.id}">`
       + cols.map(col => `<td class="${col.name?'cg-name':''}">${custCell(c, col)}</td>`).join('')
@@ -2491,17 +2499,33 @@ async function onCustCell(el) {
   if (f === 'phone' && v) { v = formatPhone(v); el.value = v; }
   c[f] = v;
 
+  const linkedLicense = f === 'status'
+    ? LICENSES.find(x => x.license_key === c.license_key) : null;
+
   const moneyChanged = recalcMoney(c, f);
 
   const tr = el.closest('tr');
   if (tr) { tr.classList.remove('saved','failed'); tr.classList.add('saving'); }
   try {
+    if (linkedLicense && (v === 'trial' || v === 'customer')) {
+      const toTrial = v === 'trial';
+      await edgeCall('UPDATE_LICENSE', {
+        id: linkedLicense.id,
+        license_type: toTrial ? 'trial' : 'lifetime',
+        expire_date: null,
+        trial_days: toTrial ? (Number(linkedLicense.trial_days) || 3) : null
+      });
+      linkedLicense.license_type = toTrial ? 'trial' : 'lifetime';
+      linkedLicense.expire_date = null;
+      linkedLicense.trial_days = toTrial ? (Number(linkedLicense.trial_days) || 3) : null;
+    }
     const saved = await edgeCall('SAVE_CUSTOMER', c);
     
     if (saved && saved.id) Object.assign(c, saved);
     if (tr) { tr.classList.remove('saving'); tr.classList.add('saved'); }
     updateCustStats();
 
+    if (f === 'status') renderTable();
     if (moneyChanged || ['status','list_price','discount','paid_amount','extra_amount','next_action_at'].includes(f)) renderCustomers();
   } catch(err) {
     if (tr) { tr.classList.remove('saving'); tr.classList.add('failed'); }
@@ -2889,19 +2913,16 @@ tr.cg-row.s-customer td,
 tr.cg-row.s-churned  td{background:#fff}
 tr.cg-row.s-churned  td{color:#8a93a0}
 
-tr.cg-row.s-lead     td.cg-name{box-shadow:inset 4px 0 0 #DAE1EA}
-tr.cg-row.s-trial    td.cg-name{box-shadow:inset 4px 0 0 var(--st-trial)}
-tr.cg-row.s-customer td.cg-name{box-shadow:inset 4px 0 0 var(--st-live)}
-tr.cg-row.s-churned  td.cg-name{box-shadow:inset 4px 0 0 var(--st-off)}
+tr.cg-row.lic-live    td.cg-name{box-shadow:inset 4px 0 0 var(--st-live)}
+tr.cg-row.lic-trial   td.cg-name{box-shadow:inset 4px 0 0 var(--st-trial)}
+tr.cg-row.lic-soon    td.cg-name{box-shadow:inset 4px 0 0 var(--st-soon)}
+tr.cg-row.lic-expired td.cg-name{box-shadow:inset 4px 0 0 var(--st-expired)}
+tr.cg-row.lic-off     td.cg-name{box-shadow:inset 4px 0 0 var(--st-off)}
 
 tr.cg-row.s-trial    select.cg-in[data-f="status"]{color:var(--st-trial);font-weight:900}
 tr.cg-row.s-customer select.cg-in[data-f="status"]{color:var(--st-live);font-weight:900}
 tr.cg-row.s-churned  select.cg-in[data-f="status"]{color:var(--st-off);font-weight:900}
 
-tr.cg-row.due    td.cg-name{box-shadow:inset 4px 0 0 var(--st-expired)}
-tr.cg-row.saving td.cg-name{box-shadow:inset 4px 0 0 var(--st-soon)}
-tr.cg-row.saved  td.cg-name{box-shadow:inset 4px 0 0 var(--st-live)}
-tr.cg-row.failed td.cg-name{box-shadow:inset 4px 0 0 var(--st-expired)}
 tr.cg-row.failed td{background:#fff}
 tr.cg-row:hover td{background:#fff}
 tr.cg-row.flash td{background:#FFF3CC !important;transition:background .5s}
