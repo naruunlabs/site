@@ -2863,12 +2863,12 @@ if (savedToken) {
 .stat-card[data-filter="expired"].is-on{border-color:var(--st-expired);box-shadow:0 0 0 2px rgba(220,38,38,.18)}
 .stat-card[data-filter="off"].is-on{border-color:var(--st-off);box-shadow:0 0 0 2px rgba(132,148,168,.24)}
 
-#tab-license td.cell-main{border-left:4px solid transparent}
-tr.st-live    td.cell-main{border-left-color:var(--st-live)}
-tr.st-trial   td.cell-main{border-left-color:var(--st-trial)}
-tr.st-soon    td.cell-main{border-left-color:var(--st-soon)}
-tr.st-expired td.cell-main{border-left-color:var(--st-expired)}
-tr.st-off     td.cell-main{border-left-color:var(--st-off)}
+#tab-license td.cell-main{box-shadow:inset 4px 0 0 transparent}
+tr.st-live    td.cell-main{box-shadow:inset 4px 0 0 var(--st-live)}
+tr.st-trial   td.cell-main{box-shadow:inset 4px 0 0 var(--st-trial)}
+tr.st-soon    td.cell-main{box-shadow:inset 4px 0 0 var(--st-soon)}
+tr.st-expired td.cell-main{box-shadow:inset 4px 0 0 var(--st-expired)}
+tr.st-off     td.cell-main{box-shadow:inset 4px 0 0 var(--st-off)}
 
 #tab-license tr.st-live td,
 #tab-license tr.st-trial td,
