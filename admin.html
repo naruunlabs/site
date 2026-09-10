@@ -1188,8 +1188,26 @@ async function loadLicenses() {
 
     LICENSES.forEach(d => { if (d.phone) d.phone = formatPhone(d.phone); });
     updateStats(); renderTable(); markSynced(); tickSidebar();
+    repairLifetimeExpiry();   
   } catch(err) {
     tbody.innerHTML = `<tr><td colspan="8" class="empty-msg">불러오기 실패: ${escapeHtml(err.message)}</td></tr>`;
+  }
+}
+
+async function repairLifetimeExpiry() {
+  const broken = LICENSES.filter(d => d.license_type === 'lifetime' && d.expire_date);
+  if (!broken.length) return;
+  let fixed = 0;
+  for (const d of broken) {
+    try {
+      await edgeCall('UPDATE_LICENSE', { id: d.id, expire_date: null });
+      d.expire_date = null;
+      fixed++;
+    } catch (e) {  }
+  }
+  if (fixed) {
+    updateStats(); renderTable();
+    showToast(`정식 라이선스 ${fixed}곳에 남아 있던 만료일을 지웠습니다.`);
   }
 }
 
@@ -1426,6 +1444,8 @@ function onTypeChange(fromUser) {
   } else if (fromUser && Number(document.getElementById('mMaxDevices').value) === 1) {
     document.getElementById('mMaxDevices').value = 2;
   }
+
+  if (fromUser && type !== 'package') document.getElementById('mExpireDate').value = '';
 
   if (document.getElementById('deviceSlotSection').style.display === 'block') renderDeviceSlotsUI();
 }
@@ -1872,10 +1892,10 @@ async function saveLicense(alsoCopy) {
   const license_type = document.getElementById('mLicenseType').value;
   const version = document.getElementById('mVersion').value.trim() || AKM_VERSION;
   const license_key = document.getElementById('mKey').value.trim();
-  
-  const expire_date = license_type === 'trial'
-    ? null
-    : (document.getElementById('mExpireDate').value || null);
+
+  const expire_date = (license_type === 'package')
+    ? (document.getElementById('mExpireDate').value || null)
+    : null;
   const pay_amount = document.getElementById('mPayAmount').value ? Number(document.getElementById('mPayAmount').value) : null;
   const pay_date = document.getElementById('mPayDate').value || null;
   const pay_memo = document.getElementById('mPayMemo').value.trim() || null;
@@ -1927,6 +1947,12 @@ async function syncLedgerFromLicense(p) {
 
   if (found) {
     row.id = found.id;
+
+    if (p.license_type !== 'trial' && ['lead', 'trial'].includes(found.status || 'lead')) {
+      row.status = 'customer';
+      if (!found.paid_amount && p.pay_amount) row.paid_amount = p.pay_amount;
+      if (!found.sold_at    && p.pay_date)   row.sold_at    = p.pay_date;
+    }
   } else {
     row.status      = (p.license_type === 'trial') ? 'trial' : 'customer';
     row.paid_amount = p.pay_amount || null;
