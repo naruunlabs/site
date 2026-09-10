@@ -601,23 +601,22 @@ table.cg tfoot td.num{text-align:right}
 
     <div class="stats-row six">
       <div class="stat-card" data-filter="all" onclick="pickStatFilter('all')"><div class="num" id="statTotal">-</div><div class="label">전체 도장</div></div>
-      <div class="stat-card" data-filter="active" onclick="pickStatFilter('active')"><div class="num" id="statActive" style="color:var(--green)">-</div><div class="label">활성</div></div>
-      <div class="stat-card" data-filter="inactive" onclick="pickStatFilter('inactive')"><div class="num" id="statInactive" style="color:var(--red)">-</div><div class="label">비활성</div></div>
-      <div class="stat-card" data-filter="lifetime" onclick="pickStatFilter('lifetime')"><div class="num" id="statLifetime" style="color:var(--gold)">-</div><div class="label">정식 라이선스</div></div>
-      <div class="stat-card" data-filter="expiring" onclick="pickStatFilter('expiring')"><div class="num" id="statExpiring" style="color:var(--amber)">-</div><div class="label">만료 임박 (7일)</div></div>
-      <div class="stat-card" data-filter="trial" onclick="pickStatFilter('trial')"><div class="num" id="statTrial" style="color:#4fa3ff">-</div><div class="label">체험판 진행중</div></div>
+      <div class="stat-card" data-filter="live" onclick="pickStatFilter('live')"><div class="num n-live" id="statLive">-</div><div class="label">정식 사용중</div></div>
+      <div class="stat-card" data-filter="trial" onclick="pickStatFilter('trial')"><div class="num n-trial" id="statTrial">-</div><div class="label">체험 진행중</div></div>
+      <div class="stat-card" data-filter="soon" onclick="pickStatFilter('soon')"><div class="num n-soon" id="statExpiring">-</div><div class="label">만료 임박 (7일)</div></div>
+      <div class="stat-card" data-filter="expired" onclick="pickStatFilter('expired')"><div class="num n-expired" id="statExpired">-</div><div class="label">만료됨</div></div>
+      <div class="stat-card" data-filter="off" onclick="pickStatFilter('off')"><div class="num n-off" id="statInactive">-</div><div class="label">중지</div></div>
     </div>
 
     <div class="toolbar">
       <input id="searchInput" class="f-input" type="search" placeholder="도장명, 라이선스 키, 연락처 검색" oninput="renderTable()" />
       <select id="statusFilter" class="select-filter" onchange="onFilterChange()">
         <option value="all">전체</option>
-        <option value="active">활성</option>
-        <option value="inactive">비활성</option>
-        <option value="lifetime">정식</option>
-        <option value="expiring">만료 임박</option>
+        <option value="live">정식 사용중</option>
+        <option value="trial">체험 진행중</option>
+        <option value="soon">만료 임박</option>
         <option value="expired">만료됨</option>
-        <option value="trial">체험판</option>
+        <option value="off">중지</option>
       </select>
       <select id="sortSelect" class="select-filter" onchange="renderTable()">
         <option value="expire">만료 임박순</option>
@@ -645,9 +644,9 @@ table.cg tfoot td.num{text-align:right}
 
     <div class="stats-row">
       <div class="stat-card" data-cfilter="all" onclick="pickCustStat('all')"><div class="num" id="cstTotal">-</div><div class="label">전체 회원</div></div>
-      <div class="stat-card" data-cfilter="customer" onclick="pickCustStat('customer')"><div class="num" id="cstPaid" style="color:var(--green)">-</div><div class="label">구매 고객</div></div>
-      <div class="stat-card" data-cfilter="due" onclick="pickCustStat('due')"><div class="num" id="cstDue" style="color:var(--red)">-</div><div class="label">오늘 연락할 곳</div></div>
-      <div class="stat-card" data-cfilter="all" onclick="pickCustStat('all')"><div class="num" id="cstRevenue" style="color:var(--gold)">-</div><div class="label">누적 매출</div></div>
+      <div class="stat-card" data-cfilter="customer" onclick="pickCustStat('customer')"><div class="num n-live" id="cstPaid">-</div><div class="label">구매 고객</div></div>
+      <div class="stat-card" data-cfilter="due" onclick="pickCustStat('due')"><div class="num n-expired" id="cstDue">-</div><div class="label">오늘 연락할 곳</div></div>
+      <div class="stat-card" data-cfilter="all" onclick="pickCustStat('all')"><div class="num n-money" id="cstRevenue">-</div><div class="label">누적 매출</div></div>
     </div>
 
     <div class="cg-wrap">
@@ -1008,7 +1007,10 @@ let currentLicenseProduct = 'kick';
 function escapeHtml(v) {
   return String(v ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
 }
-function todayStr() { return new Date().toISOString().slice(0,10); }
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
 function generateKey(prefix) {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   const seg = () => Array.from({length:4}, () => chars[Math.floor(Math.random()*chars.length)]).join('');
@@ -1222,21 +1224,43 @@ function switchLicenseSubtab(p){
   updateStats(); renderTable();
 }
 
+const LIC_STATES = ['live','trial','soon','expired','off'];
+
+function trialEnded(d) {
+  if (d.license_type !== 'trial') return false;
+  if (!d.trial_started_at) return false;            
+  const days = Number(d.trial_days) || 3;
+  return (new Date(d.trial_started_at).getTime() + days * 86400000) <= Date.now();
+}
+
+function licenseState(d) {
+  if (!d.is_active) return 'off';
+  const days = daysUntil(d.expire_date);
+  if ((days !== null && days < 0) || trialEnded(d)) return 'expired';
+  if (days !== null && days >= 0 && days <= 7)      return 'soon';
+  if (d.license_type === 'trial')                   return 'trial';
+  return 'live';
+}
+
+function licenseStateText(d, state) {
+  const days = daysUntil(d.expire_date);
+  const isTrial = d.license_type === 'trial';
+  if (state === 'off')     return '중지';
+  if (state === 'expired') return '만료됨';
+  if (state === 'soon')    return (isTrial ? '체험 ' : '') + (days === 0 ? 'D-0' : `D-${days}`);
+  if (state === 'trial')   return d.trial_started_at ? '체험중' : '시작 전';
+  return '사용중';
+}
+
 function updateStats() {
-  const list = licensesForCurrentProduct();
-  const expiringCount = list.filter(d => { const days = daysUntil(d.expire_date); return d.is_active && days !== null && days >= 0 && days <= 7; }).length;
-  document.getElementById('statTotal').textContent = list.length;
-  document.getElementById('statActive').textContent = list.filter(d => d.is_active).length;
-  document.getElementById('statInactive').textContent = list.filter(d => !d.is_active).length;
-  document.getElementById('statLifetime').textContent = list.filter(d => d.license_type === 'lifetime').length;
-  document.getElementById('statExpiring').textContent = expiringCount;
-  const trialLive = list.filter(d => {
-    if (d.license_type !== 'trial' || !d.is_active) return false;
-    if (!d.trial_started_at) return true; 
-    const days = Number(d.trial_days) || 3;
-    return (new Date(d.trial_started_at).getTime() + days * 86400000) > Date.now();
-  }).length;
-  document.getElementById('statTrial').textContent = trialLive;
+  const list  = licensesForCurrentProduct();
+  const count = st => list.filter(d => licenseState(d) === st).length;
+  document.getElementById('statTotal').textContent    = list.length;
+  document.getElementById('statLive').textContent     = count('live');
+  document.getElementById('statTrial').textContent    = count('trial');
+  document.getElementById('statExpiring').textContent = count('soon');
+  document.getElementById('statExpired').textContent  = count('expired');
+  document.getElementById('statInactive').textContent = count('off');
 }
 
 function clearFilters() {
@@ -1306,7 +1330,8 @@ async function sendToLedger(id) {
     
     status      : isTrial ? 'trial' : 'customer',
     paid_amount : d.pay_amount || null,
-    sold_at     : d.pay_date || null
+    
+    sold_at     : d.pay_date || (isTrial ? null : todayStr())
   };
   try {
     const made = await edgeCall('SAVE_CUSTOMER', row);
@@ -1345,16 +1370,7 @@ function renderTable() {
     const hay = [d.dojang_name, d.license_key, d.phone||'', d.memo||''].join(' ').toLowerCase();
     const qHit = !q || hay.includes(q)
       || (qd && String(d.phone||'').replace(/[^0-9]/g,'').includes(qd));
-    const days = daysUntil(d.expire_date);
-    const isExpired = days !== null && days < 0;
-    const isExpiring = days !== null && days >= 0 && days <= 7;
-    let statusMatch = true;
-    if (filter === 'active') statusMatch = d.is_active;
-    else if (filter === 'inactive') statusMatch = !d.is_active;
-    else if (filter === 'lifetime') statusMatch = d.license_type === 'lifetime';
-    else if (filter === 'expiring') statusMatch = d.is_active && isExpiring;
-    else if (filter === 'expired') statusMatch = isExpired;
-    else if (filter === 'trial') statusMatch = d.license_type === 'trial';
+    const statusMatch = LIC_STATES.includes(filter) ? (licenseState(d) === filter) : true;
     return qHit && statusMatch;
   });
   rows = sortRows(rows, document.getElementById('sortSelect').value);
@@ -1363,24 +1379,19 @@ function renderTable() {
     const days = daysUntil(d.expire_date);
     const isExpired = days !== null && days < 0;
     const isExpiring = days !== null && days >= 0 && days <= 7;
-    let statusCls = d.is_active ? 'active' : 'inactive';
-    let statusText = d.is_active ? '활성' : '비활성';
-    if (d.is_active && isExpired) { statusCls = 'expired'; statusText = '만료됨'; }
-    else if (d.is_active && isExpiring) { statusCls = 'soon'; statusText = `D-${days}`; }
     const isTrial = d.license_type === 'trial';
 
-    let stripe = '';
-    if (!d.is_active) stripe = 'st-inactive';
-    else if (isExpired) stripe = 'st-expired';
-    else if (isExpiring) stripe = 'st-soon';
-    else if (isTrial) stripe = 'st-trial';
+    const state      = licenseState(d);      
+    const stripe     = 'st-' + state;
+    const statusCls  = 'st-' + state;
+    const statusText = licenseStateText(d, state);
 
     const typeLabel = isTrial ? `체험 ${Number(d.trial_days)||3}일`
                     : (d.license_type === 'package' ? '패키지' : '정식');
     const lastVerified = d.last_verified_at ? d.last_verified_at.slice(0,10) : '미사용';
-    let expireDisplay = d.expire_date ? `${d.expire_date}<br><span style="font-size:11px;color:${isExpired?'#dc2626':isExpiring?'#a16207':'#71859d'}">${isExpired?'만료됨':`D-${days}`}</span>` : '<span style="color:#8a93a0">-</span>';
+    let expireDisplay = d.expire_date ? `${d.expire_date}<br><span style="font-size:11px;color:${isExpired?'var(--st-expired)':isExpiring?'var(--st-soon)':'#71859d'}">${isExpired?'만료됨':`D-${days}`}</span>` : '<span style="color:#8a93a0">-</span>';
     if (isTrial && !d.trial_started_at) {
-      expireDisplay = '<span style="color:#0757D8;font-size:12px">시작 전<br><span style="font-size:11px;color:#71859d">첫 인증 시 시작</span></span>';
+      expireDisplay = '<span style="color:var(--st-trial);font-size:12px">시작 전<br><span style="font-size:11px;color:#71859d">첫 인증 시 시작</span></span>';
     }
     const payDisplay = d.pay_amount ? `${formatMoney(d.pay_amount)}<span class="sub-text">${d.pay_date||''}</span>` : '-';
     const encoded = encodeURIComponent(JSON.stringify(d));
@@ -1915,8 +1926,9 @@ async function saveLicense(alsoCopy) {
     else { await edgeCall('INSERT_LICENSE', { ...payload, is_active: true }); }
 
     let ledgerNote = '';
-    try { await syncLedgerFromLicense(payload); }
-    catch(e) { ledgerNote = ' (회원 장부 등록은 실패했습니다 — 목록에서 \'장부로\' 를 눌러주세요)'; }
+    let ledgerInfo = null;
+    try { ledgerInfo = await syncLedgerFromLicense(payload); }
+    catch(e) { ledgerNote = ' (회원 장부 반영 실패: ' + e.message + ' — 목록에서 \'장부로\' 를 눌러주세요)'; }
 
     if (alsoCopy) {
       
@@ -1926,44 +1938,69 @@ async function saveLicense(alsoCopy) {
     await loadLicenses();
     await loadCustomers();
     if (ledgerNote) showToast('저장했습니다' + ledgerNote);
+    else if (ledgerInfo && ledgerInfo.becameCustomer) {
+      showToast(`저장했습니다 · 장부의 '${ledgerInfo.name}' 을(를) 고객으로 바꾸고 판매일 ${ledgerInfo.soldAt || '-'} 을 넣었습니다`);
+    }
   } catch(err) { errEl.textContent = '저장 실패: ' + err.message; }
   finally { saveBtn.disabled = false; copyBtn.disabled = false; }
 }
 
 async function syncLedgerFromLicense(p) {
-  const owner   = document.getElementById('mOwner').value.trim()   || null;
-  const sido    = document.getElementById('mSido').value           || null;
-  const sigungu = document.getElementById('mSigungu').value.trim() || null;
-  const source  = document.getElementById('mSource').value         || null;
+  const val = id => { const el = document.getElementById(id); return el ? String(el.value || '').trim() : ''; };
+  const owner   = val('mOwner');
+  const sido    = val('mSido');
+  const sigungu = val('mSigungu');
+  const source  = val('mSource');
 
-  const found = customerForLicense(p.license_key);
-  const row = {
-    dojang_name : p.dojang_name,
-    phone       : p.phone,
-    license_key : p.license_key,
-    owner_name  : owner,
-    sido, sigungu, source
-  };
+  const found = customerForLicense(p.license_key)
+             || CUSTOMERS.find(c => !c.license_key && c.dojang_name === p.dojang_name)
+             || null;
+
+  const row = { dojang_name: p.dojang_name, license_key: p.license_key };
+  if (p.phone) row.phone       = p.phone;
+  if (owner)   row.owner_name  = owner;
+  if (sido)    row.sido        = sido;
+  if (sigungu) row.sigungu     = sigungu;
+  if (source)  row.source      = source;
+
+  const isTrial = p.license_type === 'trial';
+  let becameCustomer = false;
 
   if (found) {
     row.id = found.id;
+    const cur = found.status || 'lead';
 
-    if (p.license_type !== 'trial' && ['lead', 'trial'].includes(found.status || 'lead')) {
+    if (!isTrial && cur !== 'customer' && cur !== 'churned') {
       row.status = 'customer';
-      if (!found.paid_amount && p.pay_amount) row.paid_amount = p.pay_amount;
-      if (!found.sold_at    && p.pay_date)   row.sold_at    = p.pay_date;
+      becameCustomer = true;
+    } else if (isTrial && cur === 'lead') {
+      row.status = 'trial';
+    }
+
+    if (!found.paid_amount && p.pay_amount) row.paid_amount = p.pay_amount;
+    if (!found.sold_at) {
+      
+      if (p.pay_date)          row.sold_at = p.pay_date;
+      else if (becameCustomer) row.sold_at = todayStr();
     }
   } else {
-    row.status      = (p.license_type === 'trial') ? 'trial' : 'customer';
+    row.status      = isTrial ? 'trial' : 'customer';
     row.paid_amount = p.pay_amount || null;
-    row.sold_at     = p.pay_date || null;
+    row.sold_at     = p.pay_date || (isTrial ? null : todayStr());
     row.memo        = p.memo || null;
+    becameCustomer  = !isTrial;
   }
+
   const saved = await edgeCall('SAVE_CUSTOMER', row);
   if (saved && saved.id) {
     const i = CUSTOMERS.findIndex(c => c.id === saved.id);
     if (i >= 0) CUSTOMERS[i] = saved; else CUSTOMERS.unshift(saved);
   }
+  return {
+    becameCustomer,
+    name   : p.dojang_name,
+    soldAt : (saved && saved.sold_at) || row.sold_at || null
+  };
 }
 
 function regenerateKey(){
@@ -2801,6 +2838,92 @@ if (savedToken) {
   }, true);
 })();
 </script>
+
+<style id="naruun-admin-status-palette">
+
+:root{
+  --st-live:#12A15C;    --st-live-bg:#E7F8EF;    --st-live-tint:#F1FBF6;
+  --st-trial:#2F7BF6;   --st-trial-bg:#E8F1FE;   --st-trial-tint:#F3F8FF;
+  --st-soon:#E08700;    --st-soon-bg:#FFF3DC;    --st-soon-tint:#FFFAF1;
+  --st-expired:#DC2626; --st-expired-bg:#FDEAEC; --st-expired-tint:#FEF5F6;
+  --st-off:#8494A8;     --st-off-bg:#EDF0F4;     --st-off-tint:#F6F7F9;
+}
+
+.stat-card .num.n-live{color:var(--st-live)}
+.stat-card .num.n-trial{color:var(--st-trial)}
+.stat-card .num.n-soon{color:var(--st-soon)}
+.stat-card .num.n-expired{color:var(--st-expired)}
+.stat-card .num.n-off{color:var(--st-off)}
+.stat-card .num.n-money{color:#071C49}
+
+.stat-card.is-on{border-color:#0757D8;box-shadow:0 0 0 2px rgba(7,87,216,.18)}
+.stat-card[data-filter="live"].is-on{border-color:var(--st-live);box-shadow:0 0 0 2px rgba(18,161,92,.20)}
+.stat-card[data-filter="trial"].is-on{border-color:var(--st-trial);box-shadow:0 0 0 2px rgba(47,123,246,.20)}
+.stat-card[data-filter="soon"].is-on{border-color:var(--st-soon);box-shadow:0 0 0 2px rgba(224,135,0,.22)}
+.stat-card[data-filter="expired"].is-on{border-color:var(--st-expired);box-shadow:0 0 0 2px rgba(220,38,38,.18)}
+.stat-card[data-filter="off"].is-on{border-color:var(--st-off);box-shadow:0 0 0 2px rgba(132,148,168,.24)}
+
+#tab-license td.cell-main{border-left:4px solid transparent}
+tr.st-live    td.cell-main{border-left-color:var(--st-live)}
+tr.st-trial   td.cell-main{border-left-color:var(--st-trial)}
+tr.st-soon    td.cell-main{border-left-color:var(--st-soon)}
+tr.st-expired td.cell-main{border-left-color:var(--st-expired)}
+tr.st-off     td.cell-main{border-left-color:var(--st-off)}
+
+tr.st-expired td{background:var(--st-expired-tint)}
+tr.st-soon    td{background:var(--st-soon-tint)}
+tr.st-off     td{background:var(--st-off-tint)}
+tr.st-expired:hover td,tr.st-soon:hover td,tr.st-off:hover td{background:#FAFCFF}
+
+.badge.st-live{background:var(--st-live-bg);color:#0C8D54}
+.badge.st-trial{background:var(--st-trial-bg);color:#1B5FC1}
+.badge.st-soon{background:var(--st-soon-bg);color:#A96A00}
+.badge.st-expired{background:var(--st-expired-bg);color:var(--st-expired)}
+.badge.st-off{background:var(--st-off-bg);color:#64748B}
+
+tr.cg-row.s-lead     td{background:#fff}
+tr.cg-row.s-trial    td{background:var(--st-trial-tint)}
+tr.cg-row.s-customer td{background:var(--st-live-tint)}
+tr.cg-row.s-churned  td{background:var(--st-off-tint);color:#8a93a0}
+
+tr.cg-row.s-lead     td.cg-name{box-shadow:inset 4px 0 0 #DAE1EA}
+tr.cg-row.s-trial    td.cg-name{box-shadow:inset 4px 0 0 var(--st-trial)}
+tr.cg-row.s-customer td.cg-name{box-shadow:inset 4px 0 0 var(--st-live)}
+tr.cg-row.s-churned  td.cg-name{box-shadow:inset 4px 0 0 var(--st-off)}
+
+tr.cg-row.s-trial    select.cg-in[data-f="status"]{color:var(--st-trial);font-weight:900}
+tr.cg-row.s-customer select.cg-in[data-f="status"]{color:var(--st-live);font-weight:900}
+tr.cg-row.s-churned  select.cg-in[data-f="status"]{color:var(--st-off);font-weight:900}
+
+tr.cg-row.due    td.cg-name{box-shadow:inset 4px 0 0 var(--st-expired)}
+tr.cg-row.saving td.cg-name{box-shadow:inset 4px 0 0 var(--st-soon)}
+tr.cg-row.saved  td.cg-name{box-shadow:inset 4px 0 0 var(--st-live)}
+tr.cg-row.failed td.cg-name{box-shadow:inset 4px 0 0 var(--st-expired)}
+tr.cg-row.failed td{background:var(--st-expired-bg)}
+tr.cg-row:hover td{background:#FFFBEB}
+tr.cg-row.flash td{background:#FFF3CC !important;transition:background .5s}
+
+.cg-due-dot{background:var(--st-expired)}
+
+.btn-ledger{background:var(--st-soon-bg);color:#A96A00}
+.btn-ledger:hover{background:#FFE8C7}
+.btn-ledger.done{background:var(--st-live-bg);color:#0C8D54}
+
+.aw-row.s-launched td,.aw-row.s-maintenance td{background:var(--st-live-tint)}
+.aw-row.s-building td,.aw-row.s-materials td{background:var(--st-trial-tint)}
+.aw-row.s-review td{background:var(--st-soon-tint)}
+.aw-row.due td:first-child{box-shadow:inset 4px 0 var(--st-expired)}
+
+@media(max-width:900px){
+  #tab-license tbody td.cell-main{border-left:0;box-shadow:none}
+  tr.st-live    {border-left:4px solid var(--st-live)}
+  tr.st-trial   {border-left:4px solid var(--st-trial)}
+  tr.st-soon    {border-left:4px solid var(--st-soon)}
+  tr.st-expired {border-left:4px solid var(--st-expired)}
+  tr.st-off     {border-left:4px solid var(--st-off)}
+  tr.st-expired td,tr.st-soon td,tr.st-off td{background:transparent!important}
+}
+</style>
 
 </body>
 </html>

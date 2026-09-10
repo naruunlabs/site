@@ -761,7 +761,7 @@ button{transition:transform .14s ease, filter .14s ease, background .14s ease}bu
   <div class="hop-emblem"><div class="hop-dot"></div><div class="hop-dot"></div><div class="hop-dot"></div></div>
   <p class="product-sub">카메라가 몸의 움직임을 보고 줄넘기 개수를 세어줍니다. 전신이 보이게 서서 제자리에서 뛰어보세요.</p>
   <button class="start-btn" id="enterBtn">시작하기</button>
-  <div class="start-note">카메라 사용 권한을 허용해 주세요 · 나른랩스 점프마스터 v0.2</div>
+  <div class="start-note">카메라 사용 권한을 허용해 주세요 · 나른랩스 점프마스터 v3</div>
 </div>
 
 <div id="app">
@@ -776,7 +776,7 @@ button{transition:transform .14s ease, filter .14s ease, background .14s ease}bu
       <div class="jump-title-left">
         <div class="jump-title-dojang" id="bsDojangName">AI JUMP MASTER</div>
         <div class="jump-title-auth">● 정품 인증됨</div>
-        <div class="jump-title-version">v0.2.0</div>
+        <div class="jump-title-version">v3.0.0</div>
         <div class="jump-hud-meta"><span class="jump-powered">Powered by Google MediaPipe</span></div>
         <button id="jumpHudSettingsBtn" class="jump-hud-settings-btn" type="button" onclick="toggleJumpSettings()">설정</button>
       </div>
@@ -892,20 +892,26 @@ import { PoseLandmarker, FilesetResolver, DrawingUtils }
 
 const MODEL_VARIANT = 'lite';
 
-let JUMP_UP_RATIO = 0.10;        
-const JUMP_MIN_UP = 0.045;       
-const JUMP_HYSTERESIS = 0.45;    
-const JUMP_MIN_GAP_MS = 170;     
-const AIR_MAX_MS = 1200;         
+const SR = 50;                   
+const WIN_SEC = 3.0;             
+const NWIN = Math.round(SR*WIN_SEC);
+const MIN_FILL = Math.round(SR*0.6);
+let   K_UP = 0.42;               
+const PROM_RATIO = 0.33;         
+const AMP_HUGE = 0.100;          
+const MIN_AMP_STRONG = 0.050;    
+const MIN_AMP_PERIODIC = 0.030;  
+const R_PERIODIC = 0.45;         
+const R_STRICT = 0.60;           
+const PERIOD_LO = 185, PERIOD_HI = 720;   
+const LAG_MIN = Math.round(SR*0.16);      
+const LAG_MAX = Math.round(SR*1.40);      
+const GAP_FLOOR_MS = 120;        
+const MIN_RISE_FLOOR = 0.014;    
 const STREAK_TIMEOUT_MS = 1500;  
-const BASELINE_CALIB_FRAMES = 15;   
-const BASELINE_STABLE_RANGE = 0.035;
 const LOST_GRACE_MS = 2500;      
 
-const AUTO_PEAK_RATIO = 0.55;
-const AUTO_PEAK_WINDOW = 8;      
-
-function sliderToRatio(v){ return 0.17 - (v/100)*(0.17-0.05); }
+function sliderToRatio(v){ return 0.60 - (v/100)*(0.60-0.30); }
 
 const video=document.getElementById('video');
 const canvas=document.getElementById('overlay');
@@ -947,14 +953,18 @@ let showCalib=true;
 
 let jumpCount=0, jumpHipY=null, jumpBaselineY=null, jumpState='ground', jumpLastT=0;
 let curTorso=null, curRiseNorm=0, personVisible=false;
-let jumpBaselineSamples=[];  
-let calibratingBaseline=false;
-let airStartT=0, peakRise=0;
-let recentPeaks=[];          
+let calibratingBaseline=false;   
 let autoSens=true;
-let lostSince=null;          
-let lastFrameT=0;            
-let fpsEMA=0;                
+let lostSince=null;              
+let fpsEMA=0;                    
+
+let sigBuf=new Float64Array(NWIN), sigFilled=0, sigIdx=0;
+let gridT=null, prevSampT=null, prevSampV=null, torsoS=null;
+let mA=null,mB=null,mC=null,aA=null,aB=null, sigNow=null;
+let ampNow=0, baseNow=0, periodR=0, periodMs=0, periodCV=1, gateOn=false;
+let curUPv=MIN_RISE_FLOOR, runMax=-1e9, armed=false;
+let pHist=[], peakTs=[], rhythmOK=false;
+let pendingTs=[], prevGate=false, backfilled=false;   
 
 let audioCtx=null;
 function ensureAudio(){ try{ if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)();
@@ -1001,80 +1011,169 @@ function saveBest(mode,value){
   return false;
 }
 
-function currentUP(){
-  if(autoSens && recentPeaks.length>=3){
-    const s=[...recentPeaks].sort((a,b)=>a-b);
-    const med=s[Math.floor(s.length/2)];
-    
-    return Math.min(JUMP_UP_RATIO, Math.max(JUMP_MIN_UP, med*AUTO_PEAK_RATIO));
+function currentUP(){ return curUPv; }
+
+function pushSig(v){ sigBuf[sigIdx]=v; sigIdx=(sigIdx+1)%NWIN; if(sigFilled<NWIN) sigFilled++; }
+function qtile(sorted,q){
+  const i=(sorted.length-1)*q, lo=Math.floor(i), hi=Math.ceil(i);
+  return sorted[lo]+(sorted[hi]-sorted[lo])*(i-lo);
+}
+
+function autocorrPeak(d){
+  const n=d.length, maxLag=Math.min(LAG_MAX, Math.floor(n/2));
+  if(maxLag<=LAG_MIN+1) return {r:0,lag:0};
+  const R=new Float64Array(maxLag+2);
+  for(let lag=Math.max(1,LAG_MIN-1); lag<=maxLag+1 && lag<n; lag++){
+    let num=0,e1=0,e2=0;
+    for(let i=0;i+lag<n;i++){ num+=d[i]*d[i+lag]; e1+=d[i]*d[i]; e2+=d[i+lag]*d[i+lag]; }
+    const den=Math.sqrt(e1*e2); R[lag]= den>0 ? num/den : 0;
   }
-  return JUMP_UP_RATIO;
+  let best=0;
+  for(let lag=LAG_MIN; lag<=maxLag; lag++)
+    if(R[lag]>R[lag-1] && R[lag]>=R[lag+1] && R[lag]>best) best=R[lag];
+  if(best<=0) return {r:0,lag:0};
+  for(let lag=LAG_MIN; lag<=maxLag; lag++)
+    if(R[lag]>R[lag-1] && R[lag]>=R[lag+1] && R[lag]>=best*0.85) return {r:R[lag],lag};
+  return {r:0,lag:0};
 }
 
-function smoothHip(rawY, now){
-  if(jumpHipY==null){ jumpHipY=rawY; lastFrameT=now; return; }
-  const dt=Math.max(1, now-lastFrameT); lastFrameT=now;
-  
-  const vel=Math.abs(rawY-jumpHipY)/dt;             
-  const a=Math.min(0.85, 0.35 + vel*900);
-  jumpHipY = jumpHipY*(1-a) + rawY*a;
-}
-
+let acTick=0;
 function detectJump(hipY, torso){
   if(!(torso>0.02)) return;
   curTorso=torso;
-  const now=performance.now();
-  smoothHip(hipY, now);
 
-  if(jumpBaselineY==null){
-    calibratingBaseline=true;
-    jumpBaselineSamples.push(jumpHipY);
-    if(jumpBaselineSamples.length>BASELINE_CALIB_FRAMES) jumpBaselineSamples.shift();
-    if(!running) setGuide('기준 잡는 중… 가만히 서주세요');
-    if(jumpBaselineSamples.length>=BASELINE_CALIB_FRAMES){
-      const mn=Math.min(...jumpBaselineSamples), mx=Math.max(...jumpBaselineSamples);
-      if((mx-mn) < BASELINE_STABLE_RANGE){ 
-        const s=[...jumpBaselineSamples].sort((a,b)=>a-b);
-        jumpBaselineY=s[Math.floor(s.length/2)];   
-        jumpBaselineSamples=[]; calibratingBaseline=false;
-        if(!running) setGuide('');
-      }
-      
-    }
-    return;
-  }
+  torsoS = (torsoS==null) ? torso : torsoS*0.96 + torso*0.04;
+  const raw = hipY/torsoS;
+  const t = performance.now();
+  if(gridT==null){ gridT=t; prevSampT=t; prevSampV=raw; return; }
 
-  const UP=currentUP(), DOWN=UP*JUMP_HYSTERESIS;
-  const riseNorm=(jumpBaselineY - jumpHipY)/torso; 
-  curRiseNorm=Math.max(0,riseNorm);
-
-  if(jumpState==='ground' && Math.abs(riseNorm) < UP*0.5){
-    const drift = running ? 0.025 : 0.08; 
-    jumpBaselineY = jumpBaselineY*(1-drift) + jumpHipY*drift;
-  }
-
-  if(jumpState==='ground'){
+  const step=1000/SR;
+  let guard=0;
+  while(gridT+step<=t && guard++<300){
+    gridT+=step;
+    const u=(gridT-prevSampT)/Math.max(1e-6,(t-prevSampT));
+    const v=prevSampV+(raw-prevSampV)*Math.max(0,Math.min(1,u));
     
-    if(riseNorm>UP && (now-jumpLastT)>JUMP_MIN_GAP_MS){
-      jumpState='air'; airStartT=now; peakRise=riseNorm;
-      if(running){ 
-        jumpCount++; jumpLastT=now;
-        onJumpCounted();
-      } else { jumpLastT=now; }
-    }
-  } else { 
-    peakRise=Math.max(peakRise,riseNorm);
-    if(riseNorm<DOWN){
-      
-      jumpState='ground'; statState.textContent=running?'착지':'준비';
-      recentPeaks.push(peakRise);
-      if(recentPeaks.length>AUTO_PEAK_WINDOW) recentPeaks.shift();
-    } else if((now-airStartT)>AIR_MAX_MS){
-      
-      jumpState='ground';
-      jumpBaselineY=null; jumpBaselineSamples=[];
-    }
+    mC=mB; mB=mA; mA=v;
+    let med=v;
+    if(mC!=null){ const s=[mA,mB,mC].sort((p,q)=>p-q); med=s[1]; }
+    
+    aB=aA; aA=med;
+    sigNow=(aB!=null)?(med+aA+aB)/3:med;
+    pushSig(sigNow);
+    analyzeWindow(gridT);
   }
+  prevSampT=t; prevSampV=raw;
+  jumpHipY = (sigNow!=null && torsoS!=null) ? sigNow*torsoS : hipY;   
+}
+
+function analyzeWindow(now){
+  calibratingBaseline = sigFilled<MIN_FILL;
+  if(calibratingBaseline) return;
+
+  const locked = periodR>=R_PERIODIC && periodMs>0;
+  const wantMs = locked ? Math.max(700, Math.min(WIN_SEC*1000, periodMs*2.5)) : WIN_SEC*1000;
+  const n = Math.min(sigFilled, Math.round(wantMs/1000*SR));
+  const x=new Float64Array(n);
+  for(let i=0;i<n;i++) x[i]=sigBuf[(sigIdx-n+i+NWIN)%NWIN];
+
+  const d=new Float64Array(n);
+  if(locked){   
+    let sx=0,sy=0,sxx=0,sxy=0;
+    for(let i=0;i<n;i++){ sx+=i; sy+=x[i]; sxx+=i*i; sxy+=i*x[i]; }
+    const den=n*sxx-sx*sx;
+    const slope=den!==0?(n*sxy-sx*sy)/den:0, icpt=(sy-slope*sx)/n;
+    for(let i=0;i<n;i++) d[i]=x[i]-(icpt+slope*i);
+  } else {
+    for(let i=0;i<n;i++) d[i]=x[i];
+  }
+
+  const sorted=Float64Array.from(d).sort();
+  baseNow=qtile(sorted,0.88);                       
+  ampNow=Math.max(0, baseNow-qtile(sorted,0.06));   
+
+  if((acTick++%4)===0){
+    const nf=sigFilled;
+    const xf=new Float64Array(nf);
+    for(let i=0;i<nf;i++) xf[i]=sigBuf[(sigIdx-nf+i+NWIN)%NWIN];
+    let fx=0,fy=0,fxx=0,fxy=0;
+    for(let i=0;i<nf;i++){ fx+=i; fy+=xf[i]; fxx+=i*i; fxy+=i*xf[i]; }
+    const fden=nf*fxx-fx*fx;
+    const fslope=fden!==0?(nf*fxy-fx*fy)/fden:0, ficpt=(fy-fslope*fx)/nf;
+    const df=new Float64Array(nf);
+    for(let i=0;i<nf;i++) df[i]=xf[i]-(ficpt+fslope*i);
+    const ac=autocorrPeak(df);
+    periodR=ac.r; periodMs= ac.lag>0 ? ac.lag*1000/SR : 0;
+    if(periodMs>0 && ac.r>=0.35){
+      pHist.push(periodMs); if(pHist.length>8) pHist.shift();
+      if(pHist.length>=5){
+        const mu=pHist.reduce((a,b)=>a+b,0)/pHist.length;
+        let vr=0; for(const p of pHist) vr+=(p-mu)*(p-mu);
+        periodCV=Math.sqrt(vr/pHist.length)/mu;
+      }
+    } else { pHist.length=0; periodCV=1; }
+  }
+
+  const periodic = periodR>=R_PERIODIC && periodMs>0;
+  
+  const steady = periodR>=R_STRICT && periodCV<=0.10 &&
+                 periodMs>=PERIOD_LO && periodMs<=PERIOD_HI && rhythmOK;
+  gateOn = (ampNow>=AMP_HUGE) ||
+           (ampNow>=MIN_AMP_STRONG && periodR>=0.45) ||
+           (steady && ampNow>=MIN_AMP_PERIODIC);
+
+  curUPv = Math.max(MIN_RISE_FLOOR, ampNow*K_UP);
+  const rise = baseNow - d[n-1];
+  curRiseNorm = Math.max(0, rise);
+  jumpBaselineY = (sigNow!=null && torsoS!=null) ? (sigNow+rise)*torsoS : jumpBaselineY;
+
+  const minGap = periodic ? Math.max(GAP_FLOOR_MS, periodMs*0.65) : 280;
+  
+  const promK = !periodic ? PROM_RATIO*1.7 : (steady ? PROM_RATIO*0.75 : PROM_RATIO);
+  const prom = Math.max(MIN_RISE_FLOOR*0.6, ampNow*promK);
+
+  while(pendingTs.length && now-pendingTs[0] > WIN_SEC*1000) pendingTs.shift();
+  if(gateOn && !prevGate && running && !backfilled && steady && periodMs>0 && pendingTs.length>=2){
+    let lastT=-1e9, added=0;
+    for(const pt of pendingTs){
+      const gap=pt-lastT;
+      if(lastT>-1e8 && (gap<periodMs*0.70 || gap>periodMs*1.40)) { lastT=pt; continue; }
+      lastT=pt; added++;
+    }
+    if(added>0){ jumpCount+=added; onJumpCounted(); }
+    pendingTs=[]; backfilled=true;          
+  }
+  prevGate=gateOn;
+
+  if(rise>runMax) runMax=rise;
+  if(!armed && runMax>curUPv){ armed=true; jumpState='air'; }
+  if(armed && rise < runMax-prom){
+    
+    const ripple = periodMs>0 ? periodMs*0.5 : 100;
+    if(!peakTs.length || (now-peakTs[peakTs.length-1])>=ripple){
+      peakTs.push(now); if(peakTs.length>9) peakTs.shift();
+    }
+    if(peakTs.length>=5 && periodMs>0){
+      let good=0;
+      for(let i=1;i<peakTs.length;i++){
+        const gap=peakTs[i]-peakTs[i-1];
+        if(gap>=periodMs*0.70 && gap<=periodMs*1.40) good++;
+      }
+      rhythmOK = good >= (peakTs.length-2);   
+      
+    } else { rhythmOK=false; }
+
+    if(gateOn && (now-jumpLastT)>minGap){
+      jumpLastT=now;
+      if(running){ jumpCount++; onJumpCounted(); }
+    } else if(!gateOn && running && !backfilled){
+      pendingTs.push(now);                 
+      if(pendingTs.length>40) pendingTs.shift();
+    }
+    armed=false; runMax=rise; jumpState='ground';
+    if(!running) statState.textContent='준비';
+  }
+  if(!armed && rise < runMax-prom) runMax=rise;
 }
 function onJumpCounted(){
   countNum.textContent=jumpCount;
@@ -1102,12 +1201,19 @@ window.setMode=(mode)=>{
 
 function resetCount(){
 
-  jumpCount=0; jumpState='ground'; jumpLastT=0; curRiseNorm=0; peakRise=0;
+  jumpCount=0; jumpState='ground'; jumpLastT=0; curRiseNorm=0;
+  runMax=-1e9; armed=false; pendingTs=[]; prevGate=gateOn; backfilled=false;
   countNum.textContent='0'; statNow.textContent='0'; statState.textContent=running?'측정중':'준비';
 }
 function fullRecalibrate(){
-  jumpHipY=null; jumpBaselineY=null; jumpBaselineSamples=[]; calibratingBaseline=false;
-  recentPeaks=[]; jumpState='ground'; curRiseNorm=0; peakRise=0; lostSince=null;
+  sigBuf=new Float64Array(NWIN); sigFilled=0; sigIdx=0;
+  gridT=null; prevSampT=null; prevSampV=null; torsoS=null;
+  mA=mB=mC=aA=aB=null; sigNow=null;
+  jumpHipY=null; jumpBaselineY=null;
+  ampNow=0; baseNow=0; periodR=0; periodMs=0; periodCV=1; gateOn=false;
+  curUPv=MIN_RISE_FLOOR; runMax=-1e9; armed=false;
+  pHist=[]; peakTs=[]; rhythmOK=false; pendingTs=[]; prevGate=false; backfilled=false;
+  jumpState='ground'; curRiseNorm=0; lostSince=null; calibratingBaseline=true;
 }
 function updateStats(){
   statBest.textContent = (loadBest(currentMode)||'—') + (loadBest(currentMode)?'개':'');
@@ -1244,11 +1350,15 @@ function drawDebug(){
   
   ctx.save();
   if(camWrap.classList.contains('mirrored')){ ctx.translate(canvas.width,0); ctx.scale(-1,1); }
-  ctx.font='bold 13px monospace';
-  ctx.fillStyle='rgba(190,242,100,.85)';
-  const up=currentUP();
-  const auto=(autoSens && recentPeaks.length>=3)?' 자동':'';
-  ctx.fillText(Math.round(fpsEMA)+'fps · 문턱 '+up.toFixed(3)+auto+' · 현재 '+curRiseNorm.toFixed(3), 10, canvas.height-14);
+  ctx.font='bold 12px monospace';
+  
+  const hz = periodMs>0 ? (1000/periodMs).toFixed(1) : '—';
+  ctx.fillStyle = gateOn ? 'rgba(190,242,100,.9)' : 'rgba(255,180,120,.9)';
+  ctx.fillText(Math.round(fpsEMA)+'fps · 진폭 '+ampNow.toFixed(3)+' · 문턱 '+curUPv.toFixed(3)+' · 현재 '+curRiseNorm.toFixed(3),
+               10, canvas.height-30);
+  ctx.fillStyle='rgba(45,212,191,.9)';
+  ctx.fillText('리듬 '+hz+'Hz · 신뢰도 '+periodR.toFixed(2)+' · 흔들림 '+(periodCV<=1?periodCV.toFixed(2):'—')+
+               ' · 박자 '+(rhythmOK?'O':'X')+' · 카운트 '+(gateOn?'ON':'off'), 10, canvas.height-14);
   ctx.restore();
 }
 
@@ -1269,7 +1379,7 @@ function processFrame(){
       const hipVis=Math.max(lm[23]?.visibility??0, lm[24]?.visibility??0);
       const shVis =Math.max(lm[11]?.visibility??0, lm[12]?.visibility??0);
       if(hipVis>0.3 && shVis>0.3){
-        personVisible=true; lostSince=null; setGuide(calibratingBaseline&&!running?'기준 잡는 중… 가만히 서주세요':'');
+        personVisible=true; lostSince=null; setGuide(calibratingBaseline&&!running?'기준 잡는 중…':'');
         
         drawingUtils.drawConnectors(lm,PoseLandmarker.POSE_CONNECTIONS,{color:'rgba(20,184,166,.55)',lineWidth:2});
         drawingUtils.drawLandmarks(lm,{color:'#A3E635',lineWidth:1,radius:3});
@@ -1308,7 +1418,7 @@ function handlePersonLost(){
   const now=performance.now();
   if(lostSince==null){ lostSince=now; return; }
   if(now-lostSince>LOST_GRACE_MS){
-    jumpHipY=null; jumpBaselineY=null; jumpBaselineSamples=[]; jumpState='ground';
+    fullRecalibrate();
     lostSince=null;
   }
 }
@@ -1355,15 +1465,15 @@ document.getElementById('calBtn').onclick=(e)=>{
 document.getElementById('recalBtn').onclick=()=>{
   
   fullRecalibrate();
-  setGuide('기준 다시 잡는 중… 가만히 서주세요');
+  setGuide('기준 다시 잡는 중…');
 };
 sensSlider.oninput=()=>{
-  JUMP_UP_RATIO=sliderToRatio(parseInt(sensSlider.value));
+  K_UP=sliderToRatio(parseInt(sensSlider.value));
   sensVal.textContent=sensSlider.value;
 };
 autoSensChk.onchange=()=>{ autoSens=autoSensChk.checked; };
 
-JUMP_UP_RATIO=sliderToRatio(parseInt(sensSlider.value));
+K_UP=sliderToRatio(parseInt(sensSlider.value));
 autoSens=autoSensChk.checked;
 
 function setAppHeight(){
