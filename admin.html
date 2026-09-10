@@ -2870,10 +2870,12 @@ tr.st-soon    td.cell-main{border-left-color:var(--st-soon)}
 tr.st-expired td.cell-main{border-left-color:var(--st-expired)}
 tr.st-off     td.cell-main{border-left-color:var(--st-off)}
 
-tr.st-expired td{background:var(--st-expired-tint)}
-tr.st-soon    td{background:var(--st-soon-tint)}
-tr.st-off     td{background:var(--st-off-tint)}
-tr.st-expired:hover td,tr.st-soon:hover td,tr.st-off:hover td{background:#FAFCFF}
+#tab-license tr.st-live td,
+#tab-license tr.st-trial td,
+#tab-license tr.st-soon td,
+#tab-license tr.st-expired td,
+#tab-license tr.st-off td{background:transparent}
+#tab-license tbody tr:hover td{background:#FAFCFF}
 
 .badge.st-live{background:var(--st-live-bg);color:#0C8D54}
 .badge.st-trial{background:var(--st-trial-bg);color:#1B5FC1}
