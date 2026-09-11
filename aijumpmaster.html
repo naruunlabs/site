@@ -541,10 +541,12 @@ button{cursor:pointer;border:0;background:none;padding:0}
       <div class="seg" id="soloSeg">
         <button type="button" data-solo="free" class="on">자유</button>
         <button type="button" data-solo="timed">시간제</button>
-        <button type="button" data-solo="streak">연속</button>
+        <button type="button" data-solo="target">목표 도전</button>
       </div>
       <label class="lfield" id="soloTimeWrap" hidden><i>제한 시간</i>
         <select id="soloTime"><option value="30">30초</option><option value="60">60초</option><option value="120">120초</option></select></label>
+      <label class="lfield" id="soloTargetWrap" hidden><i>목표 횟수</i>
+        <select id="soloTarget"><option value="30">30회</option><option value="50">50회</option><option value="100">100회</option></select></label>
       <label class="lfield"><i><span>측정 감도</span><output id="sensOutLobby">60</output></i>
         <input type="range" id="sensLobby" min="0" max="100" value="60" aria-label="측정 감도"></label>
     </div>
@@ -642,7 +644,7 @@ const MODEL_LOCAL = './vendor/mediapipe/pose_landmarker_lite.task';
 const USE_VENDOR  = window.JM_USE_VENDOR !== false;   
 const MODEL_CDN   = 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task';
 
-const STREAK_TIMEOUT_MS = 1500;  
+const TARGET_TIMEOUT_MS = 1500;  
 const LOST_GRACE_MS     = 2500;  
 
 const SYNC = {
@@ -906,7 +908,7 @@ let guideOverride='', lobbyErrorText='';
 const MODES_SOLO={
   free:  {title:'자유 모드',   sub:'멈출 때까지 계속 카운트'},
   timed: {title:'시간제 모드', sub:'제한 시간 안에 최대한 많이'},
-  streak:{title:'연속 모드',   sub:'리듬 끊기지 않게 이어서!'},
+  target:{title:'목표 도전',   sub:'걸리지 않고 목표까지 연속으로!'},
 };
 
 const team={ base:0, combo:0, best:0, PERFECT:0, GOOD:0, NORMAL:0, MISS:0, lastDiff:null };
@@ -1309,7 +1311,7 @@ function relayTick(now){
 
 const lobbyPrefs = store.json('jmp_lobby_v1',{}) || {};
 function saveLobbyPrefs(){
-  store.set('jmp_lobby_v1',JSON.stringify({mode,soloMode,soloTime:$('soloTime').value,bpm:$('bpm').value,duration:$('duration').value,
+  store.set('jmp_lobby_v1',JSON.stringify({mode,soloMode,soloTime:$('soloTime').value,soloTarget:$('soloTarget').value,bpm:$('bpm').value,duration:$('duration').value,
     relayPlayers:$('relayPlayers').value,relayTarget:$('relayTarget').value,relayRounds:$('relayRounds').value,groupKind,groupSkill:groupSkillId}));
 }
 function restoreLobbyPrefs(){
@@ -1317,7 +1319,7 @@ function restoreLobbyPrefs(){
   if(['solo','duo','relay','group'].includes(p.mode)) mode=p.mode;
   if(MODES_SOLO[p.soloMode]) soloMode=p.soloMode;
   const setSel=(id,v)=>{ const el=$(id); if(v!=null && [...el.options].some(o=>o.value===String(v))) el.value=String(v); };
-  setSel('soloTime',p.soloTime); setSel('bpm',p.bpm); setSel('duration',p.duration);
+  setSel('soloTime',p.soloTime); setSel('soloTarget',p.soloTarget); setSel('bpm',p.bpm); setSel('duration',p.duration);
   setSel('relayPlayers',p.relayPlayers); setSel('relayTarget',p.relayTarget); setSel('relayRounds',p.relayRounds);
   if(['practice','play'].includes(p.groupKind)) groupKind=p.groupKind;
   if(SKILL_BY_ID[p.groupSkill]) groupSkillId=p.groupSkill;
@@ -1327,6 +1329,7 @@ function applyModeUI(){
   document.querySelectorAll('#soloSeg button').forEach(b=>b.classList.toggle('on',b.dataset.solo===soloMode));
   $('optSolo').hidden = mode!=='solo';
   $('soloTimeWrap').hidden = soloMode!=='timed';
+  $('soloTargetWrap').hidden = soloMode!=='target';
   $('optBeat').hidden = mode==='solo';
   $('durationWrap').hidden = mode!=='duo';
   $('optRelay').hidden = mode!=='relay';
@@ -1343,7 +1346,7 @@ function applyModeUI(){
 function updateModeBadge(){
   let t='',s='';
   const b=+$('bpm').value;
-  if(mode==='solo'){ t=MODES_SOLO[soloMode].title; s=MODES_SOLO[soloMode].sub; if(soloMode==='timed') s=`제한 ${$('soloTime').value}초 안에 최대한 많이`; }
+  if(mode==='solo'){ t=MODES_SOLO[soloMode].title; s=MODES_SOLO[soloMode].sub; if(soloMode==='timed') s=`제한 ${$('soloTime').value}초 안에 최대한 많이`; if(soloMode==='target') s=`걸리지 않고 ${$('soloTarget').value}회 연속 성공`; }
   else if(mode==='duo'){ t='2인 협동'; s=`${b} BPM · ${$('duration').value}초`; }
   else if(mode==='relay'){ t='릴레이'; s=`${$('relayPlayers').value}명 · ${$('relayTarget').value}회씩 · ${$('relayRounds').value}바퀴`; }
   else if(groupKind==='practice'){ t='단체 리듬 · 연습'; s=skillById(groupSkillId).n; }
@@ -1450,7 +1453,7 @@ async function boot(){
   appState='countdown'; layoutHud();
   const cdTotal=COUNTDOWN_MS.reduce((a,b)=>a+b,0);
   if(mode!=='solo') prepareClock(cdTotal);
-  const subs={free:'멈추고 싶을 때 종료를 누르세요',timed:'제한 시간 안에 최대한 많이!',streak:'리듬 끊기지 않게!'};
+  const subs={free:'멈추고 싶을 때 종료를 누르세요',timed:'제한 시간 안에 최대한 많이!',target:`걸리지 않고 ${$('soloTarget').value}회까지!`};
   const sub = mode==='solo'?subs[soloMode] : mode==='duo'?'박자음에 맞춰 둘이 함께 뛰어요' : mode==='relay'?'1번 주자부터 시작합니다': groupKind==='practice'?'코치와 발판을 보고 따라 해요':'노트가 판정선에 닿을 때 뛰어요';
   const ok=await runCountdown(sub);
   bootBusy=false; $('playBtn').disabled=false;
@@ -1467,7 +1470,7 @@ function setupRound(){
                        turn:0,turnCount:0,changing:false,resumeAt:0,finishSec:0,done:false});
   durationSec = mode==='duo' ? +$('duration').value : mode==='group' ? (groupKind==='play'?Math.ceil(groupTotal()*60/bpm):0) : +$('soloTime').value;
   gameEndPerf=Infinity;
-  if(mode==='solo'){ setText($('stCountLab'), soloMode==='streak'?'연속 성공':'줄넘기 개수'); updateBest(); }
+  if(mode==='solo'){ setText($('stCountLab'), soloMode==='target'?'목표 도전':'줄넘기 개수'); updateBest(); }
   if(mode==='duo'){ setText($('p0name'),'청'); setText($('p1name'),'홍'); }
   if(mode==='group') buildGroupBar();
   setText($('stTimeLab'), mode==='relay'?'경과 시간':'남은 시간');
@@ -1538,13 +1541,14 @@ function finishSolo(title){ soloResultTitle=title; finish(false); }
 function resultHtml(m){
   if(m==='solo'){
     const cnt=players[0].count, isBest=saveBest(soloMode,cnt), best=loadBest(soloMode);
-    if(cnt>0) snd.finish();
-    if(isBest && cnt>0) confetti(true);
-    const label = soloMode==='timed' ? `1인 측정 · 시간제 ${durationSec}초` : `1인 측정 · ${MODES_SOLO[soloMode].title}`;
+    const targetMode=soloMode==='target', target=+$('soloTarget').value, targetClear=targetMode&&cnt>=target;
+    if(cnt>0 && (!targetMode||targetClear)) snd.finish();
+    if(isBest && cnt>0 && (!targetMode||targetClear)) confetti(true);
+    const label = soloMode==='timed' ? `1인 측정 · 시간제 ${durationSec}초` : targetMode ? `1인 측정 · 목표 도전 ${target}회` : `1인 측정 · ${MODES_SOLO[soloMode].title}`;
     return `<div class="res-label">${label}</div>
       <div class="res-title">${esc(soloResultTitle||'측정 완료')}</div>
-      <div class="rbox big win"><span>${soloMode==='streak'?'연속 성공':'줄넘기 개수'}</span><strong>${fmt(cnt)}</strong></div>
-      <div class="rline">${isBest&&cnt>0?'<b>오늘 최고 기록 갱신!</b> · ':''}오늘 최고 ${fmt(best)}개</div>`;
+      <div class="rbox big ${targetMode&&!targetClear?'':'win'}"><span>${targetMode?'연속 성공':'줄넘기 개수'}</span><strong>${fmt(cnt)}</strong></div>
+      <div class="rline">${targetMode&&!targetClear?`목표까지 ${fmt(Math.max(0,target-cnt))}회 남음 · `:''}${isBest&&cnt>0?'<b>오늘 최고 기록 갱신!</b> · ':''}오늘 최고 ${fmt(best)}개</div>`;
   }
   if(m==='duo'){
     const bonus=team.best*SYNC.COMBO_BONUS, total=team.base+bonus;
@@ -1604,7 +1608,8 @@ function tick(now){
       const p=players[0];
       if(soloMode==='timed' && now>=gameEndPerf){ finishSolo('시간 종료!'); return; }
 
-      if(soloMode==='streak' && p.count>0 && now-(p.lastCountAt||0)>STREAK_TIMEOUT_MS){ snd.brk(); finishSolo('리듬이 끊겼어요'); return; }
+      if(soloMode==='target' && p.count>=+$('soloTarget').value){ finishSolo('목표 달성!'); return; }
+      if(soloMode==='target' && p.count>0 && now-(p.lastCountAt||0)>TARGET_TIMEOUT_MS){ snd.brk(); finishSolo('도전 실패'); return; }
     }else if(m==='duo'){
       duoCheckTimeouts(now);
       if(now>=gameEndPerf){ finish(false); return; }
@@ -2285,9 +2290,9 @@ document.querySelectorAll('#modelist .choice').forEach(b=>b.addEventListener('cl
 }));
 document.querySelectorAll('#soloSeg button').forEach(b=>b.addEventListener('click',()=>{
   soloMode=b.dataset.solo; applyModeUI(); updateBest(); saveLobbyPrefs();
-  setText($('stCountLab'), soloMode==='streak'?'연속 성공':'줄넘기 개수');
+  setText($('stCountLab'), soloMode==='target'?'목표 도전':'줄넘기 개수');
 }));
-['soloTime','bpm','duration','relayPlayers','relayTarget','relayRounds'].forEach(id=>$(id).addEventListener('change',()=>{ applyModeUI(); saveLobbyPrefs(); }));
+['soloTime','soloTarget','bpm','duration','relayPlayers','relayTarget','relayRounds'].forEach(id=>$(id).addEventListener('change',()=>{ applyModeUI(); saveLobbyPrefs(); }));
 
 $('groupSkill').innerHTML=['발 모양','발 리듬','손 기술'].map(c=>`<optgroup label="${c}">${SKILLS.filter(s=>s.cat===c).map(s=>`<option value="${s.id}">${esc(s.n)}</option>`).join('')}</optgroup>`).join('');
 document.querySelectorAll('#groupSeg button').forEach(b=>b.addEventListener('click',()=>{ groupKind=b.dataset.gk; applyModeUI(); saveLobbyPrefs(); }));
