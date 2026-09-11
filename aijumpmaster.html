@@ -286,12 +286,13 @@ button{cursor:pointer;border:0;background:none;padding:0}
   overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none;padding-right:4px;
   text-shadow:0 2px 3px rgba(0,0,0,.95),0 0 14px rgba(0,0,0,.78)}
 .panel::-webkit-scrollbar{display:none}
-.modelist{display:grid;gap:max(3px,calc(var(--u)*.35))}
-.choice{display:block;width:100%;padding:max(8px,calc(var(--u)*.8)) max(10px,calc(var(--u)*1));text-align:left;
+.modelist{display:grid;gap:max(2px,calc(var(--u)*.2))}
+
+.choice{display:block;width:100%;padding:max(5px,calc(var(--u)*.45)) max(9px,calc(var(--u)*.85));text-align:left;
   border-left:5px solid transparent;color:rgba(255,255,255,.62);
   background:linear-gradient(90deg,rgba(3,15,27,.52),rgba(3,15,27,0));transition:color .13s,border-color .13s,background .13s}
-.choice b{display:block;font-size:max(15px,calc(var(--u)*1.5));font-weight:900}
-.choice small{display:block;margin-top:1px;font-size:max(11px,calc(var(--u)*1.02));font-weight:500;color:rgba(255,255,255,.5)}
+.choice b{display:block;font-size:max(13px,calc(var(--u)*1.08));line-height:1.12;font-weight:900}
+.choice small{display:block;margin-top:2px;font-size:max(10px,calc(var(--u)*.78));line-height:1.15;font-weight:500;color:rgba(255,255,255,.5)}
 .choice:hover{color:rgba(255,255,255,.86)}
 .choice[aria-pressed="true"]{border-left-color:var(--lime);color:#fff;background:linear-gradient(90deg,rgba(255,255,255,.18),rgba(255,255,255,0))}
 .choice[aria-pressed="true"] small{color:rgba(255,255,255,.76)}
