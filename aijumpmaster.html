@@ -290,14 +290,12 @@ button{cursor:pointer;border:0;background:none;padding:0}
 .panel::-webkit-scrollbar{display:none}
 .modelist{display:grid;gap:max(2px,calc(var(--u)*.2))}
 
-.choice{display:block;width:100%;padding:max(5px,calc(var(--u)*.45)) max(9px,calc(var(--u)*.85));text-align:left;
+.choice{display:block;width:100%;padding:max(8px,calc(var(--u)*.7)) max(9px,calc(var(--u)*.85));text-align:left;
   border-left:5px solid transparent;color:rgba(255,255,255,.62);
   background:linear-gradient(90deg,rgba(3,15,27,.52),rgba(3,15,27,0));transition:color .13s,border-color .13s,background .13s}
-.choice b{display:block;font-size:max(13px,calc(var(--u)*1.08));line-height:1.12;font-weight:900}
-.choice small{display:block;margin-top:2px;font-size:max(10px,calc(var(--u)*.78));line-height:1.15;font-weight:500;color:rgba(255,255,255,.5)}
+.choice b{display:block;font-size:max(13px,calc(var(--u)*1.08));line-height:1.15;font-weight:900}
 .choice:hover{color:rgba(255,255,255,.86)}
 .choice[aria-pressed="true"]{border-left-color:var(--lime);color:#fff;background:linear-gradient(90deg,rgba(255,255,255,.18),rgba(255,255,255,0))}
-.choice[aria-pressed="true"] small{color:rgba(255,255,255,.76)}
 .opts{margin-top:max(10px,calc(var(--u)*1.2))}
 .option-label{display:block;margin-bottom:max(4px,calc(var(--u)*.45));font-size:max(11px,calc(var(--u)*1));font-weight:900;color:rgba(255,255,255,.72)}
 .seg{display:grid;grid-template-columns:repeat(3,1fr);gap:3px}
@@ -321,6 +319,7 @@ button{cursor:pointer;border:0;background:none;padding:0}
 .seg.two{grid-template-columns:1fr 1fr}
 .rsum{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:3px;padding:max(7px,calc(var(--u)*.72)) max(8px,calc(var(--u)*.8));
   border-bottom:2px solid rgba(255,255,255,.2);background:rgba(3,15,27,.4);font-size:max(12px,calc(var(--u)*1.1));font-weight:700;color:#fff}
+.rsum span{min-width:0;white-space:nowrap;font-size:max(10px,calc(var(--u)*.92));letter-spacing:-.035em}
 .rsum button{flex:none;font-weight:900;color:var(--lime-lit)}
 
 .rmodal{position:fixed;inset:0;z-index:190;display:flex;align-items:center;justify-content:center;padding:max(12px,2vw);background:rgba(2,8,16,.78)}
@@ -573,10 +572,10 @@ html body:not(.jmp-beta-on) #jumpLabModal{
 
   <section class="panel" id="lobby" aria-label="모드 선택">
     <div class="modelist" id="modelist">
-      <button class="choice" type="button" data-mode="solo" aria-pressed="true"><b>1인 측정</b><small>정확한 줄넘기 횟수</small></button>
-      <button class="choice" type="button" data-mode="duo" aria-pressed="false"><b>2인 협동</b><small>둘이 같은 순간에 착지하기</small></button>
-      <button class="choice" type="button" data-mode="relay" aria-pressed="false"><b>릴레이</b><small>순서대로 이어 뛰기</small></button>
-      <button class="choice" type="button" data-mode="group" aria-pressed="false"><b>단체 리듬</b><small>동작 바꿔가며 함께 · 카메라 꺼짐</small></button>
+      <button class="choice" type="button" data-mode="solo" aria-pressed="true"><b>1인 측정</b></button>
+      <button class="choice" type="button" data-mode="duo" aria-pressed="false"><b>2인 협동</b></button>
+      <button class="choice" type="button" data-mode="relay" aria-pressed="false"><b>릴레이</b></button>
+      <button class="choice" type="button" data-mode="group" aria-pressed="false"><b>단체 리듬</b></button>
     </div>
 
     <div class="opts" id="optSolo">
@@ -2403,7 +2402,7 @@ function renderRoutineModal(){
 }
 function groupRoutineSummary(){
   const b=+$('bpm').value||120, sec=Math.ceil(groupTotal()*60/b);
-  return `${groupRoutine.length}개 동작 · ${groupTotal()}박 · 약 ${Math.floor(sec/60)?Math.floor(sec/60)+'분 ':''}${sec%60}초`;
+  return `${groupRoutine.length}동작 · ${groupTotal()}박 · ${Math.floor(sec/60)?Math.floor(sec/60)+'분 ':''}${sec%60}초`;
 }
 
 let loopOn=false;
