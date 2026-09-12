@@ -355,6 +355,15 @@ button{cursor:pointer;border:0;background:none;padding:0}
 .rm-move button{width:clamp(26px,2.2vw,34px);height:clamp(26px,2.2vw,34px);border-radius:6px;background:rgba(255,255,255,.08);color:#cbd5e1;font-size:.8em}
 .rm-empty{margin:0;color:var(--muted);font-size:14px}
 .rm-foot{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px}
+.rm-slot-head{width:100%;display:flex;align-items:center;gap:9px;padding-top:8px;border-top:1px solid rgba(45,212,191,.14)}
+.rm-slot-head strong{font-size:13px;font-weight:900;color:#eaf4f1}.rm-slot-head span{font-size:11px;color:var(--muted)}
+.rm-slot-msg{margin-left:auto;font-size:11px;font-weight:800;color:var(--lime-lit)}
+.rm-slots{width:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.rm-slot{min-width:0;display:grid;grid-template-columns:auto 1fr auto auto;align-items:center;gap:6px;padding:7px 8px;border-radius:9px;background:rgba(255,255,255,.04);border:1px solid rgba(45,212,191,.12)}
+.rm-slot>strong{display:grid;place-items:center;width:24px;height:24px;border-radius:7px;background:rgba(45,212,191,.12);font-family:var(--num);color:var(--teal-lit)}
+.rm-slot>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;font-weight:800;color:#8fa3b9}
+.rm-slot button{padding:5px 7px;border-radius:6px;background:rgba(255,255,255,.07);font-size:10px;font-weight:900;color:#dcecff}
+.rm-slot button:last-child{color:var(--lime-lit)}.rm-slot button:disabled{opacity:.3;cursor:default}
 .rm-sum{font-size:clamp(13px,1.1vw,17px);font-weight:800}
 .rm-sum b{font-family:var(--num);color:var(--lime-lit)}
 .rm-ghost{padding:9px 14px;border-radius:9px;background:rgba(255,255,255,.07);font-size:clamp(12px,1vw,15px);font-weight:800;color:#dcecff}
@@ -401,6 +410,32 @@ button{cursor:pointer;border:0;background:none;padding:0}
 .m-act.home{background:rgba(255,255,255,.07);color:#fff}
 .m-info{font-size:12px;line-height:1.7;color:#a9bdd3}
 .m-info b{color:#fff}
+
+html body:not(.jmp-beta-on) .tb-lab-btn,
+html body:not(.jmp-beta-on) #jumpLabModal{
+  display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important}
+.tb-btns{display:flex;gap:6px;align-items:flex-start}
+.tb-lab-btn{margin-top:7px;padding:5px 11px;border-radius:7px;background:rgba(190,242,100,.12);
+  border:1px solid rgba(190,242,100,.42);color:var(--lime-lit,#bef264);font-size:11px;font-weight:900;cursor:pointer}
+.lab-box{width:620px}
+.lab-sec{margin:14px 0 0}
+.lab-sec>h4{margin:0 0 7px;font-size:12px;font-weight:900;letter-spacing:.04em;color:var(--lime,#a3e635)}
+.lab-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(126px,1fr));gap:6px}
+.lab-cell{padding:7px 9px;border-radius:9px;background:rgba(255,255,255,.045);border:1px solid rgba(45,212,191,.13)}
+.lab-cell i{display:block;font-style:normal;font-size:10px;font-weight:800;color:#7d93ad;margin-bottom:3px}
+.lab-cell b{font-size:14px;font-weight:900;color:#eaf4f1;font-variant-numeric:tabular-nums}
+.lab-cell.warn b{color:#ff8795}
+.lab-cell.good b{color:var(--lime-lit,#bef264)}
+.lab-rec{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.lab-rec .full{grid-column:1/-1}
+.lab-note{margin-top:10px;padding:9px 11px;border-radius:9px;background:rgba(56,189,248,.08);
+  border:1px solid rgba(56,189,248,.22);font-size:11px;line-height:1.65;color:#a9bdd3}
+.lab-tbl{width:100%;margin-top:6px;border-collapse:collapse;font-size:11px;font-variant-numeric:tabular-nums}
+.lab-tbl th{padding:4px 5px;text-align:right;color:#7d93ad;font-weight:800;border-bottom:1px solid rgba(45,212,191,.18)}
+.lab-tbl td{padding:4px 5px;text-align:right;color:#dcecff;border-bottom:1px solid rgba(255,255,255,.05)}
+.lab-tbl th:first-child,.lab-tbl td:first-child{text-align:left}
+.lab-empty{padding:14px 0;text-align:center;font-size:11px;color:#63788f}
+@media(max-width:680px){.lab-box{width:100%}}
 
 .confetti-piece{position:fixed;top:-24px;z-index:150;font-size:22px;pointer-events:none;animation:fall linear forwards}
 @keyframes fall{to{transform:translateY(110vh) rotate(540deg);opacity:.9}}
@@ -455,7 +490,12 @@ button{cursor:pointer;border:0;background:none;padding:0}
       <div class="tb-auth">● 정품 인증됨</div>
       <div class="tb-meta" id="tbMeta">v3.2.0</div>
       <div class="tb-meta">Powered by Google MediaPipe</div>
-      <button class="tb-btn" id="settingsBtn" type="button">설정</button>
+      
+      <div class="tb-btns">
+        <button class="tb-btn" id="settingsBtn" type="button">설정</button>
+        
+        <button class="tb-btn tb-lab-btn" id="labBtn" type="button">점프 연구소</button>
+      </div>
     </div>
 
     <div class="mode-badge" id="modeBadge">
@@ -529,7 +569,6 @@ button{cursor:pointer;border:0;background:none;padding:0}
       <div class="st" id="stGC" hidden><div class="st-lab" id="stGCLab"></div><div class="st-val" id="stGCVal"></div><div class="st-name" id="stGCName"></div></div>
     </div>
 
-    <div class="debug" id="debug" hidden></div>
   </div>
 
   <section class="panel" id="lobby" aria-label="모드 선택">
@@ -606,11 +645,13 @@ button{cursor:pointer;border:0;background:none;padding:0}
         <div class="rm-col"><h4>담긴 순서</h4><div class="rm-scroll"><div class="rm-order" id="rmOrder"></div></div></div>
       </div>
       <div class="rm-foot">
+        <div class="rm-slot-head"><strong>내 루틴</strong><span>현재 기기에 3개까지 저장</span><em class="rm-slot-msg" id="rmSlotMsg"></em></div>
+        <div class="rm-slots" id="rmSlots"></div>
         <span class="rm-sum" id="rmSum"></span>
         <button class="rm-ghost" id="rmBasic" type="button">기본 루틴</button>
         <button class="rm-ghost" id="rmGrade" type="button">급수 형식 (5개 × 32박)</button>
         <button class="rm-ghost" id="rmClose" type="button">닫기</button>
-        <button class="rm-save" id="rmSave" type="button">저장</button>
+        <button class="rm-save" id="rmSave" type="button">현재 루틴 사용</button>
       </div>
     </div>
   </div>
@@ -638,6 +679,57 @@ button{cursor:pointer;border:0;background:none;padding:0}
     <button class="m-act home" id="homePageBtn" type="button" style="margin-top:8px">홈페이지로 돌아가기</button>
   </div>
 </div>
+
+<div class="modal" id="jumpLabModal" role="dialog" aria-modal="true" aria-labelledby="labTitle" hidden>
+  <div class="modal-box lab-box">
+    <div class="modal-head"><div id="labTitle"><span>점프 연구소</span></div><button class="modal-close" id="labClose" type="button">닫기</button></div>
+
+    <div class="lab-sec">
+      <h4>실시간 · 점프 신호</h4>
+      <div class="lab-grid" id="labSig"></div>
+    </div>
+
+    <div class="lab-sec">
+      <h4>리듬</h4>
+      <div class="lab-grid" id="labRhythm"></div>
+    </div>
+
+    <div class="lab-sec">
+      <h4>인식 상태</h4>
+      <div class="lab-grid" id="labVision"></div>
+    </div>
+
+    <div class="lab-sec" id="labDuoSec" hidden>
+      <h4>2인 협동</h4>
+      <div class="lab-grid" id="labDuo"></div>
+    </div>
+
+    <div class="lab-sec">
+      <h4>최근 점프</h4>
+      <div id="labRecent"><div class="lab-empty">아직 기록된 점프가 없습니다.</div></div>
+    </div>
+
+    <hr class="m-div">
+    <div class="lab-sec" style="margin-top:0">
+      <h4>측정 기록</h4>
+      <div class="lab-grid">
+        <div class="lab-cell"><i>기록 스위치</i><b id="labRecState">꺼짐</b></div>
+        <div class="lab-cell"><i>쌓인 점프</i><b id="labRecCount">0</b></div>
+      </div>
+      <div class="lab-rec">
+        <button class="m-act full" id="labRecBtn" type="button">● 기록 시작</button>
+        <button class="m-act" id="labDlJson" type="button">JSON 내려받기</button>
+        <button class="m-act" id="labDlCsv" type="button">CSV 내려받기</button>
+        <button class="m-act logout full" id="labClear" type="button">기록 비우기</button>
+      </div>
+      <div class="lab-note">
+        기록에는 <b>숫자만</b> 남습니다. 영상·사진·이름·얼굴은 저장하지도, 내보내지도 않습니다.<br>
+        기록 스위치는 새로고침해도 유지되므로 켜 둔 채로 수업해도 됩니다.
+      </div>
+    </div>
+  </div>
+</div>
+
 <script type="module">
 
 const APP_VERSION = '3.2.0';
@@ -894,7 +986,6 @@ let appState='login';
 let mode='solo';                 
 let soloMode='free';             
 let soundOn = store.get('jmp_sound','1')!=='0';
-let debugOn=false;
 
 let stream=null, facingMode='user';
 let vision=null, pose=null, poseNum=0, poseBusy=false, poseLoading=null, poseInfo='';
@@ -1224,6 +1315,7 @@ function updateRig(p,lm){
 
 function onEngineEvent(p,ev){
   if(!running) return;
+  labRecordJump(p,ev);   
   const n = ev.type==='backfill' ? ev.n : 1;
   const t = ev.type==='jump' ? ev.t : null;
   if(mode==='solo') soloCounted(p,n);
@@ -1662,7 +1754,7 @@ function tick(now){
   if(inGame && m==='relay') updateRelayHud(now);
   if(inGame && m==='group') updateGroupHud(now);
   if(appState==='lobby'||(inGame&&m==='solo')) refreshGuide();
-  if(debugOn && now-lastDebugT>200){ lastDebugT=now; updateDebug(); }
+  labTick(now);   
 }
 
 function presenceText(p){
@@ -1722,15 +1814,6 @@ function updateRelayHud(now){
   }
 }
 
-function updateDebug(){
-  const lines=[`${poseInfo||'모델 준비 전'} · AI ${Math.round(inferHz)}Hz(${inferCost.toFixed(0)}ms) · 화면 ${Math.round(fps)}fps · 사람 ${personCount} · 감도 K ${K_UP.toFixed(2)}`];
-  players.forEach((p,i)=>{
-    const e=p.engine, hz=e.periodMs>0?(1000/e.periodMs).toFixed(1):'—';
-    lines.push(`P${i} ${p.seen?'●':'○'} 진폭 ${e.ampNow.toFixed(3)} · 문턱 ${e.curUPv.toFixed(3)} · 현재 ${e.curRiseNorm.toFixed(3)} · 리듬 ${hz}Hz · 신뢰도 ${e.periodR.toFixed(2)} · 흔들림 ${e.periodCV<=1?e.periodCV.toFixed(2):'—'} · 박자 ${e.rhythmOK?'O':'X'} · 카운트 ${e.gateOn?'ON':'off'} · ${p.count}회`);
-  });
-  $('debug').textContent=lines.join('\n');
-}
-
 const LINKS=[[11,12],[11,13],[13,15],[12,14],[14,16],[11,23],[12,24],[23,24],[23,25],[25,27],[24,26],[26,28]];
 const JOINTS=[11,12,23,24,25,26,27,28];
 const COLOR={ solo:'#5EEAD4', blue:'#38BDF8', red:'#FB7185' };
@@ -1767,7 +1850,8 @@ function render(now){
       ropeFor(p.rig, phase, RGB[key]);
     });
   }
-  if(debugOn && m==='solo' && players[0]?.seen) drawCalibration(players[0]);
+  
+  if(labOpen && jmpIsLab() && m==='solo' && players[0]?.seen) drawCalibration(players[0]);
 }
 
 function drawSkeleton(lm,color){
@@ -2281,7 +2365,27 @@ function stepPracticeSkill(d){
 }
 
 let routineDraft=null;
-function openRoutineEditor(){ routineDraft=groupRoutine.map(m=>({...m})); renderRoutineModal(); $('routineModal').hidden=false; }
+const ROUTINE_SLOT_COUNT=3;
+function validRoutine(d){ return Array.isArray(d)&&d.length&&d.every(m=>m&&SKILL_BY_ID[m.id]&&[8,16,32].includes(m.b)); }
+function routineSlotsKey(){
+  const c=store.json('jmp_license_v1'), key=String(c?.license_key||'device').replace(/[^A-Z0-9-]/gi,'');
+  return 'jmp_group_routine_slots_v1_'+key;
+}
+function readRoutineSlots(){
+  const saved=store.json(routineSlotsKey()), slots=Array.isArray(saved)?saved.slice(0,ROUTINE_SLOT_COUNT):[];
+  while(slots.length<ROUTINE_SLOT_COUNT) slots.push(null);
+  return slots.map(d=>validRoutine(d)?d:null);
+}
+function writeRoutineSlots(slots){ store.set(routineSlotsKey(),JSON.stringify(slots)); }
+function renderRoutineSlots(){
+  const slots=readRoutineSlots();
+  $('rmSlots').innerHTML=slots.map((d,i)=>{
+    const beats=d?d.reduce((sum,m)=>sum+m.b,0):0;
+    return `<div class="rm-slot"><strong>${i+1}</strong><span>${d?`${d.length}동작 · ${beats}박`:'비어 있음'}</span><button type="button" data-rm-load="${i}" ${d?'':'disabled'}>불러오기</button><button type="button" data-rm-save="${i}">저장</button></div>`;
+  }).join('');
+}
+function routineSlotMessage(t){ const el=$('rmSlotMsg'); el.textContent=t; clearTimeout(routineSlotMessage.timer); routineSlotMessage.timer=setTimeout(()=>{el.textContent='';},1800); }
+function openRoutineEditor(){ routineDraft=groupRoutine.map(m=>({...m})); $('rmSlotMsg').textContent=''; renderRoutineModal(); $('routineModal').hidden=false; }
 function closeRoutineEditor(){ $('routineModal').hidden=true; routineDraft=null; }
 function renderRoutineModal(){
   const d=routineDraft, at=id=>d.findIndex(m=>m.id===id);
@@ -2295,6 +2399,7 @@ function renderRoutineModal(){
   $('rmSum').innerHTML=`<b>${d.length}</b>개 동작 · <b>${T}</b>박 · ${b}BPM 약 <b>${Math.floor(sec/60)}분 ${sec%60}초</b>`;
   setText($('rmCount'),`${d.length}개 담김`);
   $('rmSave').disabled=!d.length;
+  renderRoutineSlots();
 }
 function groupRoutineSummary(){
   const b=+$('bpm').value||120, sec=Math.ceil(groupTotal()*60/b);
@@ -2353,6 +2458,21 @@ $('rmOrder').addEventListener('click',e=>{
   else if(b.dataset.up!=null){ const i=+b.dataset.up; if(i>0) [d[i-1],d[i]]=[d[i],d[i-1]]; }
   else if(b.dataset.down!=null){ const i=+b.dataset.down; if(i<d.length-1) [d[i+1],d[i]]=[d[i],d[i+1]]; }
   renderRoutineModal();
+});
+$('rmSlots').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b||!routineDraft) return;
+  const load=b.dataset.rmLoad, save=b.dataset.rmSave, slots=readRoutineSlots();
+  if(load!=null){
+    const d=slots[+load]; if(!d) return;
+    routineDraft=d.map(m=>({...m})); renderRoutineModal(); routineSlotMessage(`${+load+1}번 루틴을 불러왔습니다`);
+    return;
+  }
+  if(save!=null){
+    const i=+save;
+    if(!validRoutine(routineDraft)) return;
+    if(slots[i]&&!confirm(`${i+1}번 루틴을 현재 내용으로 덮어쓸까요?`)) return;
+    slots[i]=routineDraft.map(m=>({...m})); writeRoutineSlots(slots); renderRoutineSlots(); routineSlotMessage(`${i+1}번에 저장했습니다`);
+  }
 });
 $('rmBasic').addEventListener('click',()=>{ routineDraft=GROUP_BASIC.map(m=>({...m})); renderRoutineModal(); });
 $('rmGrade').addEventListener('click',()=>{ routineDraft=GROUP_GRADE.map(m=>({...m})); renderRoutineModal(); });
@@ -2415,13 +2535,6 @@ $('flipBtn').addEventListener('click',async()=>{
 $('homePageBtn').addEventListener('click',()=>{ location.href='./jumpmaster.html'; });
 $('logoutBtn').addEventListener('click',()=>{ _jmpClearCache(); location.reload(); });
 
-let tapTimes=[];
-$('dojangName').addEventListener('click',()=>{
-  const now=performance.now();
-  tapTimes=tapTimes.filter(t=>now-t<2500); tapTimes.push(now);
-  if(tapTimes.length>=5){ tapTimes=[]; debugOn=!debugOn; $('debug').hidden=!debugOn; if(debugOn) updateDebug(); }
-});
-
 document.addEventListener('visibilitychange',()=>{ if(document.hidden && (appState==='running'||appState==='countdown')) finish(true); });
 window.addEventListener('pagehide',()=>stopCamera());
 
@@ -2435,10 +2548,27 @@ restoreLobbyPrefs();
 applyModeUI();
 updateBest();
 
-const _JMP_EDGE_URL  = 'https://ebgoolsymyzkftvavpyj.supabase.co/functions/v1/verify-license';
-const _JMP_LS_KEY    = 'jmp_license_v1';
-const _JMP_CACHE_DAYS= 7;
+const _JMP_EDGE_URL         = 'https://ebgoolsymyzkftvavpyj.supabase.co/functions/v1/verify-license';
+const _JMP_LS_KEY           = 'jmp_license_v1';
+const _JMP_CACHE_DAYS       = 7;              
+const _JMP_TRIAL_CACHE_DAYS = 1;              
+const _JMP_HEARTBEAT_MS     = 30*60*1000;     
+const _JMP_FIRST_CHECK_MS   = 5*1000;         
+const _JMP_BLOCK_WATCH_MS   = 15*1000;        
+const _JMP_EXPIRY_WATCH_MS  = 60*1000;        
+const _JMP_BLOCK_MSG_KEY    = 'jmp_block_msg';
+
+const _JMP_SIGN_PUBKEY = {"kty":"EC","crv":"P-256",
+  "x":"TRVuOcoZYEagtQgi5GRgUOSIkAjiW_aUS4O9U6cfK0I",
+  "y":"IknjHnofBQw-5FhVBgeI2hx9WFT4OIs90G4aPYBNbuc"};
+
+const _JMP_LAB_KEY = 'JMP-2026-MASTER-0001';
+
+let _jmpAuth = { ok:false, key:'', beta:false, trial:false, exp:null };
+
 let _jmpFailCount=0, _jmpFailLockUntil=0;
+let _jmpHeartbeatTimer=null, _jmpBlockWatchTimer=null, _jmpExpiryWatchTimer=null;
+let _jmpPendingBlock=null;
 
 function _jmpGetOrCreateDeviceId(){
   const KEY='jmp_device_id';
@@ -2448,7 +2578,71 @@ function _jmpGetOrCreateDeviceId(){
 }
 function _jmpGetCache(){ return store.json(_JMP_LS_KEY); }
 function _jmpSetCache(d){ store.set(_JMP_LS_KEY,JSON.stringify(d)); }
-function _jmpClearCache(){ store.del(_JMP_LS_KEY); }
+function _jmpClearCache(){ store.del(_JMP_LS_KEY); _jmpAuth={ok:false,key:'',beta:false,trial:false,exp:null}; }
+
+let _jmpVerifyKeyP=null;
+function _jmpSignPubKey(){
+  if(!_jmpVerifyKeyP){
+    _jmpVerifyKeyP = crypto.subtle.importKey('jwk', _JMP_SIGN_PUBKEY,
+      { name:'ECDSA', namedCurve:'P-256' }, false, ['verify']);
+  }
+  return _jmpVerifyKeyP;
+}
+function _jmpB64urlToBytes(s){
+  s=String(s).replace(/-/g,'+').replace(/_/g,'/');
+  while(s.length%4) s+='=';
+  const bin=atob(s), out=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) out[i]=bin.charCodeAt(i);
+  return out;
+}
+
+async function _jmpCheckToken(cache){
+  if(!cache || !cache.tok) return 'none';
+
+  if(!(window.crypto && window.crypto.subtle)) return 'none';
+  try{
+    const parts=String(cache.tok).split('.');
+    if(parts.length!==2) return 'bad';
+    const key=await _jmpSignPubKey();
+    const ok=await crypto.subtle.verify({name:'ECDSA',hash:'SHA-256'}, key,
+      _jmpB64urlToBytes(parts[1]), new TextEncoder().encode(parts[0]));
+    if(!ok) return 'bad';
+
+    const c=JSON.parse(new TextDecoder().decode(_jmpB64urlToBytes(parts[0])));
+
+    if(!/^JMP-/.test(String(c.k||''))) return 'bad';
+    if(c.k !== cache.license_key) return 'bad';        
+    if(!c.sxp || Date.now() > c.sxp) return 'bad';     
+    if(c.exp && Date.now() > c.exp) return 'bad';      
+
+    _jmpSetCache(Object.assign({}, cache, {
+      dojang_name : c.dj || cache.dojang_name,
+      license_type: c.lt || cache.license_type,
+      is_trial    : !!c.tr,
+      is_beta     : !!c.bt,
+      expires_at  : c.exp ? new Date(c.exp).toISOString() : null
+    }));
+    _jmpAuth = { ok:true, key:c.k, beta:!!c.bt, trial:!!c.tr, exp:c.exp||null };
+    return 'ok';
+  }catch(e){ return 'bad'; }
+}
+
+async function _jmpSignatureAllows(cache){
+  const v=await _jmpCheckToken(cache);
+  if(v==='ok') return true;
+  try{ console.warn('[JMP] 라이선스 도장 확인 실패:', v); }catch(_){}
+  return false;
+}
+
+function _jmpIsCacheExpired(cache){
+  if(!cache) return true;
+  if(cache.expires_at){
+    const t=new Date(cache.expires_at).getTime();
+    if(!isNaN(t) && Date.now()>t) return true;
+  }
+  const limitDays = cache.is_trial ? _JMP_TRIAL_CACHE_DAYS : _JMP_CACHE_DAYS;
+  return (Date.now()-(cache.cached_at||0))/864e5 >= limitDays;
+}
 
 function licenseLabel(c){
   const t=String(c?.license_type||'').trim();
@@ -2468,8 +2662,31 @@ function showAuthed(c){
   $('loginScreen').hidden=true;
   $('app').hidden=false;
   appState='lobby';
+  applyJmpLabVisibility();     
+  _jmpStartHeartbeat();
   loop();
   openLobby();
+}
+
+function _jmpShowBlocked(info){
+  try{
+    $('app').hidden=true;
+    $('loginScreen').hidden=false;
+    const help=$('licenseHelp'); if(help) help.innerHTML=esc(info&&info.title||'라이선스를 확인할 수 없습니다');
+    const err=$('loginError');   if(err)  err.innerHTML = (info&&info.msg) || '';
+    const inp=$('licenseKeyInput'); if(inp) inp.value='';
+  }catch(e){}
+}
+function _jmpBlockMessage(result){
+  const r=result && result.reason;
+  if(r==='trial_expired') return { title:'체험 기간이 끝났습니다',
+    msg:'체험 기간이 모두 사용되었습니다. 계속 사용하시려면 정식 라이선스가 필요합니다.' };
+  if(r==='expired') return { title:'라이선스 기간이 끝났습니다',
+    msg:'사용 기간이 종료되었습니다. 연장 또는 재발급은 카카오톡으로 문의해 주세요.' };
+  if(r==='inactive') return { title:'라이선스가 중지되었습니다',
+    msg:'이 라이선스는 현재 사용이 중지되어 있습니다. 카카오톡으로 문의해 주세요.' };
+  return { title:'라이선스를 확인할 수 없습니다',
+    msg:'등록된 라이선스 정보를 찾을 수 없습니다. 카카오톡으로 문의해 주세요.' };
 }
 
 async function _jmpVerifyWithServer(license_key){
@@ -2477,6 +2694,25 @@ async function _jmpVerifyWithServer(license_key){
     body:JSON.stringify({license_key, device_id:_jmpGetOrCreateDeviceId()})});
   return await res.json();
 }
+
+function _jmpCacheFromResult(key,r,prev){
+  return {
+    license_key : key,
+    dojang_name : r.dojang_name || prev?.dojang_name,
+    license_type: r.license_type || prev?.license_type,
+    version     : r.version || prev?.version,
+    device_slots: r.device_slots || prev?.device_slots || [],
+    max_devices : r.max_devices || prev?.max_devices || 2,
+    is_trial    : !!r.is_trial,
+    is_beta     : !!r.is_beta,
+    expires_at  : r.expires_at || null,
+    days_left   : r.days_left ?? null,
+
+    tok         : r.tok || prev?.tok || null,
+    cached_at   : Date.now()
+  };
+}
+
 async function doLicenseActivate(){
   const input=$('licenseKeyInput'), errorEl=$('loginError'), btn=$('loginBtn');
   const key=input.value.trim().toUpperCase();
@@ -2497,15 +2733,23 @@ async function doLicenseActivate(){
       return;
     }
     _jmpFailCount=0;
-    const c={license_key:key, dojang_name:r.dojang_name, license_type:r.license_type, is_trial:!!r.is_trial,
-             version:r.version, device_slots:r.device_slots||[], max_devices:r.max_devices||2,
-             expires_at:r.expires_at||null, days_left:r.days_left??null, cached_at:Date.now()};
+    const c=_jmpCacheFromResult(key,r,_jmpGetCache());
     _jmpSetCache(c);
+
+    await _jmpCheckToken(_jmpGetCache());
+    if(!_jmpAuth.ok){
+
+      try{ console.warn('[JMP] 도장 없이 인증됨 — Supabase Secrets 의 AKM_SIGN_KEY 를 확인하세요.'); }catch(_){}
+      _jmpAuth.key=key; _jmpAuth.trial=!!r.is_trial; _jmpAuth.exp=r.expires_at?new Date(r.expires_at).getTime():null;
+    }
     initAudio();
-    showAuthed(c);
+    showAuthed(_jmpGetCache());
   }catch(e){
+
     const cache=_jmpGetCache();
-    if(cache && cache.license_key===key && (Date.now()-cache.cached_at)/864e5 < _JMP_CACHE_DAYS){ showAuthed(cache); return; }
+    if(cache && cache.license_key===key && !_jmpIsCacheExpired(cache) && await _jmpSignatureAllows(cache)){
+      showAuthed(cache); return;
+    }
     errorEl.textContent='네트워크 오류가 발생했습니다. 인터넷 연결을 확인해주세요.';
   }finally{
     btn.textContent='인증하기'; btn.disabled=false;
@@ -2514,11 +2758,321 @@ async function doLicenseActivate(){
 $('loginBtn').addEventListener('click',doLicenseActivate);
 $('licenseKeyInput').addEventListener('keydown',e=>{ if(e.key==='Enter') doLicenseActivate(); });
 
-{ 
-  const cache=_jmpGetCache();
-  if(cache && (Date.now()-cache.cached_at)/864e5 < _JMP_CACHE_DAYS) showAuthed(cache);
-  else { if(cache) _jmpClearCache(); $('loginScreen').hidden=false; }
+function _jmpIsTraining(){
+  return appState==='running' || appState==='countdown' || !!running;
 }
+function _jmpShouldBlock(result){
+  if(!result || result.valid) return false;
+  const r=result.reason;
+  if(!r) return true;                                   
+  
+  return r==='inactive' || r==='trial_expired' || r==='expired';
+}
+function _jmpApplyBlock(){
+  if(!_jmpPendingBlock) return;
+  if(_jmpIsTraining()) return;                          
+  const info=_jmpPendingBlock; _jmpPendingBlock=null;
+  if(_jmpHeartbeatTimer){ clearInterval(_jmpHeartbeatTimer); _jmpHeartbeatTimer=null; }
+  if(_jmpBlockWatchTimer){ clearInterval(_jmpBlockWatchTimer); _jmpBlockWatchTimer=null; }
+  if(_jmpExpiryWatchTimer){ clearInterval(_jmpExpiryWatchTimer); _jmpExpiryWatchTimer=null; }
+  _jmpClearCache();
+  try{ sessionStorage.setItem(_JMP_BLOCK_MSG_KEY, JSON.stringify(info)); }catch(e){}
+  location.reload();          
+}
+async function _jmpHeartbeat(){
+  const cache=_jmpGetCache();
+  if(!cache || !cache.license_key) return;
+  let result;
+  try{ result=await _jmpVerifyWithServer(cache.license_key); }
+  catch(e){ return; }          
+  if(result && result.valid){
+    _jmpSetCache(_jmpCacheFromResult(cache.license_key,result,cache));
+    await _jmpCheckToken(_jmpGetCache());
+    applyJmpLabVisibility();   
+    return;
+  }
+  if(_jmpShouldBlock(result)){ _jmpPendingBlock=_jmpBlockMessage(result); _jmpApplyBlock(); }
+}
+function _jmpStartHeartbeat(){
+  if(_jmpHeartbeatTimer) return;
+
+  setTimeout(()=>{
+    try{
+      const c=_jmpGetCache();
+      if(!c || !c.license_key) return;
+      if(c.cached_at && (Date.now()-c.cached_at)<60*1000) return;
+      _jmpHeartbeat();
+    }catch(e){}
+  }, _JMP_FIRST_CHECK_MS);
+  _jmpHeartbeatTimer=setInterval(_jmpHeartbeat,_JMP_HEARTBEAT_MS);
+  _jmpBlockWatchTimer=setInterval(()=>{ if(_jmpPendingBlock && !_jmpIsTraining()) _jmpApplyBlock(); },_JMP_BLOCK_WATCH_MS);
+
+  _jmpExpiryWatchTimer=setInterval(()=>{
+    const c=_jmpGetCache();
+    if(!c) return;
+    if(_jmpIsCacheExpired(c)){
+      _jmpPendingBlock=_jmpBlockMessage({reason:c.is_trial?'trial_expired':'expired'});
+      _jmpApplyBlock();
+    }
+  },_JMP_EXPIRY_WATCH_MS);
+}
+
+(async function _jmpBoot(){
+  
+  try{
+    const raw=sessionStorage.getItem(_JMP_BLOCK_MSG_KEY);
+    if(raw){
+      sessionStorage.removeItem(_JMP_BLOCK_MSG_KEY);
+      _jmpShowBlocked(JSON.parse(raw));
+      $('loginScreen').hidden=false;
+      return;
+    }
+  }catch(e){}
+
+  const cache=_jmpGetCache();
+  if(!cache || !cache.license_key){ $('loginScreen').hidden=false; return; }
+
+  if(!_jmpIsCacheExpired(cache) && await _jmpSignatureAllows(cache)){
+    showAuthed(_jmpGetCache());
+    return;
+  }
+
+  try{
+    const r=await _jmpVerifyWithServer(cache.license_key);
+    if(r && r.valid){
+      _jmpSetCache(_jmpCacheFromResult(cache.license_key,r,cache));
+      await _jmpCheckToken(_jmpGetCache());
+      if(!_jmpAuth.ok){ _jmpAuth.key=cache.license_key; _jmpAuth.trial=!!r.is_trial; }
+      showAuthed(_jmpGetCache());
+      return;
+    }
+    if(_jmpShouldBlock(r)){ _jmpClearCache(); _jmpShowBlocked(_jmpBlockMessage(r)); $('loginScreen').hidden=false; return; }
+  }catch(e){}
+
+  _jmpClearCache();
+  $('loginScreen').hidden=false;
+})();
+
+const JMP_LAB_LOG_KEY  = 'jmp_lab_log_v1';
+const JMP_LAB_ON_KEY   = 'jmp_lab_rec_v1';
+const JMP_LAB_MAX      = 3000;         
+
+let labOpen=false, labRecording=false, labLog=[], labRecent=[], lastLabT=0;
+
+function jmpIsLab(){
+  return !!(_jmpAuth && _jmpAuth.ok && _jmpAuth.beta && _jmpAuth.key===_JMP_LAB_KEY);
+}
+
+function applyJmpLabVisibility(){
+  const on=jmpIsLab();
+  document.body.classList.toggle('jmp-beta-on', on);
+  if(!on){
+    labRecording=false;                 
+    labOpen=false;
+    const m=$('jumpLabModal'); if(m) m.hidden=true;
+  }
+}
+
+function labLoad(){
+  try{ labRecording = store.get(JMP_LAB_ON_KEY,'0')==='1'; }catch(e){ labRecording=false; }
+  try{ const v=store.json(JMP_LAB_LOG_KEY); labLog=Array.isArray(v)?v:[]; }catch(e){ labLog=[]; }
+}
+function labSave(){
+  try{ store.set(JMP_LAB_LOG_KEY, JSON.stringify(labLog)); }catch(e){}
+}
+const labRound=(v,n=3)=>(v==null||!isFinite(v))?null:Number(Number(v).toFixed(n));
+function labVis(p,i){
+  try{ const v=p?.lm?.[i]?.visibility; return v==null?null:labRound(v,2); }catch(e){ return null; }
+}
+
+function labRecordJump(p,ev){
+  if(!jmpIsLab()) return;
+  const e=p.engine, now=performance.now();
+  const row={
+    ts        : new Date().toISOString(),
+    mode      : mode,
+    solo_mode : mode==='solo' ? soloMode : null,
+    pid       : p.id ?? 0,
+    kind      : ev.type,                                  
+    n         : ev.type==='backfill' ? ev.n : 1,
+    peak_ms   : ev.type==='jump' ? labRound(now-ev.t,1) : null,  
+    amp       : labRound(e.ampNow),                       
+    thr       : labRound(e.curUPv),                       
+    rise      : labRound(e.curRiseNorm),                  
+    base      : labRound(e.baseNow),                      
+    period_ms : labRound(e.periodMs,1),
+    bpm       : e.periodMs>0 ? labRound(60000/e.periodMs,1) : null,
+    period_r  : labRound(e.periodR,2),                    
+    period_cv : e.periodCV<1 ? labRound(e.periodCV,3) : null,   
+    rhythm_ok : !!e.rhythmOK,
+    gate      : !!e.gateOn,
+    k_up      : labRound(K_UP,2),                         
+    count     : p.count,
+    fps       : labRound(fps,1),
+    infer_hz  : labRound(inferHz,1),
+    infer_ms  : labRound(inferCost,1),
+    persons   : personCount,
+    vis_sh    : labVis(p,11), vis_hip:labVis(p,23), vis_ank:labVis(p,27),
+    sync_diff : (mode==='duo' && team.lastDiff!=null) ? labRound(team.lastDiff,3) : null
+  };
+  labRecent.unshift(row); if(labRecent.length>12) labRecent.pop();
+  if(labRecording){
+    labLog.push(row);
+    if(labLog.length>JMP_LAB_MAX) labLog.splice(0, labLog.length-JMP_LAB_MAX);
+    labSave();
+  }
+  if(labOpen){ labRenderRecent(); labRenderCount(); }
+}
+
+function labCell(label,val,cls){
+  return `<div class="lab-cell${cls?' '+cls:''}"><i>${esc(label)}</i><b>${esc(val)}</b></div>`;
+}
+const labNum=(v,n=3,unit='')=>(v==null||!isFinite(v))?'—':Number(v).toFixed(n)+unit;
+
+function labTick(now){
+  if(!labOpen || !jmpIsLab()) return;
+  if(now-lastLabT<200) return;
+  lastLabT=now;
+
+  const ps=players.length?players:[];
+  let sig='', rh='', vis='';
+  if(!ps.length){
+    sig=labCell('상태','카메라 대기');
+  }
+  ps.forEach((p,i)=>{
+    const e=p.engine, tag=ps.length>1?`P${i} `:'';
+    const state = !p.seen ? '전신 인식 대기'
+                : e.calibrating ? '움직임 분석 중'
+                : e.jumpState==='air' ? '공중'
+                : e.gateOn ? '카운트 ON' : '지상';
+    sig += labCell(tag+'상태', state, e.gateOn?'good':'');
+    sig += labCell(tag+'기준선', labNum(e.baseNow));
+    sig += labCell(tag+'현재 상승', labNum(e.curRiseNorm));
+    sig += labCell(tag+'진폭', labNum(e.ampNow), e.ampNow>=ENGINE.MIN_AMP_STRONG?'good':'');
+    sig += labCell(tag+'이륙 문턱', labNum(e.curUPv));
+
+    const hz = e.periodMs>0 ? 1000/e.periodMs : null;
+    rh += labCell(tag+'점프 주기', labNum(e.periodMs,0,' ms'));
+    rh += labCell(tag+'분당 횟수', hz?labNum(hz*60,0,' 회'):'—');
+    rh += labCell(tag+'주기 신뢰도', labNum(e.periodR,2), e.periodR>=ENGINE.R_PERIODIC?'good':'');
+    
+    rh += labCell(tag+'주기 흔들림', e.periodCV<1?labNum(e.periodCV,3):'—', (e.periodCV<=0.10)?'good':'');
+    rh += labCell(tag+'박자 확증', e.rhythmOK?'O':'X', e.rhythmOK?'good':'');
+
+    vis += labCell(tag+'전신', p.seen?'인식됨':'없음', p.seen?'good':'warn');
+    vis += labCell(tag+'어깨', labNum(labVis(p,11),2));
+    vis += labCell(tag+'골반', labNum(labVis(p,23),2));
+    vis += labCell(tag+'발목', labNum(labVis(p,27),2));
+  });
+  rh  += labCell('감지 지연', ENGINE.FILTER_LAG_MS+' ms');
+  rh  += labCell('감도 K_UP', labNum(K_UP,2));
+  vis += labCell('화면', labNum(fps,0,' fps'), fps<35?'warn':'good');
+  vis += labCell('AI 추론', labNum(inferHz,0,' Hz'));
+  vis += labCell('추론 시간', labNum(inferCost,0,' ms'));
+  vis += labCell('보이는 사람', String(personCount));
+  vis += labCell('화질 단계', quality==='low'?'낮춤':'높음', quality==='low'?'warn':'');
+
+  $('labSig').innerHTML=sig;
+  $('labRhythm').innerHTML=rh;
+  $('labVision').innerHTML=vis;
+
+  const duoSec=$('labDuoSec');
+  if(mode==='duo' && ps.length>=2){
+    duoSec.hidden=false;
+    const a=ps[0], b=ps[1];
+    let d='';
+    d += labCell('마지막 싱크 차이', team.lastDiff!=null?labNum(team.lastDiff,3,' 초'):'—',
+                 (team.lastDiff!=null&&team.lastDiff<=SYNC.PERFECT_S)?'good':'');
+    d += labCell('짝 허용 시간', labNum(pairWindowMs(a,b),0,' ms'));
+    d += labCell('청 추적 X', labNum(a.trackX,0));
+    d += labCell('홍 추적 X', labNum(b.trackX,0));
+    d += labCell('청 짝지음', a.paired?'O':'대기');
+    d += labCell('홍 짝지음', b.paired?'O':'대기');
+    $('labDuo').innerHTML=d;
+  }else duoSec.hidden=true;
+}
+
+function labRenderRecent(){
+  const box=$('labRecent'); if(!box) return;
+  if(!labRecent.length){ box.innerHTML='<div class="lab-empty">아직 기록된 점프가 없습니다.</div>'; return; }
+  const rows=labRecent.map(r=>`<tr>
+    <td>${esc(r.ts.slice(11,19))}</td><td>${r.pid}</td><td>${esc(r.kind==='backfill'?'소급 '+r.n:'점프')}</td>
+    <td>${r.peak_ms==null?'—':r.peak_ms}</td><td>${r.amp==null?'—':r.amp}</td>
+    <td>${r.thr==null?'—':r.thr}</td><td>${r.bpm==null?'—':r.bpm}</td><td>${r.count}</td></tr>`).join('');
+  box.innerHTML=`<table class="lab-tbl"><thead><tr>
+    <th>시각</th><th>P</th><th>종류</th><th>지연ms</th><th>진폭</th><th>문턱</th><th>분당</th><th>누적</th>
+    </tr></thead><tbody>${rows}</tbody></table>`;
+}
+function labRenderCount(){
+  setText($('labRecCount'), fmt(labLog.length));
+  setText($('labRecState'), labRecording?'켜짐 · 쌓는 중':'꺼짐');
+  const b=$('labRecBtn'); if(b) b.textContent = labRecording?'■ 기록 멈추기':'● 기록 시작';
+}
+
+function openJumpLab(){
+  if(!jmpIsLab()) return;              
+  labOpen=true;
+  $('jumpLabModal').hidden=false;
+  labRenderRecent(); labRenderCount();
+  lastLabT=0; labTick(performance.now());
+}
+function closeJumpLab(){ labOpen=false; $('jumpLabModal').hidden=true; }
+
+function labDownload(name,text,type){
+  try{
+    const blob=new Blob([text],{type:type+';charset=utf-8'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url; a.download=name; document.body.appendChild(a); a.click();
+    setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); },400);
+  }catch(e){ alert('내려받기에 실패했습니다.'); }
+}
+function labStamp(){
+  const d=new Date(), p=n=>String(n).padStart(2,'0');
+  return `${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}`;
+}
+const LAB_COLS=['ts','mode','solo_mode','pid','kind','n','peak_ms','amp','thr','rise','base',
+  'period_ms','bpm','period_r','period_cv','rhythm_ok','gate','k_up','count','fps','infer_hz',
+  'infer_ms','persons','vis_sh','vis_hip','vis_ank','sync_diff'];
+function labToCsv(){
+  const head=LAB_COLS.join(',');
+  const body=labLog.map(r=>LAB_COLS.map(k=>{
+    const v=r[k];
+    if(v==null) return '';
+    const s=String(v);
+    return /[",\n]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s;
+  }).join(',')).join('\n');
+  return '﻿'+head+'\n'+body;      // BOM — 엑셀에서 한글이 깨지지 않게
+}
+
+/* ── 버튼 연결 ────────────────────────────────────────────── */
+labLoad();
+$('labBtn')?.addEventListener('click',openJumpLab);
+$('labClose')?.addEventListener('click',closeJumpLab);
+$('labRecBtn')?.addEventListener('click',()=>{
+  if(!jmpIsLab()) return;
+  labRecording=!labRecording;
+  store.set(JMP_LAB_ON_KEY, labRecording?'1':'0');
+  labRenderCount();
+});
+$('labDlJson')?.addEventListener('click',()=>{
+  if(!jmpIsLab()||!labLog.length) return;
+  labDownload(`jumplab_${labStamp()}.json`, JSON.stringify({
+    app:'AI JUMP MASTER', version:APP_VERSION, exported_at:new Date().toISOString(),
+    note:'숫자 계측값만 들어 있습니다. 영상·사진·이름은 수집하지 않습니다.',
+    count:labLog.length, rows:labLog
+  },null,2),'application/json');
+});
+$('labDlCsv')?.addEventListener('click',()=>{
+  if(!jmpIsLab()||!labLog.length) return;
+  labDownload(`jumplab_${labStamp()}.csv`, labToCsv(), 'text/csv');
+});
+$('labClear')?.addEventListener('click',()=>{
+  if(!jmpIsLab()) return;
+  if(!confirm('쌓인 측정 기록을 모두 지웁니다. 계속할까요?')) return;
+  labLog=[]; labRecent=[]; labSave(); labRenderRecent(); labRenderCount();
+});
+
 </script>
 </body>
 </html>
