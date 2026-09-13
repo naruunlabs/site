@@ -284,7 +284,7 @@ button{cursor:pointer;border:0;background:none;padding:0}
   width:clamp(238px,20vw,330px);padding:11px 13px 9px;border:1px solid rgba(94,234,212,.3);border-radius:13px;
   background:linear-gradient(135deg,rgba(3,13,25,.82),rgba(4,25,32,.66));box-shadow:0 8px 24px rgba(0,0,0,.22);
   text-shadow:none;pointer-events:none}
-html body:not(.jmp-pilot-hud) #jmpPilotGraph,body:not(.jmp-pilot-solo) #jmpPilotGraph,.jmp-lite-hud #jmpPilotGraph,#app.lobby-open #jmpPilotGraph{display:none!important}
+html body:not(.jmp-pilot-hud) #jmpPilotGraph,body:not(.jmp-pilot-solo) #jmpPilotGraph,#app.lobby-open #jmpPilotGraph{display:none!important}
 .jpg-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:5px}
 .jpg-head b{font-size:12px;color:#f4fffd}.jpg-head span{font-family:var(--num);font-size:10px;font-weight:850;color:var(--lime-lit)}
 #jmpPilotSvg{display:block;width:100%;height:66px;overflow:visible}
@@ -1866,6 +1866,30 @@ const JOINTS=[11,12,23,24,25,26,27,28];
 const COLOR={ solo:'#5EEAD4', blue:'#38BDF8', red:'#FB7185' };
 const RGB={ solo:'rgba(94,234,212,', blue:'rgba(56,189,248,', red:'rgba(251,113,133,' };
 
+function gBeatTarget(cx,cy,base,bf,alpha=1,label=''){
+  const q=gmod(bf,1), hit=Math.pow(1-q,7), hi=quality==='high';
+  ctx.save(); ctx.globalAlpha=alpha; ctx.lineJoin='round';
+  const rings=[
+    {k:2.55,c:'rgba(56,189,248,.28)',w:1.3},
+    {k:1.75,c:'rgba(94,234,212,.48)',w:1.8},
+    {k:1.05,c:'rgba(190,242,100,.82)',w:2.4}
+  ];
+  for(const r of rings){
+    const s=base*(1+(r.k-1)*(1-q));
+    ctx.strokeStyle=r.c; ctx.lineWidth=Math.max(1,r.w);
+    if(hi&&r.k===1.05){ ctx.shadowColor='#A3E635'; ctx.shadowBlur=(5+10*hit)*view.dpr; }
+    ctx.strokeRect(cx-s/2,cy-s/2,s,s); ctx.shadowBlur=0;
+  }
+  ctx.strokeStyle=`rgba(190,242,100,${.72+.28*hit})`; ctx.lineWidth=Math.max(2,2.2+2.5*hit);
+  ctx.strokeRect(cx-base/2,cy-base/2,base,base);
+  if(hit>.02){ ctx.fillStyle=`rgba(190,242,100,${hit*.34})`; ctx.fillRect(cx-base/2,cy-base/2,base,base); }
+  if(label){
+    ctx.fillStyle='rgba(234,244,241,.88)'; ctx.font=`800 ${Math.max(11,base*.24)}px 'JM Noto KR','Noto Sans KR',sans-serif`;
+    ctx.textAlign='center'; ctx.textBaseline='top'; ctx.shadowColor='#000'; ctx.shadowBlur=5*view.dpr; ctx.fillText(label,cx,cy+base*1.45);
+  }
+  ctx.restore();
+}
+
 function render(now){
   sizeCanvas();
   const {W,H}=view;
@@ -1888,15 +1912,16 @@ function render(now){
     const key = players.length===2 ? (i===0?'blue':'red') : 'solo';
     drawSkeleton(p.lm, COLOR[key]);
   });
-  if(inGame && (m==='duo'||m==='relay')){
+  if(inGame && m==='relay'){
     const phase=(now-gameStartPerf)/beatMs + 0.5 + ROPE.LEAD;   
     players.forEach((p,i)=>{
       if(!p.rig || now-p.lastSeen>600) return;
       if(m==='relay' && relay.changing) return;
-      const key = m==='duo' ? (i===0?'blue':'red') : 'solo';
-      ropeFor(p.rig, phase, RGB[key]);
+      ropeFor(p.rig, phase, RGB.solo);
     });
   }
+  
+  if(inGame && m==='duo') gBeatTarget(W/2,H*.23,Math.min(W,H)*.052,(now-gameStartPerf)/beatMs,1,'함께 착지');
   
   if(labOpen && jmpIsLab() && m==='solo' && players[0]?.seen) drawCalibration(players[0]);
 }
@@ -1942,6 +1967,7 @@ function drawCalibration(p){
 function cubic(a,b,c,e,t){ const m=1-t; return m*m*m*a+3*m*m*t*b+3*m*t*t*c+t*t*t*e; }
 function cubicD(a,b,c,e,t){ const m=1-t; return 3*m*m*(b-a)+6*m*t*(c-b)+3*t*t*(e-c); }
 function ropeFor(rig,phase,rgb){
+  if(quality==='low'){ ropeOnce(rig,phase,rgb,1); return; } 
   for(let i=3;i>=0;i--) ropeOnce(rig, phase-i*ROPE.TRAIL_GAP, rgb, i?0.16/i:1);   
 }
 function ropeOnce(rig,phase,rgb,am){
@@ -2138,11 +2164,14 @@ function gDrawCoach(J,u,ground,p,glowK,bf){
     ctx.shadowBlur=0; ctx.fillStyle='#BEF264';
     ctx.beginPath(); ctx.moveTo(ax+ux*ah,ay+uy*ah); ctx.lineTo(ax-ux*ah*.4-uy*ah*.55,ay-uy*ah*.4+ux*ah*.55); ctx.lineTo(ax-ux*ah*.4+uy*ah*.55,ay-uy*ah*.4-ux*ah*.55); ctx.closePath(); ctx.fill();
   }else{
-    ctx.beginPath();
-    ctx.moveTo(J.hL.x,J.hL.y); ctx.bezierCurveTo(J.hL.x-u*.02,gy,J.hR.x-(J.hL.x-J.hR.x)*.2-u*.3,gy+u*.02,J.hR.x-u*.06,gy);
-    ctx.moveTo(J.hR.x,J.hR.y); ctx.bezierCurveTo(J.hR.x+u*.02,gy,J.hL.x+u*.3,gy+u*.02,J.hL.x+u*.06,gy);
-    ctx.moveTo(J.hR.x-u*.06,gy); ctx.lineTo(J.hL.x+u*.06,gy);
-    ctx.stroke();
+    const turns=p.arms==='double'?2:1, th=(gmod(bf*turns,1)*Math.PI*2)+Math.PI;
+    const hx=(J.hL.x+J.hR.x)/2, hy=(J.hL.y+J.hR.y)/2, reach=ground-hy+u*.035;
+    const ropeY=hy-Math.cos(th)*reach, bow=.18+.82*Math.abs(Math.cos(th));
+    ctx.globalAlpha=.36+.54*Math.abs(Math.cos(th));
+    ctx.beginPath(); ctx.moveTo(J.hL.x,J.hL.y);
+    ctx.bezierCurveTo(J.hL.x-u*.18*bow,ropeY,J.hR.x+u*.18*bow,ropeY,J.hR.x,J.hR.y); ctx.stroke();
+    if(Math.cos(th)<-.72){ ctx.shadowBlur=0; ctx.strokeStyle=`rgba(190,242,100,${.35+.5*glowK})`; ctx.lineWidth=Math.max(1,u*.007);
+      ctx.beginPath(); ctx.moveTo(hx-u*.22,gy); ctx.lineTo(hx+u*.22,gy); ctx.stroke(); }
     if(p.arms==='double'){ ctx.shadowBlur=0; ctx.strokeStyle='rgba(190,242,100,.85)'; ctx.lineWidth=Math.max(1.5,u*.008);
       for(const h of [J.hL,J.hR]){ for(let i=0;i<2;i++){ ctx.beginPath(); ctx.arc(h.x,h.y,u*(.04+i*.025),-.9,.9+Math.PI*.2); ctx.stroke(); } } }
   }
@@ -2181,7 +2210,7 @@ function gPadFoot(f){
   if(f.st==='kick') y-=.2; if(f.st==='back') y+=.16; if(f.st==='knee') y-=.06;
   return {x,y,a:f.a||0};
 }
-function gDrawPad(cx,cy,pw,ph,pA,pB,tt,beatGlow,alphaAll,big){
+function gDrawPad(cx,cy,pw,ph,pA,pB,tt,beatGlow,alphaAll,big,bf=null){
   const r=Math.min(pw,ph)*.08;
   ctx.save(); ctx.globalAlpha=alphaAll;
   
@@ -2196,6 +2225,7 @@ function gDrawPad(cx,cy,pw,ph,pA,pB,tt,beatGlow,alphaAll,big){
     ctx.fillStyle='rgba(234,244,241,.55)'; ctx.font=`800 ${Math.max(10,ph*.055)}px 'JM Noto KR','Noto Sans KR',sans-serif`; ctx.textAlign='left'; ctx.textBaseline='middle';
     ctx.fillText('앞 ↑',cx-pw/2+pw*.05,cy-ph/2+ph*.07); ctx.fillText('뒤 ↓',cx-pw/2+pw*.05,cy+ph/2-ph*.07);
   }
+  if(big && bf!=null) gBeatTarget(cx,cy,Math.min(pw,ph)*.2,bf,alphaAll,'');
   
   const p=tt<.5?pA:pB;
   for(const side of ['L','R']){
@@ -2353,7 +2383,7 @@ function drawGroupScene(now){
     const B=gCoachAt(bf,H*.5,W*.24,H*.79,pulse);
     
     const ph=H*.46, pcx=W*.56, pcy=H*.64;
-    gDrawPad(pcx,pcy,ph,ph,B.pA,B.pB,B.tt,pulse,1,true);
+    gDrawPad(pcx,pcy,ph,ph,B.pA,B.pB,B.tt,pulse,1,true,bf);
     
     const nph=ph*.3, ny=pcy-ph/2-H*.1-nph/2, nP=B.tt>.5?B.pC:B.pB;
     gDrawPad(pcx,ny,nph,nph,nP,nP,0,0,.72,false);
@@ -2481,7 +2511,10 @@ function loop(){
     const now=performance.now();
     fpsFrames++;
     if(now-fpsT>=2000){
-      fps=fpsFrames*1000/(now-fpsT); fpsFrames=0; fpsT=now; quality = fps<35 ? 'low' : 'high';
+      fps=fpsFrames*1000/(now-fpsT); fpsFrames=0; fpsT=now;
+
+      if(quality==='high' && fps<15) quality='low';
+      else if(quality==='low' && fps>18) quality='high';
       document.body.classList.toggle('jmp-lite-hud',quality==='low');
     }
     if(appState!=='login'){
