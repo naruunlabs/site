@@ -1538,7 +1538,7 @@ function refreshGuide(){
   else if(appState==='lobby'){
     if(mode==='group') text='단체 리듬은 카메라를 쓰지 않습니다 · 시작하면 카메라가 꺼져요';
     else if(!stream||!pose) text='';
-    else if(mode==='duo') text= personCount>=2 ? '두 사람 모두 인식됨 · 시작을 누르세요' : `${personCount}/2명 인식 · 두 사람이 좌우로 나란히 서세요`;
+    else if(mode==='duo') text= personCount>=2 ? '두 사람 모두 인식됨 · 시작을 누르세요' : personCount===1 ? '1명 인식됨 · 먼저 시작하거나 상대를 기다릴 수 있어요' : '사람을 찾는 중 · 한 명부터 시작할 수 있어요';
     else if(!players[0]?.seen) text='전신이 보이게 뒤로 물러서세요';
     else if(players[0].engine.calibrating) text='기준 잡는 중…';
     else text= mode==='relay' ? '1번 주자가 화면 가운데에 서세요' : '';
@@ -1598,10 +1598,10 @@ async function boot(){
       ensurePlayers(neededPoses());
       await ensurePose(neededPoses());
       if(mode==='duo'){
-        guideOverride='두 사람의 기준을 잡는 중입니다…'; refreshGuide();
-        const ready=await waitForPlayersReady(2,6000);
+        guideOverride='인식된 사람의 기준을 잡는 중입니다…'; refreshGuide();
+        const ready=await waitForPlayersReady(1,6000);
         guideOverride=''; refreshGuide();
-        if(!ready){ setLobbyError('두 사람의 전신이 모두 보이고 움직임 분석이 끝난 뒤 시작해주세요.'); bootBusy=false; $('playBtn').disabled=false; return; }
+        if(!ready){ setLobbyError('한 명 이상의 전신이 보이고 움직임 분석이 끝난 뒤 시작해주세요.'); bootBusy=false; $('playBtn').disabled=false; return; }
       }
     }catch(e){
       console.error(e);

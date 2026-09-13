@@ -3586,10 +3586,10 @@ body.hud-v21.akm-ui.sparring-mode .stats-row{
 body.akm-pilot-hud.playing-ui #kickPilotGraph{display:block}
 body.balloon-mode #kickPilotGraph,body.sparring-mode #kickPilotGraph{display:none!important}
 .kt-wing{position:absolute;top:21%;width:clamp(150px,17vw,255px);filter:drop-shadow(0 0 7px rgba(72,217,255,.38))}.kt-wing.left{right:calc(50% + clamp(80px,10vw,175px));text-align:right}.kt-wing.right{left:calc(50% + clamp(80px,10vw,175px))}
-.kt-wing strong{display:block;font:1000 clamp(31px,4.2vw,68px)/.9 var(--num);letter-spacing:-.04em;color:#fff}.kt-wing small{display:block;margin-top:7px;font-size:clamp(9px,.8vw,13px);font-weight:1000;letter-spacing:.14em}.kt-wing.left small{color:#ff8b2c}.kt-wing.right small{color:#48d9ff}
+.kt-title{display:block;margin-bottom:8px;font-size:clamp(15px,1.35vw,22px);font-weight:1000;letter-spacing:-.02em;color:#fff}.kt-wing strong{display:block;font:1000 clamp(31px,4.2vw,68px)/.9 var(--num);letter-spacing:-.04em;color:#fff}.kt-wing small{display:block;margin-top:7px;font-size:clamp(10px,.85vw,14px);font-weight:1000;letter-spacing:.12em}.kt-wing.left small{color:#ff8b2c}.kt-wing.right small{color:#48d9ff}
 .kt-bars{height:60px;display:flex;align-items:flex-end;gap:4px;margin-top:9px}.kt-wing.left .kt-bars{justify-content:flex-end}.kt-bars i{width:clamp(7px,.7vw,11px);height:100%;transform:scaleY(var(--p,.15));transform-origin:bottom;transition:transform .16s cubic-bezier(.2,.8,.2,1);background:linear-gradient(#ffd166,#ff6a1a);box-shadow:0 0 7px rgba(255,106,26,.55)}.kt-wing.right .kt-bars i{background:linear-gradient(#b9f4ff,#48d9ff);box-shadow:0 0 7px rgba(72,217,255,.55)}
 .kt-trace{height:2px;margin-top:8px;background:linear-gradient(90deg,transparent,#ff8b2c 22%,#48d9ff 75%,transparent);box-shadow:0 0 8px #48d9ff}
-.kt-duo{display:none;position:absolute;left:50%;top:17%;bottom:20%;width:66px;transform:translateX(-50%);text-align:center}.kt-duo .axis{position:absolute;left:28px;top:38px;bottom:58px;width:10px;background:rgba(255,255,255,.11);overflow:hidden}.kt-duo .axis i{position:absolute;left:0;right:0;bottom:0;height:var(--p,15%);background:linear-gradient(#ffd166,#ff6a1a 48%,#48d9ff);box-shadow:0 0 10px #48d9ff;transition:height .16s ease-out}.kt-duo b{font:1000 20px var(--num);color:#fff}.kt-duo span{position:absolute;bottom:27px;left:50%;transform:translateX(-50%);font:1000 10px var(--num);white-space:nowrap;color:#ffd166}.kt-duo:after{content:'KICK AXIS';position:absolute;bottom:4px;left:50%;transform:translateX(-50%);font-size:8px;letter-spacing:.16em;white-space:nowrap;color:#48d9ff}
+.kt-duo{display:none;position:absolute;left:50%;top:17%;bottom:20%;width:84px;transform:translateX(-50%);text-align:center}.kt-duo .axis{position:absolute;top:46px;bottom:58px;width:11px;background:rgba(255,255,255,.11);overflow:hidden}.kt-duo .axis.blue{left:22px}.kt-duo .axis.red{right:22px}.kt-duo .axis i{position:absolute;left:0;right:0;bottom:0;height:var(--p,15%);transition:height .16s ease-out}.kt-duo .axis.blue i{background:linear-gradient(#b9f4ff,#2b7fff);box-shadow:0 0 10px #2b7fff}.kt-duo .axis.red i{background:linear-gradient(#ffd0d5,#e3172e);box-shadow:0 0 10px #e3172e}.kt-duo .duo-name{position:absolute;top:0;font:1000 12px var(--num)}.kt-duo .duo-name.blue{left:13px;color:#7db7ff}.kt-duo .duo-name.red{right:13px;color:#ff7c89}.kt-duo .duo-val{position:absolute;top:18px;font:1000 18px var(--num);color:#fff}.kt-duo .duo-val.blue{left:12px}.kt-duo .duo-val.red{right:12px}.kt-duo .duo-count{position:absolute;bottom:27px;left:50%;transform:translateX(-50%);font:1000 10px var(--num);white-space:nowrap;color:#ffd166}.kt-duo:after{content:'KICK AXIS';position:absolute;bottom:4px;left:50%;transform:translateX(-50%);font-size:8px;letter-spacing:.16em;white-space:nowrap;color:#48d9ff}
 body.two-player-mode .kt-wing{display:none}body.two-player-mode .kt-duo{display:block}
 body.akm-lite-fx .kt-wing{filter:none}body.akm-lite-fx .kt-bars i,body.akm-lite-fx .kt-duo .axis i{box-shadow:none}
 @media (max-width:700px),(max-height:520px){.kt-wing{transform:scale(.8)}.kt-wing.left{transform-origin:right top}.kt-wing.right{transform-origin:left top}}
@@ -3926,9 +3926,9 @@ body.akm-lite-fx .kt-wing{filter:none}body.akm-lite-fx .kt-bars i,body.akm-lite-
     </div>
 
     <aside id="kickPilotGraph" aria-label="실시간 발차기 텔레메트리">
-      <div class="kt-wing left"><strong id="kpgScoreVal">—</strong><small>KICK SCORE</small><div class="kt-bars" id="kpgScoreBars"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="kt-trace"></div></div>
-      <div class="kt-wing right"><strong id="kpgHeightVal">—</strong><small>KICK HEIGHT · %</small><div class="kt-bars" id="kpgHeightBars"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="kt-trace"></div></div>
-      <div class="kt-duo"><b id="kpgDuoVal">—</b><div class="axis"><i id="kpgDuoAxis"></i></div><span id="kpgCount">0/8</span></div>
+      <div class="kt-wing left"><span class="kt-title">발차기 점수</span><strong id="kpgScoreVal">—</strong><small>최근 8회 · KICK SCORE</small><div class="kt-bars" id="kpgScoreBars"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="kt-trace"></div></div>
+      <div class="kt-wing right"><span class="kt-title">발차기 높이</span><strong id="kpgHeightVal">—</strong><small>최근 8회 · HEIGHT %</small><div class="kt-bars" id="kpgHeightBars"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="kt-trace"></div></div>
+      <div class="kt-duo"><span class="duo-name blue">청</span><b class="duo-val blue" id="kpgDuoBlueVal">—</b><div class="axis blue"><i id="kpgDuoBlueAxis"></i></div><span class="duo-name red">홍</span><b class="duo-val red" id="kpgDuoRedVal">—</b><div class="axis red"><i id="kpgDuoRedAxis"></i></div><span class="duo-count" id="kpgCount">0/8</span></div>
       <span id="kpgNow" hidden>—</span><i id="kpgBalance" hidden></i>
     </aside>
 
@@ -6607,6 +6607,7 @@ function drawTurnArrow(visualBodyX,toCanvasX,visualSide,TP){
 }
 
 const kickPilotHistory=[];
+const kickPilotDuo={c:0,h:0};
 function kickPilotPath(values){
   const n=values.length;
   return values.map((v,i)=>{
@@ -6624,9 +6625,12 @@ function kickPilotPush(score,height,foot){
   const cnt=document.getElementById('kpgCount'); if(cnt) cnt.textContent=kickPilotHistory.length+'/8';
   const s=Math.max(0,Math.min(100,score)), h=Math.max(0,Math.min(100,height));
   const sv=document.getElementById('kpgScoreVal'), hv=document.getElementById('kpgHeightVal'); if(sv) sv.textContent=Math.round(s); if(hv) hv.textContent=Math.round(h);
-  const bars=(id,power)=>{ const box=document.getElementById(id), els=box?[...box.children]:[]; els.forEach((el,i)=>el.style.setProperty('--p',Math.max(.1,Math.min(1,power*(.46+(i%4)*.17)+(i%2)*.07)).toFixed(2))); };
-  bars('kpgScoreBars',s/100); bars('kpgHeightBars',h/100);
-  const duo=Math.round((s+h)/2), dv=document.getElementById('kpgDuoVal'), da=document.getElementById('kpgDuoAxis'); if(dv) dv.textContent=duo; if(da) da.style.setProperty('--p',duo+'%');
+  const bars=(id,key)=>{ const box=document.getElementById(id), els=box?[...box.children]:[], pad=Math.max(0,8-kickPilotHistory.length); els.forEach((el,i)=>{ const row=kickPilotHistory[i-pad], power=row?Math.max(.1,Math.min(1,row[key]/100)):.08; el.style.setProperty('--p',power.toFixed(2)); }); };
+  bars('kpgScoreBars','score'); bars('kpgHeightBars','height');
+  if(twoPlayerMode){
+    const side=(typeof active2pSlot!=='undefined'&&active2pSlot===slot2p.c)?'c':'h', duo=Math.round((s+h)/2); kickPilotDuo[side]=duo;
+    const cap=side==='c'?'Blue':'Red', dv=document.getElementById('kpgDuo'+cap+'Val'), da=document.getElementById('kpgDuo'+cap+'Axis'); if(dv) dv.textContent=duo; if(da) da.style.setProperty('--p',duo+'%');
+  }
 }
 
 function onDrillKick(peak, traj){
@@ -7124,7 +7128,10 @@ window.startGame=()=>{
   runReadyCountdown(subTexts[startMode]||'',()=>{
     if(currentMode!==startMode) return;
     
-    if(twoPlayerMode) reset2pAll();
+    if(twoPlayerMode){
+      reset2pAll(); kickPilotDuo.c=0; kickPilotDuo.h=0;
+      for(const cap of ['Blue','Red']){ const v=document.getElementById('kpgDuo'+cap+'Val'), a=document.getElementById('kpgDuo'+cap+'Axis'); if(v) v.textContent='—'; if(a) a.style.setProperty('--p','8%'); }
+    }
     running=true; setPlayingUi(true); statusEl.textContent=''; statusEl.style.opacity='0';
     if(currentMode==='balloon'){
       const sec=parseInt(balloonTimeSel?.value||'30');
