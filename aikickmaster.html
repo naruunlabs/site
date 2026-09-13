@@ -3582,6 +3582,21 @@ body.hud-v21.akm-ui.sparring-mode .stats-row{
   }
 }
 
+#kickPilotGraph{display:none;position:absolute;z-index:68;right:22px;bottom:82px;width:310px;padding:12px 14px 10px;
+  border:1px solid rgba(81,211,255,.28);border-radius:13px;background:linear-gradient(135deg,rgba(8,13,22,.84),rgba(15,22,31,.68));
+  box-shadow:0 8px 24px rgba(0,0,0,.22);text-shadow:none;pointer-events:none}
+body.akm-pilot-hud.playing-ui:not(.two-player-mode):not(.akm-lite-fx) #kickPilotGraph{display:block}
+body.balloon-mode #kickPilotGraph,body.sparring-mode #kickPilotGraph{display:none!important}
+.kpg-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px}
+.kpg-head b{font-size:12px;color:#fff}.kpg-head span{font-size:9px;font-weight:850;color:rgba(255,255,255,.58)}
+#kickPilotSvg{display:block;width:100%;height:70px;overflow:visible}
+.kpg-grid{stroke:rgba(255,255,255,.12);stroke-width:1;stroke-dasharray:3 4}
+.kpg-score,.kpg-height{fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}.kpg-score{stroke:#ff8b2c}.kpg-height{stroke:#48d9ff}
+.kpg-foot{display:flex;justify-content:space-between;align-items:center;margin-top:3px;font-size:9px;font-weight:800;color:rgba(255,255,255,.58)}
+.kpg-foot b{color:#fff}.kpg-balance{display:flex;align-items:center;gap:5px}.kpg-bar{width:72px;height:4px;background:rgba(255,255,255,.13);border-radius:9px;overflow:hidden}
+.kpg-bar i{display:block;height:100%;width:50%;background:linear-gradient(90deg,#48d9ff,#ff8b2c)}
+@media (max-width:1050px),(max-height:650px){#kickPilotGraph{display:none!important}}
+
 </style>
 </head>
 <body class="hud-v21 akm-ui">
@@ -3912,6 +3927,15 @@ body.hud-v21.akm-ui.sparring-mode .stats-row{
         <div class="stat-num" id="valTime">—</div>
       </div>
     </div>
+
+    <aside id="kickPilotGraph" aria-label="최근 8회 발차기 그래프">
+      <div class="kpg-head"><b>최근 8회</b><span><i style="color:#ff8b2c">●</i> 점수&nbsp;&nbsp;<i style="color:#48d9ff">●</i> 높이</span></div>
+      <svg id="kickPilotSvg" viewBox="0 0 260 70" preserveAspectRatio="none" aria-hidden="true">
+        <path class="kpg-grid" d="M2 18H258M2 35H258M2 52H258"></path>
+        <path class="kpg-score" id="kpgScore" d=""></path><path class="kpg-height" id="kpgHeight" d=""></path>
+      </svg>
+      <div class="kpg-foot"><span>이번 <b id="kpgNow">—</b></span><span class="kpg-balance">L <span class="kpg-bar"><i id="kpgBalance"></i></span> R</span><span id="kpgCount">0/8</span></div>
+    </aside>
 
     <div class="btns fullscreen-only">
       <button class="btn-flip" id="fsBtn" onclick="toggleFullscreen()">전체화면</button>
@@ -6587,6 +6611,28 @@ function drawTurnArrow(visualBodyX,toCanvasX,visualSide,TP){
   ctx.restore();
 }
 
+const kickPilotHistory=[];
+function kickPilotPath(values){
+  const n=values.length;
+  return values.map((v,i)=>{
+    const x=n===1?130:4+i*(252/(n-1)), y=64-Math.max(0,Math.min(100,v))*0.56;
+    return (i?'L':'M')+x.toFixed(1)+' '+y.toFixed(1);
+  }).join(' ');
+}
+function kickPilotPush(score,height,foot){
+  if(!document.body.classList.contains('akm-pilot-hud') || twoPlayerMode) return;
+  kickPilotHistory.push({score:Math.round(score),height:Math.round(Math.max(0,Math.min(100,height))),foot});
+  if(kickPilotHistory.length>8) kickPilotHistory.shift();
+  const se=document.getElementById('kpgScore'), he=document.getElementById('kpgHeight');
+  if(!se||!he) return;
+  se.setAttribute('d',kickPilotPath(kickPilotHistory.map(v=>v.score)));
+  he.setAttribute('d',kickPilotPath(kickPilotHistory.map(v=>v.height)));
+  const l=kickPilotHistory.filter(v=>v.foot==='left').length, r=kickPilotHistory.filter(v=>v.foot==='right').length, lr=l+r;
+  const bal=document.getElementById('kpgBalance'); if(bal) bal.style.width=(lr?Math.round(l/lr*100):50)+'%';
+  const now=document.getElementById('kpgNow'); if(now) now.textContent=Math.round(score)+'점 · '+Math.round(height)+'%';
+  const cnt=document.getElementById('kpgCount'); if(cnt) cnt.textContent=kickPilotHistory.length+'/8';
+}
+
 function onDrillKick(peak, traj){
   if(!running) return;
   const result=analyzeTraj(peak);
@@ -6608,6 +6654,7 @@ function onDrillKick(peak, traj){
   lastScore=result.score;
   lastGrade=result.msg;
   lastColor='#4caf50';
+  kickPilotPush(result.score,peak,lastKickFoot);
 
   sndSuccess();
   flashEdge(twoPlayerMode ? (active2pSlot===slot2p.c?'c':'h') : null);
@@ -7665,6 +7712,13 @@ window.applyBetaVisibility=function(){
   const on=!!(window.akmIsBeta && window.akmIsBeta());
 
   document.body.classList.toggle('beta-on', on);
+
+  let pilot=false;
+  try{
+    const c=_akmGetCache();
+    pilot=!!(on && c && String(c.dojang_name||'').trim()==='국가대표마스터태권도장');
+  }catch(e){}
+  document.body.classList.toggle('akm-pilot-hud',pilot);
 
   if(!on) diagMode=false;               
 };
