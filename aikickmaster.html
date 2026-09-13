@@ -411,9 +411,14 @@ body.hud-v21 .bar-track{height:18px;}
 }
 #kickLabModal.show{ display:flex; }
 html body:not(.beta-on) .hud-lab-row,
+html body:not(.beta-on) .hud-lab-top,
 html body:not(.beta-on) #kickLabModal{
   display:none !important; visibility:hidden !important; pointer-events:none !important;
 }
+.hud-mini-buttons{display:flex;align-items:center;gap:12px;margin-top:3px}
+.hud-mini-buttons .hud-settings-btn{margin-top:0!important;display:block!important}
+.hud-lab-top{background:transparent;border:0;padding:2px 0;color:#b98f7d;font-size:11px;font-weight:800;cursor:pointer}
+.hud-lab-top:hover{color:#fff}
 
 body.hud-v21.akm-ui.two-player-mode .stats-row,
 body.hud-v21.akm-ui.two-player-mode #status,
@@ -3707,7 +3712,10 @@ body.hud-v21.akm-ui.sparring-mode .stats-row{
         <div class="akm-hud-meta">
           <span class="akm-powered">Powered by Google MediaPipe</span>
         </div>
-        <button id="hudSettingsBtn" class="hud-settings-btn" type="button" onclick="toggleHudSettings()">설정</button>
+        <div class="hud-mini-buttons">
+          <button id="hudSettingsBtn" class="hud-settings-btn" type="button" onclick="toggleHudSettings()">설정</button>
+          <button id="hudLabBtn" class="hud-lab-top" type="button" onclick="openKickLab()">발차기 연구소</button>
+        </div>
       </div>
     </div>
 
@@ -3784,8 +3792,8 @@ body.hud-v21.akm-ui.sparring-mode .stats-row{
       <button class="game-btn" id="m_sparring" onclick="setMode('sparring')">겨루기 모드</button>
     </div>
     
-    <div class="mode-row hud-lab-row">
-      <button class="game-btn" id="m_lab" onclick="openKickLab()">발차기 연구소</button>
+    <div class="mode-row hud-lab-row hud-group-row">
+      <button class="game-btn" id="m_group" onclick="openGroupMode()">단체 모드</button>
     </div>
     <div class="game-area" id="gameArea">
       <div class="drill-count-row balloon-time-row">
@@ -7442,6 +7450,12 @@ window.toggleLabRecording=function(){
 };
 
 let labModalOpen=false;
+window.openGroupMode=function(){
+  
+  if(!(window.akmIsBeta && window.akmIsBeta())) return;
+  if(running && typeof stopGame==='function') stopGame();
+  location.href='groupkickmaster.html';
+};
 window.openKickLab=function(){
   if(!(window.akmIsBeta && window.akmIsBeta())) return;   
   updateLabRecUi();
