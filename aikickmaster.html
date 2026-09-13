@@ -3582,6 +3582,48 @@ body.hud-v21.akm-ui.sparring-mode .stats-row{
   }
 }
 
+body.hud-v21.akm-ui .title-dojang{
+  font-size:16px !important;
+  line-height:1.15 !important;
+  letter-spacing:-.04em !important;
+}
+body.hud-v21.akm-ui .title-auth{
+  margin-top:3px !important;
+  font-size:10px !important;
+  line-height:1.2 !important;
+}
+body.hud-v21.akm-ui .title-version,
+body.hud-v21.akm-ui .akm-powered{
+  margin-top:2px !important;
+  font-size:9.5px !important;
+  line-height:1.25 !important;
+}
+
+body.hud-v21.akm-ui .hud-mini-buttons{
+  align-items:stretch !important;
+  gap:14px !important;
+  margin-top:5px !important;
+}
+body.hud-v21.akm-ui .hud-mini-buttons .hud-settings-btn,
+body.hud-v21.akm-ui .hud-mini-buttons .hud-lab-top{
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  box-sizing:border-box !important;
+  min-width:0 !important;
+  min-height:22px !important;
+  margin:0 !important;
+  padding:3px 0 !important;
+  border:0 !important;
+  border-radius:0 !important;
+  background:transparent !important;
+  box-shadow:none !important;
+  font-size:11px !important;
+  font-weight:900 !important;
+  line-height:16px !important;
+  vertical-align:top !important;
+}
+
 #kickPilotGraph{display:none;position:absolute;inset:0;z-index:68;text-shadow:0 3px 7px rgba(0,0,0,.98);pointer-events:none}
 body.akm-pilot-hud.playing-ui #kickPilotGraph{display:block}
 body.balloon-mode #kickPilotGraph,body.sparring-mode #kickPilotGraph{display:none!important}
@@ -10216,7 +10258,8 @@ const _AKM_HOME_URL    = 'https://ebgoolsymyzkftvavpyj.supabase.co/functions/v1/
 const _AKM_LS_KEY      = 'akm_license_v1';
 const _AKM_CACHE_DAYS  = 7;   
 const _AKM_TRIAL_CACHE_DAYS = 1;   
-const _AKM_VERSION     = '1.0.0';
+
+const _AKM_VERSION     = '3.2.0';
 
 let _akmFailCount = 0;
 let _akmFailLockUntil = 0;
@@ -10417,11 +10460,12 @@ function _akmShowAuthedUI(dojang_name, version){
   const verEl =document.getElementById('panelVersion');
   if(nameEl) nameEl.textContent=dojang_name || 'AI KICK MASTER';
   if(authEl) authEl.textContent='✓ 정품 인증';
-  if(verEl)  verEl.textContent='v'+(version||_AKM_VERSION);
+
+  if(verEl)  verEl.textContent='v'+_AKM_VERSION;
   const lbName=document.getElementById('lbDojangName');
   const lbVer =document.getElementById('lbVersion');
   if(lbName) lbName.textContent=dojang_name||'';
-  if(lbVer)  lbVer.textContent='v'+(version||_AKM_VERSION);
+  if(lbVer)  lbVer.textContent='v'+_AKM_VERSION;
 
   const _apply = window.applyAkmTune;
   if(typeof _apply !== 'function' || !_apply((_akmGetCache()||{}).tune)){
