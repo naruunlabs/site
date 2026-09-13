@@ -280,20 +280,21 @@ button{cursor:pointer;border:0;background:none;padding:0}
 .st.gauge-st::after,.st.has-bar::after{display:none}
 .st-state{margin-top:5px;font-size:clamp(12px,1.05vw,18px);font-weight:900;color:var(--lime-lit);text-shadow:0 2px 8px rgba(0,0,0,.95)}
 
-#jmpPilotGraph{position:absolute;z-index:7;right:max(16px,calc(var(--u)*1.9));bottom:calc(var(--sab) + 58px);
-  width:clamp(238px,20vw,330px);padding:11px 13px 9px;border:1px solid rgba(94,234,212,.3);border-radius:13px;
-  background:linear-gradient(135deg,rgba(3,13,25,.82),rgba(4,25,32,.66));box-shadow:0 8px 24px rgba(0,0,0,.22);
-  text-shadow:none;pointer-events:none}
-html body:not(.jmp-pilot-hud) #jmpPilotGraph,body:not(.jmp-pilot-solo) #jmpPilotGraph,#app.lobby-open #jmpPilotGraph{display:none!important}
-.jpg-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:5px}
-.jpg-head b{font-size:12px;color:#f4fffd}.jpg-head span{font-family:var(--num);font-size:10px;font-weight:850;color:var(--lime-lit)}
-#jmpPilotSvg{display:block;width:100%;height:66px;overflow:visible}
-.jpg-base{stroke:rgba(255,255,255,.14);stroke-width:1;stroke-dasharray:3 4}
-.jpg-line{fill:none;stroke:#5eead4;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
-.jpg-dot{fill:#bef264;stroke:rgba(255,255,255,.9);stroke-width:.7}
-.jpg-foot{display:flex;justify-content:space-between;margin-top:2px;font-size:9px;font-weight:800;color:rgba(234,244,241,.58)}
-.jpg-foot b{color:#fff}
-@media (max-width:900px),(max-height:590px){#jmpPilotGraph{display:none!important}}
+#jmpPilotGraph{display:none;position:absolute;inset:0;z-index:7;pointer-events:none;text-shadow:0 3px 7px rgba(0,0,0,.98)}
+body.jmp-pilot-hud.jmp-pilot-solo #jmpPilotGraph,body.jmp-pilot-hud.jmp-pilot-duo #jmpPilotGraph{display:block}
+#app.lobby-open #jmpPilotGraph{display:none!important}
+.jt-wing{position:absolute;top:21%;width:clamp(145px,16vw,245px);color:#5eead4;filter:drop-shadow(0 0 7px rgba(45,212,191,.42))}
+.jt-wing.left{right:calc(50% + clamp(78px,10vw,170px));text-align:right}.jt-wing.right{left:calc(50% + clamp(78px,10vw,170px))}
+.jt-wing strong{display:block;font:900 clamp(30px,4.1vw,66px)/.9 var(--num);color:#fff;letter-spacing:-.04em}.jt-wing small{display:block;margin-top:7px;font-size:clamp(9px,.8vw,13px);font-weight:900;letter-spacing:.14em;color:#bef264}
+.jt-bars{height:58px;display:flex;align-items:flex-end;gap:4px;margin-top:9px}.jt-wing.left .jt-bars{justify-content:flex-end}
+.jt-bars i{width:clamp(7px,.7vw,11px);height:100%;transform:scaleY(var(--p,.18));transform-origin:bottom;background:linear-gradient(#bef264,#5eead4);box-shadow:0 0 7px rgba(94,234,212,.55);transition:transform .16s cubic-bezier(.2,.8,.2,1)}
+.jt-trace{height:2px;margin-top:8px;background:linear-gradient(90deg,transparent,#5eead4 18%,#bef264 70%,transparent);box-shadow:0 0 8px #5eead4}
+.jt-duo{display:none;position:absolute;left:50%;top:18%;bottom:22%;width:54px;transform:translateX(-50%);text-align:center;color:#bef264}
+.jt-duo .rail{position:absolute;left:22px;top:34px;bottom:52px;width:10px;background:rgba(255,255,255,.11);overflow:hidden}.jt-duo .rail i{position:absolute;left:0;right:0;bottom:0;height:var(--p,20%);background:linear-gradient(#bef264,#5eead4);box-shadow:0 0 10px #5eead4;transition:height .16s ease-out}
+.jt-duo b{font:900 18px var(--num);color:#fff}.jt-duo span{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);white-space:nowrap;font:900 10px var(--num);letter-spacing:.1em}.jt-duo:after{content:'SYNC AXIS';position:absolute;bottom:0;left:50%;transform:translateX(-50%);font-size:8px;letter-spacing:.15em;white-space:nowrap;color:#5eead4}
+body.jmp-pilot-duo .jt-wing{display:none}body.jmp-pilot-duo .jt-duo{display:block}
+body.jmp-lite-hud .jt-bars i{box-shadow:none}body.jmp-lite-hud .jt-wing{filter:none}body.jmp-lite-hud .jt-duo .rail i{box-shadow:none}
+@media (max-width:700px),(max-height:520px){.jt-wing{transform:scale(.8)}.jt-wing.left{transform-origin:right top}.jt-wing.right{transform-origin:left top}}
 
 .debug{position:absolute;left:50%;bottom:calc(var(--sab) + 8px);transform:translateX(-50%);z-index:9;max-width:96vw;
   padding:6px 10px;border-radius:8px;background:rgba(0,0,0,.55);font:700 11.5px/1.45 ui-monospace,Consolas,monospace;
@@ -584,12 +585,10 @@ html body:not(.jmp-beta-on) #jumpLabModal{
       <div class="st" id="stGC" hidden><div class="st-lab" id="stGCLab"></div><div class="st-val" id="stGCVal"></div><div class="st-name" id="stGCName"></div></div>
     </div>
 
-    <aside id="jmpPilotGraph" aria-label="최근 10회 점프 리듬 그래프">
-      <div class="jpg-head"><b>최근 10회 · 리듬</b><span id="jpgRhythm">데이터 대기</span></div>
-      <svg id="jmpPilotSvg" viewBox="0 0 260 66" preserveAspectRatio="none" aria-hidden="true">
-        <path class="jpg-base" d="M2 33H258"></path><path class="jpg-line" id="jpgLine" d=""></path><g id="jpgDots"></g>
-      </svg>
-      <div class="jpg-foot"><span>점프 높이 <b id="jpgHeight">—</b></span><span id="jpgCount">0/10</span></div>
+    <aside id="jmpPilotGraph" aria-label="실시간 점프 텔레메트리">
+      <div class="jt-wing left"><strong id="jpgRhythm">—</strong><small>RHYTHM · BPM</small><div class="jt-bars" id="jpgRhythmBars"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="jt-trace"></div></div>
+      <div class="jt-wing right"><strong id="jpgHeight">—</strong><small>JUMP HEIGHT · %</small><div class="jt-bars" id="jpgHeightBars"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="jt-trace"></div></div>
+      <div class="jt-duo"><b id="jpgDuoVal">—</b><div class="rail"><i id="jpgDuoRail"></i></div><span id="jpgCount">0/10</span></div>
     </aside>
 
   </div>
@@ -1341,22 +1340,21 @@ function updateRig(p,lm){
 
 const jmpPilotHistory=[];
 function jmpPilotPush(p,ev){
-  if(!jmpIsLab() || mode!=='solo' || p.id!==0 || ev.type!=='jump') return;
+  if(!jmpIsLab() || !['solo','duo'].includes(mode) || ev.type!=='jump') return;
   const e=p.engine, height=clamp((e.runMax/Math.max(e.curUPv,.001))*100,0,160);
   jmpPilotHistory.push({t:ev.t||performance.now(),height});
   if(jmpPilotHistory.length>10) jmpPilotHistory.shift();
-  const n=jmpPilotHistory.length, line=$('jpgLine'), dots=$('jpgDots');
-  if(!line||!dots) return;
+  const n=jmpPilotHistory.length;
   const vals=jmpPilotHistory.map(v=>v.height), lo=Math.min(...vals,70), hi=Math.max(...vals,130), span=Math.max(20,hi-lo);
-  const pts=vals.map((v,i)=>({x:n===1?130:4+i*(252/(n-1)),y:59-(v-lo)/span*51}));
-  line.setAttribute('d',pts.map((q,i)=>(i?'L':'M')+q.x.toFixed(1)+' '+q.y.toFixed(1)).join(' '));
-  dots.textContent='';
-  for(const q of pts){ const c=document.createElementNS('http://www.w3.org/2000/svg','circle'); c.setAttribute('class','jpg-dot'); c.setAttribute('cx',q.x); c.setAttribute('cy',q.y); c.setAttribute('r','2.6'); dots.appendChild(c); }
   const gaps=[]; for(let i=1;i<n;i++) gaps.push(jmpPilotHistory[i].t-jmpPilotHistory[i-1].t);
   const avg=gaps.length?gaps.reduce((a,b)=>a+b,0)/gaps.length:0;
   const cv=avg&&gaps.length>1?Math.sqrt(gaps.reduce((s,v)=>s+(v-avg)*(v-avg),0)/gaps.length)/avg:null;
-  setText($('jpgRhythm'),avg?(Math.round(60000/avg)+' BPM · '+(cv==null?'측정 중':cv<.08?'안정':cv<.16?'보통':'흔들림')):'첫 점프');
-  setText($('jpgHeight'),Math.round(height)+'%'); setText($('jpgCount'),n+'/10');
+  const bpm=avg?Math.round(60000/avg):0, rhythm=avg?clamp(1-(cv||0)*2.8,.12,1):.2, hp=clamp(height/130,.12,1);
+  setText($('jpgRhythm'),avg?bpm:'—'); setText($('jpgHeight'),Math.round(height)); setText($('jpgCount'),n+'/10');
+  const bars=(id,power)=>{ const els=[...($(id)?.children||[])]; els.forEach((el,i)=>el.style.setProperty('--p',clamp(power*(.48+(i%4)*.16)+(i%2)*.07,.1,1).toFixed(2))); };
+  bars('jpgRhythmBars',rhythm); bars('jpgHeightBars',hp);
+  const duoScore=mode==='duo'&&team.lastDiff!=null?clamp(1-team.lastDiff/SYNC.NORMAL_S,0,1):rhythm;
+  $('jpgDuoRail')?.style.setProperty('--p',Math.round(duoScore*100)+'%'); setText($('jpgDuoVal'),Math.round(duoScore*100));
 }
 function onEngineEvent(p,ev){
   if(!running) return;
@@ -1425,7 +1423,11 @@ function setSync(diff,text){
   $('sdotB').style.left=(50-k*42)+'%'; $('sdotR').style.left=(50+k*42)+'%';
   setText($('syncTxt'),text);
 }
-function updateTeamHud(){ setText($('teamScore'),fmt(team.base)); setText($('teamCombo'),team.combo); }
+function updateTeamHud(){
+  setText($('teamScore'),fmt(team.base)); setText($('teamCombo'),team.combo);
+  const power=team.lastDiff==null?.18:clamp(1-team.lastDiff/SYNC.NORMAL_S,0,1);
+  $('jpgDuoRail')?.style.setProperty('--p',Math.round(power*100)+'%'); setText($('jpgDuoVal'),team.lastDiff==null?'—':Math.round(power*100));
+}
 let judgeTimer=0;
 function showJudge(word,cls){
   const el=$('judge'); el.hidden=false; el.textContent=word;
@@ -1478,6 +1480,7 @@ function restoreLobbyPrefs(){
 }
 function applyModeUI(){
   document.body.classList.toggle('jmp-pilot-solo',mode==='solo');
+  document.body.classList.toggle('jmp-pilot-duo',mode==='duo');
   document.querySelectorAll('#modelist .choice').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mode===mode)));
   document.querySelectorAll('#soloSeg button').forEach(b=>b.classList.toggle('on',b.dataset.solo===soloMode));
   $('optSolo').hidden = mode!=='solo';

@@ -3582,23 +3582,17 @@ body.hud-v21.akm-ui.sparring-mode .stats-row{
   }
 }
 
-#kickPilotGraph{display:none;position:absolute;z-index:68;right:30px;bottom:72px;width:clamp(390px,31vw,540px);padding:0;
-  border:0;border-radius:0;background:transparent;box-shadow:none;
-  text-shadow:0 2px 9px rgba(0,0,0,.95);pointer-events:none}
-body.akm-pilot-hud.playing-ui:not(.two-player-mode):not(.akm-lite-fx) #kickPilotGraph{display:block}
+#kickPilotGraph{display:none;position:absolute;inset:0;z-index:68;text-shadow:0 3px 7px rgba(0,0,0,.98);pointer-events:none}
+body.akm-pilot-hud.playing-ui #kickPilotGraph{display:block}
 body.balloon-mode #kickPilotGraph,body.sparring-mode #kickPilotGraph{display:none!important}
-.kpg-head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:4px;padding-left:13px;border-left:4px solid #ff6a1a}
-.kpg-head b{font-size:17px;letter-spacing:.8px;color:#fff}.kpg-head b small{display:block;margin-top:2px;font-size:8px;letter-spacing:2.2px;color:rgba(81,211,255,.72)}
-.kpg-head span{font-size:11px;font-weight:900;color:rgba(255,255,255,.72)}
-#kickPilotSvg{display:block;width:100%;height:112px;overflow:visible;filter:drop-shadow(0 2px 5px rgba(0,0,0,.8))}
-.kpg-grid{stroke:rgba(140,215,255,.20);stroke-width:.8;stroke-dasharray:2 5}
-.kpg-axis{stroke:rgba(255,255,255,.35);stroke-width:.8}
-.kpg-score,.kpg-height{fill:none;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}.kpg-score{stroke:#ff8b2c}.kpg-height{stroke:#48d9ff}
-.kpg-score-dot{fill:#ff8b2c;stroke:#fff;stroke-width:.7}.kpg-height-dot{fill:#48d9ff;stroke:#fff;stroke-width:.7}
-.kpg-foot{display:flex;justify-content:space-between;align-items:center;margin-top:4px;padding-top:5px;border-top:1px solid rgba(111,207,255,.28);font-size:11px;font-weight:850;color:rgba(255,255,255,.66)}
-.kpg-foot b{color:#fff;font-size:13px}.kpg-balance{display:flex;align-items:center;gap:7px}.kpg-bar{width:104px;height:5px;background:rgba(255,255,255,.16);border-radius:9px;overflow:hidden}
-.kpg-bar i{display:block;height:100%;width:50%;background:linear-gradient(90deg,#48d9ff,#ff8b2c)}
-@media (max-width:1050px),(max-height:650px){#kickPilotGraph{display:none!important}}
+.kt-wing{position:absolute;top:21%;width:clamp(150px,17vw,255px);filter:drop-shadow(0 0 7px rgba(72,217,255,.38))}.kt-wing.left{right:calc(50% + clamp(80px,10vw,175px));text-align:right}.kt-wing.right{left:calc(50% + clamp(80px,10vw,175px))}
+.kt-wing strong{display:block;font:1000 clamp(31px,4.2vw,68px)/.9 var(--num);letter-spacing:-.04em;color:#fff}.kt-wing small{display:block;margin-top:7px;font-size:clamp(9px,.8vw,13px);font-weight:1000;letter-spacing:.14em}.kt-wing.left small{color:#ff8b2c}.kt-wing.right small{color:#48d9ff}
+.kt-bars{height:60px;display:flex;align-items:flex-end;gap:4px;margin-top:9px}.kt-wing.left .kt-bars{justify-content:flex-end}.kt-bars i{width:clamp(7px,.7vw,11px);height:100%;transform:scaleY(var(--p,.15));transform-origin:bottom;transition:transform .16s cubic-bezier(.2,.8,.2,1);background:linear-gradient(#ffd166,#ff6a1a);box-shadow:0 0 7px rgba(255,106,26,.55)}.kt-wing.right .kt-bars i{background:linear-gradient(#b9f4ff,#48d9ff);box-shadow:0 0 7px rgba(72,217,255,.55)}
+.kt-trace{height:2px;margin-top:8px;background:linear-gradient(90deg,transparent,#ff8b2c 22%,#48d9ff 75%,transparent);box-shadow:0 0 8px #48d9ff}
+.kt-duo{display:none;position:absolute;left:50%;top:17%;bottom:20%;width:66px;transform:translateX(-50%);text-align:center}.kt-duo .axis{position:absolute;left:28px;top:38px;bottom:58px;width:10px;background:rgba(255,255,255,.11);overflow:hidden}.kt-duo .axis i{position:absolute;left:0;right:0;bottom:0;height:var(--p,15%);background:linear-gradient(#ffd166,#ff6a1a 48%,#48d9ff);box-shadow:0 0 10px #48d9ff;transition:height .16s ease-out}.kt-duo b{font:1000 20px var(--num);color:#fff}.kt-duo span{position:absolute;bottom:27px;left:50%;transform:translateX(-50%);font:1000 10px var(--num);white-space:nowrap;color:#ffd166}.kt-duo:after{content:'KICK AXIS';position:absolute;bottom:4px;left:50%;transform:translateX(-50%);font-size:8px;letter-spacing:.16em;white-space:nowrap;color:#48d9ff}
+body.two-player-mode .kt-wing{display:none}body.two-player-mode .kt-duo{display:block}
+body.akm-lite-fx .kt-wing{filter:none}body.akm-lite-fx .kt-bars i,body.akm-lite-fx .kt-duo .axis i{box-shadow:none}
+@media (max-width:700px),(max-height:520px){.kt-wing{transform:scale(.8)}.kt-wing.left{transform-origin:right top}.kt-wing.right{transform-origin:left top}}
 
 </style>
 </head>
@@ -3931,15 +3925,11 @@ body.balloon-mode #kickPilotGraph,body.sparring-mode #kickPilotGraph{display:non
       </div>
     </div>
 
-    <aside id="kickPilotGraph" aria-label="최근 8회 발차기 그래프">
-      <div class="kpg-head"><b>최근 8회<small>PERFORMANCE TRACE</small></b><span><i style="color:#ff8b2c">●</i> 점수&nbsp;&nbsp;<i style="color:#48d9ff">●</i> 높이</span></div>
-      <svg id="kickPilotSvg" viewBox="0 0 260 70" preserveAspectRatio="none" aria-hidden="true">
-        <path class="kpg-grid" d="M2 12H258M2 35H258M2 58H258M38 4V64M75 4V64M112 4V64M149 4V64M186 4V64M223 4V64"></path>
-        <path class="kpg-axis" d="M2 64H258"></path>
-        <path class="kpg-score" id="kpgScore" d=""></path><path class="kpg-height" id="kpgHeight" d=""></path>
-        <g id="kpgScoreDots"></g><g id="kpgHeightDots"></g>
-      </svg>
-      <div class="kpg-foot"><span>이번 <b id="kpgNow">—</b></span><span class="kpg-balance">L <span class="kpg-bar"><i id="kpgBalance"></i></span> R</span><span id="kpgCount">0/8</span></div>
+    <aside id="kickPilotGraph" aria-label="실시간 발차기 텔레메트리">
+      <div class="kt-wing left"><strong id="kpgScoreVal">—</strong><small>KICK SCORE</small><div class="kt-bars" id="kpgScoreBars"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="kt-trace"></div></div>
+      <div class="kt-wing right"><strong id="kpgHeightVal">—</strong><small>KICK HEIGHT · %</small><div class="kt-bars" id="kpgHeightBars"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="kt-trace"></div></div>
+      <div class="kt-duo"><b id="kpgDuoVal">—</b><div class="axis"><i id="kpgDuoAxis"></i></div><span id="kpgCount">0/8</span></div>
+      <span id="kpgNow" hidden>—</span><i id="kpgBalance" hidden></i>
     </aside>
 
     <div class="btns fullscreen-only">
@@ -6625,26 +6615,18 @@ function kickPilotPath(values){
   }).join(' ');
 }
 function kickPilotPush(score,height,foot){
-  if(!document.body.classList.contains('akm-pilot-hud') || twoPlayerMode) return;
+  if(!document.body.classList.contains('akm-pilot-hud')) return;
   kickPilotHistory.push({score:Math.round(score),height:Math.round(Math.max(0,Math.min(100,height))),foot});
   if(kickPilotHistory.length>8) kickPilotHistory.shift();
-  const se=document.getElementById('kpgScore'), he=document.getElementById('kpgHeight');
-  if(!se||!he) return;
-  const scores=kickPilotHistory.map(v=>v.score), heights=kickPilotHistory.map(v=>v.height);
-  se.setAttribute('d',kickPilotPath(scores)); he.setAttribute('d',kickPilotPath(heights));
-  const drawDots=(id,values,cls)=>{
-    const g=document.getElementById(id); if(!g) return; g.textContent='';
-    values.forEach((v,i)=>{
-      const x=values.length===1?130:4+i*(252/(values.length-1)), y=64-Math.max(0,Math.min(100,v))*.56;
-      const c=document.createElementNS('http://www.w3.org/2000/svg','circle');
-      c.setAttribute('class',cls); c.setAttribute('cx',x); c.setAttribute('cy',y); c.setAttribute('r',i===values.length-1?'2.8':'1.7'); g.appendChild(c);
-    });
-  };
-  drawDots('kpgScoreDots',scores,'kpg-score-dot'); drawDots('kpgHeightDots',heights,'kpg-height-dot');
   const l=kickPilotHistory.filter(v=>v.foot==='left').length, r=kickPilotHistory.filter(v=>v.foot==='right').length, lr=l+r;
   const bal=document.getElementById('kpgBalance'); if(bal) bal.style.width=(lr?Math.round(l/lr*100):50)+'%';
   const now=document.getElementById('kpgNow'); if(now) now.textContent=Math.round(score)+'점 · '+Math.round(height)+'%';
   const cnt=document.getElementById('kpgCount'); if(cnt) cnt.textContent=kickPilotHistory.length+'/8';
+  const s=Math.max(0,Math.min(100,score)), h=Math.max(0,Math.min(100,height));
+  const sv=document.getElementById('kpgScoreVal'), hv=document.getElementById('kpgHeightVal'); if(sv) sv.textContent=Math.round(s); if(hv) hv.textContent=Math.round(h);
+  const bars=(id,power)=>{ const box=document.getElementById(id), els=box?[...box.children]:[]; els.forEach((el,i)=>el.style.setProperty('--p',Math.max(.1,Math.min(1,power*(.46+(i%4)*.17)+(i%2)*.07)).toFixed(2))); };
+  bars('kpgScoreBars',s/100); bars('kpgHeightBars',h/100);
+  const duo=Math.round((s+h)/2), dv=document.getElementById('kpgDuoVal'), da=document.getElementById('kpgDuoAxis'); if(dv) dv.textContent=duo; if(da) da.style.setProperty('--p',duo+'%');
 }
 
 function onDrillKick(peak, traj){
