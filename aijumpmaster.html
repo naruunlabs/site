@@ -731,7 +731,7 @@ html body:not(.jmp-beta-on) #jumpLabModal{
 
 <script type="module">
 
-const APP_VERSION = '3.2.0';
+const APP_VERSION = '3.2.1';
 
 const MP_VERSION  = '0.10.14';
 const MP_LOCAL    = './vendor/mediapipe/';
@@ -1061,7 +1061,7 @@ const glerp=(a,b,t)=>a+(b-a)*t;
 
 function makePlayer(id){
   return { id, engine:createJumpEngine(), count:0, lastCountAt:0, seen:false, lostSince:null, lastSeen:0, lm:null, rig:null,
-           lastJumpT:null, paired:true, flashUntil:0, trackX:null };
+           lastJumpT:null, paired:true, flashUntil:0, trackX:null, poseHist:[] };
 }
 function neededPoses(){ return mode==='duo'?2:1; }
 function ensurePlayers(n){
@@ -1281,6 +1281,9 @@ function handlePose(lms,t){
 function updatePlayer(p,f,t){
   if(f){
     p.seen=true; p.lostSince=null; p.lastSeen=t; p.lm=f.lm;
+
+    p.poseHist.push({t, pose:labPoseMetrics(f.lm)});
+    while(p.poseHist.length && t-p.poseHist[0].t>4000) p.poseHist.shift();
     p.trackX=p.trackX==null?f.sx:p.trackX*.72+f.sx*.28;
     updateRig(p,f.lm);
     p.engine.feed(f.hipY,f.torso,t,ev=>onEngineEvent(p,ev));
@@ -2884,9 +2887,54 @@ function labVis(p,i){
   try{ const v=p?.lm?.[i]?.visibility; return v==null?null:labRound(v,2); }catch(e){ return null; }
 }
 
+function labPoseMetrics(lm){
+  if(!lm||lm.length<29) return null;
+  const ok=i=>(lm[i]?.visibility??0)>.30;
+  const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+  const angle=(a,b,c)=>{
+    const ux=a.x-b.x, uy=a.y-b.y, vx=c.x-b.x, vy=c.y-b.y;
+    const den=Math.hypot(ux,uy)*Math.hypot(vx,vy);
+    return den>1e-6 ? Math.acos(clamp((ux*vx+uy*vy)/den,-1,1))*180/Math.PI : null;
+  };
+  const mid=(a,b)=>({x:(a.x+b.x)/2,y:(a.y+b.y)/2});
+  if(![11,12,23,24].every(ok)) return null;
+  const sh=mid(lm[11],lm[12]), hip=mid(lm[23],lm[24]);
+  const torso=Math.max(.02,dist(sh,hip)), shW=Math.max(.02,dist(lm[11],lm[12]));
+  const val=(indices,fn)=>indices.every(ok)?fn():null;
+  const bend=(a,b,c)=>{ const v=angle(a,b,c); return v==null?null:180-v; };
+  const lk=val([23,25,27],()=>bend(lm[23],lm[25],lm[27]));
+  const rk=val([24,26,28],()=>bend(lm[24],lm[26],lm[28]));
+  const le=val([11,13,15],()=>angle(lm[11],lm[13],lm[15]));
+  const re=val([12,14,16],()=>angle(lm[12],lm[14],lm[16]));
+  const avg=(a,b)=>(a==null||b==null)?null:(a+b)/2;
+  return {
+    knee_bend_deg:labRound(avg(lk,rk),1),
+    knee_lr_diff_deg:labRound(lk==null||rk==null?null:Math.abs(lk-rk),1),
+    elbow_angle_deg:labRound(avg(le,re),1),
+    elbow_lr_diff_deg:labRound(le==null||re==null?null:Math.abs(le-re),1),
+    torso_lean:labRound(Math.abs(sh.x-hip.x)/torso,3),
+    shoulder_tilt:labRound(Math.abs(lm[11].y-lm[12].y)/shW,3),
+    hip_tilt:labRound(Math.abs(lm[23].y-lm[24].y)/torso,3),
+    feet_gap:labRound(val([27,28],()=>Math.abs(lm[27].x-lm[28].x)/torso),3),
+    ankle_y_diff:labRound(val([27,28],()=>Math.abs(lm[27].y-lm[28].y)/torso),3),
+    wrist_gap:labRound(val([15,16],()=>Math.abs(lm[15].x-lm[16].x)/torso),3),
+    elbow_out:labRound(val([11,12,13,14],()=>
+      (Math.abs(lm[13].x-lm[11].x)+Math.abs(lm[14].x-lm[12].x))/(2*torso)),3)
+  };
+}
+function labPoseAt(p,t){
+  const h=p?.poseHist||[];
+  if(!h.length) return {pose:null,delay:null};
+  let best=h[0];
+  for(let i=1;i<h.length;i++) if(Math.abs(h[i].t-t)<Math.abs(best.t-t)) best=h[i];
+  return {pose:best.pose,delay:Math.abs(best.t-t)};
+}
+
 function labRecordJump(p,ev){
   if(!jmpIsLab()) return;
   const e=p.engine, now=performance.now();
+  
+  const snap=ev.type==='jump'?labPoseAt(p,ev.t):{pose:null,delay:null}, pose=snap.pose||{};
   const row={
     ts        : new Date().toISOString(),
     mode      : mode,
@@ -2912,7 +2960,20 @@ function labRecordJump(p,ev){
     infer_ms  : labRound(inferCost,1),
     persons   : personCount,
     vis_sh    : labVis(p,11), vis_hip:labVis(p,23), vis_ank:labVis(p,27),
-    sync_diff : (mode==='duo' && team.lastDiff!=null) ? labRound(team.lastDiff,3) : null
+    sync_diff : (mode==='duo' && team.lastDiff!=null) ? labRound(team.lastDiff,3) : null,
+    pose_sample_ms:snap.delay==null?null:labRound(snap.delay,1),
+    jump_height:ev.type==='jump'?labRound(e.runMax):null,
+    knee_bend_deg:pose.knee_bend_deg??null,
+    knee_lr_diff_deg:pose.knee_lr_diff_deg??null,
+    elbow_angle_deg:pose.elbow_angle_deg??null,
+    elbow_lr_diff_deg:pose.elbow_lr_diff_deg??null,
+    torso_lean:pose.torso_lean??null,
+    shoulder_tilt:pose.shoulder_tilt??null,
+    hip_tilt:pose.hip_tilt??null,
+    feet_gap:pose.feet_gap??null,
+    ankle_y_diff:pose.ankle_y_diff??null,
+    wrist_gap:pose.wrist_gap??null,
+    elbow_out:pose.elbow_out??null
   };
   labRecent.unshift(row); if(labRecent.length>12) labRecent.pop();
   if(labRecording){
@@ -2997,9 +3058,11 @@ function labRenderRecent(){
   const rows=labRecent.map(r=>`<tr>
     <td>${esc(r.ts.slice(11,19))}</td><td>${r.pid}</td><td>${esc(r.kind==='backfill'?'소급 '+r.n:'점프')}</td>
     <td>${r.peak_ms==null?'—':r.peak_ms}</td><td>${r.amp==null?'—':r.amp}</td>
-    <td>${r.thr==null?'—':r.thr}</td><td>${r.bpm==null?'—':r.bpm}</td><td>${r.count}</td></tr>`).join('');
+    <td>${r.jump_height==null?'—':r.jump_height}</td><td>${r.knee_bend_deg==null?'—':r.knee_bend_deg+'°'}</td>
+    <td>${r.torso_lean==null?'—':r.torso_lean}</td><td>${r.feet_gap==null?'—':r.feet_gap}</td>
+    <td>${r.bpm==null?'—':r.bpm}</td><td>${r.count}</td></tr>`).join('');
   box.innerHTML=`<table class="lab-tbl"><thead><tr>
-    <th>시각</th><th>P</th><th>종류</th><th>지연ms</th><th>진폭</th><th>문턱</th><th>분당</th><th>누적</th>
+    <th>시각</th><th>P</th><th>종류</th><th>지연ms</th><th>진폭</th><th>높이</th><th>무릎</th><th>몸통</th><th>발간격</th><th>분당</th><th>누적</th>
     </tr></thead><tbody>${rows}</tbody></table>`;
 }
 function labRenderCount(){
@@ -3032,7 +3095,9 @@ function labStamp(){
 }
 const LAB_COLS=['ts','mode','solo_mode','pid','kind','n','peak_ms','amp','thr','rise','base',
   'period_ms','bpm','period_r','period_cv','rhythm_ok','gate','k_up','count','fps','infer_hz',
-  'infer_ms','persons','vis_sh','vis_hip','vis_ank','sync_diff'];
+  'infer_ms','persons','vis_sh','vis_hip','vis_ank','sync_diff','pose_sample_ms','jump_height',
+  'knee_bend_deg','knee_lr_diff_deg','elbow_angle_deg','elbow_lr_diff_deg','torso_lean',
+  'shoulder_tilt','hip_tilt','feet_gap','ankle_y_diff','wrist_gap','elbow_out'];
 function labToCsv(){
   const head=LAB_COLS.join(',');
   const body=labLog.map(r=>LAB_COLS.map(k=>{
