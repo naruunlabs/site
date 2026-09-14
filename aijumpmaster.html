@@ -610,6 +610,14 @@ html body:not(.jmp-beta-on) #jumpLabModal{
         <button type="button" data-jump="alternate">번갈아뛰기</button>
         <button type="button" data-jump="double">2중뛰기</button>
       </div>
+      <div id="alternateCountWrap" hidden>
+        <span class="option-label">번갈아뛰기 계수</span>
+        <div class="seg" id="alternateCountSeg">
+          <button type="button" data-alt-count="both" class="on">양발 합산</button>
+          <button type="button" data-alt-count="left">왼발만</button>
+          <button type="button" data-alt-count="right">오른발만</button>
+        </div>
+      </div>
       <span class="option-label">1인 측정 방식</span>
       <div class="seg" id="soloSeg">
         <button type="button" data-solo="free" class="on">자유 측정</button>
@@ -770,7 +778,7 @@ html body:not(.jmp-beta-on) #jumpLabModal{
 
 <script type="module">
 
-const APP_VERSION = '3.2.2';
+const APP_VERSION = '3.2.3';
 
 const MP_VERSION  = '0.10.14';
 const MP_LOCAL    = './vendor/mediapipe/';
@@ -1024,6 +1032,7 @@ let appState='login';
 let mode='solo';                 
 let soloMode='free';             
 let soloJumpType='together';     
+let alternateCountMode='both';   
 let duoType='cooperate';         
 let soundOn = store.get('jmp_sound','1')!=='0';
 
@@ -1045,6 +1054,9 @@ const MODES_SOLO={
   target:{title:'목표 도전',   sub:'걸리지 않고 목표까지 연속으로!'},
 };
 const SOLO_JUMPS={together:'모아뛰기',alternate:'번갈아뛰기',double:'2중뛰기'};
+const ALTERNATE_COUNTS={both:'양발 합산',left:'왼발만',right:'오른발만'};
+function soloJumpLabel(){ return soloJumpType==='alternate' ? `번갈아뛰기 · ${ALTERNATE_COUNTS[alternateCountMode]}` : SOLO_JUMPS[soloJumpType]; }
+function soloRecordKey(){ return `${soloJumpType}${soloJumpType==='alternate'?'_'+alternateCountMode:''}_${soloMode}`; }
 
 const team={ base:0, combo:0, best:0, PERFECT:0, GOOD:0, NORMAL:0, MISS:0, SKIP:0, lastDiff:null };
 function resetTeam(){ Object.assign(team,{base:0,combo:0,best:0,PERFECT:0,GOOD:0,NORMAL:0,MISS:0,SKIP:0,lastDiff:null}); }
@@ -1104,7 +1116,7 @@ const glerp=(a,b,t)=>a+(b-a)*t;
 function makePlayer(id){
   return { id, engine:createJumpEngine(), count:0, lastCountAt:0, seen:false, lostSince:null, lastSeen:0, lm:null, rig:null,
            lastJumpT:null, paired:true, flashUntil:0, trackX:null, poseHist:[],
-           altBaseL:null,altBaseR:null,altActive:'',altLastAt:0,altLift:0 };
+           altBaseL:null,altBaseR:null,altUpL:false,altUpR:false,altPendingFoot:'',altPendingAt:0,altLastAt:0,altLift:0 };
 }
 function neededPoses(){ return mode==='duo'?2:1; }
 function ensurePlayers(n){
@@ -1387,7 +1399,16 @@ function updatePlayer(p,f,t){
   }
 }
 
-function resetAlternateJump(p){ p.altBaseL=null; p.altBaseR=null; p.altActive=''; p.altLastAt=0; p.altLift=0; }
+function resetAlternateJump(p){
+  p.altBaseL=null; p.altBaseR=null; p.altUpL=false; p.altUpR=false;
+  p.altPendingFoot=''; p.altPendingAt=0; p.altLastAt=0; p.altLift=0;
+}
+function countAlternateFoot(p,foot,t){
+  const wanted=alternateCountMode==='both'||(alternateCountMode==='left'&&foot==='L')||(alternateCountMode==='right'&&foot==='R');
+  if(!wanted||t-p.altLastAt<120) return;
+  p.altLastAt=t; soloCounted(p,1);
+  labRecordJump(p,{type:'jump',t}); jmpPilotPush(p,{type:'jump',t});
+}
 function feedAlternateJump(p,lm,torso,t){
   const lv=lm[27]?.visibility??0, rv=lm[28]?.visibility??0;
   if(lv<.45||rv<.45||!(torso>.01)) return;
@@ -1397,17 +1418,25 @@ function feedAlternateJump(p,lm,torso,t){
   p.altBaseL += (ly>p.altBaseL ? .20 : .006)*(ly-p.altBaseL);
   p.altBaseR += (ry>p.altBaseR ? .20 : .006)*(ry-p.altBaseR);
   const liftL=(p.altBaseL-ly)/torso, liftR=(p.altBaseR-ry)/torso;
-  const up=.105, down=.045, lUp=liftL>up, rUp=liftR>up;
+  const up=.105, down=.045;
+  const lUp=p.altUpL ? liftL>down : liftL>up;
+  const rUp=p.altUpR ? liftR>down : liftR>up;
+  const riseL=!p.altUpL&&lUp, riseR=!p.altUpR&&rUp;
+  p.altUpL=lUp; p.altUpR=rUp;
   p.altLift=Math.max(liftL,liftR);          
-  if(!p.altActive){
-    if(lUp&&rUp){ p.altActive='both'; return; }
-    if((lUp||rUp) && t-p.altLastAt>140){
-      p.altActive=lUp?'L':'R'; p.altLastAt=t; soloCounted(p,1);
-
-      labRecordJump(p,{type:'jump',t}); jmpPilotPush(p,{type:'jump',t});
+  const simultaneousMs=140;
+  if(p.altPendingFoot){
+    const oppositeRise=(p.altPendingFoot==='L'&&riseR)||(p.altPendingFoot==='R'&&riseL);
+    if(oppositeRise && t-p.altPendingAt<=simultaneousMs){
+      p.altPendingFoot=''; p.altPendingAt=0; return;       
     }
-  }else if(liftL<down&&liftR<down){ p.altActive=''; }
-  else if(p.altActive!=='both'&&lUp&&rUp){ p.altActive='both'; }
+    if(t-p.altPendingAt>simultaneousMs){
+      countAlternateFoot(p,p.altPendingFoot,p.altPendingAt);
+      p.altPendingFoot=''; p.altPendingAt=0;
+    }
+  }
+  if(riseL&&riseR){ p.altPendingFoot=''; p.altPendingAt=0; return; }
+  if((riseL||riseR)&&!p.altPendingFoot){ p.altPendingFoot=riseL?'L':'R'; p.altPendingAt=t; }
 }
 
 function updateRig(p,lm){
@@ -1575,7 +1604,7 @@ function relayTick(now){
 
 const lobbyPrefs = store.json('jmp_lobby_v1',{}) || {};
 function saveLobbyPrefs(){
-  store.set('jmp_lobby_v1',JSON.stringify({mode,soloMode,soloJumpType,duoType,soloTime:$('soloTime').value,soloTarget:$('soloTarget').value,bpm:$('bpm').value,duration:$('duration').value,
+  store.set('jmp_lobby_v1',JSON.stringify({mode,soloMode,soloJumpType,alternateCountMode,duoType,soloTime:$('soloTime').value,soloTarget:$('soloTarget').value,bpm:$('bpm').value,duration:$('duration').value,
     relayPlayers:$('relayPlayers').value,relayTarget:$('relayTarget').value,relayRounds:$('relayRounds').value,relayChange:$('relayChange').value,groupKind,groupSkill:groupSkillId}));
 }
 function restoreLobbyPrefs(){
@@ -1583,6 +1612,7 @@ function restoreLobbyPrefs(){
   if(['solo','duo','relay','group'].includes(p.mode)) mode=p.mode;
   if(MODES_SOLO[p.soloMode]) soloMode=p.soloMode;
   if(SOLO_JUMPS[p.soloJumpType]) soloJumpType=p.soloJumpType;
+  if(ALTERNATE_COUNTS[p.alternateCountMode]) alternateCountMode=p.alternateCountMode;
   if(['cooperate','battle'].includes(p.duoType)) duoType=p.duoType;
   const setSel=(id,v)=>{ const el=$(id); if(v!=null && [...el.options].some(o=>o.value===String(v))) el.value=String(v); };
   setSel('soloTime',p.soloTime); setSel('soloTarget',p.soloTarget); setSel('bpm',p.bpm); setSel('duration',p.duration);
@@ -1596,8 +1626,10 @@ function applyModeUI(){
   document.querySelectorAll('#modelist .choice').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mode===mode)));
   document.querySelectorAll('#soloSeg button').forEach(b=>b.classList.toggle('on',b.dataset.solo===soloMode));
   document.querySelectorAll('#soloJumpSeg button').forEach(b=>b.classList.toggle('on',b.dataset.jump===soloJumpType));
+  document.querySelectorAll('#alternateCountSeg button').forEach(b=>b.classList.toggle('on',b.dataset.altCount===alternateCountMode));
   document.querySelectorAll('#duoSeg button').forEach(b=>b.classList.toggle('on',b.dataset.duo===duoType));
   $('optSolo').hidden = mode!=='solo';
+  $('alternateCountWrap').hidden = mode!=='solo'||soloJumpType!=='alternate';
   $('optDuo').hidden = mode!=='duo';
   $('soloTimeWrap').hidden = soloMode!=='timed';
   $('soloTargetWrap').hidden = soloMode!=='target';
@@ -1618,7 +1650,7 @@ function applyModeUI(){
 function updateModeBadge(){
   let t='',s='';
   const b=+$('bpm').value;
-  if(mode==='solo'){ t=`${SOLO_JUMPS[soloJumpType]} · ${MODES_SOLO[soloMode].title}`; s=MODES_SOLO[soloMode].sub; if(soloMode==='timed') s=`제한 ${$('soloTime').value}초 안에 최대한 많이`; if(soloMode==='target') s=`걸리지 않고 ${$('soloTarget').value}회 연속 성공`; }
+  if(mode==='solo'){ t=`${soloJumpLabel()} · ${MODES_SOLO[soloMode].title}`; s=MODES_SOLO[soloMode].sub; if(soloMode==='timed') s=`제한 ${$('soloTime').value}초 안에 최대한 많이`; if(soloMode==='target') s=`걸리지 않고 ${$('soloTarget').value}회 연속 성공`; }
   else if(mode==='duo'){ t=duoType==='battle'?'2인 대결':'2인 협동'; s=duoType==='battle'?`${$('duration').value}초 · 더 많이 뛰면 승리`:`${b} BPM · ${$('duration').value}초`; }
   else if(mode==='relay'){ t='릴레이'; s=`${$('relayPlayers').value}명 · ${$('relayTarget').value}회씩 · ${$('relayRounds').value}바퀴`; }
   else if(groupKind==='practice'){ t='단체 리듬 · 연습'; s=skillById(groupSkillId).n; }
@@ -1732,7 +1764,7 @@ async function boot(){
   const cdTotal=COUNTDOWN_MS.reduce((a,b)=>a+b,0);
   if(mode!=='solo') prepareClock(cdTotal);
   const subs={free:'멈추고 싶을 때 종료를 누르세요',timed:'제한 시간 안에 최대한 많이!',target:`걸리지 않고 ${$('soloTarget').value}회까지!`};
-  const sub = mode==='solo'?`${SOLO_JUMPS[soloJumpType]} · ${subs[soloMode]}` : mode==='duo'?(duoType==='battle'?'제한시간 동안 더 많이 뛰면 승리!':'박자음에 맞춰 둘이 함께 뛰어요') : mode==='relay'?'1번 주자부터 시작합니다': groupKind==='practice'?'코치와 발판을 보고 따라 해요':'노트가 판정선에 닿을 때 뛰어요';
+  const sub = mode==='solo'?`${soloJumpLabel()} · ${subs[soloMode]}` : mode==='duo'?(duoType==='battle'?'제한시간 동안 더 많이 뛰면 승리!':'박자음에 맞춰 둘이 함께 뛰어요') : mode==='relay'?'1번 주자부터 시작합니다': groupKind==='practice'?'코치와 발판을 보고 따라 해요':'노트가 판정선에 닿을 때 뛰어요';
   const ok=await runCountdown(sub);
   bootBusy=false; $('playBtn').disabled=false;
   if(!ok) return;
@@ -1881,7 +1913,7 @@ function finishSolo(title){ soloResultTitle=title; finish(false); }
 
 function resultHtml(m){
   if(m==='solo'){
-    const bestKey=soloJumpType+'_'+soloMode;
+    const bestKey=soloRecordKey();
 
     const cnt=players[0].count;
     const countsAsRecord = (soloMode==='free' || !stoppedEarly);
@@ -1890,7 +1922,7 @@ function resultHtml(m){
     const targetMode=soloMode==='target', target=+$('soloTarget').value, targetClear=targetMode&&cnt>=target;
     if(cnt>0 && (!targetMode||targetClear)) snd.finish();
     if(isBest && cnt>0 && (!targetMode||targetClear)) confetti(true);
-    const label = soloMode==='timed' ? `1인 측정 · ${SOLO_JUMPS[soloJumpType]} · 시간제 ${durationSec}초` : targetMode ? `1인 측정 · ${SOLO_JUMPS[soloJumpType]} · 목표 도전 ${target}회` : `1인 측정 · ${SOLO_JUMPS[soloJumpType]} · ${MODES_SOLO[soloMode].title}`;
+    const label = soloMode==='timed' ? `1인 측정 · ${soloJumpLabel()} · 시간제 ${durationSec}초` : targetMode ? `1인 측정 · ${soloJumpLabel()} · 목표 도전 ${target}회` : `1인 측정 · ${soloJumpLabel()} · ${MODES_SOLO[soloMode].title}`;
     return `<div class="res-label">${label}</div>
       <div class="res-title">${esc(soloResultTitle||'측정 완료')}</div>
       <div class="rbox big ${targetMode&&!targetClear?'':'win'}"><span>${targetMode?'연속 성공':'줄넘기 개수'}</span><strong>${fmt(cnt)}</strong></div>
@@ -1947,7 +1979,7 @@ function resultHtml(m){
 function todayKey(){ const d=new Date(); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
 function loadBest(m){ const o=store.json('jm_best_'+m); return (o&&o.date===todayKey())?(o.value||0):0; }
 function saveBest(m,v){ if(v>loadBest(m)){ store.set('jm_best_'+m,JSON.stringify({date:todayKey(),value:v})); return true; } return false; }
-function updateBest(){ const b=loadBest(soloJumpType+'_'+soloMode); setText($('railBest'), b?fmt(b):'—'); }
+function updateBest(){ const b=loadBest(soloRecordKey()); setText($('railBest'), b?fmt(b):'—'); }
 
 function confetti(big=false){
   const chars=['🎉','⭐','💪','🟢','✨'], n=big?32:14;
@@ -2732,6 +2764,9 @@ document.querySelectorAll('#soloSeg button').forEach(b=>b.addEventListener('clic
 document.querySelectorAll('#soloJumpSeg button').forEach(b=>b.addEventListener('click',()=>{
   soloJumpType=b.dataset.jump; applyModeUI(); updateBest(); saveLobbyPrefs();
 }));
+document.querySelectorAll('#alternateCountSeg button').forEach(b=>b.addEventListener('click',()=>{
+  alternateCountMode=b.dataset.altCount; applyModeUI(); updateBest(); saveLobbyPrefs();
+}));
 document.querySelectorAll('#duoSeg button').forEach(b=>b.addEventListener('click',()=>{
   duoType=b.dataset.duo; applyModeUI(); saveLobbyPrefs();
 }));
@@ -3295,6 +3330,8 @@ function labRecordJump(p,ev){
     ts        : new Date().toISOString(),
     mode      : mode,
     solo_mode : mode==='solo' ? soloMode : null,
+    solo_jump_type: mode==='solo' ? soloJumpType : null,
+    alternate_count: mode==='solo'&&soloJumpType==='alternate' ? alternateCountMode : null,
     pid       : p.id ?? 0,
     kind      : ev.type,                                  
     n         : ev.type==='backfill' ? ev.n : 1,
@@ -3449,7 +3486,7 @@ function labStamp(){
   const d=new Date(), p=n=>String(n).padStart(2,'0');
   return `${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}`;
 }
-const LAB_COLS=['ts','mode','solo_mode','pid','kind','n','peak_ms','amp','thr','rise','base',
+const LAB_COLS=['ts','mode','solo_mode','solo_jump_type','alternate_count','pid','kind','n','peak_ms','amp','thr','rise','base',
   'period_ms','bpm','period_r','period_cv','rhythm_ok','gate','k_up','count','fps','infer_hz',
   'infer_ms','persons','vis_sh','vis_hip','vis_ank','sync_diff','pose_sample_ms','jump_height',
   'knee_bend_deg','knee_lr_diff_deg','elbow_angle_deg','elbow_lr_diff_deg','torso_lean',
