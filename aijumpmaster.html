@@ -395,6 +395,8 @@ body.jmp-lite-hud .jt-bars i{box-shadow:none}body.jmp-lite-hud .jt-wing{filter:n
 .rbox strong{display:block;margin-top:3px;font-family:var(--num);font-variation-settings:'wdth' 118,'wght' 900;font-weight:900;
   font-size:max(24px,calc(var(--u)*2.8));line-height:1;font-variant-numeric:tabular-nums;color:#fff}
 .rbox.win strong{color:var(--lime)}
+.rbox.blue{border:1px solid rgba(56,189,248,.48)}.rbox.blue strong{color:var(--blue)}
+.rbox.red{border:1px solid rgba(251,113,133,.48)}.rbox.red strong{color:var(--red)}
 .rbox.big{text-align:left}
 .rbox.big strong{font-size:max(36px,calc(var(--u)*4.4))}
 .rline{margin:max(6px,calc(var(--u)*.7)) 0;font-size:max(12px,calc(var(--u)*1.1));font-weight:800;color:rgba(255,255,255,.8);line-height:1.55}
@@ -602,6 +604,12 @@ html body:not(.jmp-beta-on) #jumpLabModal{
     </div>
 
     <div class="opts" id="optSolo">
+      <span class="option-label">줄넘기 종목</span>
+      <div class="seg" id="soloJumpSeg">
+        <button type="button" data-jump="together" class="on">모아뛰기</button>
+        <button type="button" data-jump="alternate">번갈아뛰기</button>
+        <button type="button" data-jump="double">2중뛰기</button>
+      </div>
       <span class="option-label">1인 측정 방식</span>
       <div class="seg" id="soloSeg">
         <button type="button" data-solo="free" class="on">자유 측정</button>
@@ -616,6 +624,14 @@ html body:not(.jmp-beta-on) #jumpLabModal{
         <input type="range" id="sensLobby" min="0" max="100" value="60" aria-label="측정 감도"></label>
     </div>
 
+    <div class="opts" id="optDuo" hidden>
+      <span class="option-label">2인 진행 방식</span>
+      <div class="seg two" id="duoSeg">
+        <button type="button" data-duo="cooperate" class="on">협동</button>
+        <button type="button" data-duo="battle">대결</button>
+      </div>
+    </div>
+
     <div class="opts" id="optGroup" hidden>
       <div class="seg two" id="groupSeg">
         <button type="button" data-gk="practice" class="on">연습 · 발판</button>
@@ -626,7 +642,7 @@ html body:not(.jmp-beta-on) #jumpLabModal{
     </div>
 
     <div class="opts" id="optBeat" hidden>
-      <label class="lfield"><i id="bpmLabel">박자 속도</i>
+      <label class="lfield" id="bpmWrap"><i id="bpmLabel">박자 속도</i>
         <select id="bpm"><option value="80">아주 느리게 · 80 BPM</option><option value="100">느리게 · 100 BPM</option><option value="120" selected>기본 · 120 BPM</option><option value="140">빠르게 · 140 BPM</option><option value="160">매우 빠르게 · 160 BPM</option></select></label>
       <label class="lfield" id="durationWrap"><i>게임 시간</i>
         <select id="duration"><option value="30">30초</option><option value="45" selected>45초</option><option value="60">60초</option><option value="90">90초</option><option value="120">120초</option></select></label>
@@ -754,7 +770,7 @@ html body:not(.jmp-beta-on) #jumpLabModal{
 
 <script type="module">
 
-const APP_VERSION = '3.2.1';
+const APP_VERSION = '3.2.2';
 
 const MP_VERSION  = '0.10.14';
 const MP_LOCAL    = './vendor/mediapipe/';
@@ -1007,6 +1023,8 @@ function esc(s){ return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&
 let appState='login';            
 let mode='solo';                 
 let soloMode='free';             
+let soloJumpType='together';     
+let duoType='cooperate';         
 let soundOn = store.get('jmp_sound','1')!=='0';
 
 let stream=null, facingMode='user';
@@ -1026,9 +1044,10 @@ const MODES_SOLO={
   timed: {title:'시간 도전', sub:'제한 시간 안에 최대한 많이'},
   target:{title:'목표 도전',   sub:'걸리지 않고 목표까지 연속으로!'},
 };
+const SOLO_JUMPS={together:'모아뛰기',alternate:'번갈아뛰기',double:'2중뛰기'};
 
-const team={ base:0, combo:0, best:0, PERFECT:0, GOOD:0, NORMAL:0, MISS:0, lastDiff:null };
-function resetTeam(){ Object.assign(team,{base:0,combo:0,best:0,PERFECT:0,GOOD:0,NORMAL:0,MISS:0,lastDiff:null}); }
+const team={ base:0, combo:0, best:0, PERFECT:0, GOOD:0, NORMAL:0, MISS:0, SKIP:0, lastDiff:null };
+function resetTeam(){ Object.assign(team,{base:0,combo:0,best:0,PERFECT:0,GOOD:0,NORMAL:0,MISS:0,SKIP:0,lastDiff:null}); }
 
 const relay={ players:4, target:30, rounds:2, changeMs:5000, turn:0, turnCount:0, changing:false, resumeAt:0, finishSec:0, done:false };
 
@@ -1084,7 +1103,8 @@ const glerp=(a,b,t)=>a+(b-a)*t;
 
 function makePlayer(id){
   return { id, engine:createJumpEngine(), count:0, lastCountAt:0, seen:false, lostSince:null, lastSeen:0, lm:null, rig:null,
-           lastJumpT:null, paired:true, flashUntil:0, trackX:null, poseHist:[] };
+           lastJumpT:null, paired:true, flashUntil:0, trackX:null, poseHist:[],
+           altBaseL:null,altBaseR:null,altActive:'',altLastAt:0,altLift:0 };
 }
 function neededPoses(){ return mode==='duo'?2:1; }
 function ensurePlayers(n){
@@ -1125,6 +1145,23 @@ const snd={
 };
 function drum(t,accent){ tone(accent?110:150,.07,'triangle',accent?.18:.09,t); if(accent) tone(55,.12,'sine',.13,t); }
 
+function startBeatScheduler(){
+  clearInterval(scheduler);
+  if(!audio) return;
+  scheduler = setInterval(()=>{
+    if(!audio) return;
+    const period=beatMs/1000;
+    while(clockAudioStart + nextBeatIdx*period < audio.currentTime + .15){
+      const t=clockAudioStart + nextBeatIdx*period;
+      if(mode==='group' && groupRunKind==='play' && nextBeatIdx>=groupTotal()) break;   
+      if(t>=audio.currentTime-.03){
+        if(!(mode==='duo'&&duoType==='battle')) drum(t, nextBeatIdx%4===0);
+        if(mode==='group' && gGhost(nextBeatIdx)) drum(t+period/2,false);                 
+      }
+      nextBeatIdx++;
+    }
+  },25);
+}
 function prepareClock(delayMs){
   initAudio();
   clearInterval(scheduler);
@@ -1133,21 +1170,32 @@ function prepareClock(delayMs){
   if(!audio){ return; }
   clockAudioStart = audio.currentTime + delayMs/1000;
   nextBeatIdx = 0;
-  scheduler = setInterval(()=>{
-    if(!audio) return;
-    const period=beatMs/1000;
-    while(clockAudioStart + nextBeatIdx*period < audio.currentTime + .15){
-      const t=clockAudioStart + nextBeatIdx*period;
-      if(mode==='group' && groupRunKind==='play' && nextBeatIdx>=groupTotal()) break;   
-      if(t>=audio.currentTime-.03){
-        drum(t, nextBeatIdx%4===0);
-        if(mode==='group' && gGhost(nextBeatIdx)) drum(t+period/2,false);                 
-      }
-      nextBeatIdx++;
-    }
-  },25);
+  startBeatScheduler();
+}
+
+function resumeClock(){
+  initAudio();
+  clearInterval(scheduler);
+  if(!audio) return;
+  const elapsedBeats=(performance.now()-gameStartPerf)/beatMs;
+  clockAudioStart = audio.currentTime - elapsedBeats*(beatMs/1000);
+  nextBeatIdx = Math.max(0, Math.ceil(elapsedBeats));
+  startBeatScheduler();
 }
 function stopClock(){ clearInterval(scheduler); scheduler=0; }
+
+let wakeLock=null;
+async function keepScreenOn(on){
+  try{
+    if(on){
+      if(wakeLock || !navigator.wakeLock || document.hidden) return;
+      wakeLock=await navigator.wakeLock.request('screen');
+      wakeLock.addEventListener('release',()=>{ wakeLock=null; });
+    }else if(wakeLock){
+      const w=wakeLock; wakeLock=null; await w.release();
+    }
+  }catch(e){ wakeLock=null; }
+}
 
 let cameraStarting=null;
 async function ensureCamera(){
@@ -1179,20 +1227,30 @@ function cameraErrorText(e){
                 : '카메라를 시작할 수 없습니다: '+(e?.message||'알 수 없는 오류');
 }
 
+let _vendorProbe=null;
+function vendorAvailable(){
+  if(!USE_VENDOR) return Promise.resolve(false);
+  if(!_vendorProbe){
+    _vendorProbe=fetch(MP_LOCAL+'vision_bundle.mjs',{method:'HEAD',cache:'no-store'})
+      .then(r=>!!r.ok).catch(()=>false);
+  }
+  return _vendorProbe;
+}
 async function loadVisionModule(){
   if(vision) return vision;
-  try{
-    if(!USE_VENDOR) throw new Error('사이트에서는 폴더 파일을 찾지 않는다');
-    const mod=await import(MP_LOCAL+'vision_bundle.mjs');
-    vision={mod, wasm:MP_LOCAL+'wasm', src:'폴더'};
-  }catch(e){
-    const mod=await import(MP_CDN);
-    vision={mod, wasm:MP_CDN+'/wasm', src:'인터넷'};
+  if(await vendorAvailable()){
+    try{
+      const mod=await import(MP_LOCAL+'vision_bundle.mjs');
+      vision={mod, wasm:MP_LOCAL+'wasm', src:'폴더'};
+      return vision;
+    }catch(e){  }
   }
+  const mod=await import(MP_CDN);
+  vision={mod, wasm:MP_CDN+'/wasm', src:'인터넷'};
   return vision;
 }
 async function localModelExists(){
-  if(!USE_VENDOR) return false;
+  if(!(await vendorAvailable())) return false;
   try{ const r=await fetch(MODEL_LOCAL,{method:'HEAD',cache:'no-store'}); return r.ok; }catch(e){ return false; }
 }
 async function createPose(num){
@@ -1247,22 +1305,30 @@ async function ensurePose(num){
 }
 
 const view={W:1,H:1,dpr:1,dw:1,dh:1,ox:0,oy:0,mirror:true};
+
+let viewDirty=true;
+function markViewDirty(){ viewDirty=true; }
 function sizeCanvas(){
-  const W=app.clientWidth||innerWidth, H=app.clientHeight||innerHeight;
+  if(viewDirty){
+    viewDirty=false;
+    view.W=app.clientWidth||innerWidth; view.H=app.clientHeight||innerHeight;
+  }
+  const W=view.W, H=view.H;
   const dpr=Math.min(devicePixelRatio||1, quality==='high'?1.5:1);
   const cw=Math.round(W*dpr), ch=Math.round(H*dpr);
   if(cv.width!==cw||cv.height!==ch){ cv.width=cw; cv.height=ch; }
+  view.dpr=dpr;
   ctx.setTransform(dpr,0,0,dpr,0,0);
   const vw=video.videoWidth||1280, vh=video.videoHeight||720, sc=Math.max(W/vw,H/vh);
-  Object.assign(view,{W,H,dpr,dw:vw*sc,dh:vh*sc,ox:(W-vw*sc)/2,oy:(H-vh*sc)/2,mirror:facingMode==='user'});
+  view.dw=vw*sc; view.dh=vh*sc; view.ox=(W-vw*sc)/2; view.oy=(H-vh*sc)/2; view.mirror=(facingMode==='user');
 }
 function sp(pt){ return { x:view.ox+(view.mirror?1-pt.x:pt.x)*view.dw, y:view.oy+pt.y*view.dh }; }
 
 function maybeInfer(now){
   if(!pose||poseBusy||!stream||video.readyState<2) return;
   if(video.currentTime===lastVideoTime) return;
-  
-  const minGap = poseNum>1 ? clamp(inferCost*1.15,33,125) : 0;
+
+  const minGap = poseNum>1 ? clamp(inferCost*1.15,33,125) : clamp(inferCost*1.10,20,40);
   if(now-lastInfer<minGap) return;
   lastVideoTime=video.currentTime; lastInfer=now;
   const t0=performance.now();
@@ -1305,17 +1371,43 @@ function updatePlayer(p,f,t){
   if(f){
     p.seen=true; p.lostSince=null; p.lastSeen=t; p.lm=f.lm;
 
-    p.poseHist.push({t, pose:labPoseMetrics(f.lm)});
-    while(p.poseHist.length && t-p.poseHist[0].t>4000) p.poseHist.shift();
+    if(jmpIsLab()){
+      p.poseHist.push({t, pose:labPoseMetrics(f.lm)});
+      while(p.poseHist.length && t-p.poseHist[0].t>4000) p.poseHist.shift();
+    }else if(p.poseHist.length) p.poseHist.length=0;
     p.trackX=p.trackX==null?f.sx:p.trackX*.72+f.sx*.28;
     updateRig(p,f.lm);
     p.engine.feed(f.hipY,f.torso,t,ev=>onEngineEvent(p,ev));
+    if(running && mode==='solo' && soloJumpType==='alternate') feedAlternateJump(p,f.lm,f.torso,t);
   }else{
     p.seen=false;
     
     if(p.lostSince==null){ p.lostSince=t; return; }
-    if(t-p.lostSince>LOST_GRACE_MS){ p.engine.recalibrate(); p.lostSince=null; p.rig=null; }
+    if(t-p.lostSince>LOST_GRACE_MS){ p.engine.recalibrate(); resetAlternateJump(p); p.lostSince=null; p.rig=null; }
   }
+}
+
+function resetAlternateJump(p){ p.altBaseL=null; p.altBaseR=null; p.altActive=''; p.altLastAt=0; p.altLift=0; }
+function feedAlternateJump(p,lm,torso,t){
+  const lv=lm[27]?.visibility??0, rv=lm[28]?.visibility??0;
+  if(lv<.45||rv<.45||!(torso>.01)) return;
+  const ly=lm[27].y, ry=lm[28].y;
+  if(p.altBaseL==null){ p.altBaseL=ly; p.altBaseR=ry; return; }
+  
+  p.altBaseL += (ly>p.altBaseL ? .20 : .006)*(ly-p.altBaseL);
+  p.altBaseR += (ry>p.altBaseR ? .20 : .006)*(ry-p.altBaseR);
+  const liftL=(p.altBaseL-ly)/torso, liftR=(p.altBaseR-ry)/torso;
+  const up=.105, down=.045, lUp=liftL>up, rUp=liftR>up;
+  p.altLift=Math.max(liftL,liftR);          
+  if(!p.altActive){
+    if(lUp&&rUp){ p.altActive='both'; return; }
+    if((lUp||rUp) && t-p.altLastAt>140){
+      p.altActive=lUp?'L':'R'; p.altLastAt=t; soloCounted(p,1);
+
+      labRecordJump(p,{type:'jump',t}); jmpPilotPush(p,{type:'jump',t});
+    }
+  }else if(liftL<down&&liftR<down){ p.altActive=''; }
+  else if(p.altActive!=='both'&&lUp&&rUp){ p.altActive='both'; }
 }
 
 function updateRig(p,lm){
@@ -1348,9 +1440,10 @@ function jmpPilotPush(p,ev){
   const vals=jmpPilotHistory.map(v=>v.height), lo=Math.min(...vals,70), hi=Math.max(...vals,130), span=Math.max(20,hi-lo);
   const gaps=[]; for(let i=1;i<n;i++) gaps.push(jmpPilotHistory[i].t-jmpPilotHistory[i-1].t);
   const avg=gaps.length?gaps.reduce((a,b)=>a+b,0)/gaps.length:0;
-  const cv=avg&&gaps.length>1?Math.sqrt(gaps.reduce((s,v)=>s+(v-avg)*(v-avg),0)/gaps.length)/avg:null;
-  const bpm=avg?Math.round(60000/avg):0, rhythm=avg?clamp(1-(cv||0)*2.8,.12,1):.2, hp=clamp(height/130,.12,1);
-  setText($('jpgRhythm'),avg?bpm:'—'); setText($('jpgHeight'),Math.round(height)); setText($('jpgCount'),n+'/10');
+  
+  const gapCv=avg&&gaps.length>1?Math.sqrt(gaps.reduce((s,v)=>s+(v-avg)*(v-avg),0)/gaps.length)/avg:null;
+  const bpmNow=avg?Math.round(60000/avg):0, rhythm=avg?clamp(1-(gapCv||0)*2.8,.12,1):.2, hp=clamp(height/130,.12,1);
+  setText($('jpgRhythm'),avg?bpmNow:'—'); setText($('jpgHeight'),Math.round(height)); setText($('jpgCount'),n+'/10');
   const bars=(id,power)=>{ const els=[...($(id)?.children||[])]; els.forEach((el,i)=>el.style.setProperty('--p',clamp(power*(.48+(i%4)*.16)+(i%2)*.07,.1,1).toFixed(2))); };
   bars('jpgRhythmBars',rhythm); bars('jpgHeightBars',hp);
   const duoScore=mode==='duo'&&team.lastDiff!=null?clamp(1-team.lastDiff/SYNC.NORMAL_S,0,1):rhythm;
@@ -1380,11 +1473,22 @@ function soloCounted(p,n){
   }
 }
 
+function duoPartnerVisible(x){
+  const q=players[1-x.id];
+  return !!(q && q.seen);
+}
 function duoCounted(p,n,t){
   p.count+=n; setText($('p'+p.id+'num'),p.count); pulse($('p'+p.id+'num'));
-  if(t==null) return;                                  
+  if(duoType==='battle'){
+    p.lastCountAt=performance.now(); p.flashUntil=p.lastCountAt+320; snd.hop();
+    updateBattleHud(); return;
+  }
+  if(t==null){ team.SKIP+=n; return; }   
   const q=players[1-p.id];
-  if(!p.paired && p.lastJumpT!=null) duoMiss(p);        
+  if(!p.paired && p.lastJumpT!=null){    
+    if(duoPartnerVisible(p)) duoMiss(p);
+    else p.paired=true;                  
+  }
   if(q && !q.paired && q.lastJumpT!=null && Math.abs(t-q.lastJumpT)<=pairWindowMs(p,q)){
     const diff=Math.abs(t-q.lastJumpT)/1000;
     p.lastJumpT=t; p.paired=true; q.paired=true;
@@ -1398,6 +1502,10 @@ function duoCounted(p,n,t){
     p.lastJumpT=t; p.paired=false;
   }
   updateTeamHud();
+}
+function updateBattleHud(){
+  const a=players[0]?.count||0,b=players[1]?.count||0;
+  setText($('teamScore'),a===b?'동점':a>b?'청':'홍'); setText($('teamCombo'),Math.abs(a-b));
 }
 
 function pairWindowMs(p,q){
@@ -1415,7 +1523,9 @@ function duoMiss(x){
 }
 function duoCheckTimeouts(now){
   for(const x of players){
-    if(!x.paired && x.lastJumpT!=null && now-x.lastJumpT > SYNC.NORMAL_S*1000+SYNC.REPORT_LAG_MS) duoMiss(x);
+    if(x.paired || x.lastJumpT==null) continue;
+    if(!duoPartnerVisible(x)){ x.paired=true; continue; }   
+    if(now-x.lastJumpT > SYNC.NORMAL_S*1000+SYNC.REPORT_LAG_MS) duoMiss(x);
   }
 }
 function setSync(diff,text){
@@ -1465,13 +1575,15 @@ function relayTick(now){
 
 const lobbyPrefs = store.json('jmp_lobby_v1',{}) || {};
 function saveLobbyPrefs(){
-  store.set('jmp_lobby_v1',JSON.stringify({mode,soloMode,soloTime:$('soloTime').value,soloTarget:$('soloTarget').value,bpm:$('bpm').value,duration:$('duration').value,
+  store.set('jmp_lobby_v1',JSON.stringify({mode,soloMode,soloJumpType,duoType,soloTime:$('soloTime').value,soloTarget:$('soloTarget').value,bpm:$('bpm').value,duration:$('duration').value,
     relayPlayers:$('relayPlayers').value,relayTarget:$('relayTarget').value,relayRounds:$('relayRounds').value,relayChange:$('relayChange').value,groupKind,groupSkill:groupSkillId}));
 }
 function restoreLobbyPrefs(){
   const p=lobbyPrefs;
   if(['solo','duo','relay','group'].includes(p.mode)) mode=p.mode;
   if(MODES_SOLO[p.soloMode]) soloMode=p.soloMode;
+  if(SOLO_JUMPS[p.soloJumpType]) soloJumpType=p.soloJumpType;
+  if(['cooperate','battle'].includes(p.duoType)) duoType=p.duoType;
   const setSel=(id,v)=>{ const el=$(id); if(v!=null && [...el.options].some(o=>o.value===String(v))) el.value=String(v); };
   setSel('soloTime',p.soloTime); setSel('soloTarget',p.soloTarget); setSel('bpm',p.bpm); setSel('duration',p.duration);
   setSel('relayPlayers',p.relayPlayers); setSel('relayTarget',p.relayTarget); setSel('relayRounds',p.relayRounds); setSel('relayChange',p.relayChange);
@@ -1483,11 +1595,15 @@ function applyModeUI(){
   document.body.classList.toggle('jmp-pilot-duo',mode==='duo');
   document.querySelectorAll('#modelist .choice').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mode===mode)));
   document.querySelectorAll('#soloSeg button').forEach(b=>b.classList.toggle('on',b.dataset.solo===soloMode));
+  document.querySelectorAll('#soloJumpSeg button').forEach(b=>b.classList.toggle('on',b.dataset.jump===soloJumpType));
+  document.querySelectorAll('#duoSeg button').forEach(b=>b.classList.toggle('on',b.dataset.duo===duoType));
   $('optSolo').hidden = mode!=='solo';
+  $('optDuo').hidden = mode!=='duo';
   $('soloTimeWrap').hidden = soloMode!=='timed';
   $('soloTargetWrap').hidden = soloMode!=='target';
   $('optBeat').hidden = mode==='solo';
   $('durationWrap').hidden = mode!=='duo';
+  $('bpmWrap').hidden = mode==='duo'&&duoType==='battle';
   $('optRelay').hidden = mode!=='relay';
   $('optGroup').hidden = mode!=='group';
   document.querySelectorAll('#groupSeg button').forEach(b=>b.classList.toggle('on',b.dataset.gk===groupKind));
@@ -1502,8 +1618,8 @@ function applyModeUI(){
 function updateModeBadge(){
   let t='',s='';
   const b=+$('bpm').value;
-  if(mode==='solo'){ t=MODES_SOLO[soloMode].title; s=MODES_SOLO[soloMode].sub; if(soloMode==='timed') s=`제한 ${$('soloTime').value}초 안에 최대한 많이`; if(soloMode==='target') s=`걸리지 않고 ${$('soloTarget').value}회 연속 성공`; }
-  else if(mode==='duo'){ t='2인 협동'; s=`${b} BPM · ${$('duration').value}초`; }
+  if(mode==='solo'){ t=`${SOLO_JUMPS[soloJumpType]} · ${MODES_SOLO[soloMode].title}`; s=MODES_SOLO[soloMode].sub; if(soloMode==='timed') s=`제한 ${$('soloTime').value}초 안에 최대한 많이`; if(soloMode==='target') s=`걸리지 않고 ${$('soloTarget').value}회 연속 성공`; }
+  else if(mode==='duo'){ t=duoType==='battle'?'2인 대결':'2인 협동'; s=duoType==='battle'?`${$('duration').value}초 · 더 많이 뛰면 승리`:`${b} BPM · ${$('duration').value}초`; }
   else if(mode==='relay'){ t='릴레이'; s=`${$('relayPlayers').value}명 · ${$('relayTarget').value}회씩 · ${$('relayRounds').value}바퀴`; }
   else if(groupKind==='practice'){ t='단체 리듬 · 연습'; s=skillById(groupSkillId).n; }
   else { t='단체 리듬 · 실전'; s=groupRoutineSummary(); }
@@ -1616,7 +1732,7 @@ async function boot(){
   const cdTotal=COUNTDOWN_MS.reduce((a,b)=>a+b,0);
   if(mode!=='solo') prepareClock(cdTotal);
   const subs={free:'멈추고 싶을 때 종료를 누르세요',timed:'제한 시간 안에 최대한 많이!',target:`걸리지 않고 ${$('soloTarget').value}회까지!`};
-  const sub = mode==='solo'?subs[soloMode] : mode==='duo'?'박자음에 맞춰 둘이 함께 뛰어요' : mode==='relay'?'1번 주자부터 시작합니다': groupKind==='practice'?'코치와 발판을 보고 따라 해요':'노트가 판정선에 닿을 때 뛰어요';
+  const sub = mode==='solo'?`${SOLO_JUMPS[soloJumpType]} · ${subs[soloMode]}` : mode==='duo'?(duoType==='battle'?'제한시간 동안 더 많이 뛰면 승리!':'박자음에 맞춰 둘이 함께 뛰어요') : mode==='relay'?'1번 주자부터 시작합니다': groupKind==='practice'?'코치와 발판을 보고 따라 해요':'노트가 판정선에 닿을 때 뛰어요';
   const ok=await runCountdown(sub);
   bootBusy=false; $('playBtn').disabled=false;
   if(!ok) return;
@@ -1626,7 +1742,7 @@ async function boot(){
 async function waitForPlayersReady(n,timeoutMs){
   const until=performance.now()+timeoutMs;
   while(performance.now()<until){
-    if(players.length>=n&&players.slice(0,n).every(p=>p.seen&&!p.engine.calibrating)) return true;
+    if(players.filter(p=>p.seen&&!p.engine.calibrating).length>=n) return true;
     await sleep(100);
   }
   return false;
@@ -1634,15 +1750,23 @@ async function waitForPlayersReady(n,timeoutMs){
 
 function setupRound(){
   clearTimeout(finishTimer);
+  stoppedEarly=false; pausedAt=0; roundEndPerf=0;
   resetTeam(); updateTeamHud(); setSync(0,'두 사람이 같은 순간에 착지하면 PERFECT');
-  players.forEach(p=>{ p.count=0; p.lastCountAt=0; p.lastJumpT=null; p.paired=true; p.flashUntil=0; p.engine.counting=false; p.engine.resetCount(); });
+  players.forEach(p=>{ p.count=0; p.lastCountAt=0; p.lastJumpT=null; p.paired=true; p.flashUntil=0; p.engine.counting=false; p.engine.resetCount(); resetAlternateJump(p); });
   setText($('p0num'),0); setText($('p1num'),0); setText($('stCountVal'),0);
   Object.assign(relay,{players:+$('relayPlayers').value,target:+$('relayTarget').value,rounds:+$('relayRounds').value,changeMs:+$('relayChange').value,
                        turn:0,turnCount:0,changing:false,resumeAt:0,finishSec:0,done:false});
   durationSec = mode==='duo' ? +$('duration').value : mode==='group' ? (groupKind==='play'?Math.ceil(groupTotal()*60/bpm):0) : +$('soloTime').value;
   gameEndPerf=Infinity;
   if(mode==='solo'){ setText($('stCountLab'), soloMode==='target'?'목표 도전':'줄넘기 개수'); updateBest(); }
-  if(mode==='duo'){ setText($('p0name'),'청'); setText($('p1name'),'홍'); }
+  if(mode==='duo'){
+    setText($('p0name'),'청'); setText($('p1name'),'홍');
+    const labs=$('teamwrap').querySelectorAll('.tlab');
+    setText(labs[0],duoType==='battle'?'선두':'팀 점수'); setText(labs[1],duoType==='battle'?'격차':'연속');
+    $('teamwrap').querySelector('.syncmeter').hidden=duoType==='battle';
+    $('syncTxt').hidden=duoType==='battle';
+    if(duoType==='battle') updateBattleHud();
+  }
   if(mode==='group') buildGroupBar();
   setText($('stTimeLab'), mode==='relay'?'경과 시간':'남은 시간');
   setText($('stTimeVal'), mode==='relay'?0:durationSec); setText($('teamTime'), durationSec);
@@ -1670,7 +1794,7 @@ function startRound(){
   running=true; appState='running';
   if(mode==='solo'){
     gameStartPerf=now;
-    const p=players[0]; p.engine.resetCount(); p.engine.markStart(now); p.engine.counting=true;
+    const p=players[0]; p.engine.resetCount(); p.engine.markStart(now); resetAlternateJump(p); p.engine.counting=soloJumpType!=='alternate';
     gameEndPerf = soloMode==='timed' ? now+durationSec*1000 : Infinity;
   }else if(mode==='duo'){
     gameEndPerf=gameStartPerf+durationSec*1000;
@@ -1684,44 +1808,104 @@ function startRound(){
 }
 
 function stopRound(){
-  running=false; countdownToken++;
+  running=false; countdownToken++; pausedAt=0;
   stopClock(); clearTimeout(finishTimer);
   players.forEach(p=>p.engine.counting=false);
   $('countdown').hidden=true;
+  labFlush();
 }
 
+let pausedAt=0;
+function pauseRound(){
+  if(pausedAt || appState!=='running') return;
+  pausedAt=performance.now();
+  running=false;
+  stopClock();
+  players.forEach(p=>p.engine.counting=false);
+  const box=$('countdown'); box.hidden=false;
+  $('cdNum').textContent='❚❚'; setText($('cdSub'),'잠시 멈춤 · 화면으로 돌아오면 이어서 합니다');
+}
+async function resumeRound(){
+  if(!pausedAt || appState!=='running') return;
+  const ok=await runCountdown('이어서 시작합니다');
+  if(!ok || appState!=='running' || !pausedAt) return;
+  
+  const gap=performance.now()-pausedAt; pausedAt=0;
+  gameStartPerf+=gap;
+  if(isFinite(gameEndPerf)) gameEndPerf+=gap;
+  if(relay.changing) relay.resumeAt+=gap;
+  players.forEach(p=>{
+    if(p.lastCountAt) p.lastCountAt+=gap;
+    if(p.lastJumpT!=null) p.lastJumpT+=gap;
+    p.engine.recalibrate();        
+    resetAlternateJump(p);
+    p.engine.markStart(performance.now());
+  });
+  running=true;
+  const m=lastRoundMode;
+  if(m==='solo')       players[0].engine.counting = soloJumpType!=='alternate';
+  else if(m==='duo')   players.forEach(p=>p.engine.counting=true);
+  else if(m==='relay') players[0].engine.counting = !relay.changing && !relay.done;
+  if(m!=='solo') resumeClock();
+  keepScreenOn(true);
+}
+
+let roundEndPerf=0, stoppedEarly=false;
 function finish(cancelled){
   if(appState!=='running' && appState!=='countdown') return;
   const m=lastRoundMode;
   const endPerf=performance.now();
+  roundEndPerf=endPerf;
   stopRound();
-  if(cancelled){ openLobby(); return; }
+  if(cancelled){ stoppedEarly=false; openLobby(); return; }
   groupFrozenAt = m==='group' ? Math.min(endPerf, gameStartPerf+groupTotal()*beatMs) : 0;
   $('resultBody').innerHTML = resultHtml(m);
   appState='result'; layoutHud();
 }
 
 function quit(){
-  
-  if(appState==='running' && lastRoundMode==='solo' && soloMode==='free' && players[0]?.count>0) finishSolo('측정 완료');
-  else finish(true);
+  if(appState==='countdown'){ finish(true); return; }
+  if(appState!=='running'){ finish(true); return; }
+  const m=lastRoundMode;
+  const has = m==='solo'  ? (players[0]?.count>0)
+            : m==='duo'   ? ((players[0]?.count||0)+(players[1]?.count||0)>0)
+            : m==='relay' ? (relay.turn>0 || relay.turnCount>0)
+            :               (performance.now()-gameStartPerf > 1000);
+  if(!has){ finish(true); return; }
+  stoppedEarly=true;
+  if(m==='solo') finishSolo(soloMode==='free' ? '측정 완료' : '중간에 멈춤');
+  else finish(false);
 }
 let soloResultTitle='';
 function finishSolo(title){ soloResultTitle=title; finish(false); }
 
 function resultHtml(m){
   if(m==='solo'){
-    const cnt=players[0].count, isBest=saveBest(soloMode,cnt), best=loadBest(soloMode);
+    const bestKey=soloJumpType+'_'+soloMode;
+
+    const cnt=players[0].count;
+    const countsAsRecord = (soloMode==='free' || !stoppedEarly);
+    const isBest = countsAsRecord ? saveBest(bestKey,cnt) : false;
+    const best=loadBest(bestKey);
     const targetMode=soloMode==='target', target=+$('soloTarget').value, targetClear=targetMode&&cnt>=target;
     if(cnt>0 && (!targetMode||targetClear)) snd.finish();
     if(isBest && cnt>0 && (!targetMode||targetClear)) confetti(true);
-    const label = soloMode==='timed' ? `1인 측정 · 시간제 ${durationSec}초` : targetMode ? `1인 측정 · 목표 도전 ${target}회` : `1인 측정 · ${MODES_SOLO[soloMode].title}`;
+    const label = soloMode==='timed' ? `1인 측정 · ${SOLO_JUMPS[soloJumpType]} · 시간제 ${durationSec}초` : targetMode ? `1인 측정 · ${SOLO_JUMPS[soloJumpType]} · 목표 도전 ${target}회` : `1인 측정 · ${SOLO_JUMPS[soloJumpType]} · ${MODES_SOLO[soloMode].title}`;
     return `<div class="res-label">${label}</div>
       <div class="res-title">${esc(soloResultTitle||'측정 완료')}</div>
       <div class="rbox big ${targetMode&&!targetClear?'':'win'}"><span>${targetMode?'연속 성공':'줄넘기 개수'}</span><strong>${fmt(cnt)}</strong></div>
       <div class="rline">${targetMode&&!targetClear?`목표까지 ${fmt(Math.max(0,target-cnt))}회 남음 · `:''}${isBest&&cnt>0?'<b>오늘 최고 기록 갱신!</b> · ':''}오늘 최고 ${fmt(best)}개</div>`;
   }
   if(m==='duo'){
+    if(duoType==='battle'){
+      const blue=players[0].count,red=players[1].count,word=blue===red?'DRAW':blue>red?'BLUE WIN':'RED WIN';
+      snd.finish(); if(blue!==red) confetti(true);
+      return `<div class="res-label">2인 대결 · ${durationSec}초</div>
+        <div class="res-title">${word}</div><div class="rgrid">
+          <div class="rbox blue ${blue>red?'win':''}"><span>청팀</span><strong>${fmt(blue)}</strong></div>
+          <div class="rbox red ${red>blue?'win':''}"><span>홍팀</span><strong>${fmt(red)}</strong></div>
+        </div><div class="rline">${blue===red?'같은 횟수로 무승부입니다.':blue>red?'청팀이 '+fmt(blue-red)+'회 앞섰습니다.':'홍팀이 '+fmt(red-blue)+'회 앞섰습니다.'}</div>`;
+    }
     const bonus=team.best*SYNC.COMBO_BONUS, total=team.base+bonus;
     snd.finish();
     return `<div class="res-label">2인 협동 · ${durationSec}초 · ${bpm} BPM</div>
@@ -1733,29 +1917,37 @@ function resultHtml(m){
       </div>
       <div class="rline">기본 ${fmt(team.base)} + 최고 연속 ${fmt(team.best)} × ${SYNC.COMBO_BONUS} = <b>보너스 ${fmt(bonus)}</b> → 팀 점수 ${fmt(total)}</div>
       <div class="rbox big win"><span>팀 점수</span><strong>${fmt(total)}</strong></div>
-      <div class="rline">청 ${fmt(players[0].count)}회 · 홍 ${fmt(players[1].count)}회</div>`;
+      <div class="rline">청 ${fmt(players[0].count)}회 · 홍 ${fmt(players[1].count)}회${team.SKIP?` <span style="opacity:.7">(리듬을 잡기 전 소급 ${fmt(team.SKIP)}개는 개수에만 더해져 판정 합계와 다릅니다)</span>`:''}</div>`;
   }
   if(m==='relay'){
-    const s=relay.finishSec, min=Math.floor(s/60), sec=(s%60).toFixed(1), total=relay.players*relay.target*relay.rounds;
+    const done=relay.done;
+    const s=done ? relay.finishSec : Math.max(0,(roundEndPerf-gameStartPerf)/1000);
+    const min=Math.floor(s/60), sec=(s%60).toFixed(1);
+    const total=relay.players*relay.target*relay.rounds;
+    const ranTurns=relay.turn, ranTotal=ranTurns*relay.target+relay.turnCount;
+    if(done) snd.finish();
     return `<div class="res-label">릴레이 · ${relay.players}명 · ${relay.target}회씩 · ${relay.rounds}바퀴</div>
-      <div class="res-title">모두 완주했어요!</div>
-      <div class="rbox big win"><span>완주 기록</span><strong>${min?min+'분 ':''}${sec}초</strong></div>
-      <div class="rline">총 ${fmt(total)}회 · 선수 교체 ${relay.changeMs/1000}초씩 포함</div>`;
+      <div class="res-title">${done?'모두 완주했어요!':'중간에 멈췄어요'}</div>
+      <div class="rbox big ${done?'win':''}"><span>${done?'완주 기록':'여기까지 기록'}</span><strong>${min?min+'분 ':''}${sec}초</strong></div>
+      <div class="rline">${done?`총 ${fmt(total)}회`:`${fmt(ranTotal)}회 / 목표 ${fmt(total)}회 · ${ranTurns+1}번째 차례에서 멈춤`} · 선수 교체 ${relay.changeMs/1000}초씩 포함</div>`;
   }
-  snd.finish();
+  const gDone=!stoppedEarly;
+  const gBeats=clamp(Math.floor((roundEndPerf-gameStartPerf)/beatMs),0,groupTotal());
+  const gMove=Math.min(groupRoutine.length, groupMoveAt(Math.max(0,gBeats-1)).i+1);
+  if(gDone) snd.finish();
   return `<div class="res-label">단체 리듬 · 실전 · ${bpm} BPM</div>
-    <div class="res-title">마지막 동작까지 완주!</div>
+    <div class="res-title">${gDone?'마지막 동작까지 완주!':'중간에 멈췄어요'}</div>
     <div class="rgrid">
-      <div class="rbox win"><span>동작</span><strong>${groupRoutine.length}</strong></div>
-      <div class="rbox"><span>시간</span><strong>${durationSec}초</strong></div>
+      <div class="rbox ${gDone?'win':''}"><span>동작</span><strong>${gDone?groupRoutine.length:gMove+' / '+groupRoutine.length}</strong></div>
+      <div class="rbox"><span>시간</span><strong>${gDone?durationSec:Math.round((roundEndPerf-gameStartPerf)/1000)}초</strong></div>
     </div>
-    <div class="rline">모두 함께 끝까지 뛰었습니다!</div>`;
+    <div class="rline">${gDone?'모두 함께 끝까지 뛰었습니다!':`${fmt(gBeats)}박까지 진행했습니다.`}</div>`;
 }
 
 function todayKey(){ const d=new Date(); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
 function loadBest(m){ const o=store.json('jm_best_'+m); return (o&&o.date===todayKey())?(o.value||0):0; }
 function saveBest(m,v){ if(v>loadBest(m)){ store.set('jm_best_'+m,JSON.stringify({date:todayKey(),value:v})); return true; } return false; }
-function updateBest(){ const b=loadBest(soloMode); setText($('railBest'), b?fmt(b):'—'); }
+function updateBest(){ const b=loadBest(soloJumpType+'_'+soloMode); setText($('railBest'), b?fmt(b):'—'); }
 
 function confetti(big=false){
   const chars=['🎉','⭐','💪','🟢','✨'], n=big?32:14;
@@ -1771,6 +1963,7 @@ function confetti(big=false){
 
 let groupFrozenAt=0, lastHudT=0, lastDebugT=0;
 function tick(now){
+  if(pausedAt) return;          
   const inGame = appState==='running'||appState==='countdown';
   const m = inGame||appState==='result' ? lastRoundMode : mode;
 
@@ -1783,7 +1976,7 @@ function tick(now){
       if(soloMode==='target' && p.count>0 && !p.seen) p.lastCountAt=now;
       if(soloMode==='target' && p.count>0 && p.seen && !p.engine.calibrating && now-(p.lastCountAt||0)>TARGET_TIMEOUT_MS){ snd.brk(); finishSolo('도전 실패'); return; }
     }else if(m==='duo'){
-      duoCheckTimeouts(now);
+      if(duoType==='cooperate') duoCheckTimeouts(now);
       if(now>=gameEndPerf){ finish(false); return; }
     }else if(m==='relay'){
       relayTick(now);
@@ -1828,6 +2021,8 @@ function updatePlayerCards(now,m,inGame){
   }else if(m==='duo'){
     setText($('p0state'),presenceText(p0));
     if(players[1]) setText($('p1state'),presenceText(players[1]));
+    if(inGame && duoType==='cooperate' && !(p0.seen && players[1]?.seen))
+      setText($('syncTxt'),'상대를 기다리는 중 · 두 사람이 모두 보이면 판정이 시작됩니다');
   }else if(m==='relay' && inGame){
     const runner=relay.turn%relay.players+1;
     const total=relay.players*relay.rounds, nowTurn=Math.min(total, relay.done?total:relay.turn+1);
@@ -1901,7 +2096,7 @@ function render(now){
   const m = inGame||appState==='result' ? lastRoundMode : mode;
 
   if(m==='group' && (inGame||appState==='result')){
-    drawGroupScene(appState==='result'?groupFrozenAt:now);
+    drawGroupScene(appState==='result'?groupFrozenAt:(pausedAt||now));
     return;
   }
   if(!stream) return;
@@ -1915,16 +2110,8 @@ function render(now){
     const key = players.length===2 ? (i===0?'blue':'red') : 'solo';
     drawSkeleton(p.lm, COLOR[key]);
   });
-  if(inGame && m==='relay'){
-    const phase=(now-gameStartPerf)/beatMs + 0.5 + ROPE.LEAD;   
-    players.forEach((p,i)=>{
-      if(!p.rig || now-p.lastSeen>600) return;
-      if(m==='relay' && relay.changing) return;
-      ropeFor(p.rig, phase, RGB.solo);
-    });
-  }
-  
-  if(inGame && m==='duo') gBeatTarget(W/2,H*.23,Math.min(W,H)*.052,(now-gameStartPerf)/beatMs,1,'함께 착지');
+
+  if(inGame && m==='duo' && duoType==='cooperate') gBeatTarget(W/2,H*.23,Math.min(W,H)*.052,(now-gameStartPerf)/beatMs,1,'함께 착지');
   
   if(labOpen && jmpIsLab() && m==='solo' && players[0]?.seen) drawCalibration(players[0]);
 }
@@ -1969,6 +2156,7 @@ function drawCalibration(p){
 
 function cubic(a,b,c,e,t){ const m=1-t; return m*m*m*a+3*m*m*t*b+3*m*t*t*c+t*t*t*e; }
 function cubicD(a,b,c,e,t){ const m=1-t; return 3*m*m*(b-a)+6*m*t*(c-b)+3*t*t*(e-c); }
+
 function ropeFor(rig,phase,rgb){
   if(quality==='low'){ ropeOnce(rig,phase,rgb,1); return; } 
   for(let i=3;i>=0;i--) ropeOnce(rig, phase-i*ROPE.TRAIL_GAP, rgb, i?0.16/i:1);   
@@ -2421,7 +2609,7 @@ function updateGroupHud(now){
   const bf=(now-gameStartPerf)/beatMs;
   if(groupRunKind==='practice'){
     const sk=skillById(groupSkillId), n=sk.cyc.length;
-    const k=practiceOffset+Math.max(0,Math.floor(bf)+1), demo=practiceOffset===0 && k<=8 ? true : k<=8;
+    const k=practiceOffset+Math.max(0,Math.floor(bf)+1), demo=k<=8;   
     setText($('mbTitle'),'연습 · '+shortName(sk)); setText($('mbSub'),sk.d);
     const ph=$('grpPhase'); ph.className='grp-phase '+(demo?'demo':'go');
     setText(ph, bf<0 ? '곧 시작해요' : demo ? `시범 ${Math.max(1,k)} / 8 · 코치를 보세요` : '따라 하기');
@@ -2541,6 +2729,12 @@ document.querySelectorAll('#soloSeg button').forEach(b=>b.addEventListener('clic
   soloMode=b.dataset.solo; applyModeUI(); updateBest(); saveLobbyPrefs();
   setText($('stCountLab'), soloMode==='target'?'목표 도전':'줄넘기 개수');
 }));
+document.querySelectorAll('#soloJumpSeg button').forEach(b=>b.addEventListener('click',()=>{
+  soloJumpType=b.dataset.jump; applyModeUI(); updateBest(); saveLobbyPrefs();
+}));
+document.querySelectorAll('#duoSeg button').forEach(b=>b.addEventListener('click',()=>{
+  duoType=b.dataset.duo; applyModeUI(); saveLobbyPrefs();
+}));
 ['soloTime','soloTarget','bpm','duration','relayPlayers','relayTarget','relayRounds','relayChange'].forEach(id=>$(id).addEventListener('change',()=>{ applyModeUI(); saveLobbyPrefs(); }));
 
 $('groupSkill').innerHTML=['발 모양','발 리듬','손 기술'].map(c=>`<optgroup label="${c}">${SKILLS.filter(s=>s.cat===c).map(s=>`<option value="${s.id}">${esc(s.n)}</option>`).join('')}</optgroup>`).join('');
@@ -2641,14 +2835,27 @@ $('flipBtn').addEventListener('click',async()=>{
 $('homePageBtn').addEventListener('click',()=>{ location.href='./jumpmaster.html'; });
 $('logoutBtn').addEventListener('click',()=>{ _jmpClearCache(); location.reload(); });
 
-document.addEventListener('visibilitychange',()=>{ if(document.hidden && (appState==='running'||appState==='countdown')) finish(true); });
-window.addEventListener('pagehide',()=>stopCamera());
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden){
+    if(appState==='countdown') finish(true);
+    else if(appState==='running') pauseRound();
+    keepScreenOn(false);
+  }else{
+    if(appState!=='login') keepScreenOn(true);
+    if(appState==='running') resumeRound();
+  }
+});
+window.addEventListener('pagehide',()=>{ labFlush(); keepScreenOn(false); stopCamera(); });
 
-function setAppHeight(){ document.documentElement.style.setProperty('--app-h', Math.max(320,Math.floor(innerHeight||document.documentElement.clientHeight))+'px'); }
+function setAppHeight(){ document.documentElement.style.setProperty('--app-h', Math.max(320,Math.floor(innerHeight||document.documentElement.clientHeight))+'px'); markViewDirty(); }
 setAppHeight();
 addEventListener('resize',setAppHeight,{passive:true});
 addEventListener('orientationchange',()=>setTimeout(setAppHeight,250),{passive:true});
 window.visualViewport?.addEventListener('resize',setAppHeight,{passive:true});
+document.addEventListener('fullscreenchange',markViewDirty);
+document.addEventListener('webkitfullscreenchange',markViewDirty);
+video.addEventListener('loadedmetadata',markViewDirty);
+video.addEventListener('resize',markViewDirty);
 
 restoreLobbyPrefs();
 applyModeUI();
@@ -2663,6 +2870,7 @@ const _JMP_FIRST_CHECK_MS   = 5*1000;
 const _JMP_BLOCK_WATCH_MS   = 15*1000;        
 const _JMP_EXPIRY_WATCH_MS  = 60*1000;        
 const _JMP_BLOCK_MSG_KEY    = 'jmp_block_msg';
+const _JMP_FETCH_TIMEOUT_MS = 8000;           
 
 const _JMP_SIGN_PUBKEY = {"kty":"EC","crv":"P-256",
   "x":"TRVuOcoZYEagtQgi5GRgUOSIkAjiW_aUS4O9U6cfK0I",
@@ -2770,6 +2978,7 @@ function showAuthed(c){
   $('app').hidden=false;
   appState='lobby';
   applyJmpLabVisibility();     
+  keepScreenOn(true);          
   _jmpStartHeartbeat();
   loop();
   openLobby();
@@ -2797,9 +3006,24 @@ function _jmpBlockMessage(result){
 }
 
 async function _jmpVerifyWithServer(license_key){
-  const res=await fetch(_JMP_EDGE_URL,{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({license_key, device_id:_jmpGetOrCreateDeviceId()})});
-  return await res.json();
+  const ac = (typeof AbortController!=='undefined') ? new AbortController() : null;
+  const timer = ac ? setTimeout(()=>{ try{ ac.abort(); }catch(e){} }, _JMP_FETCH_TIMEOUT_MS) : 0;
+  try{
+    const res=await fetch(_JMP_EDGE_URL,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({license_key, device_id:_jmpGetOrCreateDeviceId()}), signal: ac?ac.signal:undefined});
+    return await res.json();
+  } finally { if(timer) clearTimeout(timer); }
+}
+
+function _jmpShowChecking(){
+  $('loginScreen').hidden=false;
+  const help=$('licenseHelp'); if(help) help.textContent='저장된 라이선스를 확인하는 중입니다…';
+  const btn=$('loginBtn'); if(btn) btn.disabled=true;
+}
+function _jmpEndChecking(){
+  const help=$('licenseHelp');
+  if(help) help.innerHTML='구매 후 전달받은 라이선스 키를 입력하세요.<br>최초 1회 입력 후 자동으로 인증됩니다.';
+  const btn=$('loginBtn'); if(btn) btn.disabled=false;
 }
 
 function _jmpCacheFromResult(key,r,prev){
@@ -2857,7 +3081,9 @@ async function doLicenseActivate(){
     if(cache && cache.license_key===key && !_jmpIsCacheExpired(cache) && await _jmpSignatureAllows(cache)){
       showAuthed(cache); return;
     }
-    errorEl.textContent='네트워크 오류가 발생했습니다. 인터넷 연결을 확인해주세요.';
+    errorEl.textContent = (e && e.name==='AbortError')
+      ? '서버 응답이 너무 늦습니다. 인터넷 연결을 확인한 뒤 다시 시도해주세요.'
+      : '네트워크 오류가 발생했습니다. 인터넷 연결을 확인해주세요.';
   }finally{
     btn.textContent='인증하기'; btn.disabled=false;
   }
@@ -2939,7 +3165,10 @@ function _jmpStartHeartbeat(){
   const cache=_jmpGetCache();
   if(!cache || !cache.license_key){ $('loginScreen').hidden=false; return; }
 
+  _jmpShowChecking();
+
   if(!_jmpIsCacheExpired(cache) && await _jmpSignatureAllows(cache)){
+    _jmpEndChecking();
     showAuthed(_jmpGetCache());
     return;
   }
@@ -2950,13 +3179,15 @@ function _jmpStartHeartbeat(){
       _jmpSetCache(_jmpCacheFromResult(cache.license_key,r,cache));
       await _jmpCheckToken(_jmpGetCache());
       if(!_jmpAuth.ok){ _jmpAuth.key=cache.license_key; _jmpAuth.trial=!!r.is_trial; }
+      _jmpEndChecking();
       showAuthed(_jmpGetCache());
       return;
     }
-    if(_jmpShouldBlock(r)){ _jmpClearCache(); _jmpShowBlocked(_jmpBlockMessage(r)); $('loginScreen').hidden=false; return; }
+    if(_jmpShouldBlock(r)){ _jmpClearCache(); _jmpEndChecking(); _jmpShowBlocked(_jmpBlockMessage(r)); $('loginScreen').hidden=false; return; }
   }catch(e){}
 
   _jmpClearCache();
+  _jmpEndChecking();
   $('loginScreen').hidden=false;
 })();
 
@@ -2985,8 +3216,27 @@ function labLoad(){
   try{ labRecording = store.get(JMP_LAB_ON_KEY,'0')==='1'; }catch(e){ labRecording=false; }
   try{ const v=store.json(JMP_LAB_LOG_KEY); labLog=Array.isArray(v)?v:[]; }catch(e){ labLog=[]; }
 }
+
+let labSaveTimer=0, labDirty=false;
 function labSave(){
-  try{ store.set(JMP_LAB_LOG_KEY, JSON.stringify(labLog)); }catch(e){}
+  try{ localStorage.setItem(JMP_LAB_LOG_KEY, JSON.stringify(labLog)); return true; }
+  catch(e){
+    try{
+      labLog.splice(0, Math.floor(labLog.length/2));
+      localStorage.setItem(JMP_LAB_LOG_KEY, JSON.stringify(labLog));
+      console.warn('[JMP] 저장 공간이 부족해 오래된 기록 절반을 지웠습니다.');
+      return true;
+    }catch(_){ return false; }
+  }
+}
+function labSaveSoon(){
+  labDirty=true;
+  if(labSaveTimer) return;
+  labSaveTimer=setTimeout(()=>{ labSaveTimer=0; if(labDirty){ labDirty=false; labSave(); } },5000);
+}
+function labFlush(){
+  if(labSaveTimer){ clearTimeout(labSaveTimer); labSaveTimer=0; }
+  if(labDirty){ labDirty=false; labSave(); }
 }
 const labRound=(v,n=3)=>(v==null||!isFinite(v))?null:Number(Number(v).toFixed(n));
 function labVis(p,i){
@@ -3085,7 +3335,7 @@ function labRecordJump(p,ev){
   if(labRecording){
     labLog.push(row);
     if(labLog.length>JMP_LAB_MAX) labLog.splice(0, labLog.length-JMP_LAB_MAX);
-    labSave();
+    labSaveSoon();
   }
   if(labOpen){ labRenderRecent(); labRenderCount(); }
 }
@@ -3223,10 +3473,12 @@ $('labRecBtn')?.addEventListener('click',()=>{
   if(!jmpIsLab()) return;
   labRecording=!labRecording;
   store.set(JMP_LAB_ON_KEY, labRecording?'1':'0');
+  if(!labRecording) labFlush();
   labRenderCount();
 });
 $('labDlJson')?.addEventListener('click',()=>{
   if(!jmpIsLab()||!labLog.length) return;
+  labFlush();
   labDownload(`jumplab_${labStamp()}.json`, JSON.stringify({
     app:'AI JUMP MASTER', version:APP_VERSION, exported_at:new Date().toISOString(),
     note:'숫자 계측값만 들어 있습니다. 영상·사진·이름은 수집하지 않습니다.',
@@ -3235,12 +3487,13 @@ $('labDlJson')?.addEventListener('click',()=>{
 });
 $('labDlCsv')?.addEventListener('click',()=>{
   if(!jmpIsLab()||!labLog.length) return;
+  labFlush();
   labDownload(`jumplab_${labStamp()}.csv`, labToCsv(), 'text/csv');
 });
 $('labClear')?.addEventListener('click',()=>{
   if(!jmpIsLab()) return;
   if(!confirm('쌓인 측정 기록을 모두 지웁니다. 계속할까요?')) return;
-  labLog=[]; labRecent=[]; labSave(); labRenderRecent(); labRenderCount();
+  labLog=[]; labRecent=[]; labDirty=false; labFlush(); labSave(); labRenderRecent(); labRenderCount();
 });
 
 </script>
