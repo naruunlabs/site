@@ -195,20 +195,27 @@ button{cursor:pointer;border:0;background:none;padding:0}
   70%{opacity:1;transform:translateX(-50%) scale(1)}100%{opacity:0;transform:translateX(-50%) scale(1)}}
 
 .teamwrap{position:absolute;top:calc(var(--sat) + max(70px,calc(var(--u)*7)));left:50%;transform:translateX(-50%);z-index:6;
-  width:max(260px,calc(var(--u)*27));text-align:center}
+  width:min(720px,68vw);text-align:center}
 .trow{display:flex;gap:max(20px,calc(var(--u)*2.8));justify-content:center;align-items:flex-end}
 .tlab{font-size:max(10px,calc(var(--u)*1));font-weight:900;color:rgba(234,244,241,.66);letter-spacing:.06em}
 .tval{margin-top:2px;font-family:var(--num);font-variation-settings:'wdth' 118,'wght' 900;font-weight:900;
   font-size:max(34px,calc(var(--u)*4.4));line-height:1;font-variant-numeric:tabular-nums;color:var(--lime-lit)}
 .tval.sm{color:#fff}
-.syncmeter{position:relative;height:max(18px,calc(var(--u)*2));margin-top:max(6px,calc(var(--u)*.8))}
-.srail{position:absolute;left:0;right:0;top:50%;height:2px;transform:translateY(-50%);background:rgba(255,255,255,.2)}
-.scenter{position:absolute;left:50%;top:1px;bottom:1px;width:2px;transform:translateX(-50%);background:rgba(255,255,255,.55)}
-.sdot{position:absolute;top:50%;width:max(12px,calc(var(--u)*1.4));height:max(12px,calc(var(--u)*1.4));border-radius:50%;
-  transform:translate(-50%,-50%);transition:left .18s ease-out}
-.sdot.b{background:var(--blue);box-shadow:0 0 12px var(--blue)}
-.sdot.r{background:var(--red);box-shadow:0 0 12px var(--red)}
-.tsync{margin-top:max(5px,calc(var(--u)*.55));font-size:max(11px,calc(var(--u)*1.05));font-weight:800;color:rgba(255,255,255,.78);
+.syncmeter{position:relative;height:max(58px,calc(var(--u)*6));margin-top:max(10px,calc(var(--u)*1.2));border-radius:999px;background:rgba(2,10,20,.38);overflow:visible}
+.srail{position:absolute;left:5%;right:5%;top:50%;height:max(4px,calc(var(--u)*.42));transform:translateY(-50%);border-radius:99px;background:linear-gradient(90deg,rgba(56,189,248,.75),rgba(255,255,255,.22) 43%,rgba(255,255,255,.22) 57%,rgba(251,113,133,.75));box-shadow:0 0 14px rgba(255,255,255,.12)}
+.scenter{position:absolute;left:50%;top:50%;width:max(24px,calc(var(--u)*2.6));height:max(24px,calc(var(--u)*2.6));border:3px solid rgba(255,255,255,.82);border-radius:50%;transform:translate(-50%,-50%);background:rgba(5,13,24,.9);box-shadow:0 0 0 7px rgba(255,255,255,.07)}
+.sdot{position:absolute;top:50%;width:max(22px,calc(var(--u)*2.35));height:max(22px,calc(var(--u)*2.35));border-radius:50%;transform:translate(-50%,-50%);transition:left .2s cubic-bezier(.2,.8,.2,1);z-index:2}
+.sdot.b{background:var(--blue);box-shadow:0 0 10px var(--blue),0 0 28px var(--blue)}
+.sdot.r{background:var(--red);box-shadow:0 0 10px var(--red),0 0 28px var(--red)}
+.syncflash{position:absolute;left:50%;top:50%;z-index:4;transform:translate(-50%,-50%) scale(.7);opacity:0;white-space:nowrap;font-family:var(--num);font-size:max(22px,calc(var(--u)*2.8));font-weight:900;letter-spacing:.04em;color:var(--lime-lit);text-shadow:0 0 12px #A3E635,0 0 30px #2DD4BF;pointer-events:none}
+.syncmeter.perfect::after{content:"";position:absolute;left:8%;right:8%;top:50%;height:max(7px,calc(var(--u)*.7));transform:translateY(-50%);border-radius:99px;background:linear-gradient(90deg,var(--blue),var(--lime-lit),var(--red));box-shadow:0 0 18px var(--lime),0 0 42px rgba(163,230,53,.72);animation:syncBridge .72s ease-out both}
+.syncmeter.perfect .scenter{background:var(--lime-lit);border-color:#fff;box-shadow:0 0 0 12px rgba(190,242,100,.18),0 0 38px var(--lime)}
+.syncmeter.hit .syncflash{animation:syncFlash .78s ease-out both}.syncmeter.good .syncflash{color:var(--teal-lit)}.syncmeter.normal .syncflash,.syncmeter.miss .syncflash{color:#fff;text-shadow:0 0 18px rgba(255,255,255,.45)}
+.syncmeter.late-blue .sdot.b,.syncmeter.late-red .sdot.r{animation:lateDot .75s ease-out both}
+@keyframes syncBridge{0%{opacity:0;transform:translateY(-50%) scaleX(.08)}22%{opacity:1;transform:translateY(-50%) scaleX(1.04)}100%{opacity:0;transform:translateY(-50%) scaleX(1)}}
+@keyframes syncFlash{0%{opacity:0;transform:translate(-50%,-50%) scale(.55)}22%,68%{opacity:1;transform:translate(-50%,-120%) scale(1.08)}100%{opacity:0;transform:translate(-50%,-145%) scale(1)}}
+@keyframes lateDot{0%,100%{transform:translate(-50%,-50%)}35%{transform:translate(-50%,-50%) scale(1.45)}}
+.tsync{margin-top:max(5px,calc(var(--u)*.55));font-size:max(14px,calc(var(--u)*1.35));font-weight:900;color:rgba(255,255,255,.88);
   font-variant-numeric:tabular-nums}
 
 .runners{position:absolute;top:calc(var(--sat) + max(66px,calc(var(--u)*6.8)));left:50%;transform:translateX(-50%);z-index:6;
@@ -548,6 +555,7 @@ html body:not(.jmp-beta-on) #jumpLabModal{
         <span class="srail"></span><span class="scenter"></span>
         <i class="sdot b" id="sdotB" style="left:50%"></i>
         <i class="sdot r" id="sdotR" style="left:50%"></i>
+        <b class="syncflash" id="syncFlash"></b>
       </div>
       <div class="tsync" id="syncTxt">두 사람이 같은 순간에 착지하면 PERFECT</div>
     </div>
@@ -790,7 +798,7 @@ html body:not(.jmp-beta-on) #jumpLabModal{
 
 <script type="module">
 
-const APP_VERSION = '3.3.3';
+const APP_VERSION = '3.3.4';
 
 const MP_VERSION  = '0.10.14';
 const MP_LOCAL    = './vendor/mediapipe/';
@@ -1557,7 +1565,8 @@ function duoCounted(p,n,t){
     team[kind]++; team.base+=pts; team.combo++; team.best=Math.max(team.best,team.combo); team.lastDiff=diff;
     showJudge(kind, kind==='PERFECT'?'':kind.toLowerCase());
     snd[kind.toLowerCase()]();
-    setSync(diff, `싱크 차이 ${diff.toFixed(2)}초 · +${pts}점`);
+    const lateId=t>=q.lastJumpT?p.id:q.id, lateName=lateId===0?'청':'홍';
+    setSync(diff, kind==='PERFECT'?`동시에 착지 · +${pts}점`:`${lateName} ${kind==='GOOD'?'조금 늦음':'늦음'} · ${diff.toFixed(2)}초 · +${pts}점`,kind,lateId);
   }else{
     p.lastJumpT=t; p.paired=false;
   }
@@ -1578,7 +1587,8 @@ function duoMiss(x){
   x.paired=true;
   team.MISS++; team.combo=0;
   showJudge('MISS','miss'); snd.miss();
-  setSync(null,'놓침 · 둘이 같은 순간에 뛰어 보세요');
+  const lateId=1-x.id, lateName=lateId===0?'청':'홍';
+  setSync(null,`${lateName} 착지 대기 · 둘이 같은 순간에 뛰어 보세요`,'MISS',lateId);
   updateTeamHud();
 }
 function duoCheckTimeouts(now){
@@ -1588,9 +1598,17 @@ function duoCheckTimeouts(now){
     if(now-x.lastJumpT > SYNC.NORMAL_S*1000+SYNC.REPORT_LAG_MS) duoMiss(x);
   }
 }
-function setSync(diff,text){
-  const k = diff==null ? 1 : Math.min(1,diff/SYNC.NORMAL_S);
-  $('sdotB').style.left=(50-k*42)+'%'; $('sdotR').style.left=(50+k*42)+'%';
+function setSync(diff,text,kind='',lateId=null){
+  const meter=$('teamwrap').querySelector('.syncmeter'), blue=$('sdotB'), red=$('sdotR');
+  const k=diff==null?1:Math.min(1,diff/SYNC.NORMAL_S), cls=kind.toLowerCase();
+  if(kind==='PERFECT'){ blue.style.left='50%'; red.style.left='50%'; }
+  else if(lateId===0){ blue.style.left=(50-k*42)+'%'; red.style.left='50%'; }
+  else if(lateId===1){ blue.style.left='50%'; red.style.left=(50+k*42)+'%'; }
+  else{ blue.style.left='8%'; red.style.left='92%'; }
+  setText($('syncFlash'),kind==='PERFECT'?'PERFECT!':kind==='GOOD'?'GOOD!':kind==='NORMAL'?'맞춰요!':kind==='MISS'?'다시!':'');
+  meter.className='syncmeter';
+  void meter.offsetWidth;
+  meter.className=`syncmeter${kind?' hit '+cls:''}${lateId===0?' late-blue':lateId===1?' late-red':''}`;
   setText($('syncTxt'),text);
 }
 function updateTeamHud(){
@@ -1817,7 +1835,7 @@ async function waitForPlayersReady(n,timeoutMs){
 function setupRound(){
   clearTimeout(finishTimer);
   stoppedEarly=false; pausedAt=0; roundEndPerf=0;
-  resetTeam(); updateTeamHud(); setSync(0,'두 사람이 같은 순간에 착지하면 PERFECT');
+  resetTeam(); updateTeamHud(); setSync(null,'두 사람이 같은 순간에 착지하면 PERFECT');
   players.forEach(p=>{ p.count=0; p.lastCountAt=0; p.lastJumpT=null; p.paired=true; p.flashUntil=0; p.engine.counting=false; p.engine.resetCount(); resetAlternateJump(p); });
   setText($('p0num'),0); setText($('p1num'),0); setText($('stCountVal'),0);
   Object.assign(relay,{players:+$('relayPlayers').value,target:+$('relayTarget').value,rounds:+$('relayRounds').value,changeMs:3000,
