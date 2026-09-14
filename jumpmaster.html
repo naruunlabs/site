@@ -612,8 +612,8 @@ footer{
 @media(max-width:760px){.contact-cta{align-items:flex-start!important}.cta-actions{justify-content:flex-start}.product-footer{flex-direction:column;gap:6px}}
 
 .header-actions{display:flex;align-items:center;gap:10px}.header-link{font-size:13px;font-weight:800;color:var(--ui-muted)}
-.header-link:hover{color:var(--product-primary)}.launch-chip{padding:9px 13px;border:1px solid color-mix(in srgb,var(--product-primary) 24%,#fff);background:color-mix(in srgb,var(--product-primary) 8%,#fff);color:var(--product-primary);font-size:11px;font-weight:900;letter-spacing:.1em}
-.btn.disabled{border-color:#C9D5DF;background:#E8EEF3;color:#7B8A9A;cursor:default;box-shadow:none}
+.header-link:hover{color:var(--product-primary)}
+.header-link-primary{min-height:42px;padding:0 19px;display:inline-flex;align-items:center;border:1px solid #087F75;border-radius:8px;background:linear-gradient(180deg,#2DD4BF 0%,#14B8A6 48%,#0D9488 100%);color:#fff!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.22),inset 0 -2px 0 rgba(3,78,72,.16),0 4px 10px rgba(20,184,166,.18)}
 .hero{position:relative;overflow:hidden}.hero:after{content:"J";position:absolute;right:-.04em;bottom:-.28em;color:rgba(20,184,166,.055);font-size:min(52vw,660px);font-weight:950;line-height:1;pointer-events:none}.hero-inner{position:relative;z-index:1}
 .launch-note{display:flex;align-items:center;gap:10px;width:max-content;max-width:100%;margin:20px 0 0;padding:10px 13px;border-left:3px solid var(--jump-secondary);background:rgba(163,230,53,.08);color:#CDECA0;font-size:12px;font-weight:800}
 .trust-strip{position:relative;z-index:2;margin-top:-1px;background:#fff;border-bottom:1px solid var(--ui-line)}.trust-grid{display:grid;grid-template-columns:repeat(4,1fr)}.trust-item{padding:25px 22px;border-right:1px solid var(--ui-line)}.trust-item:last-child{border:0}.trust-item b{display:block;color:var(--ui-deep);font-size:16px}.trust-item span{display:block;margin-top:7px;color:var(--ui-muted);font-size:12.5px;line-height:1.55}
@@ -624,14 +624,14 @@ footer{
 .launch-section{background:#fff}.launch-box{display:grid;grid-template-columns:1fr auto;gap:50px;align-items:center;padding:46px 50px;background:var(--ui-deep);color:#fff}.launch-box .eyebrow{color:#5EEAD4}.launch-box h2{margin-top:14px;font-size:clamp(30px,4vw,48px);line-height:1.1;letter-spacing:-.05em}.launch-box p{margin-top:14px;color:#B7C6D8;line-height:1.75}.launch-state{text-align:right}.launch-state b{display:block;color:var(--jump-secondary);font-size:13px;letter-spacing:.14em}.launch-state span{display:block;margin-top:10px;color:#fff;font-size:18px;font-weight:900}
 .faq-section{background:var(--page-soft)}.faq-list{border-top:1px solid var(--ui-line)}.faq-list details{border-bottom:1px solid var(--ui-line);background:#fff}.faq-list summary{display:flex;justify-content:space-between;gap:18px;padding:24px 22px;color:var(--ui-deep);font-weight:850;cursor:pointer;list-style:none}.faq-list summary:after{content:"+";color:var(--product-primary);font-size:20px}.faq-list details[open] summary:after{content:"−"}.faq-list details p{padding:0 22px 24px;color:var(--ui-muted);font-size:14px;line-height:1.8;word-break:keep-all}
 @media(max-width:900px){.preview-grid{grid-template-columns:1fr;gap:34px}.benefit-head,.recommended-head,.faq-head{grid-template-columns:1fr;gap:16px}.benefit-grid,.recommended-grid{grid-template-columns:1fr}.benefit{border-right:0;border-bottom:1px solid var(--ui-line)}.launch-box{grid-template-columns:1fr}.launch-state{text-align:left}.trust-grid{grid-template-columns:1fr 1fr}.trust-item:nth-child(2){border-right:0}.trust-item:nth-child(-n+2){border-bottom:1px solid var(--ui-line)}}
-@media(max-width:620px){.header-actions .header-link{display:none}.launch-chip{padding:8px 10px}.trust-grid{grid-template-columns:1fr}.trust-item{border-right:0;border-bottom:1px solid var(--ui-line)}.product-screen{min-height:370px;padding:12px}.screen-stage{height:250px}.jump-count{font-size:86px}.screen-metrics{grid-template-columns:1fr 1fr}.screen-metrics div:last-child{display:none}.launch-box{padding:34px 25px}}
+@media(max-width:620px){.header-actions .header-link:not(.header-link-primary){display:none}.trust-grid{grid-template-columns:1fr}.trust-item{border-right:0;border-bottom:1px solid var(--ui-line)}.product-screen{min-height:370px;padding:12px}.screen-stage{height:250px}.jump-count{font-size:86px}.screen-metrics{grid-template-columns:1fr 1fr}.screen-metrics div:last-child{display:none}.launch-box{padding:34px 25px}}
 </style>
 </head>
 <body>
 <header>
   <div class="wrap nav">
     <a class="brand" href="/" aria-label="NARUUN LABS 홈"><img class="product-header-logo" src="jump1.svg" alt="AI JUMP MASTER"></a>
-    <div class="header-actions"><a class="header-link" href="/">← 전체 제품 보기</a><span class="launch-chip">COMING SOON</span></div>
+    <nav class="header-actions" aria-label="AI JUMP MASTER 주요 메뉴"><a class="header-link" href="/">전체 제품 보기</a><a class="header-link js-kakao-link" href="/#contact">문의하기</a><a class="header-link header-link-primary" href="/aijumpmaster">프로그램 실행</a></nav>
   </div>
 </header>
 
@@ -642,14 +642,14 @@ footer{
       <h1 id="jumpTitle">줄넘기가<br><span>리듬이 되는 순간.</span></h1>
       <p class="lead" id="jumpLead">웹캠 하나로 점프 횟수와 리듬을 실시간으로 측정합니다. 수련생은 화면의 즉각적인 반응을 보며 즐겁게 반복하고, 지도자는 기존 수업 흐름 안에서 간편하게 활용할 수 있습니다.</p>
       <div class="actions">
-        <span class="btn disabled" aria-disabled="true">출시 준비 중</span>
-        <a class="btn ghost js-kakao-link" href="/#contact">출시 소식 문의</a>
+        <a class="btn" href="/aijumpmaster">프로그램 실행</a>
+        <a class="btn ghost js-kakao-link" href="/#contact">도입 문의</a>
       </div>
-      <div class="launch-note"><span>COMING SOON</span><span>유료 정식 출시를 준비하고 있습니다.</span></div>
+      <div class="launch-note"><span>LICENSE REQUIRED</span><span>발급받은 JMP 라이선스 키로 이용할 수 있습니다.</span></div>
     </div>
   </section>
 
-  <div class="trust-strip"><div class="wrap trust-grid"><div class="trust-item"><b>카메라 하나</b><span>별도 동작 센서 없이 시작</span></div><div class="trust-item"><b>4가지 수업 모드</b><span>개인부터 단체까지 확장</span></div><div class="trust-item"><b>실시간 AI 측정</b><span>횟수와 착지 리듬을 즉시 표시</span></div><div class="trust-item"><b>정식 출시 준비 중</b><span>완성도 검증 후 유료 공개</span></div></div></div>
+  <div class="trust-strip"><div class="wrap trust-grid"><div class="trust-item"><b>카메라 하나</b><span>별도 동작 센서 없이 시작</span></div><div class="trust-item"><b>4가지 수업 모드</b><span>개인부터 단체까지 확장</span></div><div class="trust-item"><b>실시간 AI 측정</b><span>횟수와 착지 리듬을 즉시 표시</span></div><div class="trust-item"><b>라이선스 인증</b><span>등록된 도장과 기기에서 안전하게 실행</span></div></div></div>
 
   <section class="preview-section">
     <div class="wrap preview-grid">
@@ -696,7 +696,7 @@ footer{
     <div class="wrap"><div class="recommended-head"><div><div class="eyebrow">RECOMMENDED FOR</div><h2>이런 수업에<br>잘 맞습니다</h2></div><p>기초 체력부터 팀 활동까지, 줄넘기를 수업의 중심 프로그램으로 키우고 싶은 도장에 적합합니다.</p></div><div class="recommended-grid"><article class="recommended-card"><b>DAILY CLASS</b><h3>매일 반복되는 기초체력 수업</h3><p>익숙한 줄넘기에 기록과 목표를 더해 반복의 지루함을 줄입니다.</p></article><article class="recommended-card"><b>TEAM CLASS</b><h3>협동과 응원이 필요한 수업</h3><p>2인 협동과 릴레이로 수련생이 서로의 도전을 보고 응원하게 합니다.</p></article><article class="recommended-card"><b>RHYTHM CLASS</b><h3>단체 시범과 리듬 훈련</h3><p>박자에 맞춘 기술 연습으로 함께 움직이는 감각을 익힙니다.</p></article></div></div>
   </section>
 
-  <section class="launch-section"><div class="wrap"><div class="launch-box"><div><div class="eyebrow">PAID LAUNCH</div><h2>완성도 검증 후<br>유료 정식 출시합니다</h2><p>가격과 구매 방식은 출시 시점에 함께 안내합니다. 지금은 프로그램과 수업 경험을 최종 점검하고 있습니다.</p></div><div class="launch-state"><b>AI JUMP MASTER</b><span>COMING SOON</span></div></div></div></section>
+  <section class="launch-section"><div class="wrap"><div class="launch-box"><div><div class="eyebrow">LICENSE ACCESS</div><h2>라이선스를 인증하고<br>바로 시작하세요</h2><p>발급받은 JMP 라이선스 키를 입력하면 등록된 기기에서 AI JUMP MASTER를 실행할 수 있습니다.</p></div><div class="launch-state"><b>AI JUMP MASTER</b><span><a class="btn" href="/aijumpmaster">프로그램 실행</a></span></div></div></div></section>
 
   <section class="requirements-section" id="requirements">
     <div class="wrap">
@@ -724,20 +724,20 @@ footer{
     </div>
   </section>
 
-  <section class="faq-section" id="faq"><div class="wrap"><div class="faq-head"><div><div class="eyebrow">FREQUENTLY ASKED QUESTIONS</div><h2>출시 전<br>자주 묻는 질문</h2></div><p>현재 공개 가능한 범위의 제품 정보입니다. 세부 구매 조건은 정식 출시 때 확정됩니다.</p></div><div class="faq-list"><details><summary>AI JUMP MASTER는 어떤 프로그램인가요?</summary><p>카메라로 줄넘기 동작을 인식해 횟수와 착지 리듬을 실시간으로 보여주는 태권도장용 AI 수업 프로그램입니다.</p></details><details><summary>어떤 수업 모드를 사용할 수 있나요?</summary><p>1인 측정, 2인 협동, 릴레이, 단체 리듬의 네 가지 모드를 준비하고 있습니다.</p></details><details><summary>별도 센서나 전용 장비가 필요한가요?</summary><p>별도 동작 센서는 필요하지 않습니다. 권장 사양을 만족하는 PC 또는 태블릿과 카메라, 수련생의 전신이 보이는 공간이 필요합니다.</p></details><details><summary>지금 구매하거나 실행할 수 있나요?</summary><p>아직 공개 판매 전입니다. 최종 검증을 마친 뒤 유료 제품으로 정식 출시할 예정입니다.</p></details><details><summary>가격은 얼마인가요?</summary><p>가격과 라이선스 방식은 확정 후 정식 출시 안내와 함께 공개합니다.</p></details></div></div></section>
+  <section class="faq-section" id="faq"><div class="wrap"><div class="faq-head"><div><div class="eyebrow">FREQUENTLY ASKED QUESTIONS</div><h2>자주 묻는<br>질문</h2></div><p>프로그램 이용과 도입에 필요한 기본 안내입니다.</p></div><div class="faq-list"><details><summary>AI JUMP MASTER는 어떤 프로그램인가요?</summary><p>카메라로 줄넘기 동작을 인식해 횟수와 착지 리듬을 실시간으로 보여주는 태권도장용 AI 수업 프로그램입니다.</p></details><details><summary>어떤 수업 모드를 사용할 수 있나요?</summary><p>1인 측정, 2인 협동·대결, 릴레이, 단체 리듬 모드를 사용할 수 있습니다.</p></details><details><summary>별도 센서나 전용 장비가 필요한가요?</summary><p>별도 동작 센서는 필요하지 않습니다. 권장 사양을 만족하는 PC 또는 태블릿과 카메라, 수련생의 전신이 보이는 공간이 필요합니다.</p></details><details><summary>프로그램은 어떻게 실행하나요?</summary><p>프로그램 실행 버튼을 누른 뒤 발급받은 JMP 라이선스 키를 입력하면 등록된 기기에서 이용할 수 있습니다.</p></details><details><summary>라이선스가 없으면 사용할 수 있나요?</summary><p>프로그램 화면은 열 수 있지만 유효한 JMP 라이선스 키가 없으면 측정 기능에 들어갈 수 없습니다. 도입과 체험은 문의 채널로 신청해 주세요.</p></details></div></div></section>
 
   <section>
     <div class="wrap">
       <div class="cta contact-cta">
         <div>
-          <h2>AI JUMP MASTER<br>출시를 준비하고 있습니다</h2>
-          <p id="jumpCtaDesc">제품과 출시 일정이 궁금하시면 문의해주세요.</p>
+          <h2>AI JUMP MASTER<br>수업을 시작해보세요</h2>
+          <p id="jumpCtaDesc">라이선스 발급과 도입 상담이 필요하시면 문의해주세요.</p>
           <p class="contact-notice">도장 수업 중에는 답변이 늦어질 수 있습니다. 확인하는 대로 순차적으로 답변드리겠습니다.</p>
           <a class="contact-phone" id="jumpPhone" href="tel:01076573579">전화 문의 010-7657-3579</a>
         </div>
         <div class="cta-actions">
-          <span class="btn disabled" aria-disabled="true">COMING SOON</span>
-          <a class="btn ghost js-kakao-link" href="/#contact">출시 소식 문의하기</a>
+          <a class="btn" href="/aijumpmaster">프로그램 실행</a>
+          <a class="btn ghost js-kakao-link" href="/#contact">도입 문의하기</a>
         </div>
       </div>
     </div>
