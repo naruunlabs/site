@@ -790,7 +790,7 @@ html body:not(.jmp-beta-on) #jumpLabModal{
 
 <script type="module">
 
-const APP_VERSION = '3.3.2';
+const APP_VERSION = '3.3.3';
 
 const MP_VERSION  = '0.10.14';
 const MP_LOCAL    = './vendor/mediapipe/';
@@ -2648,8 +2648,9 @@ function gLane(W,H,bf,pulse){
 
     const y=laneY-ph*.5;
     
-    const unit=Math.max(.23*zh(z),pw*.55);
-    if(isHalf){ for(const side of ['L','R']) gFootNote(W/2+p[side].x*unit,y,pw*.55,ph*.55,GCOL[side],alpha*.55,0,'ghost'); continue; }
+    const closeUnit=Math.max(.145*zh(z),pw*.35), wideUnit=Math.max(.23*zh(z),pw*.55);
+    const laneOffset=x=>Math.sign(x)*(Math.min(Math.abs(x),.45)*closeUnit+Math.max(0,Math.abs(x)-.45)*wideUnit);
+    if(isHalf){ for(const side of ['L','R']) gFootNote(W/2+laneOffset(p[side].x),y,pw*.55,ph*.55,GCOL[side],alpha*.55,0,'ghost'); continue; }
     
     if(M.local===0 && z>.08){
       ctx.save(); ctx.globalAlpha=alpha*.85; ctx.strokeStyle='#BEF264'; ctx.lineWidth=Math.max(1,2*sc*S); ctx.setLineDash([10*sc*S,8*sc*S]);
@@ -2663,7 +2664,7 @@ function gLane(W,H,bf,pulse){
       if(['knee','back','kick'].includes(f.st)) md='dash';
       if(f.st==='tap') k=.62;
       if(!p.jump) md='ghost';
-      const x=W/2+f.x*unit, yy=y+(f.y||0)*ph*1.5;
+      const x=W/2+laneOffset(f.x), yy=y+(f.y||0)*ph*1.5;
       pos[side]={x,y:yy}; minX=Math.min(minX,x-pw*k/2); maxX=Math.max(maxX,x+pw*k/2);
       gFootNote(x,yy,pw*k,ph*k,GCOL[side],alpha,f.a,md);
     }
