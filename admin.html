@@ -1782,8 +1782,7 @@ function renderDeviceSlotsUI() {
   const isTrial = document.getElementById('mLicenseType').value === 'trial';
   const used = currentEditDeviceSlots.length;
 
-  const baseMax  = Math.min(maxDevices, 2);      
-  const baseShow = Math.max(baseMax, Math.min(used, 2));
+  const slotCount = Math.max(maxDevices, used);
 
   const ipWarn = describeSlotIpRisk(currentEditDeviceSlots);
   const warnBox = document.getElementById('slotIpWarn');
@@ -1792,8 +1791,14 @@ function renderDeviceSlotsUI() {
     warnBox.innerHTML = ipWarn || '';
   }
 
-  let html = '';
-  for (let i = 0; i < baseShow; i++) {
+  let html = `<div style="flex:1 0 100%;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:2px;">
+    <div style="font-size:13px;font-weight:800;">현재 사용 가능: 최대 ${maxDevices}대</div>
+    ${isTrial ? '' : `<div style="display:flex;gap:6px;">
+      <button type="button" class="btn-sm btn-toggle" onclick="changeDeviceLimit(-1)" ${maxDevices <= 2 ? 'disabled' : ''}>− 슬롯 삭제</button>
+      <button type="button" class="btn-sm btn-toggle" onclick="changeDeviceLimit(1)" ${maxDevices >= 10 ? 'disabled' : ''}>＋ 슬롯 추가</button>
+    </div>`}
+  </div>`;
+  for (let i = 0; i < slotCount; i++) {
     const slot = currentEditDeviceSlots[i];
     const over = i >= maxDevices;                
     if (slot) {
@@ -1806,7 +1811,7 @@ function renderDeviceSlotsUI() {
     } else {
       html += `<div class="admin-slot-card is-empty">
         <div class="admin-slot-status">사용 가능</div>
-        <div class="admin-slot-sub">기본 포함 슬롯</div>
+        <div class="admin-slot-sub">${i < 2 ? '기본 포함 슬롯' : `추가 슬롯 ${i - 1}`}</div>
       </div>`;
     }
   }
@@ -1816,55 +1821,40 @@ function renderDeviceSlotsUI() {
       <div class="admin-slot-status">체험판은 1대 고정</div>
       <div class="admin-slot-sub">대수를 늘리려면 먼저<br>라이선스 종류를 바꿔주세요</div>
     </div>`;
-  } else if (maxDevices >= 3) {
-    const slot3 = currentEditDeviceSlots[2];
-    if (slot3) {
-      const dateStr = slot3.registered_at ? slot3.registered_at.slice(0,10) : '-';
-      html += `<div class="admin-slot-card is-used is-toggle" onclick="toggleSlot3()">
-        <div class="admin-slot-status">사용 중</div>
-        <div class="admin-slot-sub">등록일 ${dateStr}${slotIpLine(slot3)}<br>클릭하면 슬롯을 닫습니다</div>
-      </div>`;
-    } else {
-      html += `<div class="admin-slot-card is-open is-toggle" onclick="toggleSlot3()">
-        <div class="admin-slot-status">확장 슬롯 열림</div>
-        <div class="admin-slot-sub">사용 가능 · 클릭하면 닫습니다</div>
-      </div>`;
-    }
-  } else {
-    html += `<div class="admin-slot-card is-locked is-toggle" onclick="toggleSlot3()">
-      <div class="admin-slot-status">확장 슬롯 잠김</div>
-      <div class="admin-slot-sub">클릭하면 3번째 기기를<br>등록할 수 있게 엽니다</div>
-    </div>`;
   }
   box.innerHTML = html;
 }
 
-async function toggleSlot3() {
+async function changeDeviceLimit(delta) {
   if (!currentEditLicenseId) return;
-
   if (document.getElementById('mLicenseType').value === 'trial') {
     alert('체험판은 기기 1대로 고정입니다.\n대수를 늘리려면 먼저 라이선스 종류를 바꿔주세요.');
     return;
   }
   const maxDevices = Number(document.getElementById('mMaxDevices').value) || 2;
-  if (maxDevices >= 3) {
-    if (!confirm('확장 슬롯을 닫을까요? 3번째로 등록된 기기가 있다면 함께 해제됩니다.')) return;
-    const newSlots = currentEditDeviceSlots.slice(0, 2);
-    try {
-      await edgeCall('UPDATE_LICENSE', { id: currentEditLicenseId, max_devices: 2, device_slots: newSlots });
-      document.getElementById('mMaxDevices').value = 2;
-      currentEditDeviceSlots = newSlots;
-      renderDeviceSlotsUI();
-      await loadLicenses();
-    } catch (err) { alert('변경 실패: ' + err.message); }
-  } else {
-    try {
-      await edgeCall('UPDATE_LICENSE', { id: currentEditLicenseId, max_devices: 3 });
-      document.getElementById('mMaxDevices').value = 3;
-      renderDeviceSlotsUI();
-      await loadLicenses();
-    } catch (err) { alert('변경 실패: ' + err.message); }
+  const nextMax = Math.max(2, Math.min(10, maxDevices + delta));
+  if (nextMax === maxDevices) {
+    alert(maxDevices >= 10 ? '슬롯은 최대 10대까지 추가할 수 있습니다.' : '기본 슬롯 2대는 삭제할 수 없습니다.');
+    return;
   }
+  let newSlots = currentEditDeviceSlots;
+  if (delta < 0) {
+    const removedSlot = currentEditDeviceSlots[nextMax];
+    const message = removedSlot
+      ? `${maxDevices}번째 슬롯에 등록된 기기도 함께 해제됩니다.\n슬롯을 삭제할까요?`
+      : `사용 가능 대수를 ${maxDevices}대에서 ${nextMax}대로 줄일까요?`;
+    if (!confirm(message)) return;
+    newSlots = currentEditDeviceSlots.slice(0, nextMax);
+  }
+  try {
+    const payload = { id: currentEditLicenseId, max_devices: nextMax };
+    if (delta < 0) payload.device_slots = newSlots;
+    await edgeCall('UPDATE_LICENSE', payload);
+    document.getElementById('mMaxDevices').value = nextMax;
+    currentEditDeviceSlots = newSlots;
+    renderDeviceSlotsUI();
+    await loadLicenses();
+  } catch (err) { alert('변경 실패: ' + err.message); }
 }
 
 async function removeDeviceSlot(idx) {
