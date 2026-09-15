@@ -44,9 +44,15 @@
     var a = screen.width || 9999, b = screen.height || 9999;
     var shortSide = Math.min(a, b), longSide = Math.max(a, b);
     var coarse = window.matchMedia && window.matchMedia('(pointer:coarse)').matches;
-    if(!(on || (!off && coarse && shortSide <= 500))) return;
 
     var portrait = !!(window.matchMedia && window.matchMedia('(orientation: portrait)').matches);
+    var rootEl = document.documentElement;
+    rootEl.classList.toggle('akm-portrait', portrait);
+    rootEl.classList.toggle('akm-landscape', !portrait);
+
+    var isPhone = on || (!off && coarse && shortSide <= 500);
+    if(!isPhone) return;                       
+
     if(portrait === lastPortrait) return;      
     lastPortrait = portrait;
 
@@ -57,8 +63,6 @@
     var root = document.documentElement;
     root.classList.add('akm-phone');
 
-    root.classList.toggle('akm-portrait', portrait);
-    root.classList.toggle('akm-landscape', !portrait);
     root.style.setProperty('--akm-phone-vw', vw);
     var m = document.querySelector('meta[name="viewport"]');
     if(m) m.setAttribute('content','width='+vw+', viewport-fit=cover, user-scalable=no');
@@ -258,14 +262,7 @@
   .btn-flip{background:#1d3050;color:#fff;}
   button:active{transform:scale(.97);}
 
-  @media (orientation:portrait){
-    .stage{display:none;}
-    .rotate-msg{display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:16px;text-align:center;padding:24px;}
-    .rotate-msg .icon{font-size:64px;}
-    .rotate-msg p{font-size:20px;font-weight:700;color:var(--gold);}
-    .rotate-msg small{font-size:14px;color:#9fb0c8;}
-  }
-  @media (orientation:landscape){.rotate-msg{display:none;}}
+  .rotate-msg{display:none !important;}
 
 body.hud-v21 .stage{
   position:relative; display:block; width:100vw; height:100vh; overflow:hidden; background:#000;
@@ -8231,6 +8228,9 @@ function makeKickSlot(key){
     trajX:[], trajY:[], trajHipX:[], trajTorso:[], trajHipW:[], trajKneeX:[], trajKneeAngle:[], trajHipVis:[], trajKneeVis:[], trajKneeAngle3D:[], trajShoulderW:[],
 
     preT:[], preFootY:[], preKneeAngle:[], preKneeVis:[], preKneeAngle3D:[], preTraj:[],
+
+    trajFootAng:[], trajFootAngVis:[], trajKneeMark:[],
+    kmPeakY:null, kmHitBefore:false, kneeMarkFlashArmed:false,
     prevFoot:{left:null,right:null},
     smHipY:null, smTorso:null, smHipX:null, smHipW:null, shoulderSamples:[],
     drillDone:0, drillScores:[], lastScore:null, lastGrade:'', lastColor:'var(--gold)',
@@ -8252,6 +8252,9 @@ function saveToSlot(slot){
   slot.trajX=trajX; slot.trajY=trajY; slot.trajHipX=trajHipX; slot.trajTorso=trajTorso; slot.trajHipW=trajHipW;
   slot.trajKneeX=trajKneeX; slot.trajKneeAngle=trajKneeAngle; slot.trajHipVis=trajHipVis; slot.trajKneeVis=trajKneeVis;
   slot.trajKneeAngle3D=trajKneeAngle3D; slot.trajShoulderW=trajShoulderW;
+  
+  slot.trajFootAng=trajFootAng; slot.trajFootAngVis=trajFootAngVis; slot.trajKneeMark=trajKneeMark;
+  slot.kmPeakY=kmPeakY; slot.kmHitBefore=kmHitBefore; slot.kneeMarkFlashArmed=kneeMarkFlashArmed;
   slot.preT=preT; slot.preFootY=preFootY; slot.preKneeAngle=preKneeAngle; slot.preKneeVis=preKneeVis;
   slot.preKneeAngle3D=preKneeAngle3D; slot.preTraj=preTraj;
   slot.prevFoot=prevFoot;
@@ -8271,6 +8274,10 @@ function loadFromSlot(slot){
   trajX=slot.trajX; trajY=slot.trajY; trajHipX=slot.trajHipX; trajTorso=slot.trajTorso; trajHipW=slot.trajHipW;
   trajKneeX=slot.trajKneeX; trajKneeAngle=slot.trajKneeAngle; trajHipVis=slot.trajHipVis; trajKneeVis=slot.trajKneeVis;
   trajKneeAngle3D=slot.trajKneeAngle3D; trajShoulderW=slot.trajShoulderW;
+  
+  trajFootAng=slot.trajFootAng||[]; trajFootAngVis=slot.trajFootAngVis||[]; trajKneeMark=slot.trajKneeMark||[];
+  kmPeakY=(slot.kmPeakY===undefined?null:slot.kmPeakY);
+  kmHitBefore=!!slot.kmHitBefore; kneeMarkFlashArmed=!!slot.kneeMarkFlashArmed;
   preT=slot.preT; preFootY=slot.preFootY; preKneeAngle=slot.preKneeAngle; preKneeVis=slot.preKneeVis;
   preKneeAngle3D=slot.preKneeAngle3D; preTraj=slot.preTraj;
   prevFoot=slot.prevFoot;
@@ -9645,7 +9652,12 @@ window.__startApp = async function() {
   try{
     await initModel();
     const cameraOk=await startCamera();
-    if(cameraOk){ startMainLoopOnce(); await prepareDeviceModel(); }
+    if(cameraOk){
+      startMainLoopOnce();
+      
+      try{ window.akmKeepScreenOn && window.akmKeepScreenOn(true); }catch(_){}
+      await prepareDeviceModel();
+    }
   }catch(e){
     console.error('앱 시작 실패:',e);
     statusEl.textContent='AI 모델 연결 실패';
@@ -10037,11 +10049,6 @@ html.akm-phone body.hud-v21.akm-ui .mode-row.hud-kick-row1{
   max-width:min(232px, 94vw) !important;
 }
 
-html.akm-phone body.hud-v21 .hud-drill-row{    top:150px !important; }
-html.akm-phone body.hud-v21 .hud-balloon-row{  top:180px !important; }
-html.akm-phone body.hud-v21 .hud-sparring-row{ top:210px !important; }
-html.akm-phone body.hud-v21 .hud-lab-row{      top:240px !important; }
-
 html.akm-phone body.hud-v21 .hud-drill-row .game-btn,
 html.akm-phone body.hud-v21 .hud-balloon-row .game-btn,
 html.akm-phone body.hud-v21 .hud-sparring-row .game-btn,
@@ -10050,26 +10057,11 @@ html.akm-phone body.hud-v21 .hud-lab-row .game-btn{
   font-size:12px !important;
 }
 
-html.akm-phone #p2PlayerToggle.show{ top:276px !important; }
-
 html.akm-phone.akm-landscape body.hud-v21 .hud-drill-row{    top:110px !important; }
 html.akm-phone.akm-landscape body.hud-v21 .hud-balloon-row{  top:140px !important; }
 html.akm-phone.akm-landscape body.hud-v21 .hud-sparring-row{ top:170px !important; }
 html.akm-phone.akm-landscape body.hud-v21 .hud-lab-row{      top:200px !important; }
 html.akm-phone.akm-landscape #p2PlayerToggle.show{           top:236px !important; }
-
-html.akm-phone.akm-portrait body.hud-v21 #modeBadge{
-  top:12px !important;
-  left:auto !important;
-  right:12px !important;
-  min-width:0 !important;
-  max-width:calc(100% - 160px) !important;
-  text-align:right !important;
-  transform:skewX(-8deg) !important;
-}
-html.akm-phone.akm-portrait body.hud-v21 .difficulty-panel{
-  transform:translateY(150px) scale(.88) !important;
-}
 
 html.akm-phone #p2Result.show{
   justify-content:flex-start !important;
@@ -10106,15 +10098,6 @@ html.akm-phone body.hud-v21 .title{
 html.akm-phone body.hud-v21 .title *{ pointer-events:none !important; }
 html.akm-phone body.hud-v21 .hud-settings-btn,
 html.akm-phone body.hud-v21.akm-ui .hud-settings-btn{ pointer-events:auto !important; }
-
-html.akm-phone.akm-portrait body.hud-v21 .mode-row.hud-kick-row,
-html.akm-phone.akm-portrait body.hud-v21 .mode-row.hud-kick-row1,
-html.akm-phone.akm-portrait body.hud-v21 .mode-row.hud-kick-tabs,
-html.akm-phone.akm-portrait body.hud-v21.akm-ui .mode-row.hud-kick-row,
-html.akm-phone.akm-portrait body.hud-v21.akm-ui .mode-row.hud-kick-row1,
-html.akm-phone.akm-portrait body.hud-v21.akm-ui .mode-row.hud-kick-tabs{
-  bottom:140px !important;
-}
 
 html.akm-phone body.hud-v21 .title{
   transform:scale(.80) !important;
@@ -10238,17 +10221,48 @@ body.hud-v21.sparring-speed #gameArea .drill-count-row.sparring-round-row{ displ
 </script>
 
 <script id="akm-v280-viewport-fit-js">
+
 (function(){
-  function setAkmViewportHeight(){
+  var lastH = 0, timer = 0;
+  function apply(force){
     var h = Math.max(320, Math.floor(window.innerHeight || document.documentElement.clientHeight || screen.height));
+    if(!force && Math.abs(h - lastH) < 24) return;      
+    lastH = h;
     document.documentElement.style.setProperty('--akm-app-height', h + 'px');
   }
-  setAkmViewportHeight();
-  window.addEventListener('resize', setAkmViewportHeight, {passive:true});
-  window.addEventListener('orientationchange', function(){ setTimeout(setAkmViewportHeight, 250); }, {passive:true});
-  if (window.visualViewport) {
-    window.visualViewport.addEventListener('resize', setAkmViewportHeight, {passive:true});
+  function later(force){
+    if(timer) clearTimeout(timer);
+    timer = setTimeout(function(){ timer = 0; apply(force); }, 120);
   }
+  apply(true);
+  window.addEventListener('resize', function(){ later(false); }, {passive:true});
+  window.addEventListener('orientationchange', function(){ setTimeout(function(){ apply(true); }, 250); }, {passive:true});
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', function(){ later(false); }, {passive:true});
+  }
+})();
+</script>
+
+<script id="akm-wakelock-js">
+(function(){
+  var lock = null, want = false;
+  async function acquire(){
+    try{
+      if(lock || !navigator.wakeLock || document.hidden || !want) return;
+      lock = await navigator.wakeLock.request('screen');
+      lock.addEventListener('release', function(){ lock = null; });
+    }catch(e){ lock = null; }
+  }
+  async function release(){
+    try{ if(lock){ var l = lock; lock = null; await l.release(); } }catch(e){ lock = null; }
+  }
+  window.akmKeepScreenOn = function(on){
+    want = !!on;
+    if(want) acquire(); else release();
+  };
+  document.addEventListener('visibilitychange', function(){
+    if(document.hidden) release(); else acquire();
+  });
 })();
 </script>
 
@@ -10259,7 +10273,7 @@ const _AKM_LS_KEY      = 'akm_license_v1';
 const _AKM_CACHE_DAYS  = 7;   
 const _AKM_TRIAL_CACHE_DAYS = 1;   
 
-const _AKM_VERSION     = '3.2.1';
+const _AKM_VERSION     = '3.2.2';
 
 let _akmFailCount = 0;
 let _akmFailLockUntil = 0;
@@ -10281,7 +10295,7 @@ const _AKM_SIGN_PUBKEY = {"kty":"EC","crv":"P-256",
   "x":"TRVuOcoZYEagtQgi5GRgUOSIkAjiW_aUS4O9U6cfK0I",
   "y":"IknjHnofBQw-5FhVBgeI2hx9WFT4OIs90G4aPYBNbuc"};
 
-const _AKM_SIGN_REQUIRED_FROM = Date.parse('2026-09-21T00:00:00+09:00');
+const _AKM_SIGN_REQUIRED_FROM = Date.parse('2026-11-01T00:00:00+09:00');
 
 let _akmVerifyKeyP = null;
 function _akmSignPubKey(){
@@ -10316,6 +10330,8 @@ async function _akmCheckToken(cache){
     if(!ok) return 'bad';
 
     const c = JSON.parse(new TextDecoder().decode(_akmB64urlToBytes(parts[0])));
+
+    if(!/^AKM-/.test(String(c.k||''))) return 'bad';   
     if(c.k !== cache.license_key) return 'bad';   
     if(!c.sxp || Date.now() > c.sxp) return 'bad';   
     if(c.exp && Date.now() > c.exp) return 'bad';    
@@ -11113,7 +11129,7 @@ window.addEventListener('load', function(){
 })();
 </script>
 
-<style id="akm-responsive-shell-v1">
+<style id="akm-portrait-shell-v2">
 
 html,body{
   width:100%;
@@ -11149,85 +11165,103 @@ body.hud-v21 .stage{
   }
 }
 
-@media (orientation:portrait) and (max-width:900px){
-  .rotate-msg{display:none !important;}
-  body.hud-v21 .stage{display:block !important;}
+html.akm-portrait body.hud-v21 .stage{display:block !important;}
 
-  body.hud-v21 #modeBadge{
-    top:calc(env(safe-area-inset-top,0px) + 12px) !important;
-    left:auto !important;
-    right:calc(env(safe-area-inset-right,0px) + 12px) !important;
-    min-width:0 !important;
-    width:auto !important;
-    max-width:calc(100% - 172px) !important;
-    padding:8px 12px !important;
-    text-align:right !important;
-    transform:skewX(-8deg) !important;
-    white-space:normal !important;
-  }
-  body.hud-v21 #modeBadge small{font-size:10px !important;}
+html.akm-portrait body.hud-v21 #modeBadge{
+  top:calc(env(safe-area-inset-top,0px) + 12px) !important;
+  left:auto !important;
+  right:calc(env(safe-area-inset-right,0px) + 12px) !important;
+  min-width:0 !important;
+  width:auto !important;
+  max-width:calc(100% - 172px) !important;
+  padding:8px 12px !important;
+  text-align:right !important;
+  transform:skewX(-8deg) !important;
+  white-space:normal !important;
+}
+html.akm-portrait body.hud-v21 #modeBadge small{font-size:10px !important;}
 
-  body.hud-v21 .title{
-    max-width:154px !important;
-    transform:scale(.86) !important;
-    transform-origin:top left !important;
-    z-index:90 !important;
-    pointer-events:none !important;
-  }
-  body.hud-v21 .title *{pointer-events:none !important;}
-  body.hud-v21 .hud-settings-btn,
-  body.hud-v21.akm-ui .hud-settings-btn{pointer-events:auto !important;}
+html.akm-portrait body.hud-v21 .title{
+  max-width:154px !important;
+  transform:scale(.86) !important;
+  transform-origin:top left !important;
+  z-index:90 !important;
+  pointer-events:none !important;
+}
+html.akm-portrait body.hud-v21 .title *{pointer-events:none !important;}
+html.akm-portrait body.hud-v21 .hud-settings-btn,
+html.akm-portrait body.hud-v21.akm-ui .hud-settings-btn{pointer-events:auto !important;}
 
-  body.hud-v21 .hud-drill-row{top:clamp(142px,16.5dvh,180px) !important;}
-  body.hud-v21 .hud-balloon-row{top:clamp(176px,20.5dvh,218px) !important;}
-  body.hud-v21 .hud-sparring-row{top:clamp(210px,24.5dvh,256px) !important;}
-  body.hud-v21 .hud-lab-row{top:clamp(244px,28.5dvh,294px) !important;}
-  body.hud-v21 .hud-drill-row,
-  body.hud-v21 .hud-balloon-row,
-  body.hud-v21 .hud-sparring-row,
-  body.hud-v21 .hud-lab-row{
-    left:calc(env(safe-area-inset-left,0px) + 12px) !important;
-    width:clamp(122px,34vw,176px) !important;
-  }
-
-  body.hud-v21 .difficulty-panel{
-    right:calc(env(safe-area-inset-right,0px) + 8px) !important;
-    max-width:min(46vw,210px) !important;
-    transform:translateY(clamp(128px,15dvh,168px)) scale(.88) !important;
-    transform-origin:top right !important;
-  }
-
-  body.hud-v21 .mode-row.hud-kick-row,
-  body.hud-v21 .mode-row.hud-kick-row1,
-  body.hud-v21 .mode-row.hud-kick-tabs,
-  body.hud-v21.akm-ui .mode-row.hud-kick-row,
-  body.hud-v21.akm-ui .mode-row.hud-kick-row1,
-  body.hud-v21.akm-ui .mode-row.hud-kick-tabs{
-    bottom:clamp(142px,17dvh,178px) !important;
-  }
-  body.hud-v21 #drillCountArea,
-  body.hud-v21 #gameArea{
-    left:calc(env(safe-area-inset-left,0px) + 10px) !important;
-    bottom:calc(env(safe-area-inset-bottom,0px) + 10px) !important;
-    max-width:calc(100% - 20px) !important;
-  }
-  body.hud-v21 .stats-row{
-    right:calc(env(safe-area-inset-right,0px) + 10px) !important;
-    bottom:calc(env(safe-area-inset-bottom,0px) + 10px) !important;
-  }
-
-  body.hud-v21 #kickPilotGraph{transform:scale(.78) !important;transform-origin:center center !important;}
+html.akm-portrait body.hud-v21 .hud-drill-row{top:clamp(142px,16.5dvh,180px) !important;}
+html.akm-portrait body.hud-v21 .hud-balloon-row{top:clamp(176px,20.5dvh,218px) !important;}
+html.akm-portrait body.hud-v21 .hud-sparring-row{top:clamp(210px,24.5dvh,256px) !important;}
+html.akm-portrait body.hud-v21 .hud-lab-row{top:clamp(244px,28.5dvh,294px) !important;}
+html.akm-portrait body.hud-v21 .hud-drill-row,
+html.akm-portrait body.hud-v21 .hud-balloon-row,
+html.akm-portrait body.hud-v21 .hud-sparring-row,
+html.akm-portrait body.hud-v21 .hud-lab-row{
+  left:calc(env(safe-area-inset-left,0px) + 12px) !important;
+  width:clamp(122px,34vw,176px) !important;
 }
 
-@media (orientation:portrait) and (max-height:700px){
-  body.hud-v21 .title-auth,
-  body.hud-v21 .title-version,
-  body.hud-v21 .akm-hud-meta,
-  body.hud-v21 #kickPilotGraph{display:none !important;}
-  body.hud-v21 .hud-drill-row{top:104px !important;}
-  body.hud-v21 .hud-balloon-row{top:138px !important;}
-  body.hud-v21 .hud-sparring-row{top:172px !important;}
-  body.hud-v21 .hud-lab-row{top:206px !important;}
+html.akm-portrait #p2PlayerToggle.show{top:clamp(278px,32.5dvh,334px) !important;}
+
+html.akm-phone.akm-portrait body.hud-v21 .hud-drill-row .game-btn,
+html.akm-phone.akm-portrait body.hud-v21 .hud-balloon-row .game-btn,
+html.akm-phone.akm-portrait body.hud-v21 .hud-sparring-row .game-btn,
+html.akm-phone.akm-portrait body.hud-v21 .hud-lab-row .game-btn{
+  min-height:26px !important;
+  font-size:12px !important;
+}
+
+html.akm-portrait body.hud-v21 .difficulty-panel{
+  right:calc(env(safe-area-inset-right,0px) + 8px) !important;
+  max-width:min(46vw,210px) !important;
+  transform:translateY(clamp(128px,15dvh,168px)) scale(.88) !important;
+  transform-origin:top right !important;
+}
+
+html.akm-portrait body.hud-v21 .mode-row.hud-kick-row,
+html.akm-portrait body.hud-v21 .mode-row.hud-kick-row1,
+html.akm-portrait body.hud-v21 .mode-row.hud-kick-tabs,
+html.akm-portrait body.hud-v21.akm-ui .mode-row.hud-kick-row,
+html.akm-portrait body.hud-v21.akm-ui .mode-row.hud-kick-row1,
+html.akm-portrait body.hud-v21.akm-ui .mode-row.hud-kick-tabs{
+  bottom:clamp(142px,17dvh,178px) !important;
+}
+html.akm-portrait body.hud-v21 #drillCountArea,
+html.akm-portrait body.hud-v21 #gameArea{
+  left:calc(env(safe-area-inset-left,0px) + 10px) !important;
+  bottom:calc(env(safe-area-inset-bottom,0px) + 10px) !important;
+  max-width:calc(100% - 20px) !important;
+}
+html.akm-portrait body.hud-v21 .stats-row{
+  right:calc(env(safe-area-inset-right,0px) + 10px) !important;
+  bottom:calc(env(safe-area-inset-bottom,0px) + 10px) !important;
+}
+
+html.akm-portrait body.hud-v21 #kickPilotGraph{
+  transform:scale(.78) !important;
+  transform-origin:center center !important;
+}
+
+html.akm-portrait #p2Result.show{
+  justify-content:flex-start !important;
+  overflow-y:auto !important;
+  overflow-x:hidden !important;
+  -webkit-overflow-scrolling:touch;
+}
+
+@media (max-height:700px){
+  html.akm-portrait body.hud-v21 .title-auth,
+  html.akm-portrait body.hud-v21 .title-version,
+  html.akm-portrait body.hud-v21 .akm-hud-meta,
+  html.akm-portrait body.hud-v21 #kickPilotGraph{display:none !important;}
+  html.akm-portrait body.hud-v21 .hud-drill-row{top:104px !important;}
+  html.akm-portrait body.hud-v21 .hud-balloon-row{top:138px !important;}
+  html.akm-portrait body.hud-v21 .hud-sparring-row{top:172px !important;}
+  html.akm-portrait body.hud-v21 .hud-lab-row{top:206px !important;}
+  html.akm-portrait #p2PlayerToggle.show{top:240px !important;}
 }
 </style>
 </body>

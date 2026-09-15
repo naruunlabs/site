@@ -4,9 +4,9 @@
   "short_name": "JUMP MASTER",
   "description": "AI 줄넘기 훈련 시스템",
   "start_url": "/aijumpmaster",
-  "scope": "/aijumpmaster",
+  "scope": "./",
   "display": "standalone",
-  "orientation": "landscape",
+  "orientation": "any",
   "background_color": "#0A1628",
   "theme_color": "#0A1628",
   "icons": [
