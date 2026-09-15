@@ -665,6 +665,7 @@ html body:not(.jmp-beta-on) #jumpLabModal{
         <button type="button" data-gk="practice" class="on">연습 · 발판</button>
         <button type="button" data-gk="play">실전 · 리듬게임</button>
       </div>
+      <label class="lfield"><i>훈련 음악</i><select id="groupMusic"><option value="iron" selected>The Iron Pace · 120 BPM</option><option value="final">The Final Rep · 120 BPM</option><option value="none">음악 없음 · 박자음만</option></select></label>
       <div class="lfield" id="groupSkillWrap"><i>연습할 종목</i><div class="rsum"><span id="groupPracticeSum">1개 종목</span><button type="button" id="groupPracticeEditBtn">선택 ›</button></div><select id="groupSkill" hidden></select></div>
       <div class="lfield" id="groupRoutineWrap" hidden><i>루틴</i><div class="rsum"><span id="groupRoutineSum"></span><button type="button" id="groupEditBtn">편집 ›</button></div></div>
     </div>
@@ -1157,6 +1158,11 @@ let groupKind='practice';
 let groupRunKind='practice';       
 let groupSkillId='together';       
 let practiceOffset=0;              
+const GROUP_MUSIC={
+  iron:{name:'The Iron Pace',src:'bgm/jump-iron-pace.mp3',bpm:120},
+  final:{name:'The Final Rep',src:'bgm/jump-final-rep.mp3',bpm:120}
+};
+let groupMusicKey='iron',groupMusicSource=null,groupMusicGain=null,groupMusicBuffer=null,groupMusicBufferKey='';
 const gmod=(a,n)=>((a%n)+n)%n;
 const glerp=(a,b,t)=>a+(b-a)*t;
 
@@ -1181,6 +1187,29 @@ function initAudio(){
   return Promise.resolve();
 }
 ['pointerdown','touchstart','keydown'].forEach(ev=>document.addEventListener(ev,initAudio,{passive:true}));
+async function loadGroupMusic(){
+  const track=GROUP_MUSIC[groupMusicKey];
+  if(!track||!audio) return null;
+  if(groupMusicBuffer&&groupMusicBufferKey===groupMusicKey) return groupMusicBuffer;
+  const res=await fetch(track.src,{cache:'force-cache'}); if(!res.ok) throw new Error('music '+res.status);
+  const buf=await res.arrayBuffer(); groupMusicBuffer=await audio.decodeAudioData(buf.slice(0)); groupMusicBufferKey=groupMusicKey;
+  return groupMusicBuffer;
+}
+function stopGroupMusic(){
+  if(groupMusicSource){try{groupMusicSource.stop()}catch(e){} try{groupMusicSource.disconnect()}catch(e){}}
+  groupMusicSource=null; groupMusicGain=null;
+}
+function startGroupMusic(at,elapsedSec=0){
+  stopGroupMusic();
+  const track=GROUP_MUSIC[groupMusicKey];
+  if(!track||!audio||!groupMusicBuffer||lastRoundMode!=='group') return;
+  const src=audio.createBufferSource(),gain=audio.createGain();
+  src.buffer=groupMusicBuffer;src.loop=true;src.playbackRate.value=bpm/track.bpm;
+  gain.gain.value=soundOn?.46:0;src.connect(gain).connect(audio.destination);
+  const offset=gmod(elapsedSec*(bpm/track.bpm),groupMusicBuffer.duration);
+  src.start(Math.max(audio.currentTime,at),offset);groupMusicSource=src;groupMusicGain=gain;
+}
+function syncGroupMusicVolume(){if(groupMusicGain&&audio)groupMusicGain.gain.setTargetAtTime(soundOn?.46:0,audio.currentTime,.025)}
 function tone(freq,dur,type='sine',vol=.16,at=null){
   if(!soundOn||!audio) return;
   try{
@@ -1235,6 +1264,7 @@ function prepareClock(delayMs){
   if(!audio){ return; }
   clockAudioStart = audio.currentTime + delayMs/1000;
   nextBeatIdx = 0;
+  if(lastRoundMode==='group') startGroupMusic(clockAudioStart,0);
   startBeatScheduler();
 }
 
@@ -1245,9 +1275,10 @@ function resumeClock(){
   const elapsedBeats=(performance.now()-gameStartPerf)/beatMs;
   clockAudioStart = audio.currentTime - elapsedBeats*(beatMs/1000);
   nextBeatIdx = Math.max(0, Math.ceil(elapsedBeats));
+  if(lastRoundMode==='group') startGroupMusic(audio.currentTime+.035,Math.max(0,(performance.now()-gameStartPerf)/1000));
   startBeatScheduler();
 }
-function stopClock(){ clearInterval(scheduler); scheduler=0; }
+function stopClock(){ clearInterval(scheduler); scheduler=0; stopGroupMusic(); }
 
 let wakeLock=null;
 async function keepScreenOn(on){
@@ -1668,7 +1699,7 @@ function relayTick(now){
 const lobbyPrefs = store.json('jmp_lobby_v1',{}) || {};
 function saveLobbyPrefs(){
   store.set('jmp_lobby_v1',JSON.stringify({mode,soloMode,soloJumpType,alternateCountMode,duoType,soloTime:$('soloTime').value,soloTarget:$('soloTarget').value,bpm:$('bpm').value,duration:$('duration').value,
-    relayPlayers:$('relayPlayers').value,relayTarget:$('relayTarget').value,relayRounds:$('relayRounds').value,relayChange:$('relayChange').value,groupKind,groupSkill:groupSkillId}));
+    relayPlayers:$('relayPlayers').value,relayTarget:$('relayTarget').value,relayRounds:$('relayRounds').value,relayChange:$('relayChange').value,groupKind,groupSkill:groupSkillId,groupMusic:groupMusicKey}));
 }
 function restoreLobbyPrefs(){
   const p=lobbyPrefs;
@@ -1682,8 +1713,12 @@ function restoreLobbyPrefs(){
   setSel('relayPlayers',p.relayPlayers); setSel('relayTarget',p.relayTarget); setSel('relayRounds',p.relayRounds); setSel('relayChange',p.relayChange);
   if(['practice','play'].includes(p.groupKind)) groupKind=p.groupKind;
   if(SKILL_BY_ID[p.groupSkill]) groupSkillId=p.groupSkill;
+  if(p.groupMusic==='none'||GROUP_MUSIC[p.groupMusic]) groupMusicKey=p.groupMusic;
 }
 function applyModeUI(){
+  const musicLocked=mode==='group'&&groupMusicKey!=='none';
+  if(musicLocked) $('bpm').value=String(GROUP_MUSIC[groupMusicKey].bpm);
+  $('bpm').disabled=musicLocked;
   document.body.classList.toggle('jmp-pilot-solo',mode==='solo');
   document.body.classList.toggle('jmp-pilot-duo',mode==='duo');
   document.querySelectorAll('#modelist .choice').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mode===mode)));
@@ -1705,9 +1740,11 @@ function applyModeUI(){
   $('groupSkillWrap').hidden = groupKind!=='practice';
   $('groupRoutineWrap').hidden = groupKind!=='play';
   $('groupSkill').value = groupSkillId;
+  $('groupMusic').value = groupMusicKey;
+  $('spDown').disabled=$('spUp').disabled=musicLocked;
   setText($('groupPracticeSum'),practiceSummary());
   setText($('groupRoutineSum'), groupRoutineSummary());
-  setText($('bpmLabel'), mode==='group'?'속도':'박자 속도');
+  setText($('bpmLabel'), mode==='group'?(musicLocked?'속도 · 음악에 맞춤':'속도'):'박자 속도');
   updateModeBadge();
   if(appState==='lobby') layoutHud(); else refreshGuide();
 }
@@ -1802,6 +1839,7 @@ async function boot(){
   
   if(soundOn) await initAudio();
   bpm=+$('bpm').value; beatMs=60000/bpm;
+  if(mode==='group'&&groupMusicKey!=='none'&&soundOn){try{await loadGroupMusic()}catch(e){console.warn('훈련 음악을 불러오지 못해 박자음만 사용합니다.',e);}}
   if(mode==='group'){ stopCamera(); }
   else{
     let step='camera';
@@ -2785,6 +2823,7 @@ function updateGroupHud(now){
 function inGroupPractice(){ return (appState==='running'||appState==='countdown') && lastRoundMode==='group' && groupRunKind==='practice'; }
 function changePracticeSpeed(d){
   if(!inGroupPractice()) return;
+  if(groupMusicKey!=='none') return;
   const bf=(performance.now()-gameStartPerf)/beatMs;
   if(bf>=0) practiceOffset+=Math.floor(bf)+1;
   bpm=clamp(bpm+d,60,160); beatMs=60000/bpm;
@@ -2896,6 +2935,7 @@ document.querySelectorAll('#duoSeg button').forEach(b=>b.addEventListener('click
 
 $('groupSkill').innerHTML=['발 모양','발 리듬','손 기술'].map(c=>`<optgroup label="${c}">${SKILLS.filter(s=>s.cat===c).map(s=>`<option value="${s.id}">${esc(s.n)}</option>`).join('')}</optgroup>`).join('');
 document.querySelectorAll('#groupSeg button').forEach(b=>b.addEventListener('click',()=>{ groupKind=b.dataset.gk; applyModeUI(); saveLobbyPrefs(); }));
+$('groupMusic').addEventListener('change',e=>{groupMusicKey=e.target.value;groupMusicBuffer=null;groupMusicBufferKey='';applyModeUI();saveLobbyPrefs();});
 $('groupSkill').addEventListener('change',e=>{ groupSkillId=e.target.value; applyModeUI(); saveLobbyPrefs(); });
 $('groupEditBtn').addEventListener('click',()=>openRoutineEditor('play'));
 $('groupPracticeEditBtn').addEventListener('click',()=>openRoutineEditor('practice'));
@@ -2975,7 +3015,8 @@ $('recalBtn2').addEventListener('click',()=>{ recalibrateAll(); closeSettings();
 function syncSoundBtn(){ const b=$('soundBtn'); b.classList.toggle('on',soundOn); b.setAttribute('aria-pressed',String(soundOn)); setText($('soundState'), soundOn?'켜짐':'꺼짐'); }
 $('soundBtn').addEventListener('click',async()=>{
   soundOn=!soundOn; store.set('jmp_sound',soundOn?'1':'0'); syncSoundBtn();
-  if(soundOn){ await initAudio(); tone(740,.09,'sine',.14); }
+  if(soundOn){ await initAudio(); tone(740,.09,'sine',.14); if(appState==='running'&&lastRoundMode==='group'&&groupMusicKey!=='none'&&!groupMusicSource){try{await loadGroupMusic();startGroupMusic(audio.currentTime+.035,Math.max(0,(performance.now()-gameStartPerf)/1000))}catch(e){}} }
+  syncGroupMusicVolume();
 });
 syncSoundBtn();
 
