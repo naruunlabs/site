@@ -26,7 +26,7 @@
 .tabs button:before{content:"";position:absolute;left:0;top:6px;bottom:6px;width:2px;background:transparent}.tabs button.on{color:#fff;background:linear-gradient(90deg,rgba(26,11,18,.78),transparent)}.tabs button.on:before{background:#ff304f;box-shadow:0 0 12px rgba(255,48,79,.8)}
 .field{position:absolute;left:28px;width:210px;margin:0}.side>.field:nth-of-type(1){top:248px}.side>.grid{position:absolute;left:28px;top:310px;width:210px;display:grid;gap:7px}.side>.grid .field{position:static;width:auto}.side>.field:nth-of-type(2){top:378px}.side>.field:nth-of-type(3){top:440px}
 .field span{color:#7f8da1;font-size:10px}.field select{height:38px;padding:0 9px;border:0;border-radius:7px;background:rgba(7,11,18,.68);backdrop-filter:blur(10px)}
-.actions{position:absolute;left:28px;bottom:24px;width:230px;display:grid;gap:6px;margin:0}.actions button{min-height:36px;border-radius:8px;background:rgba(255,255,255,.07);font-size:12px}.actions .start{min-height:48px;border-radius:10px;background:linear-gradient(135deg,#ff304f,#b91426);box-shadow:0 12px 28px rgba(227,23,46,.22)}
+.actions{position:absolute;left:28px;bottom:24px;width:230px;display:grid;gap:6px;margin:0}.actions button{min-height:36px;border-radius:8px;background:rgba(255,255,255,.07);font-size:12px}.actions .start{min-height:48px;border-radius:10px;background:linear-gradient(135deg,#ff304f,#b91426);box-shadow:0 12px 28px rgba(227,23,46,.22)}.actions .exit{grid-column:1/-1;min-height:42px;border:1px solid rgba(255,255,255,.16);background:rgba(5,8,14,.78);color:#d7dce5}
 .stage{position:absolute;inset:0}.top{top:24px;left:50%;right:auto;width:min(680px,54vw);transform:translateX(-50%);justify-content:center;text-align:center}.routine-name{font-size:20px;color:#fff}.set{position:fixed;top:24px;right:28px;font-size:14px}.progress{top:62px;left:50%;right:auto;width:min(680px,54vw);transform:translateX(-50%)}
 .cue{top:15%;width:min(760px,62vw)}.cue .beat{font-size:13px}.cue h2{font-size:clamp(44px,6vw,88px)}.cue p{font-size:clamp(13px,1.25vw,18px)}
 .arena{bottom:0;width:min(980px,72vw);height:min(640px,70vh)}.next{right:28px;bottom:24px;min-width:210px;border-left-color:#ff6a1a;background:rgba(5,8,14,.64);backdrop-filter:blur(12px)}
@@ -37,14 +37,14 @@
 <body>
 <main class="app" id="app">
   <aside class="side">
-    <div class="brand">AI <em>KICK</em> MASTER</div><div class="version">GROUP COMBINATION · TEST v0.1</div><span class="test">TEST BUILD</span>
+    <div class="brand">AI <em>KICK</em> MASTER</div><div class="version">GROUP COMBINATION · TEST v0.2</div><span class="test">TEST BUILD</span>
     <h1>단체 <span>콤비네이션</span></h1>
     <div class="tabs"><button class="on" data-kind="practice">연습</button><button data-kind="live">실전</button></div>
     <label class="field"><span>루틴</span><select id="routine"></select></label>
     <div class="grid"><label class="field"><span>속도</span><select id="bpm"><option value="60">느리게 · 60</option><option value="80" selected>기본 · 80</option><option value="100">빠르게 · 100</option><option value="120">매우 빠르게 · 120</option></select></label><label class="field"><span>세트</span><select id="sets"><option>1</option><option selected>2</option><option>3</option><option>4</option></select></label></div>
     <label class="field"><span>세트당 발차기</span><select id="kickGoal"><option value="6">6회</option><option value="10" selected>10회</option><option value="20">20회</option></select></label>
     <label class="field"><span>세트 휴식</span><select id="rest"><option value="10">10초</option><option value="15" selected>15초</option><option value="20">20초</option><option value="30">30초</option></select></label>
-    <div class="actions"><button id="prev">이전</button><button id="next">다음</button><button class="start" id="start">시작</button><button id="pause" disabled>일시정지</button><button id="reset">처음으로</button></div>
+    <div class="actions"><button id="prev">이전</button><button id="next">다음</button><button class="start" id="start">시작</button><button id="pause" disabled>일시정지</button><button id="reset">처음으로</button><button class="exit" id="exitGroup">단체모드 종료 · 모드 선택으로</button></div>
     <div class="tip">카메라를 사용하지 않는 단체 수업 지휘 테스트입니다.</div>
   </aside>
   <section class="stage" id="stage">
@@ -86,21 +86,37 @@ function drawKickGuide(W,H,now,type){
   [((t+.2)%1),((t+.58)%1)].forEach((u,i)=>{const p=point(u),q=point(Math.min(1,u+.025)),ang=Math.atan2(q.y-p.y,q.x-p.x);gx.save();gx.translate(p.x,p.y);gx.rotate(ang);gx.strokeStyle=`rgba(${pale},${i ? .32 : .55})`;gx.lineWidth=i?2:3;gx.beginPath();gx.moveTo(-9,-7);gx.lineTo(7,0);gx.lineTo(-9,7);gx.stroke();gx.restore()});
   gx.shadowColor=`rgb(${rgb})`;gx.shadowBlur=18;gx.strokeStyle=`rgba(${rgb},.62)`;gx.lineWidth=4;gx.beginPath();gx.arc(end.x,end.y,24,0,Math.PI*2);gx.stroke();gx.shadowBlur=0;gx.fillStyle='#fff';gx.font='900 18px Pretendard';gx.textAlign='center';gx.fillText(left?'왼발':'오른발',start.x,start.y+40);gx.restore();
   const age=now-impactAt;
-  if(age>=0&&age<380){const p=age/380,power=1-p;gx.save();gx.translate(end.x,end.y);gx.globalCompositeOperation='lighter';gx.fillStyle=`rgba(255,245,205,${power*.8})`;gx.beginPath();gx.arc(0,0,18+22*p,0,Math.PI*2);gx.fill();gx.strokeStyle=`rgba(255,70,82,${power})`;gx.lineWidth=8-5*p;[35+55*p,58+82*p].forEach(r=>{gx.beginPath();gx.arc(0,0,r,0,Math.PI*2);gx.stroke()});gx.rotate(-.18);for(let i=0;i<12;i++){gx.rotate(Math.PI/6);gx.beginPath();gx.moveTo(44+20*p,0);gx.lineTo(78+72*p,0);gx.stroke()}gx.restore()}
+  
+  if(age>=0&&age<430){
+    const p=age/430,ease=1-Math.pow(1-p,3),power=1-p;
+    gx.save();gx.translate(end.x,end.y);gx.globalCompositeOperation='lighter';
+    const glow=gx.createRadialGradient(0,0,0,0,0,54+32*ease);
+    glow.addColorStop(0,`rgba(255,255,255,${power*.96})`);glow.addColorStop(.2,`rgba(255,220,100,${power*.72})`);glow.addColorStop(1,'rgba(255,70,50,0)');
+    gx.fillStyle=glow;gx.beginPath();gx.arc(0,0,54+32*ease,0,Math.PI*2);gx.fill();
+    [[36,92,8],[58,142,4]].forEach(([a,b,w],i)=>{gx.strokeStyle=i?`rgba(255,126,64,${power*.68})`:`rgba(255,245,190,${power*.9})`;gx.lineWidth=Math.max(1,w*(1-p));gx.beginPath();gx.ellipse(0,0,a+(b-a)*ease,(a+(b-a)*ease)*.54,-.15,0,Math.PI*2);gx.stroke()});
+    const sparks=[[-1.2,66],[-.72,92],[-.28,76],[.18,98],[.58,70],[1.02,88],[1.48,64],[-2.55,78],[-2.05,96]];
+    sparks.forEach(([ang,dist],i)=>{const d=20+dist*ease,x=Math.cos(ang)*d,y=Math.sin(ang)*d*.72,len=10+18*power;gx.save();gx.translate(x,y);gx.rotate(ang);gx.fillStyle=i%2?`rgba(255,93,54,${power})`:`rgba(255,224,104,${power})`;gx.fillRect(-len/2,-2.5,len,5);gx.restore()});
+    gx.restore();
+  }
 }
 function speak(t){try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='ko-KR';u.rate=1.15;speechSynthesis.speak(u)}catch(e){}}
+function whistle(){
+  try{
+    audio=audio||new AudioContext();if(audio.state==='suspended')audio.resume();
+    const now=audio.currentTime,master=audio.createGain(),o1=audio.createOscillator(),o2=audio.createOscillator();
+    master.gain.setValueAtTime(.0001,now);master.gain.exponentialRampToValueAtTime(.13,now+.018);master.gain.setValueAtTime(.13,now+.14);master.gain.exponentialRampToValueAtTime(.0001,now+.27);
+    o1.type='square';o2.type='sine';o1.frequency.setValueAtTime(1850,now);o1.frequency.linearRampToValueAtTime(2350,now+.08);o1.frequency.linearRampToValueAtTime(2050,now+.24);o2.frequency.setValueAtTime(3700,now);o2.frequency.linearRampToValueAtTime(4100,now+.2);
+    const g2=audio.createGain();g2.gain.value=.17;o1.connect(master);o2.connect(g2);g2.connect(master);master.connect(audio.destination);o1.start(now);o2.start(now);o1.stop(now+.28);o2.stop(now+.28);
+  }catch(e){beep(1500)}
+}
 function announceStep(){
   const s=step(); impactAt=-1;
   try{
     speechSynthesis.cancel();
     const guide=new SpeechSynthesisUtterance(s[0]); guide.lang='ko-KR'; guide.rate=1.15;
+    if(s[1]!=='ready') guide.onend=()=>{setTimeout(()=>{whistle();impactAt=performance.now()},kind==='practice'?320:170)};
     speechSynthesis.speak(guide);
-    if(s[1]!=='ready'){
-      const kick=new SpeechSynthesisUtterance('차!'); kick.lang='ko-KR'; kick.rate=1.18;
-      kick.onstart=()=>{impactAt=performance.now()+(kind==='practice'?1000:800)};
-      speechSynthesis.speak(kick);
-    }
-  }catch(e){ if(s[1]!=='ready') impactAt=performance.now()+(kind==='practice'?1000:800); }
+  }catch(e){if(s[1]!=='ready')setTimeout(()=>{whistle();impactAt=performance.now()},kind==='practice'?950:700)}
 }
 function beep(freq=620){try{audio=audio||new AudioContext();const o=audio.createOscillator(),g=audio.createGain();o.frequency.value=freq;g.gain.value=.07;o.connect(g);g.connect(audio.destination);o.start();g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+.1);o.stop(audio.currentTime+.11)}catch(e){}}
 function move(d){si=(si+d+routines[ri].steps.length)%routines[ri].steps.length;render();announceStep();}
@@ -108,7 +124,7 @@ function schedule(token=runToken){clearTimeout(timer);if(!running||paused||token
 async function endSet(token){if(setNo<+$('sets').value){const sec=+$('rest').value;$('restScreen').hidden=false;for(let n=sec;n>0;n--){if(token!==runToken)return;$('restNum').textContent=n;await new Promise(r=>setTimeout(r,1000));}if(token!==runToken)return;setNo++;si=0;kickCount=0;$('restScreen').hidden=true;render();speak(`${setNo}세트 시작`);schedule(token);}else{running=false;$('start').textContent='다시 시작';$('pause').disabled=true;$('beat').textContent='FINISH';speak('운동 끝');}}
 async function start(){if(running)return;const token=++runToken;setNo=1;si=0;kickCount=0;running=true;paused=false;$('restScreen').hidden=true;$('countdown').hidden=false;for(const n of ['3','2','1','시작']){if(token!==runToken)return;$('countNum').textContent=n;beep(n==='시작'?900:560);await new Promise(r=>setTimeout(r,700));}if(token!==runToken)return;$('countdown').hidden=true;$('start').textContent='진행 중';$('pause').disabled=false;render();announceStep();schedule(token);}
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{kind=b.dataset.kind;document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x===b));render()});
-$('routine').onchange=e=>{ri=+e.target.value;si=0;setNo=1;kickCount=0;render()};$('kickGoal').onchange=render;$('prev').onclick=()=>move(-1);$('next').onclick=()=>move(1);$('start').onclick=start;$('pause').onclick=()=>{paused=!paused;$('pause').textContent=paused?'계속':'일시정지';if(paused){clearTimeout(timer);speechSynthesis.cancel()}else schedule()};$('reset').onclick=()=>{runToken++;clearTimeout(timer);running=paused=false;si=0;setNo=1;kickCount=0;$('countdown').hidden=true;$('restScreen').hidden=true;$('start').textContent='시작';$('pause').textContent='일시정지';$('pause').disabled=true;render()};
+$('routine').onchange=e=>{ri=+e.target.value;si=0;setNo=1;kickCount=0;render()};$('kickGoal').onchange=render;$('prev').onclick=()=>move(-1);$('next').onclick=()=>move(1);$('start').onclick=start;$('pause').onclick=()=>{paused=!paused;$('pause').textContent=paused?'계속':'일시정지';if(paused){clearTimeout(timer);speechSynthesis.cancel()}else schedule()};$('reset').onclick=()=>{runToken++;clearTimeout(timer);running=paused=false;si=0;setNo=1;kickCount=0;$('countdown').hidden=true;$('restScreen').hidden=true;$('start').textContent='시작';$('pause').textContent='일시정지';$('pause').disabled=true;render()};$('exitGroup').onclick=()=>{runToken++;clearTimeout(timer);running=paused=false;try{speechSynthesis.cancel()}catch(e){}location.replace('aikickmaster.html')};
 init();
 </script>
 </body>
