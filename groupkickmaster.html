@@ -32,19 +32,41 @@
 .arena{bottom:0;width:min(980px,72vw);height:min(640px,70vh)}.next{right:28px;bottom:24px;min-width:210px;border-left-color:#ff6a1a;background:rgba(5,8,14,.64);backdrop-filter:blur(12px)}
 @media(max-width:800px){.brand{left:16px;top:15px}.version{left:16px;top:40px}.tabs,.field,.side>.grid{left:16px;width:160px}.tabs{top:116px}.side>.field:nth-of-type(1){top:204px}.side>.grid{top:262px}.side>.field:nth-of-type(2){top:328px}.side>.field:nth-of-type(3){top:386px}.actions{left:16px;width:190px}.top,.progress{width:52vw}.set{right:16px}.arena{width:94vw}.next{right:16px;min-width:170px}}
 @media(max-width:800px){.cue{top:78px}.arena{transform:translateX(-50%) scale(.82)}}
+
+.control-stack{position:absolute;left:28px;top:clamp(104px,16vh,150px);bottom:18px;width:230px;display:flex;flex-direction:column;gap:clamp(7px,1.25vh,13px);overflow-y:auto;overscroll-behavior:contain;padding:0 4px 2px 0;scrollbar-width:thin;pointer-events:auto}
+.control-stack .tabs,.control-stack>.field,.control-stack>.grid,.control-stack .actions{position:static!important;left:auto!important;top:auto!important;bottom:auto!important;width:100%!important;margin:0!important;flex:none}
+.control-stack .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.control-stack .grid .field{position:static;width:auto;margin:0}
+.control-stack .actions{margin-top:auto!important}
+
+.control-stack .tabs button,.control-stack .actions button,.control-stack .field select{background:transparent!important;box-shadow:none!important;backdrop-filter:none!important}
+.control-stack .tabs{gap:14px;border-bottom:1px solid rgba(255,255,255,.12)}
+.control-stack .tabs button{padding:9px 4px 10px;border:0!important;border-bottom:3px solid transparent!important;text-align:center;color:rgba(255,255,255,.48)}
+.control-stack .tabs button:before{display:none}.control-stack .tabs button.on{color:#fff;border-bottom-color:var(--red)!important}
+.control-stack .field span{margin-bottom:3px;color:#697386;letter-spacing:.04em}
+.control-stack .field select{height:36px;padding:0 4px;border:0!important;border-bottom:1px solid rgba(255,255,255,.18)!important;border-radius:0!important;color:#fff}
+.control-stack .actions{gap:3px 12px;border-top:1px solid rgba(255,255,255,.1);padding-top:7px}
+.control-stack .actions button{min-height:34px;border:0!important;border-radius:0!important;color:rgba(255,255,255,.72)}
+.control-stack .actions button:hover,.control-stack .actions button:focus-visible{color:#fff;background:rgba(255,255,255,.045)!important}
+.control-stack .actions .start{min-height:44px;color:#ff536a;font-size:18px;border-bottom:2px solid rgba(255,48,79,.72)!important}
+.control-stack .actions .exit{min-height:38px;color:#9aa5b5;border-top:1px solid rgba(255,255,255,.12)!important}
+@media(max-width:800px){.control-stack{left:16px;width:190px}}
+@media(max-height:650px){.control-stack{top:82px;bottom:8px;gap:5px}.control-stack .tabs button{padding:6px 3px 7px}.control-stack .field select{height:31px}.control-stack .actions{padding-top:4px}.control-stack .actions button{min-height:28px}.control-stack .actions .start{min-height:38px}.control-stack .actions .exit{min-height:32px}.brand{top:14px}.version{top:39px}}
 </style>
 </head>
 <body>
 <main class="app" id="app">
   <aside class="side">
-    <div class="brand">AI <em>KICK</em> MASTER</div><div class="version">GROUP COMBINATION · TEST v0.2</div><span class="test">TEST BUILD</span>
+    <div class="brand">AI <em>KICK</em> MASTER</div><div class="version">GROUP COMBINATION · TEST v0.3</div><span class="test">TEST BUILD</span>
     <h1>단체 <span>콤비네이션</span></h1>
+    <div class="control-stack">
     <div class="tabs"><button class="on" data-kind="practice">연습</button><button data-kind="live">실전</button></div>
     <label class="field"><span>루틴</span><select id="routine"></select></label>
     <div class="grid"><label class="field"><span>속도</span><select id="bpm"><option value="60">느리게 · 60</option><option value="80" selected>기본 · 80</option><option value="100">빠르게 · 100</option><option value="120">매우 빠르게 · 120</option></select></label><label class="field"><span>세트</span><select id="sets"><option>1</option><option selected>2</option><option>3</option><option>4</option></select></label></div>
     <label class="field"><span>세트당 발차기</span><select id="kickGoal"><option value="6">6회</option><option value="10" selected>10회</option><option value="20">20회</option></select></label>
     <label class="field"><span>세트 휴식</span><select id="rest"><option value="10">10초</option><option value="15" selected>15초</option><option value="20">20초</option><option value="30">30초</option></select></label>
     <div class="actions"><button id="prev">이전</button><button id="next">다음</button><button class="start" id="start">시작</button><button id="pause" disabled>일시정지</button><button id="reset">처음으로</button><button class="exit" id="exitGroup">단체모드 종료 · 모드 선택으로</button></div>
+    </div>
     <div class="tip">카메라를 사용하지 않는 단체 수업 지휘 테스트입니다.</div>
   </aside>
   <section class="stage" id="stage">
@@ -103,10 +125,11 @@ function speak(t){try{speechSynthesis.cancel();const u=new SpeechSynthesisUttera
 function whistle(){
   try{
     audio=audio||new AudioContext();if(audio.state==='suspended')audio.resume();
-    const now=audio.currentTime,master=audio.createGain(),o1=audio.createOscillator(),o2=audio.createOscillator();
-    master.gain.setValueAtTime(.0001,now);master.gain.exponentialRampToValueAtTime(.13,now+.018);master.gain.setValueAtTime(.13,now+.14);master.gain.exponentialRampToValueAtTime(.0001,now+.27);
-    o1.type='square';o2.type='sine';o1.frequency.setValueAtTime(1850,now);o1.frequency.linearRampToValueAtTime(2350,now+.08);o1.frequency.linearRampToValueAtTime(2050,now+.24);o2.frequency.setValueAtTime(3700,now);o2.frequency.linearRampToValueAtTime(4100,now+.2);
-    const g2=audio.createGain();g2.gain.value=.17;o1.connect(master);o2.connect(g2);g2.connect(master);master.connect(audio.destination);o1.start(now);o2.start(now);o1.stop(now+.28);o2.stop(now+.28);
+    const now=audio.currentTime,master=audio.createGain(),comp=audio.createDynamicsCompressor(),o1=audio.createOscillator(),o2=audio.createOscillator(),o3=audio.createOscillator();
+    comp.threshold.value=-16;comp.knee.value=4;comp.ratio.value=14;comp.attack.value=.002;comp.release.value=.08;
+    master.gain.setValueAtTime(.0001,now);master.gain.exponentialRampToValueAtTime(.24,now+.008);master.gain.setValueAtTime(.21,now+.105);master.gain.exponentialRampToValueAtTime(.0001,now+.135);master.gain.setValueAtTime(.0001,now+.165);master.gain.exponentialRampToValueAtTime(.27,now+.178);master.gain.setValueAtTime(.23,now+.31);master.gain.exponentialRampToValueAtTime(.0001,now+.36);
+    o1.type='square';o2.type='sawtooth';o3.type='sine';o1.frequency.setValueAtTime(2300,now);o1.frequency.linearRampToValueAtTime(2860,now+.36);o2.frequency.setValueAtTime(2750,now);o2.frequency.linearRampToValueAtTime(3350,now+.36);o3.frequency.setValueAtTime(4600,now);o3.frequency.linearRampToValueAtTime(5200,now+.36);
+    const g2=audio.createGain(),g3=audio.createGain();g2.gain.value=.38;g3.gain.value=.18;o1.connect(master);o2.connect(g2);o3.connect(g3);g2.connect(master);g3.connect(master);master.connect(comp);comp.connect(audio.destination);[o1,o2,o3].forEach(o=>{o.start(now);o.stop(now+.38)});
   }catch(e){beep(1500)}
 }
 function announceStep(){
