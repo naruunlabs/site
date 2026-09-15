@@ -11112,5 +11112,123 @@ window.addEventListener('load', function(){
   else start();
 })();
 </script>
+
+<style id="akm-responsive-shell-v1">
+
+html,body{
+  width:100%;
+  min-height:100%;
+  overflow:hidden;
+  overscroll-behavior:none;
+}
+body.hud-v21 .stage,
+body.hud-v21 .cam-wrap,
+body.hud-v21 .panel{
+  height:var(--akm-app-height,100dvh) !important;
+  max-height:var(--akm-app-height,100dvh) !important;
+}
+body.hud-v21 .stage{
+  padding-top:env(safe-area-inset-top,0px);
+  padding-right:env(safe-area-inset-right,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  padding-left:env(safe-area-inset-left,0px);
+}
+
+@media (pointer:coarse){
+  body.hud-v21 button,
+  body.hud-v21 select,
+  #settingsModal button,
+  #kickLabModal button{
+    touch-action:manipulation;
+  }
+  body.hud-v21 .hud-settings-btn,
+  body.hud-v21 .settings-close-btn,
+  body.hud-v21 #p2ResultReplayBtn,
+  body.hud-v21 #p2ResultBackBtn{
+    min-height:44px !important;
+  }
+}
+
+@media (orientation:portrait) and (max-width:900px){
+  .rotate-msg{display:none !important;}
+  body.hud-v21 .stage{display:block !important;}
+
+  body.hud-v21 #modeBadge{
+    top:calc(env(safe-area-inset-top,0px) + 12px) !important;
+    left:auto !important;
+    right:calc(env(safe-area-inset-right,0px) + 12px) !important;
+    min-width:0 !important;
+    width:auto !important;
+    max-width:calc(100% - 172px) !important;
+    padding:8px 12px !important;
+    text-align:right !important;
+    transform:skewX(-8deg) !important;
+    white-space:normal !important;
+  }
+  body.hud-v21 #modeBadge small{font-size:10px !important;}
+
+  body.hud-v21 .title{
+    max-width:154px !important;
+    transform:scale(.86) !important;
+    transform-origin:top left !important;
+    z-index:90 !important;
+    pointer-events:none !important;
+  }
+  body.hud-v21 .title *{pointer-events:none !important;}
+  body.hud-v21 .hud-settings-btn,
+  body.hud-v21.akm-ui .hud-settings-btn{pointer-events:auto !important;}
+
+  body.hud-v21 .hud-drill-row{top:clamp(142px,16.5dvh,180px) !important;}
+  body.hud-v21 .hud-balloon-row{top:clamp(176px,20.5dvh,218px) !important;}
+  body.hud-v21 .hud-sparring-row{top:clamp(210px,24.5dvh,256px) !important;}
+  body.hud-v21 .hud-lab-row{top:clamp(244px,28.5dvh,294px) !important;}
+  body.hud-v21 .hud-drill-row,
+  body.hud-v21 .hud-balloon-row,
+  body.hud-v21 .hud-sparring-row,
+  body.hud-v21 .hud-lab-row{
+    left:calc(env(safe-area-inset-left,0px) + 12px) !important;
+    width:clamp(122px,34vw,176px) !important;
+  }
+
+  body.hud-v21 .difficulty-panel{
+    right:calc(env(safe-area-inset-right,0px) + 8px) !important;
+    max-width:min(46vw,210px) !important;
+    transform:translateY(clamp(128px,15dvh,168px)) scale(.88) !important;
+    transform-origin:top right !important;
+  }
+
+  body.hud-v21 .mode-row.hud-kick-row,
+  body.hud-v21 .mode-row.hud-kick-row1,
+  body.hud-v21 .mode-row.hud-kick-tabs,
+  body.hud-v21.akm-ui .mode-row.hud-kick-row,
+  body.hud-v21.akm-ui .mode-row.hud-kick-row1,
+  body.hud-v21.akm-ui .mode-row.hud-kick-tabs{
+    bottom:clamp(142px,17dvh,178px) !important;
+  }
+  body.hud-v21 #drillCountArea,
+  body.hud-v21 #gameArea{
+    left:calc(env(safe-area-inset-left,0px) + 10px) !important;
+    bottom:calc(env(safe-area-inset-bottom,0px) + 10px) !important;
+    max-width:calc(100% - 20px) !important;
+  }
+  body.hud-v21 .stats-row{
+    right:calc(env(safe-area-inset-right,0px) + 10px) !important;
+    bottom:calc(env(safe-area-inset-bottom,0px) + 10px) !important;
+  }
+
+  body.hud-v21 #kickPilotGraph{transform:scale(.78) !important;transform-origin:center center !important;}
+}
+
+@media (orientation:portrait) and (max-height:700px){
+  body.hud-v21 .title-auth,
+  body.hud-v21 .title-version,
+  body.hud-v21 .akm-hud-meta,
+  body.hud-v21 #kickPilotGraph{display:none !important;}
+  body.hud-v21 .hud-drill-row{top:104px !important;}
+  body.hud-v21 .hud-balloon-row{top:138px !important;}
+  body.hud-v21 .hud-sparring-row{top:172px !important;}
+  body.hud-v21 .hud-lab-row{top:206px !important;}
+}
+</style>
 </body>
 </html>
