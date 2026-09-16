@@ -618,8 +618,8 @@ html body:not(.jmp-beta-on) #jumpLabModal{
 
   <section class="panel" id="lobby" aria-label="모드 선택">
     <div class="modelist" id="modelist">
-      <button class="choice" type="button" data-mode="solo" aria-pressed="true"><b>1인 측정</b></button>
-      <button class="choice" type="button" data-mode="duo" aria-pressed="false"><b>2인 협동</b></button>
+      <button class="choice" type="button" data-mode="solo" aria-pressed="true"><b>1인 모드</b></button>
+      <button class="choice" type="button" data-mode="duo" aria-pressed="false"><b>2인 모드</b></button>
       <button class="choice" type="button" data-mode="relay" aria-pressed="false"><b>릴레이</b></button>
       <button class="choice" type="button" data-mode="group" aria-pressed="false"><b>단체 리듬</b></button>
     </div>
@@ -800,7 +800,7 @@ html body:not(.jmp-beta-on) #jumpLabModal{
 
 <script type="module">
 
-const APP_VERSION = '3.4.0';
+const APP_VERSION = '3.4.1';
 
 const MP_VERSION  = '0.10.14';
 const MP_LOCAL    = './vendor/mediapipe/';
@@ -1421,6 +1421,22 @@ function sizeCanvas(){
 }
 function sp(pt){ return { x:view.ox+(view.mirror?1-pt.x:pt.x)*view.dw, y:view.oy+pt.y*view.dh }; }
 
+const INFER_MAX_H = 320;
+let inferCv=null, inferCtx=null, inferPx='';
+function inferSource(){
+  const vw=video.videoWidth|0, vh=video.videoHeight|0;
+  if(!vw||!vh) return video;
+  if(vh<=INFER_MAX_H){ inferPx=vw+'\u00d7'+vh; return video; }
+  const s=INFER_MAX_H/vh, w=Math.round(vw*s), h=INFER_MAX_H;
+  if(!inferCv){
+    inferCv=document.createElement('canvas');
+    inferCtx=inferCv.getContext('2d',{alpha:false,desynchronized:true});
+  }
+  if(inferCv.width!==w||inferCv.height!==h){ inferCv.width=w; inferCv.height=h; inferPx=w+'\u00d7'+h; }
+  try{ inferCtx.drawImage(video,0,0,w,h); }catch(e){ return video; }   
+  return inferCv;
+}
+
 function maybeInfer(now){
   if(!pose||poseBusy||!stream||video.readyState<2) return;
   if(video.currentTime===lastVideoTime) return;
@@ -1430,7 +1446,7 @@ function maybeInfer(now){
   lastVideoTime=video.currentTime; lastInfer=now;
   const t0=performance.now();
   let res=null;
-  try{ res=pose.detectForVideo(video,t0); }catch(e){ return; }
+  try{ res=pose.detectForVideo(inferSource(),t0); }catch(e){ return; }
   const cost=performance.now()-t0;
   inferCost=inferCost?inferCost*.85+cost*.15:cost;
   inferCount++;
@@ -2293,6 +2309,14 @@ function drawCalibration(p){
   ctx.setLineDash([]);
   ctx.fillStyle=air?'#BEF264':'#2DD4BF';
   ctx.beginPath(); ctx.arc(W/2,hipY,air?9:6,0,Math.PI*2); ctx.fill();
+
+  if((p.id??0)===0){
+    const per = e.periodMs>0 ? (inferHz*e.periodMs/1000) : 0;
+    ctx.setTransform(view.dpr,0,0,view.dpr,0,0);
+    ctx.font='700 13px ui-monospace,monospace'; ctx.textAlign='left';
+    ctx.fillStyle = inferHz>=20 ? 'rgba(163,230,53,.95)' : (inferHz>=14 ? 'rgba(251,191,36,.95)' : 'rgba(251,113,133,.95)');
+    ctx.fillText(`추론 ${inferHz.toFixed(1)}Hz · ${inferPx||'-'} · 한박 ${per?per.toFixed(1):'-'}표본`, 14, view.H*0.5);
+  }
   ctx.restore();
 }
 
@@ -3539,6 +3563,7 @@ function labRecordJump(p,ev){
     fps       : labRound(fps,1),
     infer_hz  : labRound(inferHz,1),
     infer_ms  : labRound(inferCost,1),
+    infer_px  : inferPx || null,          
     persons   : personCount,
     vis_sh    : labVis(p,11), vis_hip:labVis(p,23), vis_ank:labVis(p,27),
     sync_diff : (mode==='duo' && team.lastDiff!=null) ? labRound(team.lastDiff,3) : null,
