@@ -1,0 +1,20 @@
+{
+  "id": "/kickmaster",
+  "name": "AI KICK MASTER",
+  "short_name": "KICK MASTER",
+  "description": "AI 발차기 훈련 시스템 소개",
+  "start_url": "/kickmaster",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0B0B0D",
+  "theme_color": "#E3172E",
+  "icons": [
+    {
+      "src": "./icon-kickmaster.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

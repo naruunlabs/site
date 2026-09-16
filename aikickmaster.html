@@ -95,9 +95,9 @@
 <meta name="twitter:title" content="AI KICK MASTER 실행">
 <meta name="twitter:description" content="AI KICK MASTER 프로그램 실행 페이지입니다. 라이선스 키가 필요합니다.">
 <meta name="twitter:image" content="https://naruunlabs.kr/og-kickmaster.jpg">
-<link rel="manifest" href="manifest.json">
+<link rel="manifest" href="manifest-kickmaster.json">
 <meta name="theme-color" content="#0B0B0D">
-<link rel="icon" href="kick1.svg" type="image/svg+xml">
+<link rel="icon" href="icon-kickmaster.svg" type="image/svg+xml">
 
 <style id="kick-test-refactored-css">
 
@@ -10272,6 +10272,7 @@ const _AKM_HOME_URL    = 'https://ebgoolsymyzkftvavpyj.supabase.co/functions/v1/
 const _AKM_LS_KEY      = 'akm_license_v1';
 const _AKM_CACHE_DAYS  = 7;   
 const _AKM_TRIAL_CACHE_DAYS = 1;   
+const _AKM_FETCH_TIMEOUT_MS = 8 * 1000;   
 
 const _AKM_VERSION     = '3.2.2';
 
@@ -10502,8 +10503,19 @@ window.akmIsBeta=function(){
 
 async function _akmVerifyWithServer(license_key){
   const device_id=_akmGetOrCreateDeviceId();
-  const res=await fetch(_AKM_EDGE_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({license_key, device_id})});
-  return await res.json();
+  const ac = (typeof AbortController!=='undefined') ? new AbortController() : null;
+  const timer = ac ? setTimeout(()=>{ try{ ac.abort(); }catch(e){} }, _AKM_FETCH_TIMEOUT_MS) : 0;
+  try{
+    const res=await fetch(_AKM_EDGE_URL,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({license_key, device_id}),
+      signal:ac ? ac.signal : undefined
+    });
+    return await res.json();
+  }finally{
+    if(timer) clearTimeout(timer);
+  }
 }
 
 async function doLicenseActivate(){
@@ -10585,14 +10597,17 @@ async function doLicenseActivate(){
   }catch(e){
     const cache=_akmGetCache();
     
-    if(cache && cache.license_key===key && !_akmIsCacheExpired(cache)){
+    if(cache && cache.license_key===key && !_akmIsCacheExpired(cache) && await _akmSignatureAllows(cache)){
       btn.textContent='인증하기'; btn.disabled=false;
-      _akmShowTrialBadge(cache);
-      _akmShowAuthedUI(cache.dojang_name, cache.version);
+      const verifiedCache=_akmGetCache() || cache;
+      _akmShowTrialBadge(verifiedCache);
+      _akmShowAuthedUI(verifiedCache.dojang_name, verifiedCache.version);
       return;
     }
     if(cache && cache.license_key===key) _akmClearCache();
-    errorEl.textContent='네트워크 오류가 발생했습니다. 인터넷 연결을 확인해주세요.';
+    errorEl.textContent = (e && e.name==='AbortError')
+      ? '서버 응답이 너무 늦습니다. 인터넷 연결을 확인한 뒤 다시 시도해주세요.'
+      : '네트워크 오류가 발생했습니다. 인터넷 연결을 확인해주세요.';
     btn.textContent='인증하기'; btn.disabled=false;
   }
 }

@@ -80,6 +80,8 @@ src="https://www.facebook.com/tr?id=1364933702413818&ev=PageView&noscript=1"
 }
 </script>
 <meta name="theme-color" content="#E3172E">
+<link rel="manifest" href="manifest-kickmaster.json">
+<link rel="icon" href="icon-kickmaster.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css">
 <style>
@@ -2364,6 +2366,12 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:9999;
   }),{threshold:[0,.55,1]});
   videos.forEach(v=>vio.observe(v));
 })();
+</script>
+
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
 </script>
 
 </body>

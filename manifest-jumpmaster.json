@@ -1,9 +1,9 @@
 {
-  "id": "/aijumpmaster",
+  "id": "/jumpmaster",
   "name": "AI JUMP MASTER",
   "short_name": "JUMP MASTER",
-  "description": "AI 줄넘기 훈련 시스템",
-  "start_url": "/aijumpmaster",
+  "description": "AI 줄넘기 훈련 시스템 소개",
+  "start_url": "/jumpmaster",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
@@ -11,10 +11,10 @@
   "theme_color": "#0A1628",
   "icons": [
     {
-      "src": "./jump1.svg",
+      "src": "./icon-jumpmaster.svg",
       "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any"
+      "purpose": "any maskable"
     }
   ]
 }
