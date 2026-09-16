@@ -2083,8 +2083,6 @@ async function syncLedgerFromLicense(p) {
     if (!isTrial && cur !== 'customer') {
       row.status = 'customer';
       becameCustomer = true;
-    } else if (isTrial && cur !== 'trial') {
-      row.status = 'trial';
     }
 
     if (!found.paid_amount && p.pay_amount) row.paid_amount = p.pay_amount;
