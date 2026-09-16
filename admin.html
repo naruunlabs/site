@@ -163,6 +163,15 @@ tr.row-expired td{background:#fdecec}
 .btn-copy{background:#e7f8ee;color:#0c8d54}
 .btn-toggle{background:var(--panel-soft);color:var(--text)}
 .btn-del{background:#fdecec;color:#dc2626}
+
+.btn-cross{background:#E8F7F5;color:#0F766E}
+.btn-cross:hover{background:#D3F0EC}
+.mem-pick{background:#F1F7FF;border:1px solid #D3E4FB;border-radius:14px;padding:13px 15px;margin-bottom:16px}
+.mem-pick label{display:block;font-size:12px;font-weight:800;color:#2B5C9B;margin-bottom:6px}
+.mem-pick .mem-row{display:flex;gap:8px}
+.mem-pick input{flex:1}
+.mem-pick .mem-hint{margin-top:7px;font-size:11.5px;line-height:1.5;font-weight:700;color:#4A7BB5;min-height:1.3em}
+.mem-pick .mem-hint b{color:#1F4E87}
 .empty-msg,.loading{text-align:center;padding:52px!important;color:var(--muted2);font-weight:700}
 .footer-note{color:var(--muted2);font-size:11px;text-align:right;margin-top:16px;font-weight:700}
 
@@ -835,6 +844,16 @@ table.cg tfoot td.num{text-align:right}
     <h3 id="modalTitle">라이선스 <span>발급</span></h3>
     <input type="hidden" id="editId" />
 
+    <div class="mem-pick" id="memPickBox">
+      <label>기존 회원에서 불러오기 <span style="font-weight:700;opacity:.75">— 도장명을 치면 목록이 뜹니다</span></label>
+      <div class="mem-row">
+        <input id="memPick" class="f-input" type="text" list="memPickList" placeholder="예) 구미태권도장" autocomplete="off" onchange="applyMemberPick()" />
+        <button type="button" class="btn-sm btn-cross" style="padding:0 14px" onclick="applyMemberPick()">불러오기</button>
+      </div>
+      <datalist id="memPickList"></datalist>
+      <div class="mem-hint" id="memPickHint"></div>
+    </div>
+
     <div class="modal-section">
       <div class="modal-section-title">고객 정보 <span class="ledger-tag">회원 장부에 함께 저장</span></div>
       <div class="m-row">
@@ -1407,6 +1426,12 @@ function renderTable() {
     const whoCell = (whoName || whoSido)
       ? whoName + whoSido : '<span class="who-none">-</span>';
 
+    const isJumpRow  = (d.license_key||'').startsWith('JMP-');
+    const otherPrefix= isJumpRow ? 'AKM-' : 'JMP-';
+    const otherLabel = isJumpRow ? '킥마스터도' : '점프마스터도';
+    const hasOther   = LICENSES.some(x => (x.license_key||'').startsWith(otherPrefix)
+                                       && String(x.dojang_name||'').trim() === String(d.dojang_name||'').trim());
+
     const line2 = [
       d.phone ? escapeHtml(d.phone) : '',
       `기기 ${slotUsed}/${slotMax}${slotOver ? '<span class="dev-over">한도 초과</span>' : ''}`
@@ -1428,6 +1453,7 @@ function renderTable() {
       <td class="cell-act"><div class="action-btns">
         <button class="btn-sm btn-edit" onclick="openEditModal('${encoded}')">회원정보</button>
         <button class="btn-sm btn-copy" onclick="copyLicenseMsg('${encoded}')">카톡</button>
+        ${hasOther ? '' : `<button class="btn-sm btn-cross" onclick="openAddForOther('${d.id}')">${otherLabel} 발급</button>`}
         ${inLedger
           ? `<button class="btn-sm btn-ledger done" onclick="gotoLedger('${escapeHtml(d.license_key)}')">장부 ✓</button>`
           : `<button class="btn-sm btn-ledger" onclick="sendToLedger('${d.id}')">장부로</button>`}
@@ -1547,6 +1573,88 @@ async function restartTrial() {
   }
 }
 
+function memberDirectory(){
+  const map = new Map();
+  const norm = v => String(v||'').trim();
+  const put = (name, patch) => {
+    const k = norm(name); if(!k) return;
+    const cur = map.get(k) || { dojang_name:k, phone:'', owner_name:'', sido:'', sigungu:'', source:'', kick:null, jump:null };
+    for (const f of ['phone','owner_name','sido','sigungu','source'])
+      if (!cur[f] && norm(patch[f])) cur[f] = norm(patch[f]);
+    if (patch.kick) cur.kick = patch.kick;
+    if (patch.jump) cur.jump = patch.jump;
+    map.set(k, cur);
+  };
+  for (const d of (LICENSES||[])) {
+    const isJump = norm(d.license_key).startsWith('JMP-');
+    put(d.dojang_name, { phone:d.phone, kick:isJump?null:d, jump:isJump?d:null });
+  }
+  for (const c of (CUSTOMERS||[]))
+    put(c.dojang_name, { phone:c.phone, owner_name:c.owner_name, sido:c.sido, sigungu:c.sigungu, source:c.source });
+  return [...map.values()].sort((a,b)=>a.dojang_name.localeCompare(b.dojang_name,'ko'));
+}
+
+function memberTypeLabel(t){
+  return t==='trial' ? '체험' : (t==='package' ? '패키지' : '정식');
+}
+
+function refreshMemberPickList(){
+  const dl = document.getElementById('memPickList'); if(!dl) return;
+  const wantJump = currentLicenseProduct === 'jump';
+  dl.innerHTML = memberDirectory().map(m => {
+    const have = wantJump ? m.jump : m.kick;
+    const has  = wantJump ? m.kick : m.jump;
+    const tag  = have ? ' (이 제품 이미 보유)' : (has ? ' · ' + (wantJump?'킥마스터':'점프마스터') + ' 회원' : '');
+    return `<option value="${escapeHtml(m.dojang_name)}">${escapeHtml(m.dojang_name + tag)}</option>`;
+  }).join('');
+}
+
+function applyMemberPick(){
+  const hint = document.getElementById('memPickHint');
+  const q = String(document.getElementById('memPick').value||'').trim();
+  if(!q){ if(hint) hint.textContent=''; return; }
+  const dir = memberDirectory();
+  let m = dir.find(x => x.dojang_name === q);
+  if(!m){
+    const hits = dir.filter(x => x.dojang_name.includes(q));
+    if(hits.length === 1) m = hits[0];
+    else { if(hint) hint.textContent = hits.length ? `'${q}' 에 맞는 도장이 ${hits.length}곳입니다. 목록에서 골라주세요.` : `'${q}' 라는 도장을 찾지 못했습니다.`; return; }
+  }
+  fillFromMember(m);
+}
+
+function fillFromMember(m){
+  const set = (id,v) => { const el=document.getElementById(id); if(el && v) el.value = v; };
+  set('mDojang', m.dojang_name);
+  set('mPhone',  m.phone);
+  
+  const real = (CUSTOMERS||[]).find(c => String(c.dojang_name||'').trim() === m.dojang_name) || null;
+  fillLedgerFields(real || { owner_name:m.owner_name, sido:m.sido, sigungu:m.sigungu, source:m.source });
+
+  const wantJump = currentLicenseProduct === 'jump';
+  const already  = wantJump ? m.jump : m.kick;   
+  const other    = wantJump ? m.kick : m.jump;   
+  const parts = [];
+  if (other)   parts.push(`${wantJump?'킥마스터':'점프마스터'} ${memberTypeLabel(other.license_type)} 보유`);
+
+  if (already) parts.push(`<b>※ 이 제품도 이미 있습니다 (${memberTypeLabel(already.license_type)})</b>`);
+  const hint = document.getElementById('memPickHint');
+  if (hint) hint.innerHTML = `<b>${escapeHtml(m.dojang_name)}</b> 정보를 넣었습니다`
+    + (parts.length ? ' · ' + parts.join(' · ') : '')
+    + '<br>키 · 결제 · 만료일은 이번 구매 기준으로 새로 넣어주세요.';
+  document.getElementById('memPick').value = m.dojang_name;
+}
+
+function openAddForOther(id){
+  const d = (LICENSES||[]).find(x => String(x.id) === String(id));
+  if(!d) return;
+  const toJump = !String(d.license_key||'').startsWith('JMP-');
+  switchLicenseSubtab(toJump ? 'jump' : 'kick');   
+  openAddModal();
+  const m = memberDirectory().find(x => x.dojang_name === String(d.dojang_name||'').trim());
+  if(m) fillFromMember(m);
+}
+
 function openAddModal() {
   const productLabel = currentLicenseProduct === 'jump' ? 'AI JUMP MASTER' : 'AI KICK MASTER';
   document.getElementById('modalTitle').innerHTML = `${productLabel} 라이선스 <span>발급</span>`;
@@ -1574,6 +1682,11 @@ function openAddModal() {
   document.getElementById('saveBtn').textContent = '발급';
   document.getElementById('saveCopyBtn').textContent = '발급하고 카톡 복사';
   fillLedgerFields(null);
+  
+  document.getElementById('memPickBox').style.display = 'block';
+  document.getElementById('memPick').value = '';
+  document.getElementById('memPickHint').textContent = '';
+  refreshMemberPickList();
   document.getElementById('modalErr').textContent = '';
   onTypeChange();
   document.getElementById('modalBg').classList.add('show');
@@ -1588,8 +1701,18 @@ function fillLedgerFields(c) {
   }
   document.getElementById('mOwner').value   = c ? (c.owner_name || '') : '';
   document.getElementById('mSigungu').value = c ? (c.sigungu || '') : '';
-  sido.value = c ? (c.sido || '') : '';
-  src.value  = c ? (c.source || '') : '';
+
+  const pick = (el, v) => {
+    v = String(v || '');
+    if (v && ![...el.options].some(o => o.value === v)) {
+      const o = document.createElement('option');
+      o.value = v; o.textContent = v + ' (목록에 없음)';
+      el.appendChild(o);
+    }
+    el.value = v;
+  };
+  pick(sido, c ? c.sido : '');
+  pick(src,  c ? c.source : '');
   document.getElementById('ledgerHint').textContent = c
     ? '이미 장부에 있는 회원입니다. 저장하면 그 줄이 갱신됩니다.'
     : '저장하면 회원 장부에도 한 줄이 만들어집니다.';
@@ -1601,6 +1724,7 @@ function openEditModal(encoded) {
 
   document.getElementById('modalTitle').innerHTML = `${productLabel} <span>회원정보</span>`;
   document.getElementById('editId').value = d.id;
+  document.getElementById('memPickBox').style.display = 'none';   
   document.getElementById('mDojang').value = d.dojang_name || '';
   document.getElementById('mLicenseType').value = d.license_type || 'lifetime';
   document.getElementById('mVersion').value = d.version || AKM_VERSION;
@@ -2018,7 +2142,7 @@ async function copyLicenseMsg(encoded) {
   const isJump = (d.license_key||'').startsWith('JMP-');
   const productName = isJump ? 'AI JUMP MASTER' : 'AI KICK MASTER';
   const loginUrl = isJump ? JUMP_LOGIN_URL : KICK_LOGIN_URL;
-  const actionLabel = isJump ? '줄넘기 프로그램 실행' : '발차기 프로그램 실행';
+  const actionLabel = '프로그램 실행';
   const isTrial = d.license_type === 'trial';
   const trialDays = Number(d.trial_days) || 3;
   const typeLabel = isTrial ? `${trialDays}일 체험판`
@@ -2029,8 +2153,8 @@ async function copyLicenseMsg(encoded) {
   const expireLine = (!isTrial && d.expire_date) ? `• 만료일: ${d.expire_date}\n` : '';
 
   const msg = isTrial
-    ? `[${productName} ${trialDays}일 체험판 안내]\n\n안녕하세요, ${d.dojang_name} 관장님!\n${productName}를 직접 써보실 수 있는 체험판 키를 보내드립니다.\n\n체험판 라이선스 키\n${d.license_key}\n\n체험 기간: 처음 인증하신 시점부터 ${trialDays}일\n   (키를 받은 날이 아니라, 처음 여신 날부터 계산됩니다)\n사용 기기: 1대\n\n접속 링크: ${loginUrl}\n\n사용 방법\n1. 위 홈페이지로 접속하세요\n2. [${actionLabel}] 버튼을 누르세요\n3. 체험판 키를 입력하세요\n4. 최초 1회 입력 후 자동으로 실행됩니다\n\n편하실 때 여셔도 ${trialDays}일이 그대로 보장되니 부담 없이 사용해보세요.\n체험 후 궁금한 점은 카카오톡으로 편하게 문의 주세요!`
-    : `[${productName} 구매 완료 안내]\n\n안녕하세요, ${d.dojang_name} 관장님!\n${productName} 구매 및 정식 라이선스 발급이 완료되었습니다.\n\n■ 라이선스 키\n${d.license_key}\n\n■ 구매 정보\n• 라이선스 종류: ${typeLabel}\n${paymentLine}• 사용 가능 기기: 최대 ${maxDevices}대\n• 월 구독료: 없음\n${expireLine}\n■ 접속 방법\n1. ${loginUrl}에 접속해 주세요.\n2. [${actionLabel}] 버튼을 눌러주세요.\n3. 위 라이선스 키를 입력해 주세요.\n4. 최초 인증 후에는 자동으로 실행됩니다.\n\n사용설명서도 함께 보내드립니다.\n첫 수업 전 실제 사용하실 기기에서 카메라와 동작 인식을 한 번 확인해 주세요.\n\n라이선스 키는 소중히 보관해 주세요.\n사용 중 궁금한 점은 카카오톡으로 편하게 문의해 주세요.`;
+    ? `[${productName} ${trialDays}일 체험판 안내]\n\n안녕하세요, ${d.dojang_name} 관장님!\n${productName}를 직접 써보실 수 있는 체험판 키를 보내드립니다.\n\n체험판 라이선스 키\n${d.license_key}\n\n체험 기간: 처음 인증하신 시점부터 ${trialDays}일\n   (키를 받은 날이 아니라, 처음 여신 날부터 계산됩니다)\n사용 가능 기기: 최대 ${maxDevices}대\n\n접속 링크: ${loginUrl}\n\n사용 방법\n1. 위 홈페이지로 접속하세요\n2. [${actionLabel}] 버튼을 누르세요\n3. 체험판 키를 입력하세요\n4. 최초 1회 입력 후 자동으로 실행됩니다\n\n편하실 때 여셔도 ${trialDays}일이 그대로 보장되니 부담 없이 사용해보세요.\n체험 후 궁금한 점은 카카오톡으로 편하게 문의 주세요!`
+    : `[${productName} 구매 완료 안내]\n\n안녕하세요, ${d.dojang_name} 관장님!\n${productName} 구매 및 정식 라이선스 발급이 완료되었습니다.\n\n■ 라이선스 키\n${d.license_key}\n\n■ 구매 정보\n• 라이선스 종류: ${typeLabel}\n${paymentLine}• 사용 가능 기기: 최대 ${maxDevices}대\n• 월 구독료: 없음\n${expireLine}\n■ 접속 방법\n1. ${loginUrl}에 접속해 주세요.\n2. [${actionLabel}] 버튼을 눌러주세요.\n3. 위 라이선스 키를 입력해 주세요.\n4. 최초 인증 후에는 자동으로 실행됩니다.\n\n첫 수업 전 실제 사용하실 기기에서 카메라와 동작 인식을 한 번 확인해 주세요.\n\n라이선스 키는 소중히 보관해 주세요.\n사용 중 궁금한 점은 카카오톡으로 편하게 문의해 주세요.`;
   try { await navigator.clipboard.writeText(msg); showToast('카톡 안내문을 복사했습니다!'); }
   catch { prompt('복사 실패. 아래 내용을 직접 복사하세요.', msg); }
 }
