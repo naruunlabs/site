@@ -17,7 +17,7 @@
 //    그러면 예전 캐시가 통째로 비워집니다.
 // =========================================================
 
-const CACHE_NAME = 'naruunlabs-2026-09-16-jump-infer-scale';
+const CACHE_NAME = 'naruunlabs-2026-09-17-strike-icon';
 
 const APP_SHELL = [
   './',
