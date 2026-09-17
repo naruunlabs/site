@@ -1,0 +1,20 @@
+{
+  "id": "/aistrikemaster",
+  "name": "AI STRIKE MASTER",
+  "short_name": "STRIKE MASTER",
+  "description": "어린이 AI 타격 훈련 시스템",
+  "start_url": "/aistrikemaster",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0B0B0D",
+  "theme_color": "#ff5a36",
+  "icons": [
+    {
+      "src": "./icon-strikemaster.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
