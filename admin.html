@@ -599,6 +599,7 @@ table.cg tfoot td.num{text-align:right}
     <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
       <button class="home-subtab-btn active" id="license-subtab-kick-btn" onclick="switchLicenseSubtab('kick')">킥마스터 라이선스</button>
       <button class="home-subtab-btn" id="license-subtab-jump-btn" onclick="switchLicenseSubtab('jump')">점프마스터 라이선스</button>
+      <button class="home-subtab-btn" id="license-subtab-strike-btn" onclick="switchLicenseSubtab('strike')">스트라이크 라이선스</button>
       <div style="flex:1"></div>
       <button class="btn-add btn-ghost" onclick="loadLicenses()">↻ 새로고침</button>
       <button class="btn-add" id="licenseAddBtn" onclick="openAddModal()">+ 라이선스 발급</button>
@@ -1012,6 +1013,24 @@ table.cg tfoot td.num{text-align:right}
 const ADMIN_EDGE_URL = 'https://ebgoolsymyzkftvavpyj.supabase.co/functions/v1/clever-worker';
 const KICK_LOGIN_URL = 'https://naruunlabs.kr/kickmaster';
 const JUMP_LOGIN_URL = 'https://naruunlabs.kr/jumpmaster';
+const STRIKE_LOGIN_URL = 'https://naruunlabs.kr/aistrikemaster';
+
+const PRODUCTS = {
+  kick:   { key:'kick',   prefix:'AKM-', gen:'AKM', name:'AI KICK MASTER',
+            short:'킥마스터',        url:KICK_LOGIN_URL },
+  jump:   { key:'jump',   prefix:'JMP-', gen:'JMP', name:'AI JUMP MASTER',
+            short:'점프마스터',      url:JUMP_LOGIN_URL },
+  strike: { key:'strike', prefix:'STR-', gen:'STR', name:'AI STRIKE MASTER',
+            short:'스트라이크마스터', url:STRIKE_LOGIN_URL }
+};
+const PRODUCT_ORDER = ['kick','jump','strike'];
+
+function productOfKey(licenseKey){
+  const k = String(licenseKey||'');
+  for (const id of PRODUCT_ORDER) if (k.startsWith(PRODUCTS[id].prefix)) return PRODUCTS[id];
+  return PRODUCTS.kick;
+}
+function curProduct(){ return PRODUCTS[currentLicenseProduct] || PRODUCTS.kick; }
 const AKM_VERSION = '1.0.0';
 const HOME_DATA_KEY = 'akm_home_data';
 
@@ -1228,14 +1247,16 @@ async function repairLifetimeExpiry() {
   }
 }
 
-function currentProductPrefix(){ return currentLicenseProduct === 'jump' ? 'JMP-' : 'AKM-'; }
+function currentProductPrefix(){ return curProduct().prefix; }
 function licensesForCurrentProduct(){ return LICENSES.filter(d => (d.license_key||'').startsWith(currentProductPrefix())); }
 
 function switchLicenseSubtab(p){
-  currentLicenseProduct = p;
-  document.getElementById('license-subtab-kick-btn').classList.toggle('active', p==='kick');
-  document.getElementById('license-subtab-jump-btn').classList.toggle('active', p==='jump');
-  document.getElementById('licenseAddBtn').textContent = p==='jump' ? '+ 점프마스터 라이선스 발급' : '+ 킥마스터 라이선스 발급';
+  currentLicenseProduct = PRODUCTS[p] ? p : 'kick';
+  for (const id of PRODUCT_ORDER) {
+    const btn = document.getElementById('license-subtab-' + id + '-btn');
+    if (btn) btn.classList.toggle('active', id === currentLicenseProduct);
+  }
+  document.getElementById('licenseAddBtn').textContent = '+ ' + curProduct().short + ' 라이선스 발급';
   updateStats(); renderTable();
 }
 
@@ -1426,11 +1447,14 @@ function renderTable() {
     const whoCell = (whoName || whoSido)
       ? whoName + whoSido : '<span class="who-none">-</span>';
 
-    const isJumpRow  = (d.license_key||'').startsWith('JMP-');
-    const otherPrefix= isJumpRow ? 'AKM-' : 'JMP-';
-    const otherLabel = isJumpRow ? '킥마스터도' : '점프마스터도';
-    const hasOther   = LICENSES.some(x => (x.license_key||'').startsWith(otherPrefix)
-                                       && String(x.dojang_name||'').trim() === String(d.dojang_name||'').trim());
+    const rowName  = String(d.dojang_name||'').trim();
+    const ownedIds = new Set((LICENSES||[])
+      .filter(x => String(x.dojang_name||'').trim() === rowName)
+      .map(x => productOfKey(x.license_key).key));
+    const missing  = PRODUCT_ORDER.filter(id => !ownedIds.has(id));
+    const nextProd = missing.length ? PRODUCTS[missing[0]] : null;
+    const otherLabel = nextProd ? nextProd.short + '도' : '';
+    const hasOther   = !nextProd;
 
     const line2 = [
       d.phone ? escapeHtml(d.phone) : '',
@@ -1453,7 +1477,7 @@ function renderTable() {
       <td class="cell-act"><div class="action-btns">
         <button class="btn-sm btn-edit" onclick="openEditModal('${encoded}')">회원정보</button>
         <button class="btn-sm btn-copy" onclick="copyLicenseMsg('${encoded}')">카톡</button>
-        ${hasOther ? '' : `<button class="btn-sm btn-cross" onclick="openAddForOther('${d.id}')">${otherLabel} 발급</button>`}
+        ${hasOther ? '' : `<button class="btn-sm btn-cross" onclick="openAddForOther('${d.id}','${nextProd?nextProd.key:''}')">${otherLabel} 발급</button>`}
         ${inLedger
           ? `<button class="btn-sm btn-ledger done" onclick="gotoLedger('${escapeHtml(d.license_key)}')">장부 ✓</button>`
           : `<button class="btn-sm btn-ledger" onclick="sendToLedger('${d.id}')">장부로</button>`}
@@ -1578,17 +1602,20 @@ function memberDirectory(){
   const norm = v => String(v||'').trim();
   const put = (name, patch) => {
     const k = norm(name); if(!k) return;
-    const cur = map.get(k) || { dojang_name:k, phone:'', owner_name:'', sido:'', sigungu:'', source:'', kick:null, jump:null };
+
+    const cur = map.get(k) || { dojang_name:k, phone:'', owner_name:'', sido:'', sigungu:'', source:'', by:{}, kick:null, jump:null };
+    if (!cur.by) cur.by = {};
     for (const f of ['phone','owner_name','sido','sigungu','source'])
       if (!cur[f] && norm(patch[f])) cur[f] = norm(patch[f]);
-    if (patch.kick) cur.kick = patch.kick;
-    if (patch.jump) cur.jump = patch.jump;
+    if (patch.lic) {
+      const pid = productOfKey(patch.lic.license_key).key;
+      cur.by[pid] = patch.lic;
+      if (pid === 'kick') cur.kick = patch.lic;
+      if (pid === 'jump') cur.jump = patch.lic;
+    }
     map.set(k, cur);
   };
-  for (const d of (LICENSES||[])) {
-    const isJump = norm(d.license_key).startsWith('JMP-');
-    put(d.dojang_name, { phone:d.phone, kick:isJump?null:d, jump:isJump?d:null });
-  }
+  for (const d of (LICENSES||[])) put(d.dojang_name, { phone:d.phone, lic:d });
   for (const c of (CUSTOMERS||[]))
     put(c.dojang_name, { phone:c.phone, owner_name:c.owner_name, sido:c.sido, sigungu:c.sigungu, source:c.source });
   return [...map.values()].sort((a,b)=>a.dojang_name.localeCompare(b.dojang_name,'ko'));
@@ -1600,11 +1627,14 @@ function memberTypeLabel(t){
 
 function refreshMemberPickList(){
   const dl = document.getElementById('memPickList'); if(!dl) return;
-  const wantJump = currentLicenseProduct === 'jump';
+  const wantId = curProduct().key;
   dl.innerHTML = memberDirectory().map(m => {
-    const have = wantJump ? m.jump : m.kick;
-    const has  = wantJump ? m.kick : m.jump;
-    const tag  = have ? ' (이 제품 이미 보유)' : (has ? ' · ' + (wantJump?'킥마스터':'점프마스터') + ' 회원' : '');
+    const by   = m.by || {};
+    const have = by[wantId];
+
+    const others = PRODUCT_ORDER.filter(id => id !== wantId && by[id]).map(id => PRODUCTS[id].short);
+    const tag  = have ? ' (이 제품 이미 보유)'
+                      : (others.length ? ' · ' + others.join('·') + ' 회원' : '');
     return `<option value="${escapeHtml(m.dojang_name)}">${escapeHtml(m.dojang_name + tag)}</option>`;
   }).join('');
 }
@@ -1631,11 +1661,15 @@ function fillFromMember(m){
   const real = (CUSTOMERS||[]).find(c => String(c.dojang_name||'').trim() === m.dojang_name) || null;
   fillLedgerFields(real || { owner_name:m.owner_name, sido:m.sido, sigungu:m.sigungu, source:m.source });
 
-  const wantJump = currentLicenseProduct === 'jump';
-  const already  = wantJump ? m.jump : m.kick;   
-  const other    = wantJump ? m.kick : m.jump;   
+  const wantId  = curProduct().key;
+  const by      = m.by || {};
+  const already = by[wantId];                    
   const parts = [];
-  if (other)   parts.push(`${wantJump?'킥마스터':'점프마스터'} ${memberTypeLabel(other.license_type)} 보유`);
+  
+  for (const id of PRODUCT_ORDER) {
+    if (id === wantId || !by[id]) continue;
+    parts.push(`${PRODUCTS[id].short} ${memberTypeLabel(by[id].license_type)} 보유`);
+  }
 
   if (already) parts.push(`<b>※ 이 제품도 이미 있습니다 (${memberTypeLabel(already.license_type)})</b>`);
   const hint = document.getElementById('memPickHint');
@@ -1645,24 +1679,24 @@ function fillFromMember(m){
   document.getElementById('memPick').value = m.dojang_name;
 }
 
-function openAddForOther(id){
+function openAddForOther(id, wantKey){
   const d = (LICENSES||[]).find(x => String(x.id) === String(id));
   if(!d) return;
-  const toJump = !String(d.license_key||'').startsWith('JMP-');
-  switchLicenseSubtab(toJump ? 'jump' : 'kick');   
+  const target = PRODUCTS[wantKey] ? wantKey : 'kick';
+  switchLicenseSubtab(target);   
   openAddModal();
   const m = memberDirectory().find(x => x.dojang_name === String(d.dojang_name||'').trim());
   if(m) fillFromMember(m);
 }
 
 function openAddModal() {
-  const productLabel = currentLicenseProduct === 'jump' ? 'AI JUMP MASTER' : 'AI KICK MASTER';
+  const productLabel = curProduct().name;
   document.getElementById('modalTitle').innerHTML = `${productLabel} 라이선스 <span>발급</span>`;
   document.getElementById('editId').value = '';
   document.getElementById('mDojang').value = '';
   document.getElementById('mLicenseType').value = 'lifetime';
   document.getElementById('mVersion').value = AKM_VERSION;
-  document.getElementById('mKey').value = generateKey(currentLicenseProduct === 'jump' ? 'JMP' : 'AKM');
+  document.getElementById('mKey').value = generateKey(curProduct().gen);
   document.getElementById('mExpireDate').value = '';
   document.getElementById('mPayAmount').value = '';
   document.getElementById('mPayDate').value = todayStr();
@@ -1720,7 +1754,7 @@ function fillLedgerFields(c) {
 
 function openEditModal(encoded) {
   const d = JSON.parse(decodeURIComponent(encoded));
-  const productLabel = (d.license_key||'').startsWith('JMP-') ? 'AI JUMP MASTER' : 'AI KICK MASTER';
+  const productLabel = productOfKey(d.license_key).name;
 
   document.getElementById('modalTitle').innerHTML = `${productLabel} <span>회원정보</span>`;
   document.getElementById('editId').value = d.id;
@@ -2113,7 +2147,9 @@ async function syncLedgerFromLicense(p) {
 
 function regenerateKey(){
   const cur = document.getElementById('mKey').value || '';
-  const prefix = cur.startsWith('JMP-') ? 'JMP' : (cur.startsWith('AKM-') ? 'AKM' : (currentLicenseProduct === 'jump' ? 'JMP' : 'AKM'));
+
+  const known = PRODUCT_ORDER.find(id => cur.startsWith(PRODUCTS[id].prefix));
+  const prefix = known ? PRODUCTS[known].gen : curProduct().gen;
   document.getElementById('mKey').value = generateKey(prefix);
 }
 
@@ -2137,9 +2173,10 @@ async function deleteLicense(id, name) {
 
 async function copyLicenseMsg(encoded) {
   const d = JSON.parse(decodeURIComponent(encoded));
-  const isJump = (d.license_key||'').startsWith('JMP-');
-  const productName = isJump ? 'AI JUMP MASTER' : 'AI KICK MASTER';
-  const loginUrl = isJump ? JUMP_LOGIN_URL : KICK_LOGIN_URL;
+  
+  const prod = productOfKey(d.license_key);
+  const productName = prod.name;
+  const loginUrl = prod.url;
   const actionLabel = '프로그램 실행';
   const isTrial = d.license_type === 'trial';
   const trialDays = Number(d.trial_days) || 3;
