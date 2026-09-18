@@ -4605,13 +4605,14 @@ const PUNCH_THRESHOLDS={
   startStep:.10, stopStep:.06,
   motionMin:.26,        
   decideMargin:.12,     
+
   free:{                
-    straight:{extPeakMin:125, extGainMin:25, lateralMax:.55, riseMax:.50},
+    straight:{extPeakMin:100, extGainMin:50, lateralMax:.55, riseMax:.50},
     hook:    {lateralMin:.45, lateralOverRise:1.40, extPeakMax:178},
     upper:   {riseMin:.32,    riseOverLateral:1.30, extPeakMax:178}
   },
   selected:{            
-    straight:{extPeakMin:108, extGainMin:14, lateralMax:.85, riseMax:.75},
+    straight:{extPeakMin:90,  extGainMin:45, lateralMax:.85, riseMax:.75},
     hook:    {lateralMin:.30, lateralOverRise:1.05, extPeakMax:180},
     upper:   {riseMin:.22,    riseOverLateral:1.00, extPeakMax:180}
   },
@@ -9151,6 +9152,8 @@ function punchTrajectoryPoint(lm,wlm,side){
     x:(W.x-sc.x)/unit, y:(sc.y-W.y)/unit,
     ext:angleDeg(S,E,W)||0,
     reach:Math.hypot(W.x-S.x,W.y-S.y)/unit,
+
+    armSpan:(Math.hypot(E.x-S.x,E.y-S.y)+Math.hypot(W.x-E.x,W.y-E.y))/unit,
     shoulderY:(sc.y-S.y)/unit,
     hipY:(sc.y-hc.y)/unit,
     z:+(wrist.z||0),
@@ -9194,7 +9197,8 @@ function punchTrajectoryFeatures(points){
     outward:+(Math.abs(end.x)-Math.abs(start.x)).toFixed(3),
     path:+path.toFixed(3), speed:+speed.toFixed(3),
     motion:+Math.max(lateral,rise,extGain/60,Math.max(...rs)-start.reach).toFixed(3),
-    points:p.map(q=>({x:+q.x.toFixed(3),y:+q.y.toFixed(3),ext:+q.ext.toFixed(1),reach:+q.reach.toFixed(3),dt:Math.round(q.t-start.t)}))
+    armSpanStart:+start.armSpan.toFixed(3), armSpanMin:+Math.min(...p.map(q=>q.armSpan)).toFixed(3),
+    points:p.map(q=>({x:+q.x.toFixed(3),y:+q.y.toFixed(3),ext:+q.ext.toFixed(1),reach:+q.reach.toFixed(3),arm:+q.armSpan.toFixed(3),dt:Math.round(q.t-start.t)}))
   };
   return features;
 }
