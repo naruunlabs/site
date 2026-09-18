@@ -9359,13 +9359,13 @@ function processPunchTrajectoryFrame(lm,wlm){
 
   if(punchLeadHand==='auto' && lm[23] && lm[24]){
     const d=(lm[23].z||0)-(lm[24].z||0);
-    punchLeadDepthEma=punchLeadDepthEma*.94+d*.06;
+    punchLeadDepthEma=punchLeadDepthEma*.86+d*.14;
     if(Math.abs(punchLeadDepthEma)>.10){
       const n=punchLeadDepthEma<0?'left':'right';
       if(n===punchAutoLeadHand){punchLeadCandidate=null;punchLeadCandidateFrames=0;}
       else if(n===punchLeadCandidate)punchLeadCandidateFrames++;
       else{punchLeadCandidate=n;punchLeadCandidateFrames=1;}
-      if(n!==punchAutoLeadHand&&punchLeadCandidateFrames>=25){
+      if(n!==punchAutoLeadHand&&punchLeadCandidateFrames>=8){
         punchAutoLeadHand=n;punchLeadCandidate=null;punchLeadCandidateFrames=0;
         pushPunchLog({event:'auto_lead_changed',leadHand:n,depthDelta:+punchLeadDepthEma.toFixed(4)});
       }
