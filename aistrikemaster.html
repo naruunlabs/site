@@ -6649,6 +6649,144 @@ const GUIDE_KNEE={};
 
 const GUIDE_YEOP_LIFT=1.00;
 
+const GUIDE_LOWKICK={
+  rx:1.15,     
+  ry:0.22,     
+               
+  cy:0.46,     
+  a0:-12,      
+  aFull:192,   
+  cut:0.65,    
+
+  orbit:false  
+
+};
+
+const GUIDE_KNEEKICK={
+  x:0.20,      
+  y0:1.00,     
+  y1:-0.02,    
+  foot:0.62,   
+               
+  footDx:0.17  
+
+};
+
+function guideFlowDot(c,r,a,st){
+  ctx.save(); ctx.shadowColor='rgba('+st.rgb+',1)'; ctx.shadowBlur=18;
+  ctx.fillStyle='rgba(255,255,255,'+a+')';
+  ctx.beginPath(); ctx.arc(c.x,c.y,r,0,Math.PI*2); ctx.fill();
+  ctx.strokeStyle='rgba('+st.rgb+','+(a*.75)+')'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.arc(c.x,c.y,r+6,0,Math.PI*2); ctx.stroke(); ctx.restore();
+}
+function guideChevron(c,ang,scale,a,st){
+  ctx.save(); ctx.translate(c.x,c.y); ctx.rotate(ang); ctx.globalAlpha=a;
+  ctx.strokeStyle='rgba('+st.pale+',1)'; ctx.lineWidth=3*scale;
+  ctx.lineCap='round'; ctx.lineJoin='round';
+  ctx.shadowColor='rgba('+st.rgb+',1)'; ctx.shadowBlur=12;
+  ctx.beginPath(); ctx.moveTo(-8*scale,-7*scale); ctx.lineTo(7*scale,0); ctx.lineTo(-8*scale,7*scale);
+  ctx.stroke(); ctx.restore();
+}
+
+function drawLowKickGuide(){
+  if(smHipY==null||smHipX==null||!(smTorso>0)||!running) return;
+  const G=GUIDE_LOWKICK, W=canvas.width, H=canvas.height;
+  const mirrored=camWrap.classList.contains('mirrored');
+  const st=guideFootStyle();
+  const TP=smTorso*H;
+  const rawBodyX=smHipX*W;
+  const visualBodyX=mirrored?W-rawBodyX:rawBodyX;
+  const toCanvasX=v=>mirrored?W-v:v;
+  const side=(selectedFoot()==='right')?1:-1;   
+  const cy=Math.min(H*0.94, smHipY*H+TP*G.cy);
+  const rx=TP*G.rx, ry=TP*G.ry, D=Math.PI/180;
+  const a0=G.a0*D, aEnd=G.aFull*D, a1=a0+(aEnd-a0)*G.cut;
+  
+  const clampX=v=>Math.max(W*0.03, Math.min(W*0.97, v));
+  const at=u=>{ const a=a0+(a1-a0)*u;
+    return {x:clampX(toCanvasX(visualBodyX+side*rx*Math.cos(a))), y:cy+ry*Math.sin(a)}; };
+  const end=at(1), start=at(0);
+
+  ctx.save(); ctx.lineCap='round'; ctx.lineJoin='round'; ctx.setLineDash([]);
+  if(G.orbit){
+    ctx.strokeStyle='rgba('+st.rgb+',0.13)'; ctx.lineWidth=2; ctx.setLineDash([7,7]);
+    ctx.beginPath(); ctx.ellipse(toCanvasX(visualBodyX),cy,rx,ry,0,0,Math.PI*2); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  const arc=()=>{ ctx.beginPath();
+    for(let i=0;i<=60;i++){ const p=at(i/60); i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y); } };
+  const soft=(w,c)=>{ ctx.strokeStyle=c; ctx.lineWidth=w; arc(); ctx.stroke(); };
+  soft(26,'rgba('+st.rgb+',0.070)');
+  soft(12,'rgba('+st.rgb+',0.17)');
+  soft(3, 'rgba('+st.pale+',0.26)');
+
+  const t=(performance.now()%1650)/1650;
+  guideFlowDot(at(t),10,0.82,st);
+  guideFlowDot(at((t+0.38)%1),7,0.45,st);
+  guideFlowDot(at((t+0.72)%1),5,0.28,st);
+  for(const [o,sc,al] of [[0.20,0.9,0.45],[0.58,0.7,0.28]]){
+    const u=(t+o)%1, p=at(u), p0=at(Math.max(0,u-0.03)), p1=at(Math.min(1,u+0.03));
+    guideChevron(p,Math.atan2(p1.y-p0.y,p1.x-p0.x),sc,al,st);
+  }
+
+  const flat=Math.max(0.24, (ry/rx)*2.2);
+  ctx.shadowColor='rgba('+st.rgb+',1)'; ctx.shadowBlur=18;
+  ctx.strokeStyle='rgba('+st.rgb+',0.60)'; ctx.lineWidth=4;
+  ctx.beginPath(); ctx.ellipse(end.x,end.y,30,30*flat,0,0,Math.PI*2); ctx.stroke();
+  ctx.strokeStyle='rgba(255,255,255,0.45)'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.ellipse(end.x,end.y,15,15*flat,0,0,Math.PI*2); ctx.stroke();
+  ctx.shadowBlur=0;
+  drawGuideFootLabel(start.x,start.y+40,st);
+  ctx.restore();
+}
+
+function drawKneeKickGuide(){
+  if(smHipY==null||smHipX==null||!(smTorso>0)||!running) return;
+  const G=GUIDE_KNEEKICK, W=canvas.width, H=canvas.height;
+  const mirrored=camWrap.classList.contains('mirrored');
+  const st=guideFootStyle();
+  const TP=smTorso*H;
+  const rawBodyX=smHipX*W;
+  const visualBodyX=mirrored?W-rawBodyX:rawBodyX;
+  const toCanvasX=v=>mirrored?W-v:v;
+  const side=(selectedFoot()==='right')?1:-1;
+  const x=toCanvasX(visualBodyX+side*TP*G.x);
+  const y0=Math.min(H*0.94, smHipY*H+TP*G.y0);
+  const y1=Math.max(H*0.10, smHipY*H+TP*G.y1);
+  const at=u=>({x, y:y0+(y1-y0)*u});
+
+  ctx.save(); ctx.lineCap='round'; ctx.lineJoin='round'; ctx.setLineDash([]);
+  const line=()=>{ ctx.beginPath(); ctx.moveTo(x,y0); ctx.lineTo(x,y1); };
+  const soft=(w,c)=>{ ctx.strokeStyle=c; ctx.lineWidth=w; line(); ctx.stroke(); };
+  soft(24,'rgba('+st.rgb+',0.070)');
+  soft(10,'rgba('+st.rgb+',0.17)');
+  soft(3, 'rgba('+st.pale+',0.26)');
+
+  const t=(performance.now()%1450)/1450;
+  guideFlowDot(at(t),10,0.82,st);
+  guideFlowDot(at((t+0.38)%1),7,0.45,st);
+  guideFlowDot(at((t+0.72)%1),5,0.28,st);
+  guideChevron(at((t+0.18)%1),-Math.PI/2,0.9,0.45,st);
+  guideChevron(at((t+0.55)%1),-Math.PI/2,0.7,0.28,st);
+
+  ctx.shadowColor='rgba('+st.rgb+',1)'; ctx.shadowBlur=18;
+  ctx.strokeStyle='rgba('+st.rgb+',0.60)'; ctx.lineWidth=4;
+  ctx.beginPath(); ctx.arc(x,y1,24,0,Math.PI*2); ctx.stroke();
+  ctx.strokeStyle='rgba(255,255,255,0.45)'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.arc(x,y1,12,0,Math.PI*2); ctx.stroke();
+  ctx.shadowBlur=0;
+
+  const fx=toCanvasX(visualBodyX+side*TP*(G.x-G.footDx));
+  const fy=Math.min(H*0.96, y1+TP*G.foot);
+  ctx.setLineDash([6,6]); ctx.strokeStyle='rgba('+st.rgb+',0.34)'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(x,y1+26); ctx.lineTo(fx,fy-15); ctx.stroke();
+  ctx.strokeStyle='rgba('+st.rgb+',0.40)'; ctx.lineWidth=3;
+  ctx.beginPath(); ctx.arc(fx,fy,15,0,Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
+
+  drawGuideFootLabel(x,y0+40,st);
+  ctx.restore();
+}
+
 function drawYeopDwiGuide(kind, m){
   if(smHipY==null||smHipX==null||!(smTorso>0)||!running) return;
   const S=GUIDE_SHAPE[kind]; if(!S) return;
@@ -9608,6 +9746,12 @@ function processStrikeSpecialFrame(lm){
   const hipY=(lm[23].y+lm[24].y)/2;
   const shoulderY=(lm[11].y+lm[12].y)/2;
   const torso=Math.max(.05,hipY-shoulderY);
+
+  const hipXNow=(lm[23].x+lm[24].x)/2;
+  smHipY=(smHipY==null)?hipY:smHipY*0.7+hipY*0.3;
+  smTorso=(smTorso==null)?torso:smTorso*0.7+torso*0.3;
+  smHipX=(smHipX==null)?hipXNow:smHipX*0.8+hipXNow*0.2;
+  if(special==='lowkick') drawLowKickGuide(); else drawKneeKickGuide();
   const wanted=selectedFoot();
   const sides=wanted?[wanted]:['left','right'];
   for(const side of sides){
@@ -9778,8 +9922,6 @@ function processPersonFrame(lm, wlm){
       if((isDrillMode() || (currentMode==='sparring' && sparringMode==='practice')) && drillKickType()==='apcha') drawApchaGuide();
       if((isDrillMode() || (currentMode==='sparring' && sparringMode==='practice')) && drillKickType()==='dollo') drawDolloGuide();
 
-      if((isDrillMode() || (currentMode==='sparring' && sparringMode==='practice')) && drillKickType()==='yeop') drawYeopDwiGuide('yeop', m);
-      if((isDrillMode() || (currentMode==='sparring' && sparringMode==='practice')) && drillKickType()==='dwi')  drawYeopDwiGuide('dwi', m);
       if(!twoPlayerMode && currentMode==='sparring' && sparringMode==='live') updateAdaptiveSparringTarget();
       
       if(twoPlayerMode && currentMode==='sparring' && sparringMode==='live') updateAdaptiveSparringTarget2p();
