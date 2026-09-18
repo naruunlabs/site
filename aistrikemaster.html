@@ -9199,6 +9199,8 @@ function punchTrajectoryPoint(lm,wlm,side){
     shoulderY:(sc.y-S.y)/unit,
     hipY:(sc.y-hc.y)/unit,
     z:+(wrist.z||0),
+
+    sx:wrist.x, sy:wrist.y,
     vis:Math.min(wrist.visibility??1,elbow.visibility??1),
     unit:+unit.toFixed(4)
   };
@@ -9255,10 +9257,13 @@ function punchTypeScores(f){
   };
 }
 
+function effectivePunchTechnique(){
+  return (typeof currentMode!=='undefined' && currentMode!=='punch') ? 'free' : punchTechnique;
+}
 function classifyPunchTrajectory(f,side,effectiveLead){
   const PT=PUNCH_THRESHOLDS;
   const isLead=side===effectiveLead;
-  const sel=punchTechnique;
+  const sel=effectivePunchTechnique();
   const picked=sel!=='free';
   const G=picked?PT.selected:PT.free;
   const score=punchTypeScores(f);
@@ -9348,7 +9353,7 @@ function evaluatePunchTrajectory(side,effectiveLead,reason){
   }
   const r=classifyPunchTrajectory(f,side,effectiveLead);
   if(!r.type){ pushPunchLog({event:'trajectory_attempt',hand:side,selected:punchTechnique,effectiveLead,finishReason:reason,accepted:false,predicted:null,rejection:r.reason||'no_rule_matched',checks:r.checks,scores:r.score,features:f}); return null; }
-  return {side,effectiveLead,reason,features:f,result:r,quality:punchQuality(f,r.type,reason)};
+  return {side,effectiveLead,reason,features:f,points,result:r,quality:punchQuality(f,r.type,reason)};
 }
 
 function acceptPunchTrajectory(cand){
@@ -9381,8 +9386,84 @@ function acceptPunchTrajectory(cand){
   return true;
 }
 
+function strikeHandActive(){
+  if(!running || twoPlayerMode) return false;
+  if(currentMode==='balloon') return true;
+  if(currentMode==='sparring' && sparringMode==='live') return true;
+  return false;
+}
+
+const SPARRING_PUNCH={
+  baseMin:4, baseSpan:4,                  
+  zoneMul:{head:1.40, body:1.00},         
+  headY:.15,                              
+  minDmg:3
+};
+
+function strikePunchZone(cand){
+  const pts=cand.points||[];
+  if(!pts.length) return 'body';
+  const topY=Math.max(...pts.map(p=>p.y));
+  return topY>=SPARRING_PUNCH.headY?'head':'body';
+}
+
+function strikeHandPopBalloons(cand){
+  const mirrored=camWrap.classList.contains('mirrored');
+  const before=balloons.length;
+  for(const p of (cand.points||[])){
+    if(p.sx==null) continue;
+    checkBalloons((mirrored?1-p.sx:p.sx)*100, p.sy*100);
+    if(!balloons.length) break;
+  }
+  return balloons.length<before;
+}
+
+function acceptStrikeHandHit(cand){
+  const now=performance.now();
+  if(now-(punchLastHitT||0)<PUNCH_THRESHOLDS.cooldownMs){
+    pushPunchLog({event:'trajectory_attempt',hand:cand.side,selected:effectivePunchTechnique(),
+      effectiveLead:cand.effectiveLead,finishReason:cand.reason,accepted:false,
+      predicted:cand.result.type,rejection:'cooldown',features:cand.features});
+    return false;
+  }
+  punchLastHitT=now;
+  const label=cand.result.label||'펀치';
+  pushPunchLog({event:'accepted_punch',mode:currentMode,hand:cand.side,type:cand.result.type,
+    label,score:cand.quality,effectiveLead:cand.effectiveLead,trajectory:cand.features});
+
+  if(currentMode==='balloon'){
+    const hit=strikeHandPopBalloons(cand);
+    if(!hit) popup(label+' · 빗나감','#ffd54f');
+    return hit;
+  }
+
+  const zone=strikePunchZone(cand);
+  const base=SPARRING_PUNCH.baseMin
+           + Math.round(Math.max(0,Math.min(1,(cand.quality-60)/40))*SPARRING_PUNCH.baseSpan);
+  
+  sparringCombo=(now-sparringLastHitT<=SPARRING_COMBO_WINDOW)?sparringCombo+1:1;
+  sparringLastHitT=now;
+  sparringMaxCombo=Math.max(sparringMaxCombo,sparringCombo);
+  const comboMul=sparringCombo>=5?1.45:sparringCombo>=3?1.25:sparringCombo>=2?1.12:1.0;
+  const dmg=Math.max(SPARRING_PUNCH.minDmg,
+    Math.round(base*SPARRING_PUNCH.zoneMul[zone]*comboMul));
+  sparringHp=Math.max(0,sparringHp-dmg);
+  sparringDamage+=dmg;
+  updateSparringHud(); renderStats();
+  showComboPopup(sparringCombo);
+  showDamage('-'+dmg, zone);
+  enemyHitMotion(zone);
+  flashEdge(null);
+  sndHit(zone, sparringCombo, dmg);
+  popup(label,'#4caf50');
+  if(sparringHp<=0){ sndKO(); setTimeout(finishSparring,500); }
+  return true;
+}
+
 function processPunchTrajectoryFrame(lm,wlm){
-  if(!running||currentMode!=='punch'||twoPlayerMode) return;
+  if(!running||twoPlayerMode) return;
+  
+  if(currentMode!=='punch' && !strikeHandActive()) return;
   const PT=PUNCH_THRESHOLDS;
   const now=performance.now();
 
@@ -9451,9 +9532,10 @@ function processPunchTrajectoryFrame(lm,wlm){
   if(!pending.length) return;
 
   pending.sort((a,b)=>b.quality-a.quality);
-  acceptPunchTrajectory(pending[0]);
+  if(currentMode==='punch') acceptPunchTrajectory(pending[0]);
+  else acceptStrikeHandHit(pending[0]);
   for(let i=1;i<pending.length;i++){
-    pushPunchLog({event:'trajectory_attempt',hand:pending[i].side,selected:punchTechnique,
+    pushPunchLog({event:'trajectory_attempt',hand:pending[i].side,selected:effectivePunchTechnique(),
       effectiveLead,finishReason:pending[i].reason,accepted:false,predicted:pending[i].result.type,
       rejection:'same_frame_duplicate',features:pending[i].features});
   }
@@ -9607,6 +9689,8 @@ function processPersonFrame(lm, wlm){
     processPunchTrajectoryFrame(lm,wlm);
     return;
   }
+
+  if(strikeHandActive()) processPunchTrajectoryFrame(lm,wlm);
   if(MODE_CFG[currentMode]?.strikeSpecial){
     processStrikeSpecialFrame(lm);
     return;
