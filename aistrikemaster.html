@@ -4604,6 +4604,9 @@ const PUNCH_THRESHOLDS={
 
   startStep:.10, stopStep:.06,
   motionMin:.26,        
+
+  speedMin:8,           
+  extGainFloor:30,      
   decideMargin:.12,     
 
   free:{                
@@ -9230,6 +9233,9 @@ function classifyPunchTrajectory(f,side,effectiveLead){
   };
   
   if(f.motion<PT.motionMin) return {type:null,label:'',score,checks,reason:'too_small'};
+
+  if(f.speed<PT.speedMin && f.extGain<PT.extGainFloor)
+    return {type:null,label:'',score,checks,reason:'too_slow'};
 
   let type=null, ambiguous=false;
   if(sel==='jab')        type=checks.straightOk?'straight':null;
