@@ -3330,17 +3330,26 @@ button{transition:transform .14s ease, filter .14s ease, background .14s ease}bu
 #sparringTypePanel{display:none;}
 #drillResult{pointer-events:auto !important; overflow:auto; padding:24px;}
 #drillResultSub.auto-result-summary{
-  width:min(520px,82vw); max-height:44vh; overflow:auto;
-  display:grid; grid-template-columns:1fr auto; gap:8px 26px;
-  padding:20px 24px; border-radius:18px;
+  
+  width:min(560px,86vw); overflow:visible;
+  display:grid; grid-template-columns:1fr auto; gap:7px 26px;
+  padding:18px 22px; border-radius:18px;
   background:rgba(6,16,31,.72); text-align:left;
   border:1px solid rgba(120,170,255,.22);
 }
 #drillResultSub.auto-result-summary .result-label{color:#dbeaff;font-weight:800;}
+
+#drillResultSub.auto-result-summary.many{
+  grid-template-columns:1fr auto 1fr auto; gap:6px 18px; width:min(720px,94vw);
+}
+#drillResultSub.auto-result-summary.many .result-label,
+#drillResultSub.auto-result-summary.many .result-score{font-size:15px;}
+#drillResultSub.auto-result-summary.many .result-average{font-size:26px;margin-bottom:8px;}
 #drillResultSub.auto-result-summary .result-score{color:#ffe36b;font-weight:1000;text-align:right;}
 #drillResultSub.auto-result-summary .result-average{
-  grid-column:1 / -1; margin-top:8px; padding-top:14px;
-  border-top:1px solid rgba(255,255,255,.16);
+  
+  grid-column:1 / -1; margin:0 0 10px; padding-bottom:12px;
+  border-bottom:1px solid rgba(255,255,255,.16);
   text-align:center; color:#54ffad; font-size:30px; font-weight:1000;
 }
 #drillRestartBtn{
@@ -4526,6 +4535,7 @@ function autoDrillStageLabel(){
   return (autoDrillIndex+1)+' / '+AUTO_DRILL_SEQUENCE.length;
 }
 function beginAutoDrillStage(index, announce=true){
+  cancelDrillFinish();   
   autoDrillIndex=index;
   currentMode=AUTO_DRILL_SEQUENCE[autoDrillIndex];
   drillDone=0;
@@ -4778,6 +4788,15 @@ let AUTO_DRILL_SEQUENCE=autoDrillModes();
 let autoDrillIndex=0;
 let autoDrillResults={};
 let autoDrillTransitioning=false;
+
+let drillFinishTimer=null;
+function scheduleDrillFinish(fn,ms){
+  if(drillFinishTimer) clearTimeout(drillFinishTimer);
+  drillFinishTimer=setTimeout(()=>{ drillFinishTimer=null; fn(); },ms);
+}
+function cancelDrillFinish(){
+  if(drillFinishTimer){ clearTimeout(drillFinishTimer); drillFinishTimer=null; }
+}
 let sparringHp=250, sparringDamage=0, sparringCombo=0, sparringMaxCombo=0;
 let sparringLastHitT=0;
 let lastKickCompleteT=0;
@@ -6863,6 +6882,7 @@ function onDrillKick(peak, traj){
     return;
   }
 
+  if(autoDrillTransitioning) return;
   drillDone++;
   drillScores.push(result.score);
   lastScore=result.score;
@@ -6880,8 +6900,8 @@ function onDrillKick(peak, traj){
 
   if(drillDone>=drillTarget){
     if(twoPlayerMode){  }
-    else if(drillRunMode==='auto') setTimeout(finishAutoDrillStage,700);
-    else setTimeout(finishDrill,700);
+    else if(drillRunMode==='auto') scheduleDrillFinish(finishAutoDrillStage,700);
+    else scheduleDrillFinish(finishDrill,700);
   }
 }
 
@@ -6930,9 +6950,10 @@ function finishAutoDrill(){
   drillResultText.textContent='자동 발차기 훈련 완료';
   drillResultText.style.color='#fff';
   drillResultSub.className='auto-result-summary';
-  drillResultSub.innerHTML=rows.map(r=>
-    '<div class="result-label">'+r.label+'</div><div class="result-score">'+r.avg+'점</div>'
-  ).join('')+'<div class="result-average">평균 '+totalAvg+'점</div>';
+
+  drillResultSub.innerHTML='<div class="result-average">평균 '+totalAvg+'점</div>'
+    +rows.map(r=>'<div class="result-label">'+r.label+'</div><div class="result-score">'+r.avg+'점</div>').join('');
+  drillResultSub.classList.toggle('many',rows.length>=6);
   drillResult.classList.add('auto-summary','final-result','show');
   confetti(totalAvg>=90);
   sndRecord();
@@ -9237,9 +9258,19 @@ function classifyPunchTrajectory(f,side,effectiveLead){
   if(f.speed<PT.speedMin && f.extGain<PT.extGainFloor)
     return {type:null,label:'',score,checks,reason:'too_slow'};
 
-  let type=null, ambiguous=false;
-  if(sel==='jab')        type=checks.straightOk?'straight':null;
-  else if(sel==='cross') type=checks.straightOk?'straight':null;
+  let type=null, ambiguous=false, handMiss=false;
+
+  const handLocked = (punchLeadHand!=='auto');
+  if(sel==='jab'){
+    if(!checks.straightOk) type=null;
+    else if(handLocked && !isLead){ type=null; handMiss=true; }
+    else type='straight';
+  }
+  else if(sel==='cross'){
+    if(!checks.straightOk) type=null;
+    else if(handLocked && isLead){ type=null; handMiss=true; }
+    else type='straight';
+  }
   else if(sel==='hook')  type=checks.hookOk?'hook':null;
   else if(sel==='upper') type=checks.upperOk?'upper':null;
   else{
@@ -9266,7 +9297,7 @@ function classifyPunchTrajectory(f,side,effectiveLead){
     else if(sel==='jab') label='잽';
     else label=isLead?'잽':'스트레이트';
   }
-  return {type,label,score,checks,ambiguous};
+  return {type,label,score,checks,ambiguous,reason:handMiss?'wrong_hand':undefined};
 }
 
 function punchQuality(f,type,reason){
@@ -9436,13 +9467,15 @@ const STRIKE_KICK_TH={
 function acceptStrikeKick(label){
   const now=performance.now();
   if(now-strikeKickLastHitT<STRIKE_KICK_TH.cooldownMs) return;
+  
+  if(autoDrillTransitioning) return;
   strikeKickLastHitT=now; drillDone++; drillScores.push(100);
   lastScore=100; lastGrade=label+' 성공!'; lastColor='#4caf50';
   sndSuccess(); flashEdge(null); popup(label+'!','#4caf50'); renderStats();
   altFootAdvance();
   if(drillDone>=drillTarget){
-    if(drillRunMode==='auto') setTimeout(finishAutoDrillStage,700);
-    else setTimeout(finishDrill,700);
+    if(drillRunMode==='auto') scheduleDrillFinish(finishAutoDrillStage,700);
+    else scheduleDrillFinish(finishDrill,700);
   }
 }
 function processStrikeSpecialFrame(lm){
