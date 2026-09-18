@@ -165,6 +165,17 @@ tr.row-expired td{background:#fdecec}
 .btn-del{background:#fdecec;color:#dc2626}
 
 .btn-cross{background:#E8F7F5;color:#0F766E}
+
+.owned-grid{display:flex;flex-direction:column;gap:7px}
+.owned-row{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:11px;
+  background:#F7FAFE;border:1px solid #E3EAF3}
+.owned-row .owned-name{font-weight:800;font-size:12.5px;color:#1D2939;flex:0 0 132px}
+.owned-row .owned-state{font-size:11.5px;color:#667085;flex:1}
+.owned-row.has{background:#F1FBF7;border-color:#CDEBDD}
+.owned-row.has .owned-state{color:#0F766E;font-weight:700}
+.owned-row.self{background:#EEF3FF;border-color:#D6E2FF}
+.owned-row.self .owned-state{color:#0757D8;font-weight:800}
+.owned-note{margin-top:9px;font-size:11px;color:#98A2B3}
 .btn-cross:hover{background:#D3F0EC}
 .mem-pick{background:#F1F7FF;border:1px solid #D3E4FB;border-radius:14px;padding:13px 15px;margin-bottom:16px}
 .mem-pick label{display:block;font-size:12px;font-weight:800;color:#2B5C9B;margin-bottom:6px}
@@ -922,6 +933,12 @@ table.cg tfoot td.num{text-align:right}
       <button type="button" class="btn-sm btn-toggle" style="margin-top:10px;" onclick="resetDeviceSlots()">전체 기기 초기화 (재발급 시 사용)</button>
     </div>
 
+    <div class="modal-section" id="ownedSection" style="display:none;">
+      <div class="modal-section-title">제품 보유 현황</div>
+      <div id="ownedBox" class="owned-grid"></div>
+      <div class="owned-note">다른 제품을 누르면 이 도장 정보를 채운 채 발급창이 열립니다.</div>
+    </div>
+
     <div class="modal-section" id="usageSection" style="display:none;">
       <div class="modal-section-title">사용 기록</div>
       <div id="usageBox" class="use-note">불러오는 중…</div>
@@ -1447,15 +1464,6 @@ function renderTable() {
     const whoCell = (whoName || whoSido)
       ? whoName + whoSido : '<span class="who-none">-</span>';
 
-    const rowName  = String(d.dojang_name||'').trim();
-    const ownedIds = new Set((LICENSES||[])
-      .filter(x => String(x.dojang_name||'').trim() === rowName)
-      .map(x => productOfKey(x.license_key).key));
-    const missing  = PRODUCT_ORDER.filter(id => !ownedIds.has(id));
-    const nextProd = missing.length ? PRODUCTS[missing[0]] : null;
-    const otherLabel = nextProd ? nextProd.short + '도' : '';
-    const hasOther   = !nextProd;
-
     const line2 = [
       d.phone ? escapeHtml(d.phone) : '',
       `기기 ${slotUsed}/${slotMax}${slotOver ? '<span class="dev-over">한도 초과</span>' : ''}`
@@ -1477,7 +1485,6 @@ function renderTable() {
       <td class="cell-act"><div class="action-btns">
         <button class="btn-sm btn-edit" onclick="openEditModal('${encoded}')">회원정보</button>
         <button class="btn-sm btn-copy" onclick="copyLicenseMsg('${encoded}')">카톡</button>
-        ${hasOther ? '' : `<button class="btn-sm btn-cross" onclick="openAddForOther('${d.id}','${nextProd?nextProd.key:''}')">${otherLabel} 발급</button>`}
         ${inLedger
           ? `<button class="btn-sm btn-ledger done" onclick="gotoLedger('${escapeHtml(d.license_key)}')">장부 ✓</button>`
           : `<button class="btn-sm btn-ledger" onclick="sendToLedger('${d.id}')">장부로</button>`}
@@ -1679,16 +1686,6 @@ function fillFromMember(m){
   document.getElementById('memPick').value = m.dojang_name;
 }
 
-function openAddForOther(id, wantKey){
-  const d = (LICENSES||[]).find(x => String(x.id) === String(id));
-  if(!d) return;
-  const target = PRODUCTS[wantKey] ? wantKey : 'kick';
-  switchLicenseSubtab(target);   
-  openAddModal();
-  const m = memberDirectory().find(x => x.dojang_name === String(d.dojang_name||'').trim());
-  if(m) fillFromMember(m);
-}
-
 function openAddModal() {
   const productLabel = curProduct().name;
   document.getElementById('modalTitle').innerHTML = `${productLabel} 라이선스 <span>발급</span>`;
@@ -1713,6 +1710,7 @@ function openAddModal() {
   currentEditLicenseId = null;
   document.getElementById('deviceSlotSection').style.display = 'none';
   document.getElementById('usageSection').style.display = 'none';
+  document.getElementById('ownedSection').style.display = 'none';   
   document.getElementById('saveBtn').textContent = '발급';
   document.getElementById('saveCopyBtn').textContent = '발급하고 카톡 복사';
   fillLedgerFields(null);
@@ -1752,6 +1750,56 @@ function fillLedgerFields(c) {
     : '저장하면 회원 장부에도 한 줄이 만들어집니다.';
 }
 
+function renderOwnedProducts(dojangName, currentKey){
+  const box = document.getElementById('ownedBox');
+  const sec = document.getElementById('ownedSection');
+  if(!box || !sec) return;
+  const name = String(dojangName||'').trim();
+  if(!name){ sec.style.display='none'; return; }
+
+  const mine = productOfKey(currentKey).key;
+  const owned = {};
+  for (const x of (LICENSES||[])) {
+    if (String(x.dojang_name||'').trim() !== name) continue;
+    owned[productOfKey(x.license_key).key] = x;
+  }
+
+  box.innerHTML = PRODUCT_ORDER.map(id => {
+    const P = PRODUCTS[id], lic = owned[id];
+    const isSelf = (id === mine);
+
+    const cls = isSelf ? 'owned-row self' : (lic ? 'owned-row has' : 'owned-row');
+    let state, btn = '';
+    if (isSelf) {
+      state = '지금 보고 있는 라이선스';
+    } else if (lic) {
+      state = memberTypeLabel(lic.license_type) + ' 보유 · ' + escapeHtml(String(lic.license_key||'').slice(0,8)) + '…';
+      btn = `<button type="button" class="btn-sm btn-toggle" onclick="openOwnedLicense('${lic.id}')">열기</button>`;
+    } else {
+      state = '없음';
+      btn = `<button type="button" class="btn-sm btn-cross" onclick="issueForDojang('${id}','${escapeHtml(name)}')">발급</button>`;
+    }
+    return `<div class="${cls}"><span class="owned-name">${escapeHtml(P.name)}</span>`
+         + `<span class="owned-state">${state}</span>${btn}</div>`;
+  }).join('');
+  sec.style.display = 'block';
+}
+
+function issueForDojang(productId, dojangName){
+  switchLicenseSubtab(PRODUCTS[productId] ? productId : 'kick');
+  openAddModal();
+  const m = memberDirectory().find(x => x.dojang_name === String(dojangName||'').trim());
+  if (m) fillFromMember(m);
+  else document.getElementById('mDojang').value = dojangName || '';
+}
+
+function openOwnedLicense(id){
+  const d = (LICENSES||[]).find(x => String(x.id) === String(id));
+  if(!d) return;
+  switchLicenseSubtab(productOfKey(d.license_key).key);
+  openEditModal(encodeURIComponent(JSON.stringify(d)));
+}
+
 function openEditModal(encoded) {
   const d = JSON.parse(decodeURIComponent(encoded));
   const productLabel = productOfKey(d.license_key).name;
@@ -1783,6 +1831,7 @@ function openEditModal(encoded) {
   document.getElementById('saveBtn').textContent = '저장';
   document.getElementById('saveCopyBtn').textContent = '저장하고 카톡 복사';
   fillLedgerFields(customerForLicense(d.license_key));
+  renderOwnedProducts(d.dojang_name, d.license_key);   
   document.getElementById('modalErr').textContent = '';
   onTypeChange();
   document.getElementById('modalBg').classList.add('show');
