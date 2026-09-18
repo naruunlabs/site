@@ -3,6 +3,18 @@
 <head>
 <meta charset="UTF-8">
 
+<script id="naruun-product-id">
+
+var PRODUCT = {
+  id      : 'aistrikemaster',
+  code    : 'S',                    
+  name    : 'AI STRIKE MASTER',
+  short   : 'STRIKE',
+  version : '0.9.0',
+  built   : '2026-09-18'
+};
+try{ window.PRODUCT = PRODUCT; }catch(e){}
+</script>
 <script>
 (function () {
   var KEY = 'naruunlabs_ga_optout';
@@ -320,7 +332,9 @@ body.hud-v21 .title small{display:block; margin-top:2px; font-size:10px; color:#
 body.hud-v21 .title-left{flex:1; min-width:0;}
 body.hud-v21 .title-dojang{font-size:13px; font-weight:900; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
 body.hud-v21 .title-auth{font-size:10px; color:#2ecc71; font-weight:800; margin-top:1px;}
-body.hud-v21 .title-version{font-size:10px; color:#5a7a9a; margin-top:1px;}
+
+body.hud-v21 .title-version{font-size:12px; font-weight:800; letter-spacing:.3px;
+  color:rgba(255,138,101,.92); margin-top:2px;}
 body.hud-v21 #modeBadge{top:14px; left:50%; transform:translateX(-50%); min-width:320px; padding:10px 22px; border-radius:16px; font-size:22px; font-weight:900; color:#fff; text-align:center; z-index:8;}
 body.hud-v21 #modeBadge small{display:block; margin-top:2px; font-size:11px; color:#dbeaff;}
 body.hud-v21 .hud-settings-btn{position:relative; top:auto; right:auto; min-width:44px; min-height:34px; padding:5px 10px; border-radius:10px; color:#9fb0c8; font-size:13px; font-weight:900; flex-shrink:0;}
@@ -3599,10 +3613,15 @@ body.hud-v21.akm-ui .title-auth{
   font-size:10px !important;
   line-height:1.2 !important;
 }
-body.hud-v21.akm-ui .title-version,
 body.hud-v21.akm-ui .akm-powered{
   margin-top:2px !important;
   font-size:9.5px !important;
+  line-height:1.25 !important;
+}
+
+body.hud-v21.akm-ui .title-version{
+  margin-top:2px !important;
+  font-size:12px !important;
   line-height:1.25 !important;
 }
 
@@ -4276,7 +4295,7 @@ const EVERY_KICK_MODE=ALL_KICK_MODES.concat(ALT_KICK_MODES);
 
 const KICK_KINDS=['apcha','dollo','yeop','dwi'];
 
-const AUTODRILL_LS_KEY='akm_autodrill_v2';
+const AUTODRILL_LS_KEY='asm_autodrill_v2';
 let drillKicks=['apcha','dollo'];   
 let drillFoot='both';               
 (function loadDrillPick(){
@@ -4290,7 +4309,7 @@ let drillFoot='both';
       return;
     }
 
-    const old=localStorage.getItem('akm_autodrill_v1');
+    const old=localStorage.getItem('asm_autodrill_v1');
     if(old){
       const arr=JSON.parse(old).filter(m=>ALL_KICK_MODES.includes(m));
       if(arr.length){
@@ -7668,11 +7687,11 @@ window.logoutLicense=()=>{
   location.reload();
 };
 
-const DIAG_LS_KEY='akm_diag_log_v1';
+const DIAG_LS_KEY='asm_diag_log_v1';   
 const DIAG_LOG_MAX=2000;
 
 let diagMode=(function(){
-  try{ return localStorage.getItem('akm_diag_on_v1')==='1'; }catch(e){ return false; }
+  try{ return localStorage.getItem(DIAG_MODE_LS_KEY)==='1'; }catch(e){ return false; }
 })();
 let diagLog=[];
 
@@ -7905,7 +7924,7 @@ window.clearDiagLog=function(){
   updateDiagCount();
 };
 
-const DIAG_MODE_LS_KEY='akm_diag_on_v1';
+const DIAG_MODE_LS_KEY='asm_diag_on_v1';
 
 function updateLabRecUi(){
   const st=document.getElementById('labRecState');
@@ -11168,6 +11187,17 @@ body.hud-v21.sparring-speed #gameArea .drill-count-row.sparring-round-row{ displ
 </script>
 
 <script>
+
+function _akmStampVersion(){
+  try{
+    const txt=PRODUCT.short+' v'+PRODUCT.version;
+    const a=document.getElementById('panelVersion'); if(a) a.textContent=txt;
+    const b=document.getElementById('lbVersion');    if(b) b.textContent=txt;
+  }catch(e){}
+}
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',_akmStampVersion);
+else _akmStampVersion();
+
 const _AKM_EDGE_URL   = 'https://ebgoolsymyzkftvavpyj.supabase.co/functions/v1/verify-license';
 const _AKM_HOME_URL    = 'https://ebgoolsymyzkftvavpyj.supabase.co/functions/v1/clever-worker';
 const _AKM_LS_KEY      = 'akm_license_v1';
@@ -11175,7 +11205,7 @@ const _AKM_CACHE_DAYS  = 7;
 const _AKM_TRIAL_CACHE_DAYS = 1;   
 const _AKM_FETCH_TIMEOUT_MS = 8 * 1000;   
 
-const _AKM_VERSION     = '3.2.2';
+const _AKM_VERSION     = (typeof PRODUCT!=='undefined' ? PRODUCT.version : '0.9.0');
 
 let _akmFailCount = 0;
 let _akmFailLockUntil = 0;
@@ -11379,11 +11409,11 @@ function _akmShowAuthedUI(dojang_name, version){
   if(nameEl) nameEl.textContent=dojang_name || 'AI STRIKE MASTER';
   if(authEl) authEl.textContent='✓ 정품 인증';
 
-  if(verEl)  verEl.textContent='v'+_AKM_VERSION;
+  if(verEl)  verEl.textContent=PRODUCT.short+' v'+_AKM_VERSION;
   const lbName=document.getElementById('lbDojangName');
   const lbVer =document.getElementById('lbVersion');
   if(lbName) lbName.textContent=dojang_name||'';
-  if(lbVer)  lbVer.textContent='v'+_AKM_VERSION;
+  if(lbVer)  lbVer.textContent=PRODUCT.short+' v'+_AKM_VERSION;
 
   const _apply = window.applyAkmTune;
   if(typeof _apply !== 'function' || !_apply((_akmGetCache()||{}).tune)){
