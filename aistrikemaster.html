@@ -7560,11 +7560,20 @@ function punchLogCount(){ try{ return punchDebugLog.length; }catch(e){ return 0;
 function updateDiagCount(){
 
   const punchCount=punchLogCount();
+  const skCount=strikeKickLogCount();
   const el=document.getElementById('diagCount');
-  if(el) el.textContent=punchCount?('발차기 '+diagLog.length+' · 펀치 '+punchCount):(diagLog.length+'건');
+  if(el){
+    const parts=['발차기 '+diagLog.length];
+    if(skCount) parts.push('로킥니킥 '+skCount);
+    if(punchCount) parts.push('펀치 '+punchCount);
+    el.textContent=(parts.length>1)?parts.join(' · '):(diagLog.length+'건');
+  }
   const range=document.getElementById('diagRange');
   if(range){
-    if(!diagLog.length){ range.textContent=punchCount?('펀치 기록 '+punchCount+'건'):'기록 없음'; }
+    if(!diagLog.length){
+      const extra=[]; if(skCount) extra.push('로킥니킥 '+skCount+'건'); if(punchCount) extra.push('펀치 '+punchCount+'건');
+      range.textContent=extra.length?extra.join(' · '):'기록 없음';
+    }
     else{
       const days=[...new Set(diagLog.map(e=>e.date).filter(Boolean))];
       const first=days[0]||'?', last=days[days.length-1]||'?';
@@ -7705,13 +7714,18 @@ window.downloadDiagLog=async function(){
 
   const punch=(typeof buildPunchDiagnostic==='function')?buildPunchDiagnostic():null;
   const punchCount=(punch&&punch.records)?punch.records.length:0;
-  if(!diagLog.length && !punchCount){ alert('아직 기록된 타격이 없습니다.'); return; }
+  const skCount=(typeof strikeKickLogCount==='function')?strikeKickLogCount():0;
+  if(!diagLog.length && !punchCount && !skCount){ alert('아직 기록된 타격이 없습니다.'); return; }
   const stamp=new Date().toISOString().slice(0,10).replace(/-/g,'');
   const name='strike-diag-'+stamp+'.json';
   const payload={
     format:'NaruunLabs Strike Diagnostic', version:2,
     exportedAt:new Date().toISOString(),
     kick:{count:diagLog.length, records:diagLog},
+
+    strikeKick:{count:skCount,
+                thresholds:(typeof STRIKE_KICK_TH!=='undefined')?STRIKE_KICK_TH:null,
+                records:(typeof strikeKickLog!=='undefined')?strikeKickLog:[]},
     punch:punch
   };
   const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
@@ -7741,11 +7755,13 @@ window.downloadDiagLog=async function(){
 window.clearDiagLog=function(){
 
   const punchCount=punchLogCount();
-  if(!diagLog.length && !punchCount){ alert('지울 기록이 없습니다.'); return; }
-  if(!confirm('발차기 '+diagLog.length+'건 · 펀치 '+punchCount+'건을 모두 지울까요?\n되돌릴 수 없습니다. 필요하면 먼저 다운로드하세요.')) return;
+  const skCount=strikeKickLogCount();
+  if(!diagLog.length && !punchCount && !skCount){ alert('지울 기록이 없습니다.'); return; }
+  if(!confirm('발차기 '+diagLog.length+'건 · 로킥니킥 '+skCount+'건 · 펀치 '+punchCount+'건을 모두 지울까요?\n되돌릴 수 없습니다. 필요하면 먼저 다운로드하세요.')) return;
   diagLog=[];
   try{ localStorage.removeItem(DIAG_LS_KEY); }catch(e){}
   if(typeof clearPunchLog==='function') clearPunchLog();
+  try{ strikeKickLog=[]; }catch(e){}
   updateDiagCount();
 };
 
@@ -9464,6 +9480,13 @@ const STRIKE_KICK_TH={
   }
 };
 
+let strikeKickLog=[];
+function pushStrikeKickLog(e){
+  strikeKickLog.push({t:new Date().toISOString(),ms:Math.round(performance.now()),...e});
+  if(strikeKickLog.length>1500) strikeKickLog.splice(0,strikeKickLog.length-1500);
+}
+function strikeKickLogCount(){ try{ return strikeKickLog.length; }catch(e){ return 0; } }
+
 function acceptStrikeKick(label){
   const now=performance.now();
   if(now-strikeKickLastHitT<STRIKE_KICK_TH.cooldownMs) return;
@@ -9496,30 +9519,59 @@ function processStrikeSpecialFrame(lm){
     const kneeRise=st.knee?(st.knee.y-knee.y):0;
     const ankleSpeed=st.ankle?Math.hypot(ankle.x-st.ankle.x,ankle.y-st.ankle.y):0;
 
-    let home=false, fire=false;
+    const lateral=Math.abs(ankle.x-hip.x)/shoulderW;      
+    const kneeOverHip=(hipY-knee.y)/torso;                
+    const shinDrop=(ankle.y-knee.y)/torso;                
+    let home=false, fire=false, fail=[];
+
     if(special==='lowkick'){
       const L=T.lowkick;
-      const lateral=Math.abs(ankle.x-hip.x)/shoulderW;
       home = lateral < L.homeLateral;
-      fire = kneeAngle > L.fireKneeAngle
-          && lateral > L.fireLateral
-          && ankle.y > hipY + L.ankleBelowHip*torso
-          && ankleSpeed > L.ankleSpeedMin;
+      if(!(kneeAngle > L.fireKneeAngle))                 fail.push('다리가 덜 펴짐');
+      if(!(lateral > L.fireLateral))                     fail.push('발이 덜 나감');
+      if(!(ankle.y > hipY + L.ankleBelowHip*torso))      fail.push('발이 너무 높음');
+      if(!(ankleSpeed > L.ankleSpeedMin))                fail.push('느림');
+      fire = fail.length===0;
     }else{
       const K=T.knee;
       home = knee.y > hipY + K.homeBelowHip*torso;
-      fire = knee.y < hipY + K.fireAtHip*torso     
-          && kneeAngle < K.kneeAngleMax             
-          && ankle.y > knee.y + K.shinDropMin*torso 
-          && kneeRise > K.riseMin;                  
+      if(!(knee.y < hipY + K.fireAtHip*torso))           fail.push('무릎이 덜 올라옴');
+      if(!(kneeAngle < K.kneeAngleMax))                  fail.push('정강이가 덜 접힘');
+      if(!(ankle.y > knee.y + K.shinDropMin*torso))      fail.push('발이 무릎보다 안 낮음');
+      if(!(kneeRise > K.riseMin))                        fail.push('올라오는 중이 아님');
+      fire = fail.length===0;
     }
 
     if(home){ st.homeFrames=(st.homeFrames||0)+1; if(st.homeFrames>=T.homeFrames) st.armed=true; }
     else st.homeFrames=0;
 
+    const metrics={
+      kneeAngle:+kneeAngle.toFixed(1), kneeOverHip:+kneeOverHip.toFixed(3),
+      shinDrop:+shinDrop.toFixed(3), lateral:+lateral.toFixed(3),
+      ankleSpeed:+ankleSpeed.toFixed(4), kneeRise:+kneeRise.toFixed(4),
+      torso:+torso.toFixed(4), kneeVis:+((knee.visibility??0).toFixed(2)),
+      armed:!!st.armed, home, homeFrames:st.homeFrames||0
+    };
+
     if(st.armed && fire){
       st.armed=false; st.homeFrames=0;
-      acceptStrikeKick(special==='lowkick'?'로킥':'니킥');
+      const label=special==='lowkick'?'로킥':'니킥';
+      const before=drillDone;
+      acceptStrikeKick(label);
+
+      pushStrikeKickLog({event:(drillDone>before)?'accepted_kick':'blocked_kick',
+        kind:special, label, foot:side, mode:currentMode,
+        blockedBy:(drillDone>before)?undefined:(autoDrillTransitioning?'종목 전환 중':'잠금(cooldown)'),
+        metrics, thresholds:T});
+    }else if(ankleSpeed>.006 || Math.abs(kneeRise)>.004){
+      
+      const now=performance.now();
+      if(now-(st.lastLogT||0)>150){
+        st.lastLogT=now;
+
+        pushStrikeKickLog({event:'kick_sample', kind:special, foot:side, mode:currentMode,
+          fail: fail.length?fail:['장전 안 됨 · 아직 집으로 안 돌아옴'], metrics});
+      }
     }
     st.knee={x:knee.x,y:knee.y}; st.ankle={x:ankle.x,y:ankle.y};
   }
