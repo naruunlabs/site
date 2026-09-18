@@ -3916,10 +3916,7 @@ body.akm-lite-fx .kt-wing{filter:none}body.akm-lite-fx .kt-bars i,body.akm-lite-
         <button type="button" onclick="markPunchFeedback('missed')">놓침</button>
       </div>
       <div class="punch-feedback-note">기술 선택값이 자동으로 정답 기록됩니다. 위 평가는 특별한 오류가 있을 때만 사용하세요.</div>
-      <div class="punch-json-row">
-        <button type="button" onclick="downloadPunchJson()">판정 JSON 받기</button>
-        <button type="button" onclick="clearPunchJson()">기록 초기화</button>
-      </div>
+      
       <div id="punchResult"></div>
     </div>
 
@@ -4654,12 +4651,14 @@ window.markPunchFeedback=function(feedback){
   const msg={correct:'정상 판정으로 표시했습니다.',false_positive:'오인식으로 표시했습니다.',missed:'놓친 동작으로 표시했습니다.'};
   const el=document.getElementById('punchResult'); if(el) el.textContent=msg[feedback]||'기록했습니다.';
 };
-window.clearPunchJson=function(){
+
+function clearPunchLog(){
   punchDebugLog=[]; punchLastDetected=null;
   const el=document.getElementById('punchResult'); if(el) el.textContent='판정 기록을 초기화했습니다.';
-};
-window.downloadPunchJson=function(){
-  const payload={
+}
+
+function buildPunchDiagnostic(){
+  return {
     format:'NaruunLabs Strike Punch Diagnostic',version:1,exportedAt:new Date().toISOString(),
     cameraNote:'left/right는 화면 방향이 아니라 MediaPipe의 실제 신체 좌우 기준',
     selectedTechnique:punchTechnique,leadHandMode:punchLeadHand,currentAutoLead:punchAutoLeadHand,thresholds:PUNCH_THRESHOLDS,
@@ -4671,11 +4670,7 @@ window.downloadPunchJson=function(){
       byHand:{left:a.filter(r=>r.hand==='left').length,right:a.filter(r=>r.hand==='right').length},records:punchDebugLog.length};})(),
     records:punchDebugLog
   };
-  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
-  const url=URL.createObjectURL(blob),a=document.createElement('a');
-  a.href=url; a.download='strike-punch-diagnostic-'+new Date().toISOString().replace(/[:.]/g,'-')+'.json';
-  document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),1000);
-};
+}
 
 window.setPunchTechnique=function(kind){
   if(!['free','jab','cross','hook','upper'].includes(kind)) return;
@@ -7536,12 +7531,15 @@ function diagLogSave(){
 }
 diagLogLoad();
 
+function punchLogCount(){ try{ return punchDebugLog.length; }catch(e){ return 0; } }
 function updateDiagCount(){
+
+  const punchCount=punchLogCount();
   const el=document.getElementById('diagCount');
-  if(el) el.textContent=diagLog.length+'건';
+  if(el) el.textContent=punchCount?('발차기 '+diagLog.length+' · 펀치 '+punchCount):(diagLog.length+'건');
   const range=document.getElementById('diagRange');
   if(range){
-    if(!diagLog.length){ range.textContent='기록 없음'; }
+    if(!diagLog.length){ range.textContent=punchCount?('펀치 기록 '+punchCount+'건'):'기록 없음'; }
     else{
       const days=[...new Set(diagLog.map(e=>e.date).filter(Boolean))];
       const first=days[0]||'?', last=days[days.length-1]||'?';
@@ -7679,10 +7677,19 @@ function diagLogSpeed(reason, extra){
 }
 
 window.downloadDiagLog=async function(){
-  if(!diagLog.length){ alert('아직 기록된 발차기가 없습니다.'); return; }
+
+  const punch=(typeof buildPunchDiagnostic==='function')?buildPunchDiagnostic():null;
+  const punchCount=(punch&&punch.records)?punch.records.length:0;
+  if(!diagLog.length && !punchCount){ alert('아직 기록된 타격이 없습니다.'); return; }
   const stamp=new Date().toISOString().slice(0,10).replace(/-/g,'');
-  const name='akm-diag-log-'+stamp+'.json';
-  const blob=new Blob([JSON.stringify(diagLog,null,2)],{type:'application/json'});
+  const name='strike-diag-'+stamp+'.json';
+  const payload={
+    format:'NaruunLabs Strike Diagnostic', version:2,
+    exportedAt:new Date().toISOString(),
+    kick:{count:diagLog.length, records:diagLog},
+    punch:punch
+  };
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
 
   let coarse=false;
   try{ coarse=window.matchMedia&&window.matchMedia('(pointer:coarse)').matches; }catch(e){}
@@ -7707,10 +7714,13 @@ window.downloadDiagLog=async function(){
 };
 
 window.clearDiagLog=function(){
-  if(!diagLog.length){ alert('지울 기록이 없습니다.'); return; }
-  if(!confirm('진단 기록 '+diagLog.length+'건을 모두 지울까요?\n되돌릴 수 없습니다. 필요하면 먼저 다운로드하세요.')) return;
+
+  const punchCount=punchLogCount();
+  if(!diagLog.length && !punchCount){ alert('지울 기록이 없습니다.'); return; }
+  if(!confirm('발차기 '+diagLog.length+'건 · 펀치 '+punchCount+'건을 모두 지울까요?\n되돌릴 수 없습니다. 필요하면 먼저 다운로드하세요.')) return;
   diagLog=[];
   try{ localStorage.removeItem(DIAG_LS_KEY); }catch(e){}
+  if(typeof clearPunchLog==='function') clearPunchLog();
   updateDiagCount();
 };
 
@@ -9394,9 +9404,28 @@ function finishPunch(){
   sndRecord(); if(punchCount>=15) confetti(punchCount>=30);
 }
 
+const STRIKE_KICK_TH={
+  cooldownMs:650,      
+  homeFrames:2,        
+  lowkick:{
+    homeLateral:.72,   
+    fireLateral:1.05,  
+    fireKneeAngle:140, 
+    ankleBelowHip:-.05,
+    ankleSpeedMin:.014
+  },
+  knee:{
+    homeBelowHip:.22,  
+    fireAtHip:.02,     
+    kneeAngleMax:115,  
+    shinDropMin:.30,   
+    riseMin:.012       
+  }
+};
+
 function acceptStrikeKick(label){
   const now=performance.now();
-  if(now-strikeKickLastHitT<380) return;
+  if(now-strikeKickLastHitT<STRIKE_KICK_TH.cooldownMs) return;
   strikeKickLastHitT=now; drillDone++; drillScores.push(100);
   lastScore=100; lastGrade=label+' 성공!'; lastColor='#4caf50';
   sndSuccess(); flashEdge(null); popup(label+'!','#4caf50'); renderStats();
@@ -9409,6 +9438,7 @@ function acceptStrikeKick(label){
 function processStrikeSpecialFrame(lm){
   const special=MODE_CFG[currentMode]?.strikeSpecial;
   if(!running || !special || twoPlayerMode) return;
+  const T=STRIKE_KICK_TH;
   const shoulderW=Math.max(.04,Math.abs(lm[11].x-lm[12].x));
   const hipY=(lm[23].y+lm[24].y)/2;
   const shoulderY=(lm[11].y+lm[12].y)/2;
@@ -9422,17 +9452,31 @@ function processStrikeSpecialFrame(lm){
     const kneeAngle=angleDeg(hip,knee,ankle)||0;
     const kneeRise=st.knee?(st.knee.y-knee.y):0;
     const ankleSpeed=st.ankle?Math.hypot(ankle.x-st.ankle.x,ankle.y-st.ankle.y):0;
+
+    let home=false, fire=false;
     if(special==='lowkick'){
+      const L=T.lowkick;
       const lateral=Math.abs(ankle.x-hip.x)/shoulderW;
-      if(kneeAngle<125 || lateral<.75) st.armed=true;
-      if(st.armed && kneeAngle>140 && lateral>1.05 && ankle.y>hipY-.05*torso && ankleSpeed>.014){
-        st.armed=false; acceptStrikeKick('로킥');
-      }
+      home = lateral < L.homeLateral;
+      fire = kneeAngle > L.fireKneeAngle
+          && lateral > L.fireLateral
+          && ankle.y > hipY + L.ankleBelowHip*torso
+          && ankleSpeed > L.ankleSpeedMin;
     }else{
-      if(knee.y>hipY+.25*torso) st.armed=true;
-      if(st.armed && knee.y<hipY+.08*torso && kneeRise>.012 && ankle.y>knee.y+.05){
-        st.armed=false; acceptStrikeKick('니킥');
-      }
+      const K=T.knee;
+      home = knee.y > hipY + K.homeBelowHip*torso;
+      fire = knee.y < hipY + K.fireAtHip*torso     
+          && kneeAngle < K.kneeAngleMax             
+          && ankle.y > knee.y + K.shinDropMin*torso 
+          && kneeRise > K.riseMin;                  
+    }
+
+    if(home){ st.homeFrames=(st.homeFrames||0)+1; if(st.homeFrames>=T.homeFrames) st.armed=true; }
+    else st.homeFrames=0;
+
+    if(st.armed && fire){
+      st.armed=false; st.homeFrames=0;
+      acceptStrikeKick(special==='lowkick'?'로킥':'니킥');
     }
     st.knee={x:knee.x,y:knee.y}; st.ankle={x:ankle.x,y:ankle.y};
   }
