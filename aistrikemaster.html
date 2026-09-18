@@ -4617,15 +4617,17 @@ const PUNCH_THRESHOLDS={
 
   speedMin:8,           
   extGainFloor:30,      
+
+  foldedArm:{extGainMax:20, extPeakMax:90},
   decideMargin:.12,     
 
   free:{                
-    straight:{extPeakMin:100, extGainMin:50, lateralMax:.55, riseMax:.50},
+    straight:{extPeakMin:100, extGainMin:50, extGainStrong:70, lateralMax:.55, riseMax:.50},
     hook:    {lateralMin:.45, lateralOverRise:1.40, extPeakMax:178},
     upper:   {riseMin:.32,    riseOverLateral:1.30, extPeakMax:178}
   },
   selected:{            
-    straight:{extPeakMin:90,  extGainMin:45, lateralMax:.85, riseMax:.75},
+    straight:{extPeakMin:90,  extGainMin:45, extGainStrong:55, lateralMax:.85, riseMax:.75},
     hook:    {lateralMin:.30, lateralOverRise:1.05, extPeakMax:180},
     upper:   {riseMin:.22,    riseOverLateral:1.00, extPeakMax:180}
   },
@@ -9261,7 +9263,9 @@ function classifyPunchTrajectory(f,side,effectiveLead){
   const G=picked?PT.selected:PT.free;
   const score=punchTypeScores(f);
   const checks={
-    straightOk: f.extPeak>=G.straight.extPeakMin && f.extGain>=G.straight.extGainMin
+
+    straightOk: (f.extPeak>=G.straight.extPeakMin || f.extGain>=G.straight.extGainStrong)
+                && f.extGain>=G.straight.extGainMin
                 && f.lateral<=G.straight.lateralMax && f.rise<=G.straight.riseMax,
     hookOk:     f.lateral>=G.hook.lateralMin && f.lateral>=G.hook.lateralOverRise*Math.max(f.rise,.01)
                 && f.extPeak<=G.hook.extPeakMax,
@@ -9273,6 +9277,9 @@ function classifyPunchTrajectory(f,side,effectiveLead){
 
   if(f.speed<PT.speedMin && f.extGain<PT.extGainFloor)
     return {type:null,label:'',score,checks,reason:'too_slow'};
+
+  if(f.extGain<PT.foldedArm.extGainMax && f.extPeak<PT.foldedArm.extPeakMax)
+    return {type:null,label:'',score,checks,reason:'folded_arm'};
 
   let type=null, ambiguous=false, handMiss=false;
 
@@ -9332,7 +9339,13 @@ function evaluatePunchTrajectory(side,effectiveLead,reason){
   const st=punchTrack[side], points=st.points||[];
   st.phase='idle'; st.points=[]; st.guardFrames=0;
   const f=punchTrajectoryFeatures(points);
-  if(!f){ pushPunchLog({event:'trajectory_attempt',hand:side,selected:punchTechnique,effectiveLead,finishReason:reason,accepted:false,predicted:null,rejection:'too_short',features:null}); return null; }
+  if(!f){
+
+    const n=points.length;
+    const ms=n>1?Math.round(points[n-1].t-points[0].t):0;
+    pushPunchLog({event:'trajectory_attempt',hand:side,selected:punchTechnique,effectiveLead,finishReason:reason,accepted:false,predicted:null,rejection:'too_short',frames:n,durMs:ms,features:null});
+    return null;
+  }
   const r=classifyPunchTrajectory(f,side,effectiveLead);
   if(!r.type){ pushPunchLog({event:'trajectory_attempt',hand:side,selected:punchTechnique,effectiveLead,finishReason:reason,accepted:false,predicted:null,rejection:r.reason||'no_rule_matched',checks:r.checks,scores:r.score,features:f}); return null; }
   return {side,effectiveLead,reason,features:f,result:r,quality:punchQuality(f,r.type,reason)};
@@ -9469,7 +9482,10 @@ const STRIKE_KICK_TH={
     fireLateral:1.05,  
     fireKneeAngle:140, 
     ankleBelowHip:-.05,
-    ankleSpeedMin:.014
+    ankleSpeedMin:.014,
+
+    returnSpeedMax:.030,    
+    returnKneeBelow:-.60    
   },
   knee:{
     homeBelowHip:.22,  
@@ -9531,6 +9547,8 @@ function processStrikeSpecialFrame(lm){
       if(!(lateral > L.fireLateral))                     fail.push('발이 덜 나감');
       if(!(ankle.y > hipY + L.ankleBelowHip*torso))      fail.push('발이 너무 높음');
       if(!(ankleSpeed > L.ankleSpeedMin))                fail.push('느림');
+      if(ankleSpeed < L.returnSpeedMax
+         && kneeOverHip < L.returnKneeBelow)             fail.push('돌아오는 발');
       fire = fail.length===0;
     }else{
       const K=T.knee;
