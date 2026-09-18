@@ -463,6 +463,10 @@ html body:not(.jmp-beta-on) #jumpLabModal{
 .lab-cell i{display:block;font-style:normal;font-size:10px;font-weight:800;color:#7d93ad;margin-bottom:3px}
 .lab-cell b{font-size:14px;font-weight:900;color:#eaf4f1;font-variant-numeric:tabular-nums}
 .lab-cell.warn b{color:#ff8795}
+.lab-truth{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px;padding:10px;border-radius:11px;background:rgba(45,212,191,.07);font-size:13px;font-weight:800;color:#dff}
+.lab-truth input{width:86px;padding:9px;border-radius:9px;border:1px solid rgba(45,212,191,.4);background:rgba(255,255,255,.07);color:#fff;font-size:16px;font-weight:900;text-align:center}
+.lab-truth .m-act{width:auto;padding:9px 14px}
+.lab-err-good{color:#BEF264}.lab-err-bad{color:#ff8795}
 .lab-cell.good b{color:var(--lime-lit,#bef264)}
 .lab-rec{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
 .lab-rec .full{grid-column:1/-1}
@@ -777,6 +781,19 @@ html body:not(.jmp-beta-on) #jumpLabModal{
       <div id="labRecent"><div class="lab-empty">아직 기록된 점프가 없습니다.</div></div>
     </div>
 
+    <div class="lab-sec" id="labCmpSec">
+      <h4>비교 실험 · 정답 맞추기</h4>
+      <div class="lab-grid" id="labCmp"></div>
+      <div class="lab-rec"><button class="m-act full" id="labFastBtn" type="button">고속 보조 신호 켜기</button></div>
+      <div id="labTruthBox"></div>
+      <div id="labRounds"></div>
+      <div class="lab-note">
+        1인 모드로 한 판 뛰고, 옆에서 <b>실제 개수</b>를 세어 아래 칸에 넣고 저장하세요.
+        지금 방식과 고속 방식 중 어느 쪽이 정답에 가까운지 판마다 쌓입니다.<br>
+        '측정 기록'을 켜 두면 그 판의 원신호(숫자만)도 함께 저장돼 나중에 다시 돌려 볼 수 있습니다.
+      </div>
+    </div>
+
     <hr class="m-div">
     <div class="lab-sec" style="margin-top:0">
       <h4>측정 기록</h4>
@@ -800,9 +817,9 @@ html body:not(.jmp-beta-on) #jumpLabModal{
 
 <script type="module">
 
-const APP_VERSION = '3.4.1';
+const APP_VERSION = '3.5.0';   
 
-const MP_VERSION  = '0.10.14';
+const MP_VERSION  = '1.0.1';
 const MP_LOCAL    = './vendor/mediapipe/';
 const MP_CDN      = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@' + MP_VERSION;
 const MODEL_LOCAL = './vendor/mediapipe/pose_landmarker_lite.task';
@@ -1168,9 +1185,11 @@ const gmod=(a,n)=>((a%n)+n)%n;
 const glerp=(a,b,t)=>a+(b-a)*t;
 
 function makePlayer(id){
-  return { id, engine:createJumpEngine(), count:0, lastCountAt:0, seen:false, lostSince:null, lastSeen:0, lm:null, rig:null,
+  const p = { id, engine:createJumpEngine(), count:0, lastCountAt:0, seen:false, lostSince:null, lastSeen:0, lm:null, rig:null,
            lastJumpT:null, paired:true, flashUntil:0, trackX:null, poseHist:[],
            altBaseL:null,altBaseR:null,altUpL:false,altUpR:false,altPendingFoot:'',altPendingAt:0,altLastAt:0,altLift:0 };
+  attachFastEngine(p);   
+  return p;
 }
 function neededPoses(){ return mode==='duo'?2:1; }
 function ensurePlayers(n){
@@ -1304,6 +1323,7 @@ async function openCamera(){
   if(stream && stream.getVideoTracks().some(t=>t.readyState==='live')){
     if(video.srcObject!==stream) video.srcObject=stream;
     if(video.paused) await video.play().catch(()=>{});
+    startFrameClock();
     return;
   }
   if(!navigator.mediaDevices?.getUserMedia) throw new Error('이 브라우저는 카메라 기능을 지원하지 않습니다.');
@@ -1312,6 +1332,7 @@ async function openCamera(){
   video.srcObject=stream;
   video.classList.toggle('mirrored',facingMode==='user');
   await video.play();
+  startFrameClock();   
 }
 function stopCamera(){
   if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; }
@@ -1342,7 +1363,7 @@ async function loadVisionModule(){
       return vision;
     }catch(e){  }
   }
-  const mod=await import(MP_CDN);
+  const mod=await import(MP_CDN+'/vision_bundle.mjs');   
   vision={mod, wasm:MP_CDN+'/wasm', src:'인터넷'};
   return vision;
 }
@@ -1437,6 +1458,128 @@ function inferSource(){
   return inferCv;
 }
 
+const SIGNAL_JOINTS = 4;
+
+let camMeta=null, camHz=0, camCnt=0, camWin=performance.now(), camTimeSrc='AI 계산 시각', lastSampleT=0, frameClockOn=false;
+function startFrameClock(){
+  if(frameClockOn || !video || typeof video.requestVideoFrameCallback!=='function') return;
+  frameClockOn=true;
+  const cb=(now,meta)=>{
+    try{
+      let t=now, src='화면 표시 시각';
+      const ct=meta&&meta.captureTime, pt=meta&&meta.presentationTime;
+      if(Number.isFinite(ct) && ct<=now+5 && now-ct<400){ t=ct; src='촬영 시각'; }
+      else if(Number.isFinite(pt) && pt<=now+5 && now-pt<400){ t=pt; }
+      camMeta={t,at:now}; camTimeSrc=src;
+      camCnt++; if(now-camWin>=1000){ camHz=camCnt*1000/(now-camWin); camCnt=0; camWin=now; }
+      fastOnFrame(t);
+    }catch(e){}
+    video.requestVideoFrameCallback(cb);
+  };
+  video.requestVideoFrameCallback(cb);
+}
+
+function sampleTime(t0){
+  let t=t0;
+  if(camMeta && t0-camMeta.at<120 && camMeta.t<=t0) t=camMeta.t;
+  if(t<=lastSampleT) t=lastSampleT+0.5;     
+  lastSampleT=t; return t;
+}
+
+const FAST_ON_KEY='jmp_lab_fast_v1', FAST_ROWS=96, FAST_COLS=16, FAST_S=14;
+let fastOn=false; try{ fastOn=localStorage.getItem(FAST_ON_KEY)==='1'; }catch(e){}
+let fastCv=null, fastCtx=null;
+function fastEnabled(){ return fastOn && typeof jmpIsLab==='function' && jmpIsLab(); }
+
+function attachFastEngine(p){
+  p.fastEngine=createJumpEngine(); p.fastCount=0; p.fastTorso=null; p.rawAI=[]; p.rawFast=[];
+  p.fast={roi:null,ref:null,base:0,offset:null,aiY:null,aiT:0,aiUsed:true,q:0,hz:0,cnt:0,win:performance.now(),resets:0,lastM:null};
+  const e=p.engine, fe=p.fastEngine, oReset=e.resetCount, oMark=e.markStart, oRecal=e.recalibrate;
+  
+  e.resetCount=function(){ oReset(); fe.resetCount(); p.fastCount=0; p.rawAI=[]; p.rawFast=[]; };
+  e.markStart=function(t){ oMark(t); fe.markStart(t); };
+  e.recalibrate=function(){ oRecal(); fe.recalibrate(); p.fast.roi=null; p.fast.ref=null; p.fast.offset=null; };
+}
+function onFastEvent(p,ev){
+  if(!running || !p.fastEngine.counting) return;
+  p.fastCount += ev.type==='backfill' ? ev.n : 1;
+}
+function fastOnFrame(t){
+  if(!fastEnabled() || !stream || video.readyState<2) return;
+  for(const p of players) if(p.seen && p.lm) fastTrack(p,t);
+}
+function fastRoiFrom(lm,vw,vh){
+  const shY=(lm[11].y+lm[12].y)/2, hipY=(lm[23].y+lm[24].y)/2, torso=hipY-shY;
+  if(!(torso>0.03)) return null;
+  const cx=(lm[11].x+lm[12].x+lm[23].x+lm[24].x)/4, shW=Math.abs(lm[11].x-lm[12].x);
+  const top=Math.min(shY, (lm[0]?.visibility??0)>0.3 ? lm[0].y : shY);
+  let y0=(top-0.45*torso)*vh, y1=(hipY+0.25*torso)*vh;
+  const w=Math.max(0.5*shW,0.35*torso)*vw;
+  let x0=cx*vw-w/2;
+  y0=Math.max(0,y0); y1=Math.min(vh,y1); x0=Math.max(0,Math.min(vw-w,x0));
+  if(y1-y0<FAST_ROWS/2 || w<4) return null;
+  return {x:x0,y:y0,w,h:y1-y0,torso};
+}
+function fastProfile(r){
+  if(!fastCv){
+    fastCv=document.createElement('canvas'); fastCv.width=FAST_COLS; fastCv.height=FAST_ROWS;
+    fastCtx=fastCv.getContext('2d',{willReadFrequently:true});
+  }
+  try{ fastCtx.drawImage(video,r.x,r.y,r.w,r.h,0,0,FAST_COLS,FAST_ROWS); }catch(e){ return null; }
+  const d=fastCtx.getImageData(0,0,FAST_COLS,FAST_ROWS).data;
+  const g=new Float32Array(FAST_ROWS-1);
+  let prev=0;
+  for(let y=0;y<FAST_ROWS;y++){
+    let sum=0; for(let x=0;x<FAST_COLS;x++){ const i=(y*FAST_COLS+x)*4; sum+=d[i]*0.3+d[i+1]*0.59+d[i+2]*0.11; }
+    const row=sum/FAST_COLS; if(y>0) g[y-1]=row-prev; prev=row;
+  }
+  let m=0; for(const v of g) m+=v; m/=g.length;
+  let vv=0; for(let i=0;i<g.length;i++){ g[i]-=m; vv+=g[i]*g[i]; }
+  const sd=Math.sqrt(vv/g.length); if(sd<0.4) return null;   
+  for(let i=0;i<g.length;i++) g[i]/=sd;
+  return g;
+}
+
+function fastShift(ref,cur){
+  const sc=new Float32Array(2*FAST_S+1); let best=-2, bs=0;
+  for(let s=-FAST_S;s<=FAST_S;s++){
+    let acc=0,n=0; const lo=Math.max(0,s), hi=Math.min(cur.length,ref.length+s);
+    for(let i=lo;i<hi;i++){ acc+=cur[i]*ref[i-s]; n++; }
+    const c=n>30?acc/n:-1; sc[s+FAST_S]=c; if(c>best){ best=c; bs=s; }
+  }
+  let sub=0; const k=bs+FAST_S;
+  if(k>0 && k<2*FAST_S){ const a=sc[k-1], b=sc[k], c=sc[k+1], den=a-2*b+c; if(den<0) sub=Math.max(-.5,Math.min(.5,0.5*(a-c)/den)); }
+  return {s:bs+sub,q:best};
+}
+function fastTrack(p,t){
+  const F=p.fast, vw=video.videoWidth|0, vh=video.videoHeight|0; if(!vw||!vh) return;
+  const r=fastRoiFrom(p.lm,vw,vh); if(!r) return;
+  
+  const need=!F.roi || Math.abs((r.x+r.w/2)-(F.roi.x+F.roi.w/2))>0.3*F.roi.w
+                    || Math.abs((r.y+r.h/2)-(F.roi.y+F.roi.h/2))>0.22*F.roi.h
+                    || Math.abs(r.h/F.roi.h-1)>0.2;
+  if(need){ F.roi=r; F.ref=null; F.base=0; F.offset=null; F.resets++; }
+  const g=fastProfile(F.roi); if(!g) return;
+  if(!F.ref){ F.ref=g; F.base=0; return; }
+  const {s,q}=fastShift(F.ref,g);
+  F.q=F.q*0.9+Math.max(0,q)*0.1;
+  if(q<0.35) return;                                   
+  const rowN=F.roi.h/FAST_ROWS/vh;                     
+  const m=F.base+s*rowN;
+  if(Math.abs(s)>FAST_S-4){ F.ref=g; F.base=m; }       
+  F.lastM=m;
+  
+  if(!F.aiUsed && Math.abs(t-F.aiT)<60){
+    const want=F.aiY-m; F.offset = F.offset==null ? want : F.offset*0.9+want*0.1; F.aiUsed=true;
+  }
+  if(F.offset==null) return;
+  const y=m+F.offset;
+  F.cnt++; if(t-F.win>=1000){ F.hz=F.cnt*1000/(t-F.win); F.cnt=0; F.win=t; }
+  const fe=p.fastEngine; fe.counting=p.engine.counting; fe.recoverGaps=p.engine.recoverGaps;
+  if(running && labRecording && p.rawFast.length<20000) p.rawFast.push([+t.toFixed(1),+m.toFixed(5),+y.toFixed(5),+q.toFixed(2)]);
+  fe.feed(y, p.fastTorso||r.torso, t, ev=>onFastEvent(p,ev));
+}
+
 function maybeInfer(now){
   if(!pose||poseBusy||!stream||video.readyState<2) return;
   if(video.currentTime===lastVideoTime) return;
@@ -1451,7 +1594,7 @@ function maybeInfer(now){
   inferCost=inferCost?inferCost*.85+cost*.15:cost;
   inferCount++;
   if(t0-inferWin>=1000){ inferHz=inferCount*1000/(t0-inferWin); inferCount=0; inferWin=t0; }
-  handlePose(res?.landmarks||[], t0);
+  handlePose(res?.landmarks||[], sampleTime(t0));   
 }
 function handlePose(lms,t){
   const vis=(lm,i)=>lm[i]?.visibility??0;
@@ -1461,7 +1604,8 @@ function handlePose(lms,t){
     const hipVis=Math.max(vis(lm,23),vis(lm,24)), shVis=Math.max(vis(lm,11),vis(lm,12));
     if(!(hipVis>0.3 && shVis>0.3)) continue;          
     const hipY=(lm[23].y+lm[24].y)/2, shY=(lm[11].y+lm[12].y)/2, hipX=(lm[23].x+lm[24].x)/2;
-    found.push({lm,hipY,torso:hipY-shY,sx:view.mirror?1-hipX:hipX});
+    const y4=(hipY+shY)/2;                             
+    found.push({lm,hipY,shY,y4,sigY:SIGNAL_JOINTS===4?y4:hipY,vmin:Math.min(hipVis,shVis),torso:hipY-shY,sx:view.mirror?1-hipX:hipX});
   }
   personCount=found.length;
   const slots=new Array(players.length).fill(null);
@@ -1489,7 +1633,10 @@ function updatePlayer(p,f,t){
     }else if(p.poseHist.length) p.poseHist.length=0;
     p.trackX=p.trackX==null?f.sx:p.trackX*.72+f.sx*.28;
     updateRig(p,f.lm);
-    p.engine.feed(f.hipY,f.torso,t,ev=>onEngineEvent(p,ev));
+    p.engine.feed(f.sigY,f.torso,t,ev=>onEngineEvent(p,ev));   
+    p.fast.aiY=f.sigY; p.fast.aiT=t; p.fast.aiUsed=false; p.fastTorso=f.torso;
+    if(running && labRecording && jmpIsLab() && p.rawAI.length<8000)
+      p.rawAI.push([+t.toFixed(1),+f.y4.toFixed(5),+f.hipY.toFixed(5),+f.shY.toFixed(5),+f.torso.toFixed(5),+f.vmin.toFixed(2)]);
     if(running && mode==='solo' && soloJumpType==='alternate') feedAlternateJump(p,f.lm,f.torso,t);
   }else{
     p.seen=false;
@@ -2013,6 +2160,7 @@ function finish(cancelled){
   groupFrozenAt = m==='group' ? Math.min(endPerf, gameStartPerf+groupTotal()*beatMs) : 0;
   $('resultBody').innerHTML = resultHtml(m);
   appState='result'; layoutHud();
+  labRoundFinished(m);   
 }
 
 function quit(){
@@ -3638,6 +3786,24 @@ function labTick(now){
   vis += labCell('보이는 사람', String(personCount));
   vis += labCell('화질 단계', quality==='low'?'낮춤':'높음', quality==='low'?'warn':'');
 
+  let cmp='';
+  cmp += labCell('신호 관절', SIGNAL_JOINTS===4?'4점 평균':'엉덩이 2점');
+  cmp += labCell('점 시각 기준', camTimeSrc, camTimeSrc==='촬영 시각'?'good':'');
+  cmp += labCell('카메라', labNum(camHz,0,' 장/초'));
+  ps.forEach((p,i)=>{
+    const tag=ps.length>1?`P${i} `:'', per=p.engine.periodMs>0?p.engine.periodMs/1000:0;
+    cmp += labCell(tag+'지금 방식', String(p.count));
+    cmp += labCell(tag+'고속 방식', fastEnabled()?String(p.fastCount):'꺼짐');
+    cmp += labCell(tag+'한 박 표본 AI', per?labNum(inferHz*per,1):'—', per&&inferHz*per<4?'warn':'');
+    if(fastEnabled()){
+      cmp += labCell(tag+'한 박 표본 고속', per?labNum(p.fast.hz*per,1):'—', per&&p.fast.hz*per>=8?'good':'');
+      cmp += labCell(tag+'고속 일치도', labNum(p.fast.q,2), p.fast.q>=0.6?'good':(p.fast.q<0.4?'warn':''));
+      cmp += labCell(tag+'자리 다시 잡음', String(p.fast.resets));
+    }
+  });
+  $('labCmp').innerHTML=cmp;
+  const fb=$('labFastBtn'); if(fb) fb.textContent=fastOn?'고속 보조 신호 끄기':'고속 보조 신호 켜기';
+
   $('labSig').innerHTML=sig;
   $('labRhythm').innerHTML=rh;
   $('labVision').innerHTML=vis;
@@ -3681,7 +3847,7 @@ function openJumpLab(){
   if(!jmpIsLab()) return;              
   labOpen=true;
   $('jumpLabModal').hidden=false;
-  labRenderRecent(); labRenderCount();
+  labRenderRecent(); labRenderCount(); labRenderTruth();
   lastLabT=0; labTick(performance.now());
 }
 function closeJumpLab(){ labOpen=false; $('jumpLabModal').hidden=true; }
@@ -3715,6 +3881,79 @@ function labToCsv(){
   return '﻿'+head+'\n'+body;      // BOM — 엑셀에서 한글이 깨지지 않게
 }
 
+/* ── 비교 실험: 판마다 정답과 맞춰 본다 (2026-09-18) ───────────── */
+const JMP_LAB_ROUNDS_KEY='jmp_lab_rounds_v1', LAB_ROUNDS_MAX=200, LAB_RAW_KEEP=10;
+let labRounds=[], labPending=null;
+try{ const v=JSON.parse(localStorage.getItem(JMP_LAB_ROUNDS_KEY)||'[]'); labRounds=Array.isArray(v)?v:[]; }catch(e){ labRounds=[]; }
+function labRoundsSave(){
+  // 원신호는 최근 LAB_RAW_KEEP 판만 들고 있는다(저장 공간)
+  labRounds.forEach((r,i)=>{ if(i<labRounds.length-LAB_RAW_KEEP) r.players.forEach(q=>{ delete q.raw_ai; delete q.raw_fast; }); });
+  try{ localStorage.setItem(JMP_LAB_ROUNDS_KEY, JSON.stringify(labRounds)); }
+  catch(e){ labRounds.forEach(r=>r.players.forEach(q=>{ delete q.raw_ai; delete q.raw_fast; }));
+            try{ localStorage.setItem(JMP_LAB_ROUNDS_KEY, JSON.stringify(labRounds)); }catch(_){} }
+}
+function labRoundFinished(m){
+  if(!jmpIsLab() || !(m==='solo'||m==='duo')) return;
+  labPending={
+    ts:new Date().toISOString(), mode:m, solo_mode:m==='solo'?soloMode:null,
+    solo_jump_type:m==='solo'?soloJumpType:null,
+    dur_s:labRound((roundEndPerf-gameStartPerf)/1000,1), app:APP_VERSION,
+    signal:SIGNAL_JOINTS===4?'4pt':'hip2', time_src:camTimeSrc,
+    cam_hz:labRound(camHz,1), infer_hz:labRound(inferHz,1), infer_px:inferPx||null, fast_on:fastEnabled(),
+    players:players.map(p=>({
+      pid:p.id??0, main:p.count, fast:fastEnabled()?p.fastCount:null, truth:null,
+      period_ms:labRound(p.engine.periodMs,1), fast_hz:fastEnabled()?labRound(p.fast.hz,1):null,
+      fast_q:fastEnabled()?labRound(p.fast.q,2):null,
+      raw_ai:labRecording?p.rawAI.slice():null, raw_fast:(labRecording&&fastEnabled())?p.rawFast.slice():null
+    }))
+  };
+  labRenderTruth();
+}
+function labRenderTruth(){
+  const box=$('labTruthBox'); if(!box) return;
+  if(!labPending){ box.innerHTML=''; }
+  else{
+    const ins=labPending.players.map(q=>`<span>${labPending.players.length>1?(q.pid===0?'청':'홍')+' ':''}지금 ${q.main}${q.fast!=null?' · 고속 '+q.fast:''} → 실제</span>
+      <input type="number" min="0" inputmode="numeric" data-pid="${q.pid}" placeholder="개수">`).join('');
+    box.innerHTML=`<div class="lab-truth"><span>방금 판</span>${ins}<button class="m-act" id="labTruthSave" type="button">정답 저장</button><button class="m-act home" id="labTruthSkip" type="button">버리기</button></div>`;
+  }
+  labRenderRounds();
+}
+function labRenderRounds(){
+  const box=$('labRounds'); if(!box) return;
+  const done=labRounds.filter(r=>r.players.some(q=>q.truth!=null));
+  if(!done.length){ box.innerHTML=''; return; }
+  const err=(v,t)=>v==null||t==null?null:v-t;
+  const cell=e=>e==null?'—':`<span class="${Math.abs(e)<=2?'lab-err-good':(Math.abs(e)>=5?'lab-err-bad':'')}">${e>0?'+':''}${e}</span>`;
+  let sM=0,nM=0,sF=0,nF=0;
+  const rows=done.slice(-12).reverse().map(r=>r.players.filter(q=>q.truth!=null).map(q=>{
+    const eM=err(q.main,q.truth), eF=err(q.fast,q.truth);
+    return `<tr><td>${esc(r.ts.slice(5,16).replace('T',' '))}</td><td>${r.mode==='duo'?(q.pid?'홍':'청'):'1인'}</td><td>${q.truth}</td><td>${q.main} (${cell(eM)})</td><td>${q.fast==null?'—':q.fast+' ('+cell(eF)+')'}</td><td>${q.period_ms?Math.round(60000/q.period_ms):'—'}</td></tr>`;
+  }).join('')).join('');
+  done.forEach(r=>r.players.forEach(q=>{ if(q.truth==null) return; sM+=Math.abs(q.main-q.truth); nM++; if(q.fast!=null){ sF+=Math.abs(q.fast-q.truth); nF++; } }));
+  box.innerHTML=`<table class="lab-tbl"><thead><tr><th>시각</th><th>누구</th><th>정답</th><th>지금 방식(오차)</th><th>고속(오차)</th><th>분당</th></tr></thead><tbody>${rows}</tbody></table>
+    <div class="lab-note">평균 오차 — 지금 방식 <b>${nM?(sM/nM).toFixed(1):'—'}개</b> (${nM}판) · 고속 방식 <b>${nF?(sF/nF).toFixed(1):'—'}개</b> (${nF}판)</div>`;
+}
+$('labTruthBox')?.addEventListener('click',e=>{
+  if(!jmpIsLab()||!labPending) return;
+  if(e.target.id==='labTruthSkip'){ labPending=null; labRenderTruth(); return; }
+  if(e.target.id!=='labTruthSave') return;
+  let any=false;
+  $('labTruthBox').querySelectorAll('input[data-pid]').forEach(inp=>{
+    const v=parseInt(inp.value,10), q=labPending.players.find(x=>x.pid===+inp.dataset.pid);
+    if(q && Number.isFinite(v) && v>=0){ q.truth=v; any=true; }
+  });
+  if(!any){ alert('실제 개수를 넣어 주세요.'); return; }
+  labRounds.push(labPending); if(labRounds.length>LAB_ROUNDS_MAX) labRounds.splice(0,labRounds.length-LAB_ROUNDS_MAX);
+  labPending=null; labRoundsSave(); labRenderTruth();
+});
+$('labFastBtn')?.addEventListener('click',()=>{
+  if(!jmpIsLab()) return;
+  fastOn=!fastOn; try{ localStorage.setItem(FAST_ON_KEY, fastOn?'1':'0'); }catch(e){}
+  players.forEach(p=>{ p.fastEngine.recalibrate(); p.fast.roi=null; p.fast.ref=null; p.fast.offset=null; });
+  lastLabT=0; labTick(performance.now());
+});
+
 /* ── 버튼 연결 ────────────────────────────────────────────── */
 labLoad();
 $('labBtn')?.addEventListener('click',openJumpLab);
@@ -3727,12 +3966,13 @@ $('labRecBtn')?.addEventListener('click',()=>{
   labRenderCount();
 });
 $('labDlJson')?.addEventListener('click',()=>{
-  if(!jmpIsLab()||!labLog.length) return;
+  if(!jmpIsLab()||(!labLog.length&&!labRounds.length)) return;
   labFlush();
   labDownload(`jumplab_${labStamp()}.json`, JSON.stringify({
     app:'AI JUMP MASTER', version:APP_VERSION, exported_at:new Date().toISOString(),
     note:'숫자 계측값만 들어 있습니다. 영상·사진·이름은 수집하지 않습니다.',
-    count:labLog.length, rows:labLog
+    count:labLog.length, rows:labLog,
+    rounds:labRounds   // 2026-09-18 · 판별 정답 비교 + 원신호(최근 판)
   },null,2),'application/json');
 });
 $('labDlCsv')?.addEventListener('click',()=>{

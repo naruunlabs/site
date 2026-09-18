@@ -4088,7 +4088,7 @@ body.hud-v21.akm-ui.sparring-mode .stats-row{
 
 <script type="module">
 import { PoseLandmarker, FilesetResolver, DrawingUtils }
-  from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs";
+  from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/vision_bundle.mjs";
 
 const video=document.getElementById('video');
 const canvas=document.getElementById('overlay');
@@ -7877,7 +7877,7 @@ const MODEL_URLS={
 let visionResolver=null, currentModelKind='full', currentDelegate='GPU';
 async function initModel(numPoses=1, modelKind='full'){
   statusEl.textContent='AI 모델 로딩 중…';
-  if(!visionResolver) visionResolver=await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm");
+  if(!visionResolver) visionResolver=await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/wasm");
   const vision=visionResolver;
   const MODEL_URL=MODEL_URLS[modelKind]||MODEL_URLS.full;
   if(poseLandmarker){ try{ poseLandmarker.close(); }catch(e){} poseLandmarker=null; }

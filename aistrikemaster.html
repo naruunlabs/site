@@ -4231,7 +4231,7 @@ body.akm-lite-fx .kt-wing{filter:none}body.akm-lite-fx .kt-bars i,body.akm-lite-
 
 <script type="module">
 import { PoseLandmarker, FilesetResolver, DrawingUtils }
-  from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs";
+  from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/vision_bundle.mjs";
 
 const video=document.getElementById('video');
 const canvas=document.getElementById('overlay');
@@ -8410,7 +8410,7 @@ const MODEL_URLS={
 };
 let visionResolver=null, currentModelKind='full', currentDelegate='GPU';
 let modelLoading=false, modelPreparing=false, modelSelectedKey='';
-const MODEL_PROFILE_VERSION='akm-mp0.10.14-pose1-select1';
+const MODEL_PROFILE_VERSION='akm-mp1.0.1-pose1-select1';   
 const MODEL_PROFILE_MAX_AGE=7*24*60*60*1000;
 function modelProfileKey(){ return twoPlayerMode?(crop2pEnabled?'2-crop':'2-whole'):'1'; }
 function readModelProfile(){
@@ -8444,7 +8444,7 @@ async function initModel(numPoses=twoPlayerMode?(crop2pEnabled?1:2):1, modelKind
 }
 async function loadModel(numPoses, modelKind){
   statusEl.textContent='AI 모델 로딩 중…';
-  if(!visionResolver) visionResolver=await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm");
+  if(!visionResolver) visionResolver=await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/wasm");
   const vision=visionResolver;
   const MODEL_URL=MODEL_URLS[modelKind]||MODEL_URLS.full;
   if(poseLandmarker){ try{ poseLandmarker.close(); }catch(e){} poseLandmarker=null; }
