@@ -3861,10 +3861,13 @@ function labDownload(name,text,type){
     setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); },400);
   }catch(e){ alert('내려받기에 실패했습니다.'); }
 }
-function labStamp(){
+
+function naruunStamp(){
   const d=new Date(), p=n=>String(n).padStart(2,'0');
-  return `${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}`;
+  return String(d.getFullYear()).slice(2)+p(d.getMonth()+1)+p(d.getDate())+p(d.getHours())+p(d.getMinutes());
 }
+try{ window.naruunStamp = naruunStamp; }catch(e){}
+function labStamp(){ return naruunStamp(); }
 const LAB_COLS=['ts','mode','solo_mode','solo_jump_type','alternate_count','pid','kind','n','peak_ms','amp','thr','rise','base',
   'period_ms','bpm','period_r','period_cv','rhythm_ok','gate','k_up','count','fps','infer_hz',
   'infer_ms','persons','vis_sh','vis_hip','vis_ank','sync_diff','pose_sample_ms','jump_height',
@@ -3968,7 +3971,7 @@ $('labRecBtn')?.addEventListener('click',()=>{
 $('labDlJson')?.addEventListener('click',()=>{
   if(!jmpIsLab()||(!labLog.length&&!labRounds.length)) return;
   labFlush();
-  labDownload(`jumplab_${labStamp()}.json`, JSON.stringify({
+  labDownload(`jmp${labStamp()}.json`, JSON.stringify({
     app:'AI JUMP MASTER', version:APP_VERSION, exported_at:new Date().toISOString(),
     note:'숫자 계측값만 들어 있습니다. 영상·사진·이름은 수집하지 않습니다.',
     count:labLog.length, rows:labLog,
@@ -3978,7 +3981,7 @@ $('labDlJson')?.addEventListener('click',()=>{
 $('labDlCsv')?.addEventListener('click',()=>{
   if(!jmpIsLab()||!labLog.length) return;
   labFlush();
-  labDownload(`jumplab_${labStamp()}.csv`, labToCsv(), 'text/csv');
+  labDownload(`jmp${labStamp()}.csv`, labToCsv(), 'text/csv');
 });
 $('labClear')?.addEventListener('click',()=>{
   if(!jmpIsLab()) return;

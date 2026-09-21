@@ -7486,10 +7486,15 @@ function diagLogSpeed(reason, extra){
   diagLogSubmit(entry);
 }
 
+function naruunStamp(){
+  const d=new Date(), p=n=>String(n).padStart(2,'0');
+  return String(d.getFullYear()).slice(2)+p(d.getMonth()+1)+p(d.getDate())+p(d.getHours())+p(d.getMinutes());
+}
+try{ window.naruunStamp = naruunStamp; }catch(e){}
+
 window.downloadDiagLog=async function(){
   if(!diagLog.length){ alert('아직 기록된 발차기가 없습니다.'); return; }
-  const stamp=new Date().toISOString().slice(0,10).replace(/-/g,'');
-  const name='akm-diag-log-'+stamp+'.json';
+  const name='akm'+naruunStamp()+'.json';
   const blob=new Blob([JSON.stringify(diagLog,null,2)],{type:'application/json'});
 
   let coarse=false;

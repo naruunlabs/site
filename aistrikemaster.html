@@ -7878,14 +7878,19 @@ function diagLogSpeed(reason, extra){
   diagLogSubmit(entry);
 }
 
+function naruunStamp(){
+  const d=new Date(), p=n=>String(n).padStart(2,'0');
+  return String(d.getFullYear()).slice(2)+p(d.getMonth()+1)+p(d.getDate())+p(d.getHours())+p(d.getMinutes());
+}
+try{ window.naruunStamp = naruunStamp; }catch(e){}
+
 window.downloadDiagLog=async function(){
 
   const punch=(typeof buildPunchDiagnostic==='function')?buildPunchDiagnostic():null;
   const punchCount=(punch&&punch.records)?punch.records.length:0;
   const skCount=(typeof strikeKickLogCount==='function')?strikeKickLogCount():0;
   if(!diagLog.length && !punchCount && !skCount){ alert('아직 기록된 타격이 없습니다.'); return; }
-  const stamp=new Date().toISOString().slice(0,10).replace(/-/g,'');
-  const name='strike-diag-'+stamp+'.json';
+  const name='str'+naruunStamp()+'.json';
   const payload={
     format:'NaruunLabs Strike Diagnostic', version:2,
     exportedAt:new Date().toISOString(),
