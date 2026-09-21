@@ -3337,10 +3337,14 @@ button{transition:transform .14s ease, filter .14s ease, background .14s ease}bu
 }
 #drillResultSub.auto-result-summary .result-label{color:#dbeaff;font-weight:800;}
 #drillResultSub.auto-result-summary .result-score{color:#ffe36b;font-weight:1000;text-align:right;}
+
 #drillResultSub.auto-result-summary .result-average{
-  grid-column:1 / -1; margin-top:8px; padding-top:14px;
-  border-top:1px solid rgba(255,255,255,.16);
-  text-align:center; color:#54ffad; font-size:30px; font-weight:1000;
+  grid-column:1 / -1; order:-1;
+  position:sticky; top:-20px; z-index:2;
+  margin:-4px 0 6px; padding:6px 0 14px;
+  background:rgba(6,16,31,.96);
+  border-bottom:1px solid rgba(255,255,255,.16);
+  text-align:center; color:#54ffad; font-size:34px; font-weight:1000;
 }
 #drillRestartBtn{
   display:none; min-width:190px; padding:13px 26px; border:0; border-radius:999px;
@@ -5669,6 +5673,9 @@ function scoreMeasureOnly(f,want){
     
     return {ok:false,score:null,reason:'wrong_kind_yeop',msg:'몸을 옆으로 돌려서 차보세요'};
 
+  if(want==='yeop' && !f.kneeMarkPre && f.kneeMarkSeen>0)
+    return {ok:false,score:null,reason:'no_knee_mark_yeop',msg:'무릎으로 옆선을 찍고 차세요!'};
+
   if(want==='dwi' && sw!==null && sw>MEASURE_GATE.DWI_SW)
     return {ok:false,score:null,reason:'wrong_kind_dwi',msg:'등을 보이며 뒤로 차보세요'};
 
@@ -6148,7 +6155,8 @@ function analyzeTraj(peakPctValue=null){
     shoulderWRatio,
     kneeMin3D:(kneeMin3D==null)?null:kneeMin3D,
     footAng:footAngPeak,   
-    kneeMarkPre, kneeMarkPost   
+    kneeMarkPre, kneeMarkPost,  
+    kneeMarkSeen:DIAG.kneeMarkSeen   
   };
   const want=drillKickType();               
 
@@ -6755,9 +6763,10 @@ function finishAutoDrill(){
   drillResultText.textContent='자동 발차기 훈련 완료';
   drillResultText.style.color='#fff';
   drillResultSub.className='auto-result-summary';
-  drillResultSub.innerHTML=rows.map(r=>
+
+  drillResultSub.innerHTML='<div class="result-average">평균 '+totalAvg+'점</div>'+rows.map(r=>
     '<div class="result-label">'+r.label+'</div><div class="result-score">'+r.avg+'점</div>'
-  ).join('')+'<div class="result-average">평균 '+totalAvg+'점</div>';
+  ).join('');
   drillResult.classList.add('auto-summary','final-result','show');
   confetti(totalAvg>=90);
   sndRecord();
@@ -7486,6 +7495,29 @@ function diagLogSpeed(reason, extra){
   diagLogSubmit(entry);
 }
 
+function naruunSaveToast(title, name, sub, bad){
+  try{
+    var el=document.getElementById('naruunSaveToast');
+    if(!el){
+      el=document.createElement('div'); el.id='naruunSaveToast';
+      el.style.cssText='position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);'
+        +'z-index:2147483647;max-width:min(560px,90vw);padding:20px 26px;border-radius:18px;'
+        +'background:rgba(6,16,31,.95);box-shadow:0 18px 60px rgba(0,0,0,.65);'
+        +'color:#eaf4ff;font-size:17px;font-weight:800;text-align:center;line-height:1.55;'
+        +'opacity:0;transition:opacity .18s;pointer-events:none;word-break:break-all;';
+      document.body.appendChild(el);
+    }
+    el.style.border='1px solid '+(bad?'rgba(255,120,140,.55)':'rgba(120,255,190,.5)');
+    el.innerHTML='<div style="color:'+(bad?'#ff8fa3':'#54ffad')+';font-size:19px;margin-bottom:7px;">'
+      +(bad?'✕ ':'✓ ')+title+'</div>'
+      +(name?'<div style="font-size:18px;">'+name+'</div>':'')
+      +(sub?'<div style="font-size:13px;color:#9fb6d4;margin-top:7px;font-weight:600;">'+sub+'</div>':'');
+    el.style.opacity='1';
+    clearTimeout(el._t); el._t=setTimeout(function(){ el.style.opacity='0'; }, bad?4200:2800);
+  }catch(e){}
+}
+try{ window.naruunSaveToast = naruunSaveToast; }catch(e){}
+
 function naruunStamp(){
   const d=new Date(), p=n=>String(n).padStart(2,'0');
   return String(d.getFullYear()).slice(2)+p(d.getMonth()+1)+p(d.getDate())+p(d.getHours())+p(d.getMinutes());
@@ -7504,6 +7536,7 @@ window.downloadDiagLog=async function(){
       const file=new File([blob], name, {type:'application/json'});
       if(navigator.canShare && navigator.canShare({files:[file]})){
         await navigator.share({files:[file], title:name});
+        naruunSaveToast('공유창으로 보냈습니다', name, '발차기 '+diagLog.length+'건');
         return;
       }
     }catch(e){
@@ -7517,6 +7550,7 @@ window.downloadDiagLog=async function(){
   a.href=url; a.download=name;
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(()=>URL.revokeObjectURL(url),60000);   
+  naruunSaveToast('저장했습니다', name, '발차기 '+diagLog.length+'건 · 다운로드 폴더');
 };
 
 window.clearDiagLog=function(){
@@ -9492,6 +9526,78 @@ async function prepareDeviceModel(){
   }finally{ modelPreparing=false; }
 }
 
+const HAND_START={ HOLD_MS:2000, COOLDOWN_MS:3000, CLEAR_MS:400, GAP_MS:350 };
+let hsT0=0, hsLastUp=0, hsClearSince=0, hsArmed=false, hsBlockUntil=0, hsWasBusy=true, hsEl=null;
+function hsRaised(lm){
+  if(!lm || lm.length<17) return false;
+  const v=i=>(lm[i] && lm[i].visibility!=null)?lm[i].visibility:1;
+  if(v(0)<.5 || v(11)<.5 || v(12)<.5) return false;
+  const nose=lm[0], shY=(lm[11].y+lm[12].y)/2;
+  const head=Math.max(.02, shY-nose.y);          
+  for(const w of [15,16]){
+    if(v(w)<.5) continue;
+    if(lm[w].y < nose.y - head*0.6) return true;  
+  }
+  return false;
+}
+function hsShow(p){
+  try{
+    if(!hsEl){
+      hsEl=document.createElement('div'); hsEl.id='handStartGauge';
+      hsEl.style.cssText='position:fixed;left:50%;top:24%;transform:translateX(-50%);z-index:99980;'
+        +'pointer-events:none;padding:16px 26px 18px;border-radius:18px;background:rgba(6,16,31,.86);'
+        +'border:1px solid rgba(120,255,190,.5);box-shadow:0 14px 50px rgba(0,0,0,.55);'
+        +'color:#fff;text-align:center;font-weight:900;opacity:0;transition:opacity .15s;min-width:260px;';
+      hsEl.innerHTML='<div style="font-size:26px;line-height:1.2;">✋ 그대로!</div>'
+        +'<div style="font-size:14px;color:#bfe9d4;margin:4px 0 12px;font-weight:700;">손을 들고 있으면 곧 시작합니다</div>'
+        +'<div style="height:10px;border-radius:99px;background:rgba(255,255,255,.14);overflow:hidden;">'
+        +'<div class="hsBar" style="height:100%;width:0%;background:linear-gradient(90deg,#54ffad,#b6ff5c);"></div></div>';
+      document.body.appendChild(hsEl);
+    }
+    const on=p>0;
+    hsEl.style.opacity=on?'1':'0';
+    const b=hsEl.querySelector('.hsBar'); if(b) b.style.width=Math.min(100,Math.round(p*100))+'%';
+  }catch(e){}
+}
+function hsReset(){ hsT0=0; hsLastUp=0; hsShow(0); }
+function handStartObserve(lms){
+  let ok=false;
+  try{ ok=hsCanStart(); }catch(e){ ok=false; }
+  const now=performance.now();
+  if(!ok){ hsWasBusy=true; hsArmed=false; hsClearSince=0; if(hsT0||hsEl) hsReset(); return; }
+  if(hsWasBusy){ hsWasBusy=false; hsBlockUntil=now+HAND_START.COOLDOWN_MS; }
+  const up=(lms||[]).some(hsRaised);
+  if(!hsArmed){
+    if(!up){ if(!hsClearSince) hsClearSince=now; if(now-hsClearSince>=HAND_START.CLEAR_MS) hsArmed=true; }
+    else hsClearSince=0;
+    return;
+  }
+  if(now<hsBlockUntil){ if(hsT0) hsReset(); return; }
+  if(up){ hsLastUp=now; if(!hsT0) hsT0=now; }
+  else if(!hsT0 || now-hsLastUp>HAND_START.GAP_MS){ if(hsT0) hsReset(); return; }
+  const p=(now-hsT0)/HAND_START.HOLD_MS;
+  hsShow(Math.max(.02,p));
+  if(p>=1){
+    hsReset(); hsWasBusy=true; hsArmed=false; hsClearSince=0;
+    try{ hsDoStart(); }catch(e){ console.error(e); }
+  }
+}
+
+function hsCanStart(){
+  if(running || readyTimer || modelLoading || modelPreparing) return false;
+  if(document.hidden) return false;
+  if(typeof autoNextPhase!=='undefined' && autoNextPhase!=='off') return false;   
+  if(typeof autoDrillTransitioning!=='undefined' && autoDrillTransitioning) return false;
+  if(typeof auto2pTransitioning!=='undefined' && auto2pTransitioning) return false;
+  if(typeof p2StageResultTimer!=='undefined' && p2StageResultTimer) return false;
+  const ls=document.getElementById('loginScreen'); if(ls && !ls.classList.contains('hidden')) return false;
+  for(const id of ['settingsModal','kickLabModal']){
+    const m=document.getElementById(id); if(m && m.classList.contains('show')) return false;
+  }
+  return true;
+}
+function hsDoStart(){ if(!running) window.startGame(); }   
+
 function loop(){
   if(!modelLoading && !modelPreparing && poseLandmarker && video.readyState>=2 && video.currentTime!==lastVideoTime){
     lastVideoTime=video.currentTime;
@@ -9507,6 +9613,7 @@ function loop(){
       ? detectCrop2p(performance.now())
       : poseLandmarker.detectForVideo(video,performance.now());
     const inferMs=performance.now()-t0;
+    handStartObserve(result && result.landmarks);   
     perfMonitorTick(performance.now(),inferMs);
     tickFps(performance.now());   
     liteFxTick(performance.now()); 

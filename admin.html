@@ -833,7 +833,7 @@ table.cg tfoot td.num{text-align:right}
       </div>
     </div>
     <div class="err-msg" id="awAddErr"></div>
-    <div class="modal-btns"><button class="btn-cancel" onclick="closeAcademyAddModal()">취소</button><button class="btn-save" id="awAddSaveBtn" onclick="saveNewAcademyProject()">고객 및 제작 건 등록</button></div>
+    <div class="modal-btns"><button class="btn-cancel" onclick="closeAcademyAddModal()">닫기</button><button class="btn-save" id="awAddSaveBtn" onclick="saveNewAcademyProject()">고객 및 제작 건 등록</button></div>
   </div>
 </div>
 
@@ -845,7 +845,7 @@ table.cg tfoot td.num{text-align:right}
     <label>새 비밀번호 확인</label><input id="pwConfirm" class="f-input" type="password" placeholder="새 비밀번호 재입력" />
     <div class="err-msg" id="pwErr"></div>
     <div class="modal-btns">
-      <button class="btn-cancel" onclick="closePwModal()">취소</button>
+      <button class="btn-cancel" onclick="closePwModal()">닫기</button>
       <button class="btn-save" onclick="changePassword()">변경</button>
     </div>
   </div>
@@ -1016,7 +1016,7 @@ table.cg tfoot td.num{text-align:right}
 
     <div class="err-msg" id="modalErr"></div>
     <div class="modal-btns">
-      <button class="btn-cancel" onclick="closeModal()">취소</button>
+      <button class="btn-cancel" onclick="closeModal()">닫기</button>
       <button class="btn-save btn-save-ghost" id="saveBtn" onclick="saveLicense(false)">발급</button>
       <button class="btn-save" id="saveCopyBtn" onclick="saveLicense(true)">발급하고 카톡 복사</button>
     </div>
@@ -2984,12 +2984,8 @@ function exportCustomersCsv() {
   showToast('엑셀 파일로 받았습니다');
 }
 
-document.getElementById('pwModalBg').addEventListener('click', e => { if(e.target===e.currentTarget) closePwModal(); });
-document.getElementById('modalBg').addEventListener('click', e => { if(e.target===e.currentTarget) closeModal(); });
-document.getElementById('awModalBg').addEventListener('click', e => { if(e.target===e.currentTarget) closeAcademyAddModal(); });
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
-  closeModal(); closePwModal(); closeAcademyAddModal();
 
   const t = e.target;
   const typing = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA') && t.value;
