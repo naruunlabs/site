@@ -4639,6 +4639,20 @@ let punchScores=[];
 let punchDebugLog=[];
 let punchLastDetected=null;
 
+const FIGHT_FAST={
+  PUNCH_BACK:.10, PUNCH_MIN_OUT:.30,   
+  motionMin:.40, speedMin:6,           
+  maxTrajectoryMs:600,                 
+  guardHoldFrames:1, cooldownMs:300,
+  KICK_DROP:8,                         
+  THRESH_RELIEF:6                      
+};
+function fightFast(){
+  return typeof running!=='undefined' && running
+      && typeof currentMode!=='undefined' && currentMode==='sparring'
+      && typeof sparringMode!=='undefined' && sparringMode==='live';
+}
+
 const PUNCH_THRESHOLDS={
   engine:'front-camera 2D trajectory v3',
   note:'깊이(z) 미사용 · 길이 단위는 몸통길이(어깨중심~골반중심) · 화면 가로세로비 보정',
@@ -5986,7 +6000,8 @@ function effThreshPct(){
   const p2Offset=(typeof twoPlayerMode!=='undefined' && twoPlayerMode)?-5:0;
 
   const lowFps=(typeof lowFpsThreshRelief==='function')?lowFpsThreshRelief():0;
-  return Math.max(12, Math.min(100, threshPct + (JUDGE.THRESH_OFFSET||0) + p2Offset - lowFps));
+  const fightRelief=(typeof fightFast==='function' && fightFast())?FIGHT_FAST.THRESH_RELIEF:0;   
+  return Math.max(12, Math.min(100, threshPct + (JUDGE.THRESH_OFFSET||0) + p2Offset - lowFps - fightRelief));
 }
 function applyThreshUi(){
   const eff=effThreshPct();
@@ -8243,6 +8258,7 @@ window.toggleFullscreen=()=>{
   }
 };
 
+let kickEarlyHitDone=false;   
 function onKickComplete(peak){
   if(!running) return;
   const now=performance.now();
@@ -8263,7 +8279,11 @@ function onKickComplete(peak){
     onDrillKick(peak);
     if(currentMode===modeBefore) altFootAdvance();
   }
-  else if(currentMode==='sparring'){ handleSparringKick(peak); }
+  else if(currentMode==='sparring'){
+    
+    if(kickEarlyHitDone) kickEarlyHitDone=false;
+    else handleSparringKick(peak);
+  }
   else {
 
     diagLogHit(peak);
@@ -8309,6 +8329,7 @@ function runKick(pct,m=null){
       if(strong || now-aboveFrames>=ABOVE_MS){
 
         kicking=true; peakPct=pct; belowFrames=0; trajActive=true;
+        kickEarlyHitDone=false;   
 
         kickTopFootY = m ? m.footY : null;
         kickRefTorso = m ? ((smTorso!=null && smTorso>0) ? smTorso : m.torso) : null;
@@ -8336,6 +8357,11 @@ function runKick(pct,m=null){
     }
   } else {
     peakPct=Math.max(peakPct,pct);
+
+    if(!twoPlayerMode && fightFast() && !kickEarlyHitDone && pct<=peakPct-FIGHT_FAST.KICK_DROP){
+      kickEarlyHitDone=true;
+      handleSparringKick(peakPct);
+    }
     
     if(m && Number.isFinite(m.footY) && (kickTopFootY==null || m.footY<kickTopFootY)) kickTopFootY=m.footY;
     if(pct<RESET_PCT){
@@ -9493,6 +9519,20 @@ function classifyPunchTrajectory(f,side,effectiveLead){
     upperOk:    f.rise>=G.upper.riseMin && f.rise>=G.upper.riseOverLateral*Math.max(f.lateral,.01)
                 && f.extPeak<=G.upper.extPeakMax
   };
+
+  if(fightFast()){
+    if(f.motion<FIGHT_FAST.motionMin) return {type:null,label:'',score,checks,reason:'too_small'};
+    if(!(f.speed>=FIGHT_FAST.speedMin || f.extGain>=PT.extGainFloor)) return {type:null,label:'',score,checks,reason:'too_slow'};
+    const el=[];
+    if(checks.straightOk) el.push('straight');
+    if(checks.hookOk) el.push('hook');
+    if(checks.upperOk) el.push('upper');
+    el.sort((a,b)=>score[b]-score[a]);
+    let ft='punch';
+    if(el.length===1 || (el.length>1 && score[el[0]]-score[el[1]]>=PT.decideMargin)) ft=el[0];
+    const fl=ft==='hook'?'훅':ft==='upper'?'어퍼컷':ft==='straight'?(isLead?'잽':'스트레이트'):'펀치';
+    return {type:ft,label:fl,score,checks,ambiguous:ft==='punch'};
+  }
   
   if(f.motion<PT.motionMin) return {type:null,label:'',score,checks,reason:'too_small'};
 
@@ -9636,7 +9676,8 @@ function strikeHandPopBalloons(cand){
 
 function acceptStrikeHandHit(cand){
   const now=performance.now();
-  if(now-(punchLastHitT||0)<PUNCH_THRESHOLDS.cooldownMs){
+  const coolMs=fightFast()?FIGHT_FAST.cooldownMs:PUNCH_THRESHOLDS.cooldownMs;   
+  if(now-(punchLastHitT||0)<coolMs){
     pushPunchLog({event:'trajectory_attempt',hand:cand.side,selected:effectivePunchTechnique(),
       effectiveLead:cand.effectiveLead,finishReason:cand.reason,accepted:false,
       predicted:cand.result.type,rejection:'cooldown',features:cand.features});
@@ -9724,8 +9765,16 @@ function processPunchTrajectoryFrame(lm,wlm){
 
     if(st.phase==='tracking'){
       st.points.push(p);
-      const done=(guard&&step<PT.stopStep)?'guard_return'
-        :(now-st.startedT>PT.maxTrajectoryMs||st.points.length>=PT.maxFrames)?'timeout':null;
+      const ff=fightFast();
+      const maxMs=ff?FIGHT_FAST.maxTrajectoryMs:PT.maxTrajectoryMs;
+      let done=(guard&&step<PT.stopStep)?'guard_return'
+        :(now-st.startedT>maxMs||st.points.length>=PT.maxFrames)?'timeout':null;
+
+      if(!done && ff && st.points.length>=PT.minFrames){
+        const p0=st.points[0], out=q=>Math.hypot(q.x-p0.x,q.y-p0.y)+Math.max(0,q.ext-p0.ext)/90;
+        let best=0; for(const q of st.points) best=Math.max(best,out(q));
+        if(best>=FIGHT_FAST.PUNCH_MIN_OUT && best-out(p)>=FIGHT_FAST.PUNCH_BACK) done='peak_return';
+      }
       if(done){
         const c=evaluatePunchTrajectory(side,effectiveLead,done);
         if(c) pending.push(c);
@@ -9735,7 +9784,7 @@ function processPunchTrajectoryFrame(lm,wlm){
     }
     if(guard){
       st.guardFrames=(st.guardFrames||0)+1; st.guardPoint=p;
-      if(st.guardFrames>=PT.guardHoldFrames && st.phase!=='ready'){ st.phase='ready'; st.points=[]; }
+      if(st.guardFrames>=(fightFast()?FIGHT_FAST.guardHoldFrames:PT.guardHoldFrames) && st.phase!=='ready'){ st.phase='ready'; st.points=[]; }
     }else st.guardFrames=0;
     if(st.phase==='ready' && step>=PT.startStep){
       
