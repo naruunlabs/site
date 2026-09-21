@@ -867,11 +867,14 @@ const ENGINE = {
   R_HIST_MIN: 0.35,         
   CV_MAX: 0.10,             
   GAP_NO_LOCK_MS: 280,      
-  GAP_LOCK_RATIO: 0.65,     
+  GAP_LOCK_RATIO: 0.55,     
   PROM_K_NOLOCK: 1.70,      
   PROM_K_STEADY: 0.75,      
   GAP_OK_LO: 0.70, GAP_OK_HI: 1.40,   
-  GAP_FILL_TOL: 0.28,       
+  GAP_FILL_TOL: 0.45,       
+
+  HFIX:true, HFIX_R:0.75,
+  LFILL:true, LF_LO2:1.55, LF_HI2:2.5, LF_HI3:3.5, LF_EVID:0.45,
 };
 ENGINE.NWIN     = Math.round(ENGINE.SR * ENGINE.WIN_SEC);
 ENGINE.MIN_FILL = Math.round(ENGINE.SR * 0.6);
@@ -918,12 +921,14 @@ function createJumpEngine(){
     E.curUPv=C.MIN_RISE_FLOOR; E.runMax=-1e9; E.runMaxT=0; E.armed=false;
     E.pHist=[]; E.peakTs=[]; E.rhythmOK=false; E.pendingTs=[]; E.prevGate=false; E.backfilled=false;
     E.jumpState='ground'; E.curRiseNorm=0; E.jumpLastT=0; E.hasCountedPeak=false; E.calibrating=true;
+    E.cntTs=[]; E.riseH=[];   
   };
 
   E.resetCount=function(){
     E.jumpState='ground'; E.jumpLastT=0; E.curRiseNorm=0;
     E.hasCountedPeak=false;
     E.runMax=-1e9; E.armed=false; E.pendingTs=[]; E.prevGate=E.gateOn; E.backfilled=false;
+    E.cntTs=[];   
   };
   E.markStart=function(t){ E.jumpLastT=t; };
 
@@ -1014,9 +1019,17 @@ function createJumpEngine(){
     E.curUPv = Math.max(C.MIN_RISE_FLOOR, E.ampNow*K_UP);
     const rise = E.baseNow - d[n-1];
     E.curRiseNorm = Math.max(0, rise);
+    if(C.LFILL){ (E.riseH||(E.riseH=[])).push([now,rise]); if(E.riseH.length>200) E.riseH.shift(); }   
     E.jumpBaselineY = (E.sigNow!=null && E.torsoS!=null) ? (E.sigNow+rise)*E.torsoS : E.jumpBaselineY;
 
-    const minGap = periodic ? Math.max(C.GAP_FLOOR_MS, E.periodMs*C.GAP_LOCK_RATIO) : C.GAP_NO_LOCK_MS;
+    let pEff=E.periodMs;
+    if(C.HFIX && E.cntTs && E.cntTs.length>=5 && pEff>0){
+      const iv=[]; for(let i=1;i<E.cntTs.length;i++) iv.push(E.cntTs[i]-E.cntTs[i-1]);
+      iv.sort((a,b)=>a-b); const md=iv[iv.length>>1];
+      if(md<pEff*C.HFIX_R && md>=C.PERIOD_LO) pEff=md;
+    }
+    E.pEff=pEff;
+    const minGap = periodic ? Math.max(C.GAP_FLOOR_MS, pEff*C.GAP_LOCK_RATIO) : C.GAP_NO_LOCK_MS;
     
     const promK = !periodic ? C.PROM_RATIO*C.PROM_K_NOLOCK : (steady ? C.PROM_RATIO*C.PROM_K_STEADY : C.PROM_RATIO);
     const prom = Math.max(C.MIN_RISE_FLOOR*0.6, E.ampNow*promK);
@@ -1037,7 +1050,7 @@ function createJumpEngine(){
     if(rise>E.runMax){ E.runMax=rise; E.runMaxT=now; }
     if(!E.armed && E.runMax>E.curUPv){ E.armed=true; E.jumpState='air'; }
     if(E.armed && rise < E.runMax-prom){
-      const ripple = E.periodMs>0 ? E.periodMs*0.5 : 100;
+      const ripple = pEff>0 ? pEff*0.5 : 100;
       if(!E.peakTs.length || (now-E.peakTs[E.peakTs.length-1])>=ripple){
         E.peakTs.push(now); if(E.peakTs.length>9) E.peakTs.shift();
       }
@@ -1054,12 +1067,24 @@ function createJumpEngine(){
 
         let gapFill=0;
         if(E.recoverGaps && E.hasCountedPeak && E.jumpLastT>0 && periodic && E.periodR>=C.R_PERIODIC && E.periodMs>=C.PERIOD_LO){
-          const ratio=(now-E.jumpLastT)/E.periodMs, steps=Math.round(ratio);
+          const ratio=(now-E.jumpLastT)/(C.HFIX?pEff:E.periodMs), steps=Math.round(ratio);
           if(steps>=2 && steps<=3 && Math.abs(ratio-steps)<=C.GAP_FILL_TOL) gapFill=steps-1;
+        }
+        
+        if(C.LFILL && E.recoverGaps && E.hasCountedPeak && E.jumpLastT>0 && E.cntTs && E.cntTs.length>=5){
+          const iv=[]; for(let i=1;i<E.cntTs.length;i++) iv.push(E.cntTs[i]-E.cntTs[i-1]);
+          iv.sort((a,b)=>a-b); const m=iv[iv.length>>1], g=now-E.jumpLastT, r=g/m;
+          let want=0; if(r>=C.LF_LO2&&r<C.LF_HI2) want=1; else if(r>=C.LF_HI2&&r<=C.LF_HI3) want=2;
+          if(want && m>=C.PERIOD_LO && m<=C.PERIOD_HI){
+            const a=E.jumpLastT+g*0.25, b=now-g*0.25; let mx=0;
+            for(const q of (E.riseH||[])) if(q[0]>a&&q[0]<b&&q[1]>mx) mx=q[1];
+            gapFill = (mx>=C.LF_EVID*Math.max(E.ampNow,1e-6)) ? want : 0;
+          } else gapFill=0;
         }
         if(E.counting && gapFill) onEvent({type:'backfill',n:gapFill});
         E.jumpLastT=now;
         if(E.counting){ onEvent({type:'jump', t:E.runMaxT-C.FILTER_LAG_MS}); E.hasCountedPeak=true; }
+        (E.cntTs||(E.cntTs=[])).push(now); if(E.cntTs.length>8) E.cntTs.shift();   
       } else if(!E.gateOn && E.counting){
         E.pendingTs.push(now);                 
         if(E.pendingTs.length>40) E.pendingTs.shift();
@@ -1442,7 +1467,7 @@ function sizeCanvas(){
 }
 function sp(pt){ return { x:view.ox+(view.mirror?1-pt.x:pt.x)*view.dw, y:view.oy+pt.y*view.dh }; }
 
-const INFER_MAX_H = 320;
+const INFER_MAX_H = 240;
 let inferCv=null, inferCtx=null, inferPx='';
 function inferSource(){
   const vw=video.videoWidth|0, vh=video.videoHeight|0;
@@ -1490,6 +1515,23 @@ const FAST_ON_KEY='jmp_lab_fast_v1', FAST_ROWS=96, FAST_COLS=16, FAST_S=14;
 let fastOn=false; try{ fastOn=localStorage.getItem(FAST_ON_KEY)==='1'; }catch(e){}
 let fastCv=null, fastCtx=null;
 function fastEnabled(){ return fastOn && typeof jmpIsLab==='function' && jmpIsLab(); }
+
+let fastBadSince=0, fastAutoOffNote='';
+function fastWatchdog(now){
+  if(!fastEnabled() || !running || mode==='group') { fastBadSince=0; return; }
+  const p=players[0]; if(!p || !p.fast) return;
+  const slow = !(p.fast.hz>=5);
+  if(slow){ if(!fastBadSince) fastBadSince=now; } else fastBadSince=0;
+  const el=now-gameStartPerf;
+  const behind = el>12000 && p.count>=15 && (p.fastCount||0) < p.count*0.5;
+  if((fastBadSince && now-fastBadSince>3000) || behind){
+    fastOn=false; fastBadSince=0;
+    try{ localStorage.setItem(FAST_ON_KEY,'0'); }catch(e){}
+    fastAutoOffNote='고속 보조가 이 기기에서 제대로 안 돌아 자동으로 껐습니다 ('+(behind?'개수가 절반도 안 됨':'신호가 초당 5장 미만')+'). AI 가 그만큼 더 자주 봅니다.';
+    try{ const fb=$('labFastBtn'); if(fb) fb.textContent='고속 보조 신호 켜기'; }catch(e){}
+    try{ if(typeof labRenderTruth==='function') labRenderTruth(); }catch(e){}
+  }
+}
 
 function attachFastEngine(p){
   p.fastEngine=createJumpEngine(); p.fastCount=0; p.fastTorso=null; p.rawAI=[]; p.rawFast=[];
@@ -1595,6 +1637,7 @@ function maybeInfer(now){
   inferCount++;
   if(t0-inferWin>=1000){ inferHz=inferCount*1000/(t0-inferWin); inferCount=0; inferWin=t0; }
   handlePose(res?.landmarks||[], sampleTime(t0));   
+  fastWatchdog(t0);   
 }
 
 const HAND_START={ HOLD_MS:2000, COOLDOWN_MS:3000, CLEAR_MS:400, GAP_MS:350 };
@@ -1794,10 +1837,23 @@ function jmpPilotPush(p,ev){
   const duoScore=mode==='duo'&&team.lastDiff!=null?clamp(1-team.lastDiff/SYNC.NORMAL_S,0,1):rhythm;
   $('jpgDuoRail')?.style.setProperty('--p',Math.round(duoScore*100)+'%'); setText($('jpgDuoVal'),Math.round(duoScore*100));
 }
+
+const DOUBLE_PREP={ SKIP:2, GAP_R:1.6 };
+function doubleAccept(p,t){
+  const d=p.dbl||(p.dbl={last:null,iv:[],skip:DOUBLE_PREP.SKIP});
+  const g=d.last==null?Infinity:t-d.last;
+  const iv=d.iv.slice(-6).sort((a,b)=>a-b), m=iv.length>=3?iv[iv.length>>1]:500;
+  if(g>DOUBLE_PREP.GAP_R*m) d.skip=DOUBLE_PREP.SKIP;
+  if(d.last!=null){ d.iv.push(Math.min(g,1500)); if(d.iv.length>12) d.iv.shift(); }
+  d.last=t;
+  if(d.skip>0){ d.skip--; return false; }
+  return true;
+}
 function onEngineEvent(p,ev){
   if(!running) return;
   labRecordJump(p,ev);   
   jmpPilotPush(p,ev);    
+  if(mode==='solo' && soloJumpType==='double' && ev.type==='jump' && !doubleAccept(p,ev.t)) return;   
   const n = ev.type==='backfill' ? ev.n : 1;
   const t = ev.type==='jump' ? ev.t : null;
   if(mode==='solo') soloCounted(p,n);
@@ -2162,7 +2218,7 @@ function startRound(){
   running=true; appState='running';
   if(mode==='solo'){
     gameStartPerf=now;
-    const p=players[0]; p.engine.resetCount(); p.engine.markStart(now); p.engine.recoverGaps=soloJumpType==='together'; resetAlternateJump(p); p.engine.counting=soloJumpType!=='alternate';
+    const p=players[0]; p.dbl=null; p.engine.resetCount(); p.engine.markStart(now); p.engine.recoverGaps=soloJumpType==='together'; resetAlternateJump(p); p.engine.counting=soloJumpType!=='alternate';
     gameEndPerf = soloMode==='timed' ? now+durationSec*1000 : Infinity;
   }else if(mode==='duo'){
     gameEndPerf=gameStartPerf+durationSec*1000;
@@ -4008,11 +4064,12 @@ function labRoundFinished(m){
 }
 function labRenderTruth(){
   const box=$('labTruthBox'); if(!box) return;
-  if(!labPending){ box.innerHTML=''; }
+  const note=fastAutoOffNote?`<div class="lab-note">${esc(fastAutoOffNote)}</div>`:'';   // 09-21 고속 자동 끔 안내
+  if(!labPending){ box.innerHTML=note; }
   else{
     const ins=labPending.players.map(q=>`<span>${labPending.players.length>1?(q.pid===0?'청':'홍')+' ':''}지금 ${q.main}${q.fast!=null?' · 고속 '+q.fast:''} → 실제</span>
       <input type="number" min="0" inputmode="numeric" data-pid="${q.pid}" placeholder="개수">`).join('');
-    box.innerHTML=`<div class="lab-truth"><span>방금 판</span>${ins}<button class="m-act" id="labTruthSave" type="button">정답 저장</button><button class="m-act home" id="labTruthSkip" type="button">버리기</button></div>`;
+    box.innerHTML=`<div class="lab-truth"><span>방금 판</span>${ins}<button class="m-act" id="labTruthSave" type="button">정답 저장</button><button class="m-act home" id="labTruthSkip" type="button">버리기</button></div>`+note;
   }
   labRenderRounds();
 }
