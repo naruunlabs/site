@@ -65,12 +65,9 @@ button,select{font:inherit}button{border:0;cursor:pointer;color:inherit;backgrou
 .floor:before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 99px,rgba(255,255,255,.025) 100px),repeating-linear-gradient(0deg,transparent 0 70px,rgba(255,255,255,.025) 71px);transform:perspective(480px) rotateX(54deg);transform-origin:center bottom}
 .arena{position:absolute;left:50%;bottom:58px;width:min(940px,64vw);height:min(600px,64vh);transform:translateX(-50%)}
 .guide-canvas{position:absolute;inset:0;width:100%;height:100%}
-.opponent{position:absolute;left:50%;top:47%;width:150px;height:330px;transform:translate(-50%,-50%);filter:drop-shadow(0 18px 32px rgba(0,0,0,.7));opacity:.78}
-.opponent .o-head{position:absolute;left:50%;top:0;width:62px;height:70px;transform:translateX(-50%);border-radius:48% 48% 44% 44%;background:linear-gradient(145deg,#303745,#10131A)}
-.opponent .o-head:after{content:"";position:absolute;left:50%;top:50%;width:38px;height:38px;transform:translate(-50%,-50%);border:2px solid rgba(227,23,46,.55);border-radius:50%;box-shadow:0 0 0 9px rgba(227,23,46,.06),0 0 22px rgba(227,23,46,.18)}
-.opponent .o-body{position:absolute;left:50%;top:62px;width:130px;height:176px;transform:translateX(-50%);border-radius:46% 46% 26% 26%;background:linear-gradient(90deg,#0B0D12,#313845 48%,#0A0C11);clip-path:polygon(20% 0,80% 0,100% 42%,80% 100%,20% 100%,0 42%)}
-.opponent .o-base{position:absolute;left:50%;top:220px;width:105px;height:110px;transform:translateX(-50%);background:linear-gradient(90deg,#0B0D12,#252B35,#090B10);clip-path:polygon(13% 0,87% 0,100% 100%,63% 100%,50% 28%,37% 100%,0 100%)}
-.opponent:after{content:"";position:absolute;left:50%;top:115px;width:62px;height:62px;transform:translateX(-50%);border:2px solid rgba(227,23,46,.55);border-radius:50%;box-shadow:0 0 0 12px rgba(227,23,46,.06),0 0 25px rgba(227,23,46,.18)}
+.opp-img{position:absolute;left:50%;top:11%;height:72%;transform:translateX(-50%);filter:brightness(.86) contrast(1.1) saturate(.9) drop-shadow(0 18px 26px rgba(0,0,0,.72));opacity:.96;pointer-events:none;user-select:none}
+.app.hit .opp-img{animation:oppHit .42s cubic-bezier(.2,.82,.24,1)}
+@keyframes oppHit{0%{transform:translateX(-50%)}25%{transform:translateX(calc(-50% + 6px)) rotate(2deg)}55%{transform:translateX(calc(-50% - 3px)) rotate(-1deg)}100%{transform:translateX(-50%)}}
 .guide-label{position:absolute;left:50%;bottom:66px;transform:translateX(-50%);padding:6px 11px;border-radius:6px;background:rgba(5,6,9,.55);color:#7E8795;font-size:11px;font-weight:800;letter-spacing:.08em;white-space:nowrap}
 .app:not(.stage-follow) .guide-label{display:none}
 @media(max-width:860px){.arena{width:92vw;transform:translateX(-50%) scale(.82);transform-origin:center bottom}}
@@ -162,7 +159,7 @@ button,select{font:inherit}button{border:0;cursor:pointer;color:inherit;backgrou
     <button class="fs" id="fsBtn" type="button">전체화면</button>
     <div class="cue"><div class="beat" id="beat">READY</div><h2 id="cue">준비 자세</h2><p id="detail"></p><div class="dots" id="dots"></div></div>
     <div class="floor"></div>
-    <div class="arena" id="arena"><div class="opponent"><i class="o-head"></i><i class="o-body"></i><i class="o-base"></i></div><canvas class="guide-canvas" id="guideCanvas"></canvas></div>
+    <div class="arena" id="arena"><img class="opp-img" src="assets/chrome-fighter-guard.webp" alt="" aria-hidden="true"><canvas class="guide-canvas" id="guideCanvas"></canvas></div>
 
     <div class="rail">
       <div class="st next" id="stNextBox"><div class="st-lab">다음 동작</div><div class="st-name" id="stNext">—</div><span class="when" id="stWhen">대기</span></div>
@@ -220,17 +217,27 @@ const PRODUCT={
   okNote:'확인 기준 · 축발 회전 · 복귀 균형 · 가드',
   plain:s=>s.n,
   label:s=>String(s.n).replace(/^(오른발|왼발)/,m=>`<span class="sw-${m==='오른발'?'right':'left'}">${m}</span>`),
-  hit:()=>whistle(),
+  hit:()=>{whistle();const a=document.getElementById('app');a.classList.remove('hit');void a.offsetWidth;a.classList.add('hit');},
   soft:()=>tone(900,.04,'sine',.05),
   draw(ctx,W,H,now,V){
     const st=V.stage, up=V.upcoming, cur=V.cur;
     let type=null;
     if(V.announced&&up&&up.act) type=up.t; else if(cur&&cur.act) type=cur.t;
+    drawKickRings(ctx,W,H,now);
     if(type&&st==='follow') drawKickGuide(ctx,W,H,now,type,1);
     else if(type&&st==='memory') drawKickGuide(ctx,W,H,now,type,.22,true);
     drawImpact(ctx,W,H,now,V);
   }
 };
+
+function drawKickRings(gx,W,H,now){
+  gx.save();gx.lineWidth=2;
+  gx.strokeStyle='rgba(255,48,79,.75)';gx.shadowColor='rgba(255,48,79,.7)';gx.shadowBlur=10;
+  gx.beginPath();gx.ellipse(W/2,H*.172,H*.032,H*.036,0,0,Math.PI*2);gx.stroke();
+  gx.strokeStyle='rgba(49,183,255,.7)';gx.shadowColor='rgba(49,183,255,.6)';
+  const bw=H*.075,bh=H*.085;gx.beginPath();gx.ellipse(W/2,H*.35,bw,bh,0,0,Math.PI*2);gx.stroke();
+  gx.restore();
+}
 
 function whistle(){
   try{
