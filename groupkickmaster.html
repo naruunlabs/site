@@ -299,6 +299,8 @@ let requestAnimationFrame=fn=>window.requestAnimationFrame(()=>fn(performance.no
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 
 const $=id=>document.getElementById(id);
+
+const HOST=(()=>{try{return window.parent!==window&&window.parent.closeGroupOverlay?window.parent:null;}catch(e){return null;}})();
 const P=PRODUCT;
 const STAGE_NAME={follow:'따라하기',memory:'기억해서',call:'구령만'};
 const COUNT_WORD=['하나','둘','셋','넷','다섯','여섯','일곱','여덟','아홉','열'];
@@ -407,7 +409,7 @@ function stepStart(st){
 }
 function planSay(i,silent){
   const tok=segToken;clearTimeout(sayTimer);
-  sayTimer=setTimeout(()=>{if(tok!==segToken||paused||!running)return;V.announced=true;if(!silent&&stage!=='memory')speak(TL.steps[i].phrase);paintNext();paintStrip();},SAY_DELAY*1000);
+  sayTimer=setTimeout(()=>{if(tok!==segToken||paused||!running)return;V.announced=true;if(!silent&&stage!=='memory')speak(TL.steps[i].phrase);paintPreview();paintNext();paintStrip();},SAY_DELAY*1000);
 }
 function beatsUntilUpcoming(){
   if(!seg||!V.upcoming) return 0;
@@ -527,10 +529,13 @@ async function keepAwake(on){
   }catch(e){wakeLock=null;}
 }
 function toggleFs(){
+  if(HOST){try{HOST.toggleHostFullscreen();}catch(e){}return;}
   const d=document,el=d.documentElement;
   try{if(d.fullscreenElement||d.webkitFullscreenElement)(d.exitFullscreen||d.webkitExitFullscreen).call(d);else (el.requestFullscreen||el.webkitRequestFullscreen).call(el);}catch(e){}
 }
-document.addEventListener('fullscreenchange',()=>{$('fsBtn').textContent=document.fullscreenElement?'창 모드':'전체화면';});
+function paintFs(){let fs=false;try{fs=!!(HOST?HOST.document.fullscreenElement:document.fullscreenElement);}catch(e){}$('fsBtn').textContent=fs?'창 모드':'전체화면';}
+document.addEventListener('fullscreenchange',paintFs);
+try{HOST&&HOST.document.addEventListener('fullscreenchange',paintFs);}catch(e){}
 
 function paintAll(){paintHead();paintStep(V.cur);paintCounts();paintNext();paintStrip();}
 function paintHead(){
@@ -542,7 +547,19 @@ function paintHead(){
   $('speedNote').innerHTML=`${isCombo()?'한 묶음':'동작 간격'} 약 <b>${TL.unitSec.toFixed(1)}초</b>${note}`;
   $('goalLab').textContent=isCombo()?'세트 목표 · 묶음':'세트 목표 · 횟수';
 }
+
+function previewing(){return !!(running&&phase==='run'&&V.announced&&V.upcoming&&V.upcoming.act&&V.cur!==V.upcoming);}
+function paintPreview(){
+  if(!previewing()) return;
+  const u=V.upcoming,h=$('cue'),p=$('detail');
+  h.className='';
+  h.innerHTML=stage==='call'?(u.counted?`${u.ord}<span style="color:#5b6577"> / ${u.of}</span>`:'·'):P.label(u);
+  p.textContent=stage==='follow'?(u.d||''):'';
+  paintPreviewBeat();fitCue();
+}
+function paintPreviewBeat(){const b=beatsUntilUpcoming();$('beat').textContent=b<=0?'준비':`준비 · ${b}박 후`;}
 function paintStep(st){
+  if(st&&!st.intro&&!st.act&&previewing()){paintPreview();paintNext();paintStrip();return;}
   const h=$('cue'),p=$('detail'),b=$('beat');
   if(!st){h.className='';h.innerHTML=P.label({n:routine().intro.n,t:'ready'});p.textContent=V.idle?'시작을 누르면 3초 뒤 시작합니다':routine().intro.d;b.textContent='READY';paintStrip();fitCue();return;}
   const call=stage==='call';
@@ -576,6 +593,7 @@ function drawBeat(st){
   const box=$('dots'),n=Math.min(8,st.b);
   if(box.childElementCount!==n) box.innerHTML='<i></i>'.repeat(n);
   [...box.children].forEach((d,i)=>{d.className=i<seg.beat?'done':i===seg.beat?'on':'';});
+  if(previewing())paintPreviewBeat();
   paintNext();
 }
 function paintStrip(){
@@ -585,7 +603,8 @@ function paintStrip(){
   if(cur>=0&&isCombo()){for(let k=1;k<=TL.n;k++){const q=(cur-k+TL.n)%TL.n;if(TL.steps[q].end){bundleStart=(q+1)%TL.n;break;}}}
   el.innerHTML=TL.steps.map((s,i)=>{
     const cls=['chip'];if(!s.act)cls.push('soft');
-    if(i===cur)cls.push('now');else if(i===up&&V.announced)cls.push('next');else if(cur>=0&&i<cur&&i>=bundleStart)cls.push('done');
+    const pv=previewing();
+    if(i===cur&&!pv)cls.push('now');else if(i===up&&V.announced)cls.push(pv?'now':'next');else if(i===cur&&pv)cls.push('done');else if(cur>=0&&i<cur&&i>=bundleStart)cls.push('done');
     const txt=call?(s.act?(s.counted?String(s.ord):'·'):'복귀'):(s.chip||P.plain(s));
     return `<span class="${cls.join(' ')}">${txt}</span>${s.end&&i<TL.n-1?'<span class="arr">│</span>':i<TL.n-1?'<span class="arr">›</span>':''}`;
   }).join('');
@@ -639,7 +658,7 @@ function bind(){
   $('again').onclick=againBundle;$('confirm').onclick=confirmOne;$('fsBtn').onclick=toggleFs;
   $('finAgain').onclick=()=>{$('finishScreen').hidden=true;phase='idle';start();};
   $('finClose').onclick=()=>{$('finishScreen').hidden=true;reset();};
-  $('exitGroup').onclick=()=>{stopAll();location.replace(P.exitUrl);};
+  $('exitGroup').onclick=()=>{stopAll();if(HOST){try{HOST.closeGroupOverlay();return;}catch(e){}}location.replace(P.exitUrl);};
   document.addEventListener('keydown',e=>{
     if(e.altKey||e.ctrlKey||e.metaKey) return;
     const k=e.key,a=el=>el&&el.tagName;
@@ -663,7 +682,7 @@ function init(){
   const idx=P.routines.findIndex(r=>r.id===s.routine);ri=idx>=0?idx:0;$('routine').value=String(ri);
   if(STAGE_NAME[s.stage]) stage=s.stage;
   for(const id of ['bpm','sets','rest','stance']) if($(id)&&s[id]!=null&&[...$(id).options].some(o=>o.value===String(s[id]))) $(id).value=String(s[id]);
-  fillGoals();bind();idleView();setControls();
+  fillGoals();bind();idleView();setControls();paintFs();
   if($('stOkNote')) $('stOkNote').textContent=P.okNote.replace('확인 기준 · ','');
   if($('finishNote')) $('finishNote').textContent=`완주는 화면 진행 기준입니다. 지도자 확인은 관장님이 보고 눌러 준 수입니다 (${P.okNote.replace('확인 기준 · ','기준: ')}).`;
   if(P.init) P.init();

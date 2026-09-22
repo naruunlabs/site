@@ -7608,8 +7608,33 @@ window.openGroupMode=function(){
   
   if(!(window.akmIsBeta && window.akmIsBeta())) return;
   if(running && typeof stopGame==='function') stopGame();
-  location.href='groupkickmaster.html';
+  openGroupOverlay('groupkickmaster.html?embed=1');
 };
+
+function openGroupOverlay(src){
+  let wrap=document.getElementById('groupOverlay');
+  if(wrap) wrap.remove();
+  wrap=document.createElement('div');wrap.id='groupOverlay';
+  wrap.style.cssText='position:fixed;inset:0;z-index:2147483000;background:#050609';
+  const f=document.createElement('iframe');f.id='groupFrame';f.title='단체 모드';
+  f.allow='autoplay; screen-wake-lock; fullscreen';f.setAttribute('allowfullscreen','');
+  f.style.cssText='width:100%;height:100%;border:0;display:block;background:#050609';
+  f.addEventListener('load',()=>{try{f.contentWindow.focus();}catch(e){}});
+  f.src=src;wrap.appendChild(f);document.body.appendChild(wrap);
+  window.__groupOverlayOpen=true;
+}
+window.closeGroupOverlay=function(){
+  const wrap=document.getElementById('groupOverlay');
+  if(wrap) wrap.remove();              
+  window.__groupOverlayOpen=false;
+  try{ runtimeVideoAt=trainingClock.realNow(); runtimeVideoTime=video.currentTime; lastVideoTime=-1; }catch(e){}
+  try{ window.focus(); }catch(e){}
+};
+window.toggleHostFullscreen=function(){
+  const d=document,el=d.documentElement;
+  try{ if(d.fullscreenElement||d.webkitFullscreenElement) (d.exitFullscreen||d.webkitExitFullscreen).call(d); else (el.requestFullscreen||el.webkitRequestFullscreen).call(el); }catch(e){}
+};
+
 window.openKickLab=function(){
   if(!(window.akmIsBeta && window.akmIsBeta())) return;   
   updateLabRecUi();
@@ -9635,6 +9660,7 @@ function hsDoStart(){ if(!running) window.startGame(); }
 
 function loop(){
   requestAnimationFrame(loop);
+  if(window.__groupOverlayOpen) return;   
   watchRuntimeCamera();
   if(trainingClock.paused || document.hidden)return;
   try{
