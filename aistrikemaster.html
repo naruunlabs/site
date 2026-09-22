@@ -8066,6 +8066,26 @@ function openGroupOverlay(src){
   f.addEventListener('load',()=>{try{f.contentWindow.focus();}catch(e){}});
   f.src=src;wrap.appendChild(f);document.body.appendChild(wrap);
   window.__groupOverlayOpen=true;
+  releaseCameraForGroup();
+}
+
+let groupCamWasOn=false, groupCamEpoch=0;
+function releaseCameraForGroup(){
+  groupCamEpoch++;
+  if(!stream) return;
+  groupCamWasOn=true;
+  try{ stream.getTracks().forEach(t=>t.stop()); }catch(e){}
+  stream=null;
+  try{ video.pause(); video.srcObject=null; }catch(e){}
+  lastVideoTime=-1;
+}
+async function restoreCameraAfterGroup(){
+  if(!groupCamWasOn) return;
+  groupCamWasOn=false;
+  const epoch=++groupCamEpoch;
+  statusEl.textContent='카메라를 다시 켜는 중...';
+  await startCamera();
+  if(epoch!==groupCamEpoch || window.__groupOverlayOpen) releaseCameraForGroup();
 }
 window.closeGroupOverlay=function(){
   const wrap=document.getElementById('groupOverlay');
@@ -8073,6 +8093,7 @@ window.closeGroupOverlay=function(){
   window.__groupOverlayOpen=false;
   try{ runtimeVideoAt=trainingClock.realNow(); runtimeVideoTime=video.currentTime; lastVideoTime=-1; }catch(e){}
   try{ window.focus(); }catch(e){}
+  restoreCameraAfterGroup();
 };
 window.toggleHostFullscreen=function(){
   const d=document,el=d.documentElement;
