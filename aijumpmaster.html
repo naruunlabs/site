@@ -171,6 +171,10 @@ button{cursor:pointer;border:0;background:none;padding:0}
 .speed-row{display:flex;align-items:center;gap:8px;font-size:clamp(12px,1vw,17px);font-weight:900;color:rgba(255,255,255,.62);text-shadow:0 2px 8px rgba(0,0,0,.95)}
 .speed-row b{min-width:3.2em;text-align:center;font-family:var(--num);font-size:1.35em;color:#fff}
 .speed-row button{width:clamp(28px,2.4vw,40px);height:clamp(28px,2.4vw,40px);border-radius:8px;background:rgba(8,20,34,.84);border:1px solid rgba(94,234,212,.2);color:var(--teal-lit);font-weight:900;text-shadow:none}
+.rep-row{display:flex;align-items:center;gap:10px;font-size:clamp(12px,.95vw,16px);font-weight:900;color:rgba(255,255,255,.62);text-shadow:0 2px 8px rgba(0,0,0,.95)}
+.rep-row button{padding:9px 14px;border-radius:10px;background:rgba(8,20,34,.84);border:1px solid rgba(94,234,212,.28);color:var(--teal-lit);font-weight:900;text-shadow:none;white-space:nowrap}
+.rep-row button.on{border-color:rgba(190,242,100,.7);color:#BEF264;box-shadow:0 0 16px rgba(190,242,100,.18)}
+.rep-row span{color:rgba(234,244,241,.72)}
 .bigbtn{display:block;padding:6px 0 0;text-align:left;font-size:clamp(27px,2.2vw,46px);font-weight:900;letter-spacing:-1.2px;line-height:1.05;
   text-shadow:0 3px 12px rgba(0,0,0,.86)}
 .playbtn{color:var(--start);text-shadow:0 3px 12px rgba(0,0,0,.86),0 0 18px rgba(74,222,128,.4)}
@@ -694,6 +698,7 @@ html body:not(.jmp-beta-on) #jumpLabModal{
   
   <div class="ctrl" id="ctrl">
     <div class="speed-row" id="speedRow" hidden><span>속도</span><button type="button" id="spDown" aria-label="느리게">−</button><b id="spVal">100</b><button type="button" id="spUp" aria-label="빠르게">+</button></div>
+    <div class="rep-row" id="repRow" hidden><button type="button" id="repBtn">↻ 구간 반복</button><span id="repState">어려운 동작만 다시</span></div>
     <button class="ctrl-link" id="recalBtn" type="button" hidden>기준 재설정</button>
     <button class="pill on" id="soundBtn" type="button" aria-pressed="true"><span class="dot"></span><span class="lab">소리</span><span class="state" id="soundState">켜짐</span></button>
     <button class="bigbtn playbtn" id="playBtn" type="button">시작!</button>
@@ -1191,7 +1196,90 @@ const GROUP_GRADE=[{id:'together',b:32},{id:'ski',b:32},{id:'jack',b:32},{id:'al
 let groupRoutine=GROUP_BASIC.map(m=>({...m}));
 { const saved=store.json('jmp_group_routine_v2');
   if(Array.isArray(saved)&&saved.length&&saved.every(m=>m&&SKILL_BY_ID[m.id]&&[8,16,32].includes(m.b))) groupRoutine=saved; }
-const groupTotal=()=>groupRoutine.reduce((s,m)=>s+m.b,0);
+const groupRoutineTotal=()=>groupRoutine.reduce((s,m)=>s+m.b,0);
+
+let groupTL=null, groupTail=[], groupRepeat=null, groupSwitchBeat=-1, groupSaidFor=-1;
+function resetGroupTimeline(){
+  let st=0; groupTL=groupRoutine.map((m,i)=>{const g={mi:i,start:st,len:m.b};st+=m.b;return g;});
+  groupTail=[]; groupRepeat=null; groupSwitchBeat=-1; groupSaidFor=-1;
+}
+const groupTotal=()=>{ if(!groupTL) return groupRoutineTotal(); const e=groupTL[groupTL.length-1]; return e?e.start+e.len:0; };
+function groupSegAt(k){ const T=groupTotal(); const b=clamp(Math.floor(k),0,Math.max(0,T-1)); let j=0; while(j<groupTL.length-1 && b>=groupTL[j].start+groupTL[j].len) j++; return j; }
+function rebaseGroup(from){ for(let j=Math.max(1,from);j<groupTL.length;j++) groupTL[j].start=groupTL[j-1].start+groupTL[j-1].len; }
+function groupRepeatStart(k){
+  if(!groupTL) resetGroupTimeline();
+  if(groupRepeat) return;
+  const j=groupSegAt(k), g=groupTL[j];
+  groupTail=groupTL.slice(j+1).map(x=>({mi:x.mi,len:x.len}));
+  groupTL=groupTL.slice(0,j+1).concat([{mi:g.mi,start:g.start+g.len,len:groupRoutine[g.mi].b,rep:true}]);
+  groupRepeat={mi:g.mi,count:1}; groupSwitchBeat=-1;
+  groupTail.forEach(x=>groupTL.push({mi:x.mi,start:0,len:x.len})); rebaseGroup(j+1);
+  groupTimelineChanged();
+}
+function groupRepeatExtend(k){             
+  if(!groupRepeat||groupSwitchBeat>=0) return;
+  const j=groupSegAt(k), g=groupTL[j];
+  if(!g.rep) return;
+  const next=groupTL[j+1];
+  if(!next||!next.rep){ groupTL.splice(j+1,0,{mi:g.mi,start:0,len:groupRoutine[g.mi].b,rep:true}); rebaseGroup(j+1); groupRepeat.count++; groupTimelineChanged(); }
+}
+function groupRepeatStop(k){
+  if(!groupRepeat) return;
+  const sw=Math.ceil((Math.floor(k)+4)/4)*4;           
+  let j=groupSegAt(k);
+  
+  while(groupTL[j].start+groupTL[j].len<sw && groupTL[j+1] && groupTL[j+1].rep) j++;
+  while(groupTL[j].start+groupTL[j].len<sw){ groupTL.splice(j+1,0,{mi:groupRepeat.mi,start:0,len:groupRoutine[groupRepeat.mi].b,rep:true}); rebaseGroup(j+1); j++; }
+  const c=groupSegAt(sw-1);
+  groupTL[c].len=sw-groupTL[c].start;
+  groupTL=groupTL.slice(0,c+1).concat(groupTail.map(x=>({mi:x.mi,start:0,len:x.len})));
+  rebaseGroup(c+1);
+  groupSwitchBeat=sw; groupRepeat=null; groupTail=[];
+  groupTimelineChanged();
+}
+function groupTimelineChanged(){
+  if(appState==='running'||appState==='countdown'){
+    if(lastRoundMode==='group'&&groupRunKind==='play'){ gameEndPerf=gameStartPerf+groupTotal()*beatMs+400; durationSec=Math.ceil(groupTotal()*60/bpm); }
+    buildGroupBar(); paintRepeatUi();
+  }
+}
+function paintRepeatUi(){
+  const b=$('repBtn'), st=$('repState'); if(!b) return;
+  const on=!!groupRepeat; b.classList.toggle('on',on);
+  b.textContent=on?'▶ 원래 루틴 계속':'↻ 구간 반복';
+  if(on) st.textContent=`반복 ${groupRepeat.count}회째`;
+  else if(groupSwitchBeat>=0){ const bf=(performance.now()-gameStartPerf)/beatMs, left=Math.max(0,Math.ceil(groupSwitchBeat-bf)); st.textContent=left>0?`${left}박 뒤 다음 동작`:'원래 루틴 진행 중'; }
+  else st.textContent='어려운 동작만 다시';
+}
+function toggleGroupRepeat(){
+  if(!(appState==='running'&&running&&lastRoundMode==='group'&&groupRunKind==='play')) return;
+  const k=Math.max(0,Math.floor((performance.now()-gameStartPerf)/beatMs));
+  if(groupRepeat) groupRepeatStop(k); else { groupRepeatStart(k); groupSay('한 번 더'); }
+  paintRepeatUi();
+}
+
+let jumpKoVoice=null;
+function pickJumpVoice(){try{const vs=speechSynthesis.getVoices()||[];jumpKoVoice=vs.find(v=>/ko[-_]KR/i.test(v.lang)&&/Google|Neural|Natural/i.test(v.name))||vs.find(v=>/^ko/i.test(v.lang))||null;}catch(e){}}
+try{pickJumpVoice();speechSynthesis.onvoiceschanged=pickJumpVoice;}catch(e){}
+function groupSay(t){ if(!soundOn) return; try{ const s=window.speechSynthesis; if(!s) return; s.cancel(); const u=new SpeechSynthesisUtterance(t); u.lang='ko-KR'; u.rate=1.2; u.volume=1; if(jumpKoVoice) u.voice=jumpKoVoice; s.speak(u); }catch(e){} }
+function groupHush(){ try{ window.speechSynthesis&&speechSynthesis.cancel(); }catch(e){} }
+function announceGroupAt(k){
+  if(!groupTL) return;
+  const j=groupSegAt(k), g=groupTL[j], nx=groupTL[j+1];
+  if(!nx||nx.mi===g.mi) return;                       
+  const left=g.start+g.len-Math.floor(k);
+  if(left>4||left<1||groupSaidFor===j+1) return;
+  groupSaidFor=j+1; groupSay('다음, '+shortName(skillById(groupRoutine[nx.mi].id)));
+}
+let practiceSaidFor='';
+function announcePracticeAt(k){
+  if(groupPracticeRoutine.length<2) return;
+  const M=practiceMoveAt(k); if(M.left>4||M.left<1) return;
+  const T=practiceTotal(), key=Math.floor((Math.floor(k)+practiceOffset)/T)+':'+M.i;
+  if(practiceSaidFor===key) return;
+  const nx=practiceMoveAt(Math.floor(k)+M.left).sk; if(nx.id===M.sk.id) return;
+  practiceSaidFor=key; groupSay('다음, '+shortName(nx));
+}
 let groupPracticeRoutine=[{id:'together',b:16}];
 { const saved=store.json('jmp_group_practice_v1');
   if(Array.isArray(saved)&&saved.length&&saved.every(m=>m&&SKILL_BY_ID[m.id]&&[8,16,32].includes(m.b))) groupPracticeRoutine=saved; }
@@ -2171,6 +2259,7 @@ function layoutHud(){
   $('teamwrap').hidden = $('duoCards').hidden = !(inGame && m==='duo');
   $('runners').hidden = $('relayCue').hidden = !relayIn;
   $('grpTop').hidden = $('beats').hidden = !gPlay;
+  $('repRow').hidden = !gPlay; if(gPlay) paintRepeatUi();
   const stageOnly = m==='group' && (inGame||result);
   video.hidden = stageOnly; $('vignette').hidden = stageOnly;
   if(!inGame) $('judge').hidden=true;
@@ -2248,7 +2337,7 @@ function setupRound(){
     $('syncTxt').hidden=duoType==='battle';
     if(duoType==='battle') updateBattleHud();
   }
-  if(mode==='group') buildGroupBar();
+  if(mode==='group'){ resetGroupTimeline(); practiceSaidFor=''; buildGroupBar(); }
   setText($('stTimeLab'), mode==='relay'?'경과 시간':'남은 시간');
   setText($('stTimeVal'), mode==='relay'?0:durationSec); setText($('teamTime'), durationSec);
   updateModeBadge();
@@ -2289,7 +2378,7 @@ function startRound(){
 }
 
 function stopRound(){
-  running=false; countdownToken++; pausedAt=0;
+  running=false; countdownToken++; pausedAt=0; groupHush();
   stopClock(); clearTimeout(finishTimer);
   players.forEach(p=>p.engine.counting=false);
   $('countdown').hidden=true;
@@ -2302,6 +2391,7 @@ function pauseRound(){
   pausedAt=performance.now();
   running=false;
   stopClock();
+  groupHush(); groupSaidFor=-1; practiceSaidFor='';     
   players.forEach(p=>p.engine.counting=false);
   const box=$('countdown'); box.hidden=false;
   $('cdNum').textContent='❚❚'; setText($('cdSub'),'잠시 멈춤 · 화면으로 돌아오면 이어서 합니다');
@@ -2997,10 +3087,10 @@ function gDrawPad(cx,cy,pw,ph,pA,pB,tt,beatGlow,alphaAll,big,bf=null){
 }
 
 function groupMoveAt(k){                           
-  const T=groupTotal(); let b=clamp(Math.floor(k),0,T-1), i=0;
-  while(i<groupRoutine.length-1 && b>=groupRoutine[i].b){ b-=groupRoutine[i].b; i++; }
-  const sk=skillById(groupRoutine[i].id);
-  return {i, move:groupRoutine[i], sk, local:b, left:groupRoutine[i].b-b, pose:sk.cyc[gmod(b,sk.cyc.length)]};
+  if(!groupTL) resetGroupTimeline();
+  const T=groupTotal(), b=clamp(Math.floor(k),0,Math.max(0,T-1)), j=groupSegAt(b), g=groupTL[j], move=groupRoutine[g.mi], sk=skillById(move.id);
+  const local=b-g.start, nx=groupTL[j+1];
+  return {i:g.mi, seg:j, move, sk, local, left:g.start+g.len-b, rep:!!g.rep, hasNext:!!nx, nextSame:!!nx&&nx.mi===g.mi, pose:sk.cyc[gmod(local,sk.cyc.length)]};
 }
 function practiceMoveAt(k){                        
   const T=practiceTotal(); let b=gmod(Math.floor(k+practiceOffset),T),i=0;
@@ -3130,7 +3220,7 @@ function drawGroupScene(now){
     const cur=M.pose, cph=H*.19, cy=H*.35, cfs=Math.max(11,H*.028);
     gDrawPad(W/2,cy,cph,cph,cur,cur,0,0,.92,false);
     gLabel(`지금 · ${shortName(M.sk)}`,W/2,cy-cph/2-H*.018,cfs,'rgba(255,255,255,.92)','center','bottom');
-    if(bf>-1 && M.left<=4 && M.i<groupRoutine.length-1){
+    if(bf>-1 && M.left<=4 && M.hasNext && !M.nextSame){
       const Nx=groupMoveAt(Math.round(Math.max(0,bf))+M.left), fade=clamp(4.6-M.left,0,1), pp=Nx.sk.cyc[0];
       const nph=H*.14, nx=W*.67, ny=H*.35, fs=Math.max(10,H*.024);
       gDrawPad(nx,ny,nph,nph,pp,pp,0,0,.85*fade,false);
@@ -3153,6 +3243,7 @@ function updateGroupHud(now){
   if(groupRunKind==='practice'){
     const M=practiceMoveAt(Math.max(0,Math.round(bf))),sk=M.sk,n=sk.cyc.length;
     const k=practiceOffset+Math.max(0,Math.floor(bf)+1), demo=k<=8;   
+    if(running) announcePracticeAt(Math.max(0,Math.round(bf)));
     setText($('mbTitle'),'연습 · '+shortName(sk)); setText($('mbSub'),sk.d);
     const ph=$('grpPhase'); ph.className='grp-phase '+(demo?'demo':'go');
     setText(ph, bf<0 ? '곧 시작해요' : demo ? `시범 ${Math.max(1,k)} / 8 · 코치를 보세요` : '따라 하기');
@@ -3162,15 +3253,16 @@ function updateGroupHud(now){
     setGStat('stGC',groupPracticeRoutine.length>1?'다음 종목':'지금 박',null,null,groupPracticeRoutine.length>1?shortName(practiceMoveAt(Math.max(0,Math.round(bf))+M.left).sk):`${idx+1} / ${n} · ${sk.cyc[idx].t}`,true);
   }else{
     const T=groupTotal(), M=groupMoveAt(Math.round(Math.max(0,bf)));
-    const Nx = M.i<groupRoutine.length-1 ? groupMoveAt(Math.round(Math.max(0,bf))+M.left).sk : null;
+    const Nx = M.hasNext&&!M.nextSame ? groupMoveAt(Math.round(Math.max(0,bf))+M.left).sk : null;
+    if(running){ const kk=Math.floor(Math.max(0,bf)); groupRepeatExtend(kk); announceGroupAt(Math.round(Math.max(0,bf))); paintRepeatUi(); }
     setText($('mbTitle'),'단체 리듬 · 실전'); setText($('mbSub'),`${bpm} BPM · ${groupRoutine.length}개 동작`);
-    setText($('grpStep'),`${groupRoutine.length}개 동작 중 ${M.i+1}번째`);
+    setText($('grpStep'),M.rep||groupRepeat&&groupRepeat.mi===M.i?`${M.i+1}번째 동작 · 구간 반복 중`:`${groupRoutine.length}개 동작 중 ${M.i+1}번째`);
     const secLeft=Math.max(0,Math.ceil((T-Math.max(0,bf))*beatMs/1000));
     setText($('grpLeft'),`남은 시간 ${Math.floor(secLeft/60)}:${String(secLeft%60).padStart(2,'0')}`);
     const cells=$('grpBar').children;
     for(let j=0;j<cells.length;j++){ const c=j<M.i?'done':(j===M.i&&bf>=0?'now':''); if(cells[j].className!==c) cells[j].className=c; }
     setGStat('stGA','지금 동작',null,null,shortName(M.sk),true);
-    setGStat('stGB','다음 동작',null,null,Nx?shortName(Nx):'마침');
+    setGStat('stGB','다음 동작',null,null,Nx?shortName(Nx):(M.nextSame?'한 번 더':'마침'));
     setGStat('stGC','바뀌기까지',bf<0?M.move.b:M.left,'박 후');
     const dots=$('beats').children, bi=bf<0?-1:gmod(Math.floor(bf+.02),4);
     for(let j=0;j<dots.length;j++) dots[j].classList.toggle('on',j===bi);
@@ -3240,8 +3332,8 @@ function renderRoutineModal(){
   renderRoutineSlots();
 }
 function groupRoutineSummary(){
-  const b=+$('bpm').value||120, sec=Math.ceil(groupTotal()*60/b);
-  return `${groupRoutine.length}동작 · ${groupTotal()}박 · ${Math.floor(sec/60)?Math.floor(sec/60)+'분 ':''}${sec%60}초`;
+  const b=+$('bpm').value||120, sec=Math.ceil(groupRoutineTotal()*60/b);
+  return `${groupRoutine.length}동작 · ${groupRoutineTotal()}박 · ${Math.floor(sec/60)?Math.floor(sec/60)+'분 ':''}${sec%60}초`;
 }
 
 let loopOn=false;
@@ -3404,6 +3496,16 @@ function closeSettings(){ $('settings').hidden=true; }
 $('settingsBtn').addEventListener('click',openSettings);
 $('settingsClose').addEventListener('click',closeSettings);
 $('settings').addEventListener('click',e=>{ if(e.target===$('settings')) closeSettings(); });
+$('repBtn').addEventListener('click',toggleGroupRepeat);
+
+document.addEventListener('keydown',e=>{
+  if(!(appState==='running'&&lastRoundMode==='group'&&groupRunKind==='play')) return;
+  if(e.altKey||e.ctrlKey||e.metaKey) return;
+  const k=e.key;
+  if(k==='r'||k==='R'){ e.preventDefault(); toggleGroupRepeat(); }
+  else if((k==='ArrowLeft'||k==='PageUp')&&!groupRepeat){ e.preventDefault(); toggleGroupRepeat(); }
+  else if((k==='ArrowRight'||k==='PageDown')&&groupRepeat){ e.preventDefault(); toggleGroupRepeat(); }
+});
 document.addEventListener('keydown',e=>{ if(e.key!=='Escape') return; if(!$('routineModal').hidden) closeRoutineEditor(); else if(!$('settings').hidden) closeSettings(); });
 $('flipBtn').addEventListener('click',async()=>{
   if(running) return;
