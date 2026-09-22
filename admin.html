@@ -1211,7 +1211,9 @@ async function changePassword() {
 
 async function edgeCall(action, payload) {
   if (!ADMIN_TOKEN) { alert('로그인이 필요합니다.'); logoutAdmin(); throw new Error('미로그인'); }
-  const res = await fetch(ADMIN_EDGE_URL, {
+  const ac=new AbortController();const timeout=setTimeout(()=>ac.abort(),15000);
+  let res;try{res = await fetch(ADMIN_EDGE_URL, {
+    signal:ac.signal,
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -1219,7 +1221,8 @@ async function edgeCall(action, payload) {
     },
     body: JSON.stringify({ action, payload })
   });
-  const text = await res.text();
+  var text = await res.text();
+  }finally{clearTimeout(timeout);}
   let data = null;
   try { data = text ? JSON.parse(text) : null; } catch { data = text; }
   if (res.status === 401) {
@@ -2474,6 +2477,7 @@ async function loadCustomers() {
   try {
     CUSTOMERS = await edgeCall('GET_CUSTOMERS', {}) || [];
     CUSTOMERS.forEach(c => { if (c.phone) c.phone = formatPhone(c.phone); });
+    restoreCustomerDrafts();
     renderCustomers();
     
     if (document.getElementById('dojangsTable').children.length) renderTable();
@@ -2587,6 +2591,7 @@ function renderCustomers() {
     return html;
   }).join('');
 
+  rows.forEach(c=>{if(customerSaves.has(c.id))paintCustomerSave(c.id);});
   renderCustFoot(rows, cols);
   document.getElementById('cgSub').textContent =
     `${rows.length}명 표시 · 전체 ${CUSTOMERS.length}명`;
@@ -2684,52 +2689,75 @@ function recalcMoney(c, f) {
   return false;
 }
 
-async function onCustCell(el) {
-  const id = el.dataset.id, f = el.dataset.f;
-  const c = CUSTOMERS.find(x => x.id === id);
-  if (!c) return;
-
-  let v;
-  if (el.type === 'checkbox') v = el.checked;
-  else if (el.type === 'number') v = el.value === '' ? null : Number(el.value);
-  else v = el.value === '' ? null : el.value;
-  
-  if (f === 'phone' && v) { v = formatPhone(v); el.value = v; }
-  c[f] = v;
-
-  const linkedLicense = f === 'status'
-    ? LICENSES.find(x => x.license_key === c.license_key) : null;
-
-  const moneyChanged = recalcMoney(c, f);
-
-  const tr = el.closest('tr');
-  if (tr) { tr.classList.remove('saved','failed'); tr.classList.add('saving'); }
-  try {
-    if (linkedLicense && (v === 'trial' || v === 'customer')) {
-      const toTrial = v === 'trial';
-      await edgeCall('UPDATE_LICENSE', {
-        id: linkedLicense.id,
-        license_type: toTrial ? 'trial' : 'lifetime',
-        expire_date: null,
-        trial_days: toTrial ? (Number(linkedLicense.trial_days) || 3) : null
-      });
-      linkedLicense.license_type = toTrial ? 'trial' : 'lifetime';
-      linkedLicense.expire_date = null;
-      linkedLicense.trial_days = toTrial ? (Number(linkedLicense.trial_days) || 3) : null;
-    }
-    const saved = await edgeCall('SAVE_CUSTOMER', c);
-    
-    if (saved && saved.id) Object.assign(c, saved);
-    if (tr) { tr.classList.remove('saving'); tr.classList.add('saved'); }
-    updateCustStats();
-
-    if (f === 'status') renderTable();
-    if (moneyChanged || ['status','list_price','discount','paid_amount','extra_amount','next_action_at'].includes(f)) renderCustomers();
-  } catch(err) {
-    if (tr) { tr.classList.remove('saving'); tr.classList.add('failed'); }
-    showToast('저장 실패: ' + err.message);
-  }
+const customerSaves=new Map();
+const CUSTOMER_DRAFT_KEY='naruun_admin_customer_drafts_v1';
+function customerSaveState(id){
+  if(!customerSaves.has(id))customerSaves.set(id,{draft:{},revisions:{},seq:0,busy:false,failed:false,task:null});
+  return customerSaves.get(id);
 }
+function persistCustomerDrafts(){
+  try{const out={};for(const [id,s]of customerSaves)if(Object.keys(s.draft).length)out[id]=s.draft;
+    sessionStorage.setItem(CUSTOMER_DRAFT_KEY,JSON.stringify(out));}catch(e){}
+}
+function restoreCustomerDrafts(){
+  try{const stored=JSON.parse(sessionStorage.getItem(CUSTOMER_DRAFT_KEY)||'{}');
+    for(const [id,draft]of Object.entries(stored)){
+      const c=CUSTOMERS.find(x=>x.id===id);if(!c||!draft||typeof draft!=='object')continue;
+      const st=customerSaveState(id);if(st.busy){Object.assign(c,st.draft);continue;}
+      for(const [f,v]of Object.entries(draft))if(CUST_COLS.some(col=>col.f===f&&!col.ro)){
+        st.draft[f]=v;st.revisions[f]=++st.seq;c[f]=v;
+      }
+      st.failed=Object.keys(st.draft).length>0;
+    }
+  }catch(e){}
+}
+function paintCustomerSave(id){
+  const st=customerSaveState(id),tr=document.querySelector('tr.cg-row[data-id="'+id+'"]');if(!tr)return;
+  tr.classList.remove('saving','saved','failed');tr.classList.add(st.busy?'saving':st.failed?'failed':'saved');
+  let button=tr.querySelector('.cg-retry');
+  if(!button){button=document.createElement('button');button.className='btn-sm cg-retry';button.type='button';button.onclick=()=>retryCustomerSave(id);tr.lastElementChild?.appendChild(button);}
+  button.textContent=st.busy?'저장 중…':st.failed?'저장 실패 · 다시 저장':'저장됨';
+  button.disabled=st.busy;button.hidden=!st.busy&&!st.failed;
+}
+async function drainCustomerSave(id){
+  const st=customerSaveState(id);if(st.busy)return st.task;
+  st.busy=true;st.failed=false;paintCustomerSave(id);
+  st.task=(async()=>{
+    try{
+      while(Object.keys(st.draft).length){
+        const patch={...st.draft},rev={...st.revisions};
+        const c=CUSTOMERS.find(x=>x.id===id);if(!c)break;
+        const linked=Object.hasOwn(patch,'status')?LICENSES.find(x=>x.license_key===c.license_key):null;
+        if(linked&&(patch.status==='trial'||patch.status==='customer')&&linked.license_type!==(patch.status==='trial'?'trial':'lifetime')){
+          const toTrial=patch.status==='trial';
+          const fields={license_type:toTrial?'trial':'lifetime',expire_date:null,trial_days:toTrial?(Number(linked.trial_days)||3):null};
+          await edgeCall('UPDATE_LICENSE',{id:linked.id,...fields});Object.assign(linked,fields);
+        }
+        await edgeCall('SAVE_CUSTOMER',{id,...patch});
+        
+        for(const f of Object.keys(patch))if(st.revisions[f]===rev[f])delete st.draft[f];
+        persistCustomerDrafts();
+      }
+    }catch(err){st.failed=true;showToast('저장하지 못한 입력을 보관했습니다. 다시 저장을 눌러주세요: '+err.message);}
+    finally{st.busy=false;persistCustomerDrafts();if(!st.failed){renderTable();}paintCustomerSave(id);updateCustStats();}
+  })();return st.task;
+}
+async function retryCustomerSave(id){await drainCustomerSave(id);if(!customerSaveState(id).failed)showToast('보관한 입력을 저장했습니다.');}
+async function onCustCell(el){
+  const id=el.dataset.id,f=el.dataset.f,c=CUSTOMERS.find(x=>x.id===id);if(!c)return;
+  let v=el.type==='checkbox'?el.checked:el.type==='number'?(el.value===''?null:Number(el.value)):(el.value===''?null:el.value);
+  if(f==='phone'&&v){v=formatPhone(v);el.value=v;}
+  const before={...c};c[f]=v;const moneyChanged=recalcMoney(c,f),st=customerSaveState(id);
+  for(const key of new Set([f,...Object.keys(c).filter(k=>c[k]!==before[k])])){
+    st.draft[key]=c[key];st.revisions[key]=++st.seq;
+  }
+  persistCustomerDrafts();
+  if(moneyChanged||['status','next_action_at'].includes(f)){renderCustomers();if(f==='status')renderTable();}
+  await drainCustomerSave(id);
+}
+window.addEventListener('beforeunload',e=>{
+  if([...customerSaves.values()].some(s=>s.busy||Object.keys(s.draft).length)){e.preventDefault();e.returnValue='';}
+});
 
 async function addCustomerRow() {
   const name = prompt('도장 이름을 적어주세요');
@@ -2745,6 +2773,7 @@ async function addCustomerRow() {
 }
 
 async function deleteCustomer(id) {
+  const pendingSave=customerSaves.get(id);if(pendingSave?.busy){showToast('저장이 끝난 뒤 삭제해주세요.');return;}
   const c = CUSTOMERS.find(x => x.id === id);
   if (!c) return;
 
@@ -2757,6 +2786,7 @@ async function deleteCustomer(id) {
   if (!confirm(msg)) return;
   try {
     await edgeCall('DELETE_CUSTOMER', { id });
+    customerSaves.delete(id);persistCustomerDrafts();
     CUSTOMERS = CUSTOMERS.filter(x => x.id !== id);
     if (openNotesFor === id) openNotesFor = null;
     renderCustomers();

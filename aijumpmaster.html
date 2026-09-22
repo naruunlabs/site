@@ -1338,11 +1338,63 @@ async function keepScreenOn(on){
   }catch(e){ wakeLock=null; }
 }
 
+let jumpFault='',jumpRecovering=false,jumpResumeBusy=false,jumpRecoveryEpoch=0,jumpVideoAt=0,jumpVideoTime=-1;
+function jumpRecoveryBox(){
+  let box=$('jumpRecovery');if(box)return box;
+  box=document.createElement('div');box.id='jumpRecovery';box.setAttribute('role','alertdialog');box.setAttribute('aria-label','수업 연결 복구');box.setAttribute('aria-modal','true');
+  box.style.cssText='position:fixed;inset:0;z-index:100000;background:rgba(5,15,30,.94);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;color:white;text-align:center;padding:24px';
+  const title=document.createElement('h2');title.textContent='수업을 잠시 멈췄습니다';box.appendChild(title);
+  const message=document.createElement('p');message.id='jumpRecoveryMessage';message.textContent='점수와 남은 시간은 보관 중입니다.';box.appendChild(message);
+  const button=document.createElement('button');button.id='jumpRecoveryRetry';button.textContent='연결 확인 · 이어서';button.onclick=retryJumpRecovery;box.appendChild(button);
+  document.body.appendChild(box);return box;
+}
+function holdJump(reason){
+  if(jumpFault){if(reason==='model')jumpFault='model';return;}
+  jumpFault=reason;jumpRecoveryEpoch++;
+  if(appState==='running')pauseRound();
+  else if(appState==='countdown'){countdownToken++;running=false;appState='lobby';stopClock();$('countdown').hidden=true;layoutHud();}
+  jumpRecoveryBox().style.display='flex';$('jumpRecoveryRetry').focus();
+}
+async function retryJumpRecovery(){
+  if(jumpRecovering||document.hidden)return;
+  jumpRecovering=true;const epoch=jumpRecoveryEpoch,b=$('jumpRecoveryRetry');b.disabled=true;
+  try{
+    if(jumpFault==='model'&&pose){try{pose.close();}catch(e){}pose=null;}
+    if(jumpFault==='camera')stopCamera();
+    await ensureCamera();await ensurePose(neededPoses());
+    const first=video.currentTime,until=performance.now()+5000;
+    while(video.readyState<2||video.currentTime===first){
+      if(document.hidden||performance.now()>until)throw Error('카메라 영상이 아직 들어오지 않습니다.');
+      await sleep(50);
+    }
+    if(document.hidden||epoch!==jumpRecoveryEpoch)return;
+    jumpVideoAt=performance.now();jumpVideoTime=video.currentTime;lastVideoTime=-1;
+    $('jumpRecovery').style.display='none';
+    if(pausedAt)await resumeRound();
+    if(document.hidden||pausedAt){$('jumpRecovery').style.display='flex';return;}
+    jumpFault='';
+  }catch(e){$('jumpRecoveryMessage').textContent='아직 연결하지 못했습니다. 기록은 보관 중입니다. '+cameraErrorText(e);$('jumpRecovery').style.display='flex';}
+  finally{jumpRecovering=false;b.disabled=false;}
+}
+function watchJumpCamera(now){
+  const m=appState==='running'||appState==='countdown'?lastRoundMode:mode;
+  if(m==='group'||jumpFault||jumpRecovering||!stream||poseBusy||document.hidden)return;
+  if(video.currentTime!==jumpVideoTime){jumpVideoTime=video.currentTime;jumpVideoAt=now;}
+  else if(!jumpVideoAt)jumpVideoAt=now;
+  if(stream.getVideoTracks().some(t=>t.readyState==='ended')||now-jumpVideoAt>3000)holdJump('camera');
+}
+
 let cameraStarting=null;
 async function ensureCamera(){
   if(cameraStarting) return cameraStarting;           
   cameraStarting=openCamera();
   try{ return await cameraStarting; } finally { cameraStarting=null; }
+}
+async function requestJumpCamera(constraints){
+  let expired=false,timer;const pending=navigator.mediaDevices.getUserMedia(constraints);
+  pending.then(value=>{if(expired)value.getTracks().forEach(t=>t.stop());},()=>{});
+  try{return await Promise.race([pending,new Promise((_,reject)=>{timer=setTimeout(()=>{expired=true;reject(new Error('카메라 연결 시간이 초과되었습니다.'));},15000);})]);}
+  finally{clearTimeout(timer);}
 }
 async function openCamera(){
   if(stream && stream.getVideoTracks().some(t=>t.readyState==='live')){
@@ -1352,9 +1404,11 @@ async function openCamera(){
     return;
   }
   if(!navigator.mediaDevices?.getUserMedia) throw new Error('이 브라우저는 카메라 기능을 지원하지 않습니다.');
-  stream=await navigator.mediaDevices.getUserMedia({
+  stream=await requestJumpCamera({
     video:{facingMode,width:{ideal:1280},height:{ideal:720},frameRate:{ideal:60}},audio:false});
   video.srcObject=stream;
+  jumpVideoAt=performance.now();jumpVideoTime=-1;
+  for(const track of stream.getVideoTracks())track.addEventListener?.('ended',()=>{if(mode!=='group')holdJump('camera');},{once:true});
   video.classList.toggle('mirrored',facingMode==='user');
   await video.play();
   startFrameClock();   
@@ -1402,7 +1456,7 @@ async function createPose(num){
   const attempt=async(wasmBase,model)=>{
     const fileset=await FilesetResolver.forVisionTasks(wasmBase);
     let lastErr=null;
-    for(const delegate of ['GPU','CPU']){   
+    for(const delegate of (jumpFault==='model'?['CPU']:['GPU','CPU'])){   
       try{
         const pl=await PoseLandmarker.createFromOptions(fileset,{
           baseOptions:{modelAssetPath:model,delegate}, runningMode:'VIDEO', numPoses:num });
@@ -1623,7 +1677,7 @@ function fastTrack(p,t){
 }
 
 function maybeInfer(now){
-  if(!pose||poseBusy||!stream||video.readyState<2) return;
+  if(jumpFault||!pose||poseBusy||!stream||video.readyState<2) return;
   if(video.currentTime===lastVideoTime) return;
 
   const minGap = poseNum>1 ? clamp(inferCost*1.15,33,125) : clamp(inferCost*1.10,20,40);
@@ -1631,7 +1685,7 @@ function maybeInfer(now){
   lastVideoTime=video.currentTime; lastInfer=now;
   const t0=performance.now();
   let res=null;
-  try{ res=pose.detectForVideo(inferSource(),t0); }catch(e){ return; }
+  try{ res=pose.detectForVideo(inferSource(),t0); }catch(e){holdJump('model');return;}
   const cost=performance.now()-t0;
   inferCost=inferCost?inferCost*.85+cost*.15:cost;
   inferCount++;
@@ -2206,12 +2260,12 @@ function runCountdown(sub){
   const steps=['3','2','1','시작!'];
   return new Promise(async resolve=>{
     for(let i=0;i<steps.length;i++){
-      if(token!==countdownToken){ resolve(false); return; }
+      if(token!==countdownToken || document.hidden){ resolve(false); return; }
       $('cdNum').textContent=steps[i];
       if(i<3) snd.count(); else snd.go();
       await sleep(COUNTDOWN_MS[i]);
     }
-    if(token!==countdownToken){ resolve(false); return; }
+    if(token!==countdownToken || document.hidden){ resolve(false); return; }
     box.hidden=true; resolve(true);
   });
 }
@@ -2253,9 +2307,10 @@ function pauseRound(){
   $('cdNum').textContent='❚❚'; setText($('cdSub'),'잠시 멈춤 · 화면으로 돌아오면 이어서 합니다');
 }
 async function resumeRound(){
-  if(!pausedAt || appState!=='running') return;
+  if(jumpResumeBusy || document.hidden || !pausedAt || appState!=='running') return;
+  jumpResumeBusy=true;try{
   const ok=await runCountdown('이어서 시작합니다');
-  if(!ok || appState!=='running' || !pausedAt) return;
+  if(!ok || document.hidden || appState!=='running' || !pausedAt) return;
   
   const gap=performance.now()-pausedAt; pausedAt=0;
   gameStartPerf+=gap;
@@ -2275,6 +2330,7 @@ async function resumeRound(){
   else if(m==='relay') players[0].engine.counting = !relay.changing && !relay.done;
   if(m!=='solo') resumeClock();
   keepScreenOn(true);
+  }finally{jumpResumeBusy=false;}
 }
 
 let roundEndPerf=0, stoppedEarly=false;
@@ -3203,10 +3259,13 @@ function loop(){
       document.body.classList.toggle('jmp-lite-hud',quality==='low');
     }
     if(appState!=='login'){
+      try{
+      watchJumpCamera(now);
       const m = (appState==='running'||appState==='countdown'||appState==='result') ? lastRoundMode : mode;
       if(!(m==='group' && appState!=='lobby')) maybeInfer(now);
       tick(now);
       render(now);
+      }catch(e){console.error(e);holdJump('model');}
     }
   };
   requestAnimationFrame(frame);
@@ -3360,15 +3419,17 @@ $('logoutBtn').addEventListener('click',()=>{ _jmpClearCache(); location.reload(
 
 document.addEventListener('visibilitychange',()=>{
   if(document.hidden){
+    jumpRecoveryEpoch++;countdownToken++;
     if(appState==='countdown') finish(true);
     else if(appState==='running') pauseRound();
     keepScreenOn(false);
   }else{
     if(appState!=='login') keepScreenOn(true);
-    if(appState==='running') resumeRound();
+    if(appState==='running'&&!jumpFault){if(lastRoundMode!=='group'&&(!stream||!stream.getVideoTracks().some(t=>t.readyState==='live')))holdJump('camera');else resumeRound();}
   }
 });
-window.addEventListener('pagehide',()=>{ labFlush(); keepScreenOn(false); stopCamera(); });
+window.addEventListener('pagehide',()=>{ jumpRecoveryEpoch++;countdownToken++;if(appState==='running')pauseRound();labFlush();keepScreenOn(false);stopCamera(); });
+window.addEventListener('pageshow',e=>{if(e.persisted&&appState!=='login'&&mode!=='group')holdJump('camera');});
 
 function setAppHeight(){ document.documentElement.style.setProperty('--app-h', Math.max(320,Math.floor(innerHeight||document.documentElement.clientHeight))+'px'); markViewDirty(); }
 setAppHeight();

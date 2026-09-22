@@ -3672,6 +3672,7 @@ body.akm-lite-fx .kt-wing{filter:none}body.akm-lite-fx .kt-bars i,body.akm-lite-
 @media (max-width:700px),(max-height:520px){.kt-wing{transform:scale(.8)}.kt-wing.left{transform-origin:right top}.kt-wing.right{transform-origin:left top}}
 
 </style>
+<style>body.training-held .stage *,body.training-held #camWrap *{animation-play-state:paused!important}</style>
 </head>
 <body class="hud-v21 akm-ui">
 
@@ -4237,7 +4238,35 @@ body.akm-lite-fx .kt-wing{filter:none}body.akm-lite-fx .kt-bars i,body.akm-lite-
   </div>
 </div>
 
+<script>
+
+(function(){try{if(localStorage.getItem('asm_settings_split_v1'))return;const map={"tkd_difficulty":"asm_difficulty","akm_drill_run_mode":"asm_drill_run_mode","akm_sparring_mode":"asm_sparring_mode","akm_backdrop_fx":"asm_backdrop_fx","akm_dwiarrow_v1":"asm_dwiarrow_v1","akm_snd_vol":"asm_snd_vol","akm_snd_mute":"asm_snd_mute","akm_sens_v1":"asm_sens_v1","akm_kick_level":"asm_kick_level","akm_2p_crop":"asm_2p_crop","akm_2p_show_result":"asm_2p_show_result","akm_autonext_v1":"asm_autonext_v1","akm_device_id":"asm_device_id"};for(const [old,key]of Object.entries(map)){const value=localStorage.getItem(old);if(value!==null&&localStorage.getItem(key)===null)localStorage.setItem(key,value);}localStorage.setItem('asm_settings_split_v1','1');}catch(e){}})();
+</script>
 <script type="module">
+
+function createTrainingClock(host){
+  const realNow=()=>host.performance.now(), later=host.setTimeout.bind(host), cancel=host.clearTimeout.bind(host);
+  let offset=0, frozen=null, serial=0; const timers=new Map();
+  const now=()=> (frozen===null?realNow():frozen)-offset;
+  function arm(id,t){ if(frozen!==null)return; t.handle=later(()=>{
+    if(!timers.has(id))return;
+    if(t.repeat){t.due=now()+t.delay;arm(id,t);}else timers.delete(id);
+    t.fn(...t.args);
+  },Math.max(0,t.due-now())); }
+  function add(fn,delay,repeat,args){const id=++serial,t={fn,delay:Math.max(repeat?1:0,Number(delay)||0),repeat,args,handle:null};t.due=now()+t.delay;timers.set(id,t);arm(id,t);return id;}
+  const clear=id=>{const t=timers.get(id);if(t){cancel(t.handle);timers.delete(id);}};
+  return {now,realNow,later,cancel,get paused(){return frozen!==null;},
+    setTimeout:(fn,ms,...args)=>add(fn,ms,false,args),clearTimeout:clear,
+    setInterval:(fn,ms,...args)=>add(fn,ms,true,args),clearInterval:clear,
+    pause(){if(frozen!==null)return;frozen=realNow();for(const t of timers.values())cancel(t.handle);},
+    resume(){if(frozen===null)return;offset+=realNow()-frozen;frozen=null;for(const [id,t]of timers)arm(id,t);}
+  };
+}
+const trainingClock=createTrainingClock(window);
+const performance={now:trainingClock.now};
+let {setTimeout,clearTimeout,setInterval,clearInterval}=trainingClock;
+let requestAnimationFrame=fn=>window.requestAnimationFrame(()=>fn(performance.now()));
+
 import { PoseLandmarker, FilesetResolver, DrawingUtils }
   from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/vision_bundle.mjs";
 
@@ -4510,14 +4539,14 @@ function diffCfg(){ return DIFFICULTY_CFG[difficulty] || DIFFICULTY_CFG.normal; 
 window.setDifficulty=(level)=>{
   if(!DIFFICULTY_CFG[level]) return;
   difficulty=level;
-  try{ localStorage.setItem('tkd_difficulty',level); }catch(e){}
+  try{ localStorage.setItem('asm_difficulty',level); }catch(e){}
   document.querySelectorAll('#difficultyPanel .diff-btn').forEach(btn=>btn.classList.toggle('active',btn.dataset.diff===level));
   if(typeof statusEl!=='undefined') statusEl.textContent='난이도: '+diffCfg().label;
   if(typeof renderStats==='function') renderStats();
 };
 function initDifficulty(){
   let saved='normal';
-  try{ saved=localStorage.getItem('tkd_difficulty') || 'normal'; }catch(e){}
+  try{ saved=localStorage.getItem('asm_difficulty') || 'normal'; }catch(e){}
   if(!DIFFICULTY_CFG[saved]) saved='normal';
   difficulty=saved;
   document.querySelectorAll('#difficultyPanel .diff-btn').forEach(btn=>btn.classList.toggle('active',btn.dataset.diff===saved));
@@ -4528,7 +4557,7 @@ window.setDrillRunMode=(mode)=>{
 
   if(running) stopGame();
   drillRunMode=mode;
-  try{ localStorage.setItem('akm_drill_run_mode',mode); }catch(e){}
+  try{ localStorage.setItem('asm_drill_run_mode',mode); }catch(e){}
   document.querySelectorAll('.drill-mode-btn').forEach(btn=>{
     btn.classList.toggle('active',btn.dataset.drillRunMode===mode);
   });
@@ -4550,7 +4579,7 @@ window.setDrillRunMode=(mode)=>{
 };
 function initDrillRunMode(){
   let saved='manual';
-  try{ saved=localStorage.getItem('akm_drill_run_mode') || 'manual'; }catch(e){}
+  try{ saved=localStorage.getItem('asm_drill_run_mode') || 'manual'; }catch(e){}
   if(saved!=='manual' && saved!=='auto') saved='manual';
   drillRunMode=saved;
   document.querySelectorAll('.drill-mode-btn').forEach(btn=>{
@@ -4872,7 +4901,7 @@ const SPARRING_TYPES=['live','speed'];
 window.setSparringMode=(type)=>{
   if(!SPARRING_TYPES.includes(type)) return;
   sparringMode=type;
-  try{ localStorage.setItem('akm_sparring_mode', type); }catch(e){}
+  try{ localStorage.setItem('asm_sparring_mode', type); }catch(e){}
   document.querySelectorAll('.sparring-type-btn').forEach(btn=>btn.classList.toggle('active',btn.dataset.sparringType===type));
 
   document.body.classList.toggle('sparring-practice', currentMode==='sparring' && type==='practice');
@@ -4893,7 +4922,7 @@ window.setSparringMode=(type)=>{
 let backdropFxOn=true;
 window.setBackdropFx=(on)=>{
   backdropFxOn=!!on;
-  try{ localStorage.setItem('akm_backdrop_fx', backdropFxOn?'1':'0'); }catch(e){}
+  try{ localStorage.setItem('asm_backdrop_fx', backdropFxOn?'1':'0'); }catch(e){}
   document.body.classList.toggle('akm-nobdf', !backdropFxOn);
   document.getElementById('bdfSw')?.classList.toggle('on', backdropFxOn);
   if(typeof statusEl!=='undefined'){
@@ -4903,7 +4932,7 @@ window.setBackdropFx=(on)=>{
 };
 function initBackdropFx(){
   let saved='1';
-  try{ saved=localStorage.getItem('akm_backdrop_fx') || '1'; }catch(e){}
+  try{ saved=localStorage.getItem('asm_backdrop_fx') || '1'; }catch(e){}
   backdropFxOn=(saved!=='0');
   document.body.classList.toggle('akm-nobdf', !backdropFxOn);
   document.getElementById('bdfSw')?.classList.toggle('on', backdropFxOn);
@@ -4912,7 +4941,7 @@ window.toggleBackdropFx=()=>setBackdropFx(!backdropFxOn);
 
 function initSparringMode(){
   let saved='speed';
-  try{ saved=localStorage.getItem('akm_sparring_mode') || 'speed'; }catch(e){}
+  try{ saved=localStorage.getItem('asm_sparring_mode') || 'speed'; }catch(e){}
   
   if(!SPARRING_TYPES.includes(saved)) saved='speed';
   sparringMode=saved;
@@ -5523,7 +5552,7 @@ let dwiArrowFlip=false;
 function applyDwiArrowFlip(){
   const b=document.getElementById('dwiArrowSw');
   if(b) b.classList.toggle('on',dwiArrowFlip);
-  try{ localStorage.setItem('akm_dwiarrow_v1', dwiArrowFlip?'1':'0'); }catch(e){}
+  try{ localStorage.setItem('asm_dwiarrow_v1', dwiArrowFlip?'1':'0'); }catch(e){}
 }
 window.toggleDwiArrowFlip=function(){ dwiArrowFlip=!dwiArrowFlip; applyDwiArrowFlip(); };
 
@@ -5534,15 +5563,15 @@ function applySndVolume(){
   const r=document.getElementById('sndRange');
   if(r) r.value=Math.round(sndVolume*100);
   try{
-    localStorage.setItem('akm_snd_vol',String(sndVolume));
-    localStorage.setItem('akm_snd_mute',sndMuted?'1':'0');
+    localStorage.setItem('asm_snd_vol',String(sndVolume));
+    localStorage.setItem('asm_snd_mute',sndMuted?'1':'0');
   }catch(e){}
 }
 function initSound(){
   try{
-    const v=parseFloat(localStorage.getItem('akm_snd_vol'));
+    const v=parseFloat(localStorage.getItem('asm_snd_vol'));
     if(Number.isFinite(v) && v>=0 && v<=1) sndVolume=v;
-    sndMuted=localStorage.getItem('akm_snd_mute')==='1';
+    sndMuted=localStorage.getItem('asm_snd_mute')==='1';
   }catch(e){}
   const r=document.getElementById('sndRange');
   if(r){
@@ -5584,7 +5613,7 @@ function confetti(big=false){
   })(start);
 }
 
-const SENS_LS_KEY='akm_sens_v1', SENS_DEFAULT=50;
+const SENS_LS_KEY='asm_sens_v1', SENS_DEFAULT=50;
 function applySens(v, save, paint){
   threshPct=Math.max(25, Math.min(85, parseInt(v)||SENS_DEFAULT));
   if(sensEl) sensEl.value=threshPct;          
@@ -6018,7 +6047,7 @@ window.setKickLevel=(level)=>{
   if(typeof running!=='undefined' && running && typeof stopGame==='function') stopGame();
   kickLevel=level;
   JUDGE=(level==='easy')?JUDGE_EASY:JUDGE_HARD;
-  try{ localStorage.setItem('akm_kick_level',level); }catch(e){}
+  try{ localStorage.setItem('asm_kick_level',level); }catch(e){}
   document.querySelectorAll('.kick-level-btn').forEach(btn=>{
     btn.classList.toggle('active',btn.dataset.kickLevel===level);
   });
@@ -6033,7 +6062,7 @@ window.setKickLevel=(level)=>{
 };
 function initKickLevel(){
   let saved='hard';
-  try{ saved=localStorage.getItem('akm_kick_level') || 'hard'; }catch(e){}
+  try{ saved=localStorage.getItem('asm_kick_level') || 'hard'; }catch(e){}
   if(saved!=='easy' && saved!=='hard') saved='hard';
   kickLevel=saved;
   JUDGE=(saved==='easy')?JUDGE_EASY:JUDGE_HARD;
@@ -7523,6 +7552,7 @@ function setReadyUi(on){
 function setGrResult(text){ gameResult.textContent=text; gameResult2.textContent=text; if(punchResult) punchResult.textContent=text; }
 
 window.startGame=()=>{
+  if(trainingClock.paused)return;
   if(modelLoading || modelPreparing || readyTimer) return;
   if(!running && (!poseLandmarker || video.readyState<2)){
     statusEl.textContent='카메라와 AI 모델 준비가 끝난 뒤 시작해주세요.'; return;
@@ -8019,7 +8049,7 @@ window.openGroupMode=function(){
   
   if(!(window.akmIsBeta && window.akmIsBeta())) return;
   if(running && typeof stopGame==='function') stopGame();
-  location.href='groupkickmaster.html';
+  location.href='groupkickmaster.html?product=strike';
 };
 window.openKickLab=function(){
   if(!(window.akmIsBeta && window.akmIsBeta())) return;   
@@ -8486,7 +8516,7 @@ const MODEL_URLS={
 };
 let visionResolver=null, currentModelKind='full', currentDelegate='GPU';
 let modelLoading=false, modelPreparing=false, modelSelectedKey='';
-const MODEL_PROFILE_VERSION='akm-mp1.0.1-pose1-select1';   
+const MODEL_PROFILE_VERSION='asm-mp1.0.1-pose1-select1';   
 const MODEL_PROFILE_MAX_AGE=7*24*60*60*1000;
 function modelProfileKey(){ return twoPlayerMode?(crop2pEnabled?'2-crop':'2-whole'):'1'; }
 function readModelProfile(){
@@ -8518,7 +8548,7 @@ async function initModel(numPoses=twoPlayerMode?(crop2pEnabled?1:2):1, modelKind
   }
   finally{ modelLoading=false; }
 }
-async function loadModel(numPoses, modelKind){
+async function loadModel(numPoses, modelKind, forceCPU=false){
   statusEl.textContent='AI 모델 로딩 중…';
   if(!visionResolver) visionResolver=await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/wasm");
   const vision=visionResolver;
@@ -8527,10 +8557,10 @@ async function loadModel(numPoses, modelKind){
   try{
     
     poseLandmarker=await PoseLandmarker.createFromOptions(vision,{
-      baseOptions:{ modelAssetPath:MODEL_URL, delegate:"GPU" },
+      baseOptions:{ modelAssetPath:MODEL_URL, delegate:forceCPU?"CPU":"GPU" },
       runningMode:"VIDEO", numPoses
     });
-    currentDelegate='GPU';
+    currentDelegate=forceCPU?'CPU':'GPU';
   }catch(gpuErr){
     
     console.warn('GPU 가속 초기화 실패 → CPU 모드로 전환합니다.', gpuErr);
@@ -8632,7 +8662,7 @@ function detectCrop2p(nowMs){
     const rx=cropRoiFor(key,VW,cw);
     cropCtx.drawImage(video, rx,0,cw,VH, 0,0,cw,VH);
     let res=null;
-    try{ res=poseCrop[key].detectForVideo(cropCanvas, nowMs); }catch(e){ res=null; }
+    try{ res=poseCrop[key].detectForVideo(cropCanvas, nowMs); }catch(e){ throw e; }
     const lm=(res && res.landmarks && res.landmarks[0]) ? res.landmarks[0] : null;
     if(!lm){
       
@@ -8676,11 +8706,20 @@ function drawCropZones(){
 
 const CAM_IDEAL_W=960, CAM_IDEAL_H=540;
 
+async function requestRuntimeCamera(constraints){
+  let expired=false,timer;
+  const pending=navigator.mediaDevices.getUserMedia(constraints);
+  pending.then(value=>{if(expired)value.getTracks().forEach(t=>t.stop());},()=>{});
+  try{return await Promise.race([pending,new Promise((_,reject)=>{timer=trainingClock.later(()=>{expired=true;reject(new Error('카메라 연결 시간이 초과되었습니다.'));},15000);})]);}
+  finally{trainingClock.cancel(timer);}
+}
 async function startCamera(){
   if(stream) stream.getTracks().forEach(t=>t.stop());
   try{
-    stream=await navigator.mediaDevices.getUserMedia({ video:{facingMode,width:{ideal:CAM_IDEAL_W},height:{ideal:CAM_IDEAL_H}},audio:false });
+    stream=await requestRuntimeCamera({ video:{facingMode,width:{ideal:CAM_IDEAL_W},height:{ideal:CAM_IDEAL_H}},audio:false });
     video.srcObject=stream; await video.play();
+    runtimeVideoAt=trainingClock.realNow();runtimeVideoTime=video.currentTime;lastVideoTime=-1;
+    for(const track of stream.getVideoTracks())track.addEventListener?.('ended',()=>holdTraining('camera'),{once:true});
 
     camStartT=performance.now(); fpsBase=null; inferHist=[]; detHist=[]; fpsSm=null; fpsLastT=0;
     try{
@@ -8690,7 +8729,7 @@ async function startCamera(){
     const isDrill=MODE_CFG[currentMode].isDrill;
     updateModeBadge();
     statusEl.textContent=isDrill?'시작 버튼을 눌러 연습을 시작하세요':'시작 버튼을 누르세요';
-    hideStartupRecovery();
+    if(!trainingClock.paused)hideStartupRecovery();
     return true;
   }catch(e){
     const denied=e && (e.name==='NotAllowedError' || e.name==='SecurityError');
@@ -8834,7 +8873,7 @@ window.setPlayerCount=async function(n){
 
 function initCrop2p(){
   let saved=null;
-  try{ saved=localStorage.getItem('akm_2p_crop'); }catch(e){}
+  try{ saved=localStorage.getItem('asm_2p_crop'); }catch(e){}
   crop2pEnabled=(saved==='1');
   paintCrop2pBtns();
 }
@@ -8849,7 +8888,7 @@ window.setCrop2p=async function(on){
   
   if(typeof running!=='undefined' && running && typeof stopGame==='function') stopGame();
   crop2pEnabled=next;
-  try{ localStorage.setItem('akm_2p_crop', crop2pEnabled?'1':'0'); }catch(e){}
+  try{ localStorage.setItem('asm_2p_crop', crop2pEnabled?'1':'0'); }catch(e){}
   paintCrop2pBtns();
   cropRoiX={ c:null, h:null };
   try{
@@ -8863,7 +8902,7 @@ window.setCrop2p=async function(on){
   }catch(e){
     console.error('좌우 크롭 준비 실패 — 종전 방식으로 되돌립니다.', e);
     crop2pEnabled=false; closeCropModels(); paintCrop2pBtns();
-    try{ localStorage.setItem('akm_2p_crop','0'); }catch(e2){}
+    try{ localStorage.setItem('asm_2p_crop','0'); }catch(e2){}
     if(twoPlayerMode){ try{ await initModel(2,currentModelKind); }catch(e2){} }
   }
 };
@@ -8955,12 +8994,12 @@ function render2pStatus(text){
 
 let twoPlayerShowResult=true;
 try{
-  const saved=localStorage.getItem('akm_2p_show_result');
+  const saved=localStorage.getItem('asm_2p_show_result');
   if(saved!=null) twoPlayerShowResult=(saved==='1');
 }catch(e){}
 window.setTwoPlayerShowResult=function(on){
   twoPlayerShowResult=!!on;
-  try{ localStorage.setItem('akm_2p_show_result', twoPlayerShowResult?'1':'0'); }catch(e){}
+  try{ localStorage.setItem('asm_2p_show_result', twoPlayerShowResult?'1':'0'); }catch(e){}
   document.getElementById('p2ResultSw')?.classList.toggle('on', twoPlayerShowResult);
 };
 window.toggleTwoPlayerShowResult=()=>setTwoPlayerShowResult(!twoPlayerShowResult);
@@ -10111,7 +10150,7 @@ window.toggleAutoNext=function(){
   autoNextOn=!autoNextOn;
   if(!autoNextOn) autoNextReset();
   else { autoNextTeam=0; autoNextManualStop=false; }
-  try{ localStorage.setItem('akm_autonext_v1', autoNextOn?'1':'0'); }catch(e){}
+  try{ localStorage.setItem('asm_autonext_v1', autoNextOn?'1':'0'); }catch(e){}
   autoNextSyncBtn();
 };
 function autoNextReset(){
@@ -10588,12 +10627,16 @@ function hsCanStart(){
 function hsDoStart(){ if(!running) window.startGame(); }   
 
 function loop(){
+  requestAnimationFrame(loop);
+  watchRuntimeCamera();
+  if(trainingClock.paused || document.hidden)return;
+  try{
   if(!modelLoading && !modelPreparing && poseLandmarker && video.readyState>=2 && video.currentTime!==lastVideoTime){
     lastVideoTime=video.currentTime;
     
     if(!running){
       idleFrameCounter++;
-      if(idleFrameCounter%3!==0){ requestAnimationFrame(loop); return; }
+      if(idleFrameCounter%3!==0){ return; }
     }
     if(canvas.width!==video.videoWidth){ canvas.width=video.videoWidth; canvas.height=video.videoHeight; }
     const t0=performance.now();
@@ -10637,8 +10680,90 @@ function loop(){
       kicking=false; aboveFrames=0; belowFrames=0; nearPeak=0; nearAboveN=0; nearProj=0; kickFoot=null; smHipY=null; smTorso=null; smHipX=null; smHipW=null; shoulderSamples=[]; kickTopFootY=null; kickRefTorso=null; rearmNeeded=false;  
     }
   }
-  requestAnimationFrame(loop);
+  }catch(e){ console.error('훈련 중 인식 오류:',e); holdTraining('model'); }
 }
+
+let runtimeFault='',runtimeRetrying=false,runtimeVideoAt=0,runtimeVideoTime=-1,runtimeEpoch=0;
+function holdTraining(reason){
+  if(trainingClock.paused){ if(reason==='model')runtimeFault='model'; return; }
+  runtimeFault=reason; runtimeEpoch++; trainingClock.pause();
+  document.body.classList.add('training-held');
+  const recoveryBox=document.getElementById('startupRecovery');
+  if(recoveryBox){recoveryBox.setAttribute('role','dialog');recoveryBox.setAttribute('aria-modal','true');document.body.appendChild(recoveryBox);recoveryBox.style.cssText='position:fixed;inset:0;z-index:100000';}
+  try{if(audioCtx?.state==='running')audioCtx.suspend()?.catch(()=>{});}catch(e){}
+  showStartupRecovery('runtime','수업을 잠시 멈췄습니다','점수와 남은 시간은 보관 중입니다. 연결을 확인한 뒤 이어서 진행하세요.');
+  const b=document.getElementById('startupRetryBtn');if(b){b.textContent='연결 확인 · 이어서';b.focus();}
+}
+function resetRecoveryMotion(){
+  const clear=()=>{
+    kicking=false; aboveFrames=0; belowFrames=0; nearPeak=0; nearAboveN=0; nearProj=0; kickFoot=null;
+    trajActive=false; trajX=[]; trajY=[]; trajHipX=[]; trajTorso=[]; trajHipW=[]; trajKneeX=[];
+    trajKneeAngle=[]; trajHipVis=[]; trajKneeVis=[]; trajKneeAngle3D=[]; trajShoulderW=[];
+    trajFootAng=[]; trajFootAngVis=[]; trajKneeMark=[]; kmPeakY=null; kmHitBefore=false; kneeMarkFlashArmed=false;
+    smHipY=null; smTorso=null; smHipX=null; smHipW=null; shoulderSamples=[];
+    kickTopFootY=null; kickRefTorso=null; prevFoot={left:null,right:null}; groundSince=0; rearmNeeded=true;
+    resetPreRoll();
+  };
+  if(twoPlayerMode){for(const key of ['c','h']){loadFromSlot(slot2p[key]);clear();saveToSlot(slot2p[key]);}}
+  else clear();
+  for(const hand of ['left','right'])punchTrack[hand]={phase:'idle',points:[],guardFrames:0,guardPoint:null,filteredPoint:null,startedT:0};
+  strikeKickTrack={left:{armed:false,knee:null,ankle:null},right:{armed:false,knee:null,ankle:null}};
+  punchLeadDepthEma=0;punchLeadCandidate=null;punchLeadCandidateFrames=0;
+  speedPrev={c:null,h:null};
+  hsReset(); hsArmed=false; hsClearSince=0;
+}
+function watchRuntimeCamera(){
+  if(trainingClock.paused || !stream || modelLoading || modelPreparing)return;
+  const now=trainingClock.realNow();
+  if(video.currentTime!==runtimeVideoTime){runtimeVideoTime=video.currentTime;runtimeVideoAt=now;}
+  else if(!runtimeVideoAt)runtimeVideoAt=now;
+  if(stream.getVideoTracks().some(t=>t.readyState==='ended') || now-runtimeVideoAt>3000)holdTraining('camera');
+}
+async function waitRecoveryFrame(){
+  const first=video.currentTime,until=trainingClock.realNow()+5000;
+  while(video.readyState<2 || video.currentTime===first){
+    if(document.hidden)throw Error('화면이 가려졌습니다.');
+    if(trainingClock.realNow()>until)throw Error('카메라 영상이 아직 들어오지 않습니다.');
+    await new Promise(resolve=>trainingClock.later(resolve,50));
+  }
+}
+async function resumeTraining(){
+  if(runtimeRetrying || document.hidden)return;
+  runtimeRetrying=true;const epoch=runtimeEpoch;
+  const b=document.getElementById('startupRetryBtn');if(b)b.disabled=true;
+  try{
+    if(runtimeFault==='model' || !poseLandmarker){
+      modelLoading=true;
+      try{closeCropModels();await loadModel(twoPlayerMode?(crop2pEnabled?1:2):1,currentModelKind||'lite',true);}
+      finally{modelLoading=false;}
+    }
+    const live=stream && stream.getVideoTracks().some(t=>t.readyState==='live');
+    if(!live || runtimeFault==='camera'){if(!await startCamera())throw Error('카메라 연결을 확인해주세요.');}
+    else await video.play();
+    await waitRecoveryFrame();
+    if(epoch!==runtimeEpoch || document.hidden)return;
+    showStartupRecovery('runtime','이어서 시작합니다','준비 자세를 잡아주세요.');if(b)b.disabled=true;
+    for(const n of [3,2,1]){
+      document.getElementById('startupRecoveryMessage').textContent=n+'초 뒤 이어서 진행합니다';
+      await new Promise(resolve=>trainingClock.later(resolve,1000));
+      if(epoch!==runtimeEpoch || document.hidden)return;
+    }
+    resetRecoveryMotion();lastVideoTime=-1;runtimeVideoAt=trainingClock.realNow();runtimeVideoTime=video.currentTime;
+    try{if(audioCtx?.state==='suspended')await audioCtx.resume();}catch(e){}
+    runtimeFault='';hideStartupRecovery();document.body.classList.remove('training-held');trainingClock.resume();
+  }catch(e){
+    showStartupRecovery('runtime','아직 연결하지 못했습니다','기록은 보관 중입니다. 카메라와 인터넷 연결을 확인하고 다시 시도해주세요.');
+  }finally{runtimeRetrying=false;if(b)b.disabled=false;if(trainingClock.paused&&document.hidden)showStartupRecovery('runtime','수업을 잠시 멈췄습니다','화면으로 돌아온 뒤 연결 확인을 눌러주세요.');}
+}
+document.addEventListener('keydown',e=>{if(trainingClock.paused&&e.key==='Tab'){e.preventDefault();document.getElementById('startupRetryBtn')?.focus();}});
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden){runtimeEpoch++;if(mainLoopStarted)holdTraining('visibility');}
+});
+window.addEventListener('pagehide',()=>{
+  runtimeEpoch++;if(mainLoopStarted)holdTraining('camera');
+  if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;video.srcObject=null;}
+});
+window.addEventListener('pageshow',()=>{if(trainingClock.paused)showStartupRecovery('runtime','수업이 보관되어 있습니다','연결 확인을 누르면 이어서 진행합니다.');});
 
 let startupRecoveryStage='';
 let startupRetrying=false;
@@ -10664,6 +10789,7 @@ function startMainLoopOnce(){
   loop();
 }
 window.retryStartup=async function(){
+  if(trainingClock.paused){await resumeTraining();return;}
   if(startupRetrying || modelLoading || modelPreparing || running || readyTimer) return;
   startupRetrying=true;
   const retryBtn=document.getElementById('startupRetryBtn');
@@ -10700,11 +10826,11 @@ initDrillRunMode();
 initSparringMode();
 
 (function initDwiArrow(){
-  try{ dwiArrowFlip = localStorage.getItem('akm_dwiarrow_v1')==='1'; }catch(e){ dwiArrowFlip=false; }
+  try{ dwiArrowFlip = localStorage.getItem('asm_dwiarrow_v1')==='1'; }catch(e){ dwiArrowFlip=false; }
   applyDwiArrowFlip();
 })();
 (function initAutoNext(){
-  try{ autoNextOn = localStorage.getItem('akm_autonext_v1')==='1'; }catch(e){ autoNextOn=false; }
+  try{ autoNextOn = localStorage.getItem('asm_autonext_v1')==='1'; }catch(e){ autoNextOn=false; }
   autoNextTeam=0; autoNextManualStop=false; autoNextArmed=false;
   autoNextSyncBtn();
 })();
@@ -11393,7 +11519,7 @@ let _akmFailCount = 0;
 let _akmFailLockUntil = 0;
 
 function _akmGetOrCreateDeviceId(){
-  const KEY='akm_device_id';
+  const KEY='asm_device_id';
   try{
     let id=localStorage.getItem(KEY);
     if(!id){ id='dev-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10); localStorage.setItem(KEY,id); }

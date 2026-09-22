@@ -78,6 +78,31 @@
   </section>
 </main>
 <script>
+
+function createTrainingClock(host){
+  const realNow=()=>host.performance.now(), later=host.setTimeout.bind(host), cancel=host.clearTimeout.bind(host);
+  let offset=0, frozen=null, serial=0; const timers=new Map();
+  const now=()=> (frozen===null?realNow():frozen)-offset;
+  function arm(id,t){ if(frozen!==null)return; t.handle=later(()=>{
+    if(!timers.has(id))return;
+    if(t.repeat){t.due=now()+t.delay;arm(id,t);}else timers.delete(id);
+    t.fn(...t.args);
+  },Math.max(0,t.due-now())); }
+  function add(fn,delay,repeat,args){const id=++serial,t={fn,delay:Math.max(repeat?1:0,Number(delay)||0),repeat,args,handle:null};t.due=now()+t.delay;timers.set(id,t);arm(id,t);return id;}
+  const clear=id=>{const t=timers.get(id);if(t){cancel(t.handle);timers.delete(id);}};
+  return {now,realNow,later,cancel,get paused(){return frozen!==null;},
+    setTimeout:(fn,ms,...args)=>add(fn,ms,false,args),clearTimeout:clear,
+    setInterval:(fn,ms,...args)=>add(fn,ms,true,args),clearInterval:clear,
+    pause(){if(frozen!==null)return;frozen=realNow();for(const t of timers.values())cancel(t.handle);},
+    resume(){if(frozen===null)return;offset+=realNow()-frozen;frozen=null;for(const [id,t]of timers)arm(id,t);}
+  };
+}
+const trainingClock=createTrainingClock(window);
+const performance={now:trainingClock.now};
+let {setTimeout,clearTimeout,setInterval,clearInterval}=trainingClock;
+let requestAnimationFrame=fn=>window.requestAnimationFrame(()=>fn(performance.now()));
+
+const groupProduct=new URLSearchParams(location.search).get('product')==='strike'?'strike':'kick';
 const $=id=>document.getElementById(id);
 const routines=[
  {name:'기초 앞차기',steps:[['준비 자세','ready','양발을 모으고 정면을 봅니다'],['오른발 앞차기','front-right','무릎을 들고 정면으로 찹니다'],['제자리 내려놓기','ready','오른발을 원래 자리에 놓습니다'],['왼발 앞차기','front-left','무릎을 들고 정면으로 찹니다'],['제자리 내려놓기','ready','왼발을 원래 자리에 놓습니다']]},
@@ -133,21 +158,23 @@ function whistle(){
   }catch(e){beep(1500)}
 }
 function announceStep(){
-  const s=step(); impactAt=-1;
+  const s=step(),token=runToken,stepIndex=si;impactAt=-1;const hit=()=>{if(token!==runToken||stepIndex!==si||paused)return;whistle();impactAt=performance.now();};
   try{
     speechSynthesis.cancel();
     const guide=new SpeechSynthesisUtterance(s[0]); guide.lang='ko-KR'; guide.rate=1.15;
-    if(s[1]!=='ready') guide.onend=()=>{setTimeout(()=>{whistle();impactAt=performance.now()},kind==='practice'?320:170)};
+    if(s[1]!=='ready') guide.onend=()=>{if(paused||token!==runToken)return;setTimeout(hit,kind==='practice'?320:170)};
     speechSynthesis.speak(guide);
-  }catch(e){if(s[1]!=='ready')setTimeout(()=>{whistle();impactAt=performance.now()},kind==='practice'?950:700)}
+  }catch(e){if(s[1]!=='ready')setTimeout(hit,kind==='practice'?950:700)}
 }
 function beep(freq=620){try{audio=audio||new AudioContext();const o=audio.createOscillator(),g=audio.createGain();o.frequency.value=freq;g.gain.value=.07;o.connect(g);g.connect(audio.destination);o.start();g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+.1);o.stop(audio.currentTime+.11)}catch(e){}}
 function move(d){si=(si+d+routines[ri].steps.length)%routines[ri].steps.length;render();announceStep();}
 function schedule(token=runToken){clearTimeout(timer);if(!running||paused||token!==runToken)return;const base=60000/(+$('bpm').value)*(kind==='practice'?2:1),ms=step()[1]==='ready'?base:Math.max(base,kind==='practice'?2400:2050);timer=setTimeout(async()=>{if(token!==runToken)return;if(kickCount>=+$('kickGoal').value){await endSet(token);return}si=(si+1)%routines[ri].steps.length;if(step()[1]!=='ready')kickCount++;render();beep();announceStep();schedule(token);},ms)}
 async function endSet(token){if(setNo<+$('sets').value){const sec=+$('rest').value;$('restScreen').hidden=false;for(let n=sec;n>0;n--){if(token!==runToken)return;$('restNum').textContent=n;await new Promise(r=>setTimeout(r,1000));}if(token!==runToken)return;setNo++;si=0;kickCount=0;$('restScreen').hidden=true;render();speak(`${setNo}세트 시작`);schedule(token);}else{running=false;$('start').textContent='다시 시작';$('pause').disabled=true;$('beat').textContent='FINISH';speak('운동 끝');}}
-async function start(){if(running)return;const token=++runToken;setNo=1;si=0;kickCount=0;running=true;paused=false;$('restScreen').hidden=true;$('countdown').hidden=false;for(const n of ['3','2','1','시작']){if(token!==runToken)return;$('countNum').textContent=n;beep(n==='시작'?900:560);await new Promise(r=>setTimeout(r,700));}if(token!==runToken)return;$('countdown').hidden=true;$('start').textContent='진행 중';$('pause').disabled=false;render();announceStep();schedule(token);}
+async function start(){if(running||document.hidden)return;trainingClock.resume();$('pause').disabled=false;$('pause').textContent='일시정지';const token=++runToken;setNo=1;si=0;kickCount=0;running=true;paused=false;$('restScreen').hidden=true;$('countdown').hidden=false;for(const n of ['3','2','1','시작']){if(token!==runToken)return;$('countNum').textContent=n;beep(n==='시작'?900:560);await new Promise(r=>setTimeout(r,700));}if(token!==runToken)return;$('countdown').hidden=true;$('start').textContent='진행 중';$('pause').disabled=false;render();announceStep();schedule(token);}
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{kind=b.dataset.kind;document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x===b));render()});
-$('routine').onchange=e=>{ri=+e.target.value;si=0;setNo=1;kickCount=0;render()};$('kickGoal').onchange=render;$('prev').onclick=()=>move(-1);$('next').onclick=()=>move(1);$('start').onclick=start;$('pause').onclick=()=>{paused=!paused;$('pause').textContent=paused?'계속':'일시정지';if(paused){clearTimeout(timer);speechSynthesis.cancel()}else schedule()};$('reset').onclick=()=>{runToken++;clearTimeout(timer);running=paused=false;si=0;setNo=1;kickCount=0;$('countdown').hidden=true;$('restScreen').hidden=true;$('start').textContent='시작';$('pause').textContent='일시정지';$('pause').disabled=true;render()};$('exitGroup').onclick=()=>{runToken++;clearTimeout(timer);running=paused=false;try{speechSynthesis.cancel()}catch(e){}location.replace('aikickmaster.html')};
+$('routine').onchange=e=>{ri=+e.target.value;si=0;setNo=1;kickCount=0;render()};$('kickGoal').onchange=render;$('prev').onclick=()=>move(-1);$('next').onclick=()=>move(1);$('start').onclick=start;$('pause').onclick=()=>{if(!running||document.hidden)return;paused=!paused;$('pause').textContent=paused?'계속':'일시정지';if(paused){trainingClock.pause();try{speechSynthesis.cancel()}catch(e){}}else{trainingClock.resume();if(audio?.state==='suspended')audio.resume().catch(()=>{});}};;$('reset').onclick=()=>{trainingClock.resume();runToken++;clearTimeout(timer);running=paused=false;si=0;setNo=1;kickCount=0;$('countdown').hidden=true;$('restScreen').hidden=true;$('start').textContent='시작';$('pause').textContent='일시정지';$('pause').disabled=true;render()};$('exitGroup').onclick=()=>{trainingClock.resume();runToken++;clearTimeout(timer);running=paused=false;try{speechSynthesis.cancel()}catch(e){}location.replace(groupProduct==='strike'?'aistrikemaster.html':'aikickmaster.html')};
+if(groupProduct==='strike'){document.title='스트라이크 · 단체 발차기';document.querySelector('.brand').textContent='STRIKE · 단체 발차기';}
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&running){paused=true;trainingClock.pause();$('pause').disabled=false;$('pause').textContent='계속';try{speechSynthesis.cancel();audio?.suspend();}catch(e){}}});
 init();
 </script>
 </body>
