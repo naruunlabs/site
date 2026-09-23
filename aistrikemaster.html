@@ -7276,7 +7276,7 @@ function onDrillKick(peak, traj){
     return;
   }
 
-  if(autoDrillTransitioning) return;
+  if(autoDrillTransitioning || (!twoPlayerMode && drillDone>=drillTarget)) return;   
   drillDone++;
   drillScores.push(result.score);
   lastScore=result.score;
@@ -9842,8 +9842,29 @@ function classifyPunchTrajectory(f,side,effectiveLead){
   return {type,label,score,checks,ambiguous,reason:handMiss?'wrong_hand':undefined};
 }
 
+const STRIKE_SCORE={
+  punch:{
+    speedFloor:6, speedSpan:18,         
+    hook: {width:10, widthFloor:.30, widthSpan:.60,  bent:12, bentOk:130, bentSpan:40, flat:6,  speed:6, guard:6},
+    upper:{rise:10,  riseFloor:.22,  riseSpan:.50,   bent:12, bentOk:135, bentSpan:40, vert:6,  speed:6, guard:6}
+  },
+  knee:   {fold:12, foldIdeal:70,  drop:8, dropIdeal:.90, height:8, heightIdeal:.20, snap:8, snapIdeal:350, straight:4, straightIdeal:.25},
+  lowkick:{extend:12, extendIdeal:170, reach:10, reachIdeal:1.75, speed:10, speedIdeal:.08, low:8, lowIdeal:.45}
+};
+
 function punchQuality(f,type,reason){
   const S=PUNCH_THRESHOLDS.score;
+  if(type==='hook'||type==='upper'){
+    const Q=STRIKE_SCORE.punch, H=Q[type];
+    const L=+f.lateral||0, V=+f.rise||0, sum=Math.max(.01,L+V);
+    const guard=(reason==='guard_return')?1:pc01((900-f.durMs)/400)*.4;
+    const spd=pc01((f.speed-Q.speedFloor)/Q.speedSpan);
+    const bent=1-pc01((f.extPeak-H.bentOk)/H.bentSpan);         
+    let s2=S.base+H.bent*bent+H.speed*spd+H.guard*guard;
+    if(type==='hook') s2+=H.width*pc01((L-H.widthFloor)/H.widthSpan)+H.flat*pc01((L/sum-.5)/.3);
+    else              s2+=H.rise *pc01((V-H.riseFloor)/H.riseSpan)+H.vert*pc01((V/sum-.5)/.3);
+    return Math.max(60,Math.min(100,Math.round(s2)));
+  }
   const floorExt=(type==='straight')?S.extFloorStraight:S.extFloorBent;
   const topExt =(type==='straight')?S.extTopStraight  :S.extTopBent;
   let s=S.base;
@@ -10128,14 +10149,37 @@ function pushStrikeKickLog(e){
 }
 function strikeKickLogCount(){ try{ return strikeKickLog.length; }catch(e){ return 0; } }
 
-function acceptStrikeKick(label){
+function strikeKickQuality(special,m,snapMs,ankleBelow){
+  const c=pc01, T=STRIKE_KICK_TH, parts={};
+  let s=60;
+  if(special==='knee'){
+    const Q=STRIKE_SCORE.knee, K=T.knee;
+    parts.fold    =c((K.kneeAngleMax-m.kneeAngle)/(K.kneeAngleMax-Q.foldIdeal));
+    parts.drop    =c((m.shinDrop-K.shinDropMin)/(Q.dropIdeal-K.shinDropMin));
+    parts.height  =c((m.kneeOverHip+K.fireAtHip)/(Q.heightIdeal+K.fireAtHip));
+    parts.snap    =(snapMs==null)?.5:c((K.snapMaxMs-snapMs)/(K.snapMaxMs-Q.snapIdeal));
+    parts.straight=c((K.lateralMax-m.lateral)/(K.lateralMax-Q.straightIdeal));
+    s+=Q.fold*parts.fold+Q.drop*parts.drop+Q.height*parts.height+Q.snap*parts.snap+Q.straight*parts.straight;
+  }else{
+    const Q=STRIKE_SCORE.lowkick, L=T.lowkick;
+    parts.extend=c((m.kneeAngle-L.fireKneeAngle)/(Q.extendIdeal-L.fireKneeAngle));
+    parts.reach =c((m.lateral-L.fireLateral)/(Q.reachIdeal-L.fireLateral));
+    parts.speed =c((m.ankleSpeed-L.ankleSpeedMin)/(Q.speedIdeal-L.ankleSpeedMin));
+    parts.low   =c((ankleBelow-L.ankleBelowHip)/(Q.lowIdeal-L.ankleBelowHip));
+    s+=Q.extend*parts.extend+Q.reach*parts.reach+Q.speed*parts.speed+Q.low*parts.low;
+  }
+  for(const k in parts) parts[k]=+parts[k].toFixed(2);
+  return {score:Math.max(60,Math.min(100,Math.round(s))),parts};
+}
+function acceptStrikeKick(label,score){
   const now=performance.now();
   if(now-strikeKickLastHitT<STRIKE_KICK_TH.cooldownMs) return;
   
-  if(autoDrillTransitioning) return;
-  strikeKickLastHitT=now; drillDone++; drillScores.push(100);
-  lastScore=100; lastGrade=label+' 성공!'; lastColor='#4caf50';
-  sndSuccess(); flashEdge(null); popup(label+'!','#4caf50'); renderStats();
+  if(autoDrillTransitioning || drillDone>=drillTarget) return;
+  const sc=Number.isFinite(score)?score:100;
+  strikeKickLastHitT=now; drillDone++; drillScores.push(sc);
+  lastScore=sc; lastGrade=label+' 성공!'; lastColor=sc>=90?'#4caf50':sc>=75?'#ffd54f':'#ff8a65';
+  sndSuccess(); flashEdge(null); popup(label+' '+sc+'점','#4caf50'); renderStats();
   altFootAdvance();
   if(drillDone>=drillTarget){
     if(drillRunMode==='auto') scheduleDrillFinish(finishAutoDrillStage,700);
@@ -10233,7 +10277,9 @@ function processStrikeSpecialFrame(lm){
       st.armed=false; st.homeFrames=0;
       const label=special==='lowkick'?'로킥':'니킥';
       const before=drillDone;
-      acceptStrikeKick(label);
+      const q=strikeKickQuality(special,metrics,st.att?Math.round(performance.now()-st.att.t0):null,(ankle.y-hipY)/torso);
+      metrics.score=q.score; metrics.scoreParts=q.parts;   
+      acceptStrikeKick(label,q.score);
       if(st.att && drillDone>before) st.att.accepted=true;
       if(drillDone>before) hfStrikeKick(special,metrics,(st.hfPts||[]).slice());   
 
@@ -13280,7 +13326,17 @@ body.hud-v21.akm-ui #enemyTarget .enemyBody,body.hud-v21.akm-ui .enemy-target .e
 html body.akm-lite-fx #enemyTarget .chromeFighterImg,html body.akm-lite-fx .enemy-target .chromeFighterImg{filter:brightness(.72) contrast(1.45) saturate(.85) drop-shadow(0 0 2px rgba(0,0,0,.95)) drop-shadow(0 7px 7px rgba(0,0,0,.7))!important}
 
 html body.hud-v21.akm-ui #enemyTarget,
-html body.hud-v21.akm-ui .enemy-target{opacity:.88!important}
+html body.hud-v21.akm-ui .enemy-target{opacity:1!important;isolation:auto!important}
+
+html body #enemyTarget .chromeFighterImg,
+html body .enemy-target .chromeFighterImg{
+  opacity:.58!important;mix-blend-mode:screen;
+  filter:brightness(1.15) contrast(1.25) saturate(.7) drop-shadow(0 0 1px rgba(255,255,255,.8)) drop-shadow(0 0 1.5px rgba(0,0,0,.85))!important;
+}
+html body.akm-lite-fx #enemyTarget .chromeFighterImg,
+html body.akm-lite-fx .enemy-target .chromeFighterImg{
+  filter:brightness(1.15) contrast(1.25) saturate(.7)!important;
+}
 </style>
 <script>
 

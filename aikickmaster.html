@@ -4518,6 +4518,7 @@ function autoDrillStageLabel(){
   return (autoDrillIndex+1)+' / '+AUTO_DRILL_SEQUENCE.length;
 }
 function beginAutoDrillStage(index, announce=true){
+  cancelDrillFinish();   
   autoDrillIndex=index;
   currentMode=AUTO_DRILL_SEQUENCE[autoDrillIndex];
   drillDone=0;
@@ -4657,6 +4658,15 @@ let AUTO_DRILL_SEQUENCE=autoDrillModes();
 let autoDrillIndex=0;
 let autoDrillResults={};
 let autoDrillTransitioning=false;
+
+let drillFinishTimer=null;
+function scheduleDrillFinish(fn,ms){
+  if(drillFinishTimer) clearTimeout(drillFinishTimer);
+  drillFinishTimer=setTimeout(()=>{ drillFinishTimer=null; fn(); },ms);
+}
+function cancelDrillFinish(){
+  if(drillFinishTimer){ clearTimeout(drillFinishTimer); drillFinishTimer=null; }
+}
 let sparringHp=250, sparringDamage=0, sparringCombo=0, sparringMaxCombo=0;
 let sparringLastHitT=0;
 let lastKickCompleteT=0;
@@ -6749,6 +6759,10 @@ function onDrillKick(peak, traj){
     return;
   }
 
+  if(!twoPlayerMode && (autoDrillTransitioning || drillDone>=drillTarget)){
+    trajX=[]; trajY=[]; trajHipX=[]; trajTorso=[]; trajHipW=[]; trajKneeX=[]; trajKneeAngle=[]; trajHipVis=[]; trajKneeVis=[]; trajKneeAngle3D=[]; trajShoulderW=[]; trajFootAng=[]; trajFootAngVis=[]; trajKneeMark=[]; kmPeakY=null; kmHitBefore=false; kneeMarkFlashArmed=false; trajActive=false; drillSide=0; resetPreRoll();
+    return;
+  }
   drillDone++;
   drillScores.push(result.score);
   lastScore=result.score;
@@ -6767,8 +6781,8 @@ function onDrillKick(peak, traj){
 
   if(drillDone>=drillTarget){
     if(twoPlayerMode){  }
-    else if(drillRunMode==='auto') setTimeout(finishAutoDrillStage,700);
-    else setTimeout(finishDrill,700);
+    else if(drillRunMode==='auto') scheduleDrillFinish(finishAutoDrillStage,700);
+    else scheduleDrillFinish(finishDrill,700);
   }
 }
 
@@ -11818,7 +11832,17 @@ body.hud-v21.akm-ui #enemyTarget .enemyBody,body.hud-v21.akm-ui .enemy-target .e
 html body.akm-lite-fx #enemyTarget .chromeFighterImg,html body.akm-lite-fx .enemy-target .chromeFighterImg{filter:brightness(.72) contrast(1.45) saturate(.85) drop-shadow(0 0 2px rgba(0,0,0,.95)) drop-shadow(0 7px 7px rgba(0,0,0,.7))!important}
 
 html body.hud-v21.akm-ui #enemyTarget,
-html body.hud-v21.akm-ui .enemy-target{opacity:.88!important}
+html body.hud-v21.akm-ui .enemy-target{opacity:1!important;isolation:auto!important}
+
+html body #enemyTarget .chromeFighterImg,
+html body .enemy-target .chromeFighterImg{
+  opacity:.58!important;mix-blend-mode:screen;
+  filter:brightness(1.15) contrast(1.25) saturate(.7) drop-shadow(0 0 1px rgba(255,255,255,.8)) drop-shadow(0 0 1.5px rgba(0,0,0,.85))!important;
+}
+html body.akm-lite-fx #enemyTarget .chromeFighterImg,
+html body.akm-lite-fx .enemy-target .chromeFighterImg{
+  filter:brightness(1.15) contrast(1.25) saturate(.7)!important;
+}
 </style>
 <script>
 
