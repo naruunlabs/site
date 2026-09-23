@@ -690,6 +690,11 @@ body.hf-dim #jmpPilotGraph .jt-wing{display:none!important}
         <button type="button" data-gk="practice" class="on">연습 · 발판</button>
         <button type="button" data-gk="play">실전 · 리듬게임</button>
       </div>
+      <span class="option-label">화면 방식</span>
+      <div class="seg two" id="groupViewSeg">
+        <button type="button" data-gv="grid" class="on">격자 · 새 화면</button>
+        <button type="button" data-gv="foot">발 모양 · 종전</button>
+      </div>
       <label class="lfield"><i>훈련 음악</i><select id="groupMusic"><option value="iron" selected>The Iron Pace · 120 BPM</option><option value="final">The Final Rep · 120 BPM</option><option value="none">음악 없음 · 박자음만</option></select></label>
       <div class="lfield" id="groupSkillWrap"><i>연습할 종목</i><div class="rsum"><span id="groupPracticeSum">1개 종목</span><button type="button" id="groupPracticeEditBtn">선택 ›</button></div><select id="groupSkill" hidden></select></div>
       <div class="lfield" id="groupRoutineWrap" hidden><i>루틴</i><div class="rsum"><span id="groupRoutineSum"></span><button type="button" id="groupEditBtn">편집 ›</button></div></div>
@@ -844,7 +849,7 @@ body.hf-dim #jmpPilotGraph .jt-wing{display:none!important}
 
 <script type="module">
 
-const APP_VERSION = '3.5.0';   
+const APP_VERSION = '3.6.0';   
 
 const MP_VERSION  = '1.0.1';
 const MP_LOCAL    = './vendor/mediapipe/';
@@ -1309,6 +1314,7 @@ const practiceTotal=()=>groupPracticeRoutine.reduce((s,m)=>s+m.b,0);
 function practiceSummary(){ const names=groupPracticeRoutine.slice(0,3).map(m=>shortName(skillById(m.id))).join(' · '); return `${groupPracticeRoutine.length}개 · ${names}${groupPracticeRoutine.length>3?' 외':''}`; }
 let groupKind='practice';          
 let groupRunKind='practice';       
+let groupView='grid';              
 let groupSkillId='together';       
 let practiceOffset=0;              
 const GROUP_MUSIC={
@@ -2258,7 +2264,7 @@ function relayTick(now){
 const lobbyPrefs = store.json('jmp_lobby_v1',{}) || {};
 function saveLobbyPrefs(){
   store.set('jmp_lobby_v1',JSON.stringify({mode,soloMode,soloJumpType,alternateCountMode,duoType,soloTime:$('soloTime').value,soloTarget:$('soloTarget').value,bpm:$('bpm').value,duration:$('duration').value,
-    relayPlayers:$('relayPlayers').value,relayTarget:$('relayTarget').value,relayRounds:$('relayRounds').value,relayChange:$('relayChange').value,groupKind,groupSkill:groupSkillId,groupMusic:groupMusicKey}));
+    relayPlayers:$('relayPlayers').value,relayTarget:$('relayTarget').value,relayRounds:$('relayRounds').value,relayChange:$('relayChange').value,groupKind,groupView,groupSkill:groupSkillId,groupMusic:groupMusicKey}));
 }
 function restoreLobbyPrefs(){
   const p=lobbyPrefs;
@@ -2271,6 +2277,7 @@ function restoreLobbyPrefs(){
   setSel('soloTime',p.soloTime); setSel('soloTarget',p.soloTarget); setSel('bpm',p.bpm); setSel('duration',p.duration);
   setSel('relayPlayers',p.relayPlayers); setSel('relayTarget',p.relayTarget); setSel('relayRounds',p.relayRounds); setSel('relayChange',p.relayChange);
   if(['practice','play'].includes(p.groupKind)) groupKind=p.groupKind;
+  if(['grid','foot'].includes(p.groupView)) groupView=p.groupView;
   if(SKILL_BY_ID[p.groupSkill]) groupSkillId=p.groupSkill;
   if(p.groupMusic==='none'||GROUP_MUSIC[p.groupMusic]) groupMusicKey=p.groupMusic;
 }
@@ -2296,6 +2303,7 @@ function applyModeUI(){
   $('optRelay').hidden = mode!=='relay';
   $('optGroup').hidden = mode!=='group';
   document.querySelectorAll('#groupSeg button').forEach(b=>b.classList.toggle('on',b.dataset.gk===groupKind));
+  document.querySelectorAll('#groupViewSeg button').forEach(b=>b.classList.toggle('on',b.dataset.gv===groupView));
   $('groupSkillWrap').hidden = groupKind!=='practice';
   $('groupRoutineWrap').hidden = groupKind!=='play';
   $('groupSkill').value = groupSkillId;
@@ -3338,7 +3346,176 @@ function gLane(W,H,bf,pulse){
   if(beatPhase<.3 && bf>=0 && bf<T){ const q=beatPhase/.3; ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.globalAlpha=(1-q)*.7; ctx.strokeStyle='#BEF264'; ctx.lineWidth=(5-3*q)*S; ctx.beginPath(); ctx.ellipse(W/2,hitY,(90+260*q)*S,(10+30*q)*S,0,0,Math.PI*2); ctx.stroke(); ctx.restore(); }
 }
 
+const G_VIEW_COL={ grid:{L:'#A3E635',R:'#2DD4BF'}, foot:{L:'#38BDF8',R:'#FB7185'} };
+function gApplyViewColors(){ const c=G_VIEW_COL[groupView]||G_VIEW_COL.grid; GCOL.L=c.L; GCOL.R=c.R; }
+function gGridCell(f){
+  const c=f.x<-.8?0:f.x>.8?2:1, y=f.y||0;
+  let r=y<-.5?0:y>.5?2:1;
+  if(f.st==='kick') r=0;
+  return {c,r};
+}
+function gGridFeet(p){
+  const L=gGridCell(p.L), R=gGridCell(p.R), same=L.c===R.c&&L.r===R.r;
+  const crossed=!!p.cross || p.L.x>p.R.x;           
+  return [
+    {side:'L',c:L.c,r:L.r,st:p.L.st,half:same?(crossed?'r':'l'):null},
+    {side:'R',c:R.c,r:R.r,st:p.R.st,half:same?(crossed?'l':'r'):null}
+  ];
+}
+function gDrawGrid(cx,cy,S,pA,pB,tt,pulse,alpha,big){
+  const gap=S*.045, cell=(S-gap*2)/3, rad=cell*.18, x0=cx-S/2, y0=cy-S/2, lw=Math.max(1,S*.005);
+  ctx.save();
+  for(let i=0;i<9;i++){
+    const x=x0+(i%3)*(cell+gap), y=y0+Math.floor(i/3)*(cell+gap);
+    ctx.globalAlpha=alpha; ctx.fillStyle='rgba(255,255,255,.028)';
+    ctx.strokeStyle=`rgba(163,230,53,${big?.16+.14*pulse:.16})`; ctx.lineWidth=lw;
+    ctx.beginPath(); ctx.roundRect(x,y,cell,cell,rad); ctx.fill(); ctx.stroke();
+  }
+  if(big){
+    const fs=Math.max(10,S*.045);
+    gLabel('앞',x0-gap*1.6,y0+cell/2,fs,`rgba(234,244,241,${.5*alpha})`,'right');
+    gLabel('뒤',x0-gap*1.6,y0+2*(cell+gap)+cell/2,fs,`rgba(234,244,241,${.5*alpha})`,'right');
+  }
+  const drawPose=(p,a)=>{
+    if(a<=.01) return;
+    for(const f of gGridFeet(p)){
+      const x=x0+f.c*(cell+gap), y=y0+f.r*(cell+gap);
+      let bx=x, bw=cell;
+      if(f.half==='l') bw=cell/2-gap*.25;
+      else if(f.half==='r'){ bx=x+cell/2+gap*.25; bw=cell/2-gap*.25; }
+      const col=GCOL[f.side], A=alpha*a*(p.jump?1:.5);
+      ctx.save(); ctx.globalAlpha=A;
+      if(f.st==='land'){
+        ctx.fillStyle=col; ctx.shadowColor=col; ctx.shadowBlur=(big?8+18*pulse:5)*view.dpr;
+        ctx.beginPath(); ctx.roundRect(bx,y,bw,cell,rad); ctx.fill();
+      }else if(f.st==='tap'){
+        ctx.fillStyle=col; ctx.shadowColor=col; ctx.shadowBlur=6*view.dpr;
+        ctx.beginPath(); ctx.arc(bx+bw/2,y+cell/2,Math.min(bw,cell)*.2,0,Math.PI*2); ctx.fill();
+      }else if(f.st==='air'){
+        ctx.globalAlpha=A*.5; ctx.strokeStyle=col; ctx.lineWidth=lw*2; ctx.setLineDash([cell*.08,cell*.07]);
+        ctx.beginPath(); ctx.roundRect(bx+lw,y+lw,bw-lw*2,cell-lw*2,rad); ctx.stroke(); ctx.setLineDash([]);
+      }else{
+        ctx.fillStyle=col; ctx.globalAlpha=A*.14; ctx.beginPath(); ctx.roundRect(bx,y,bw,cell,rad); ctx.fill();
+        ctx.globalAlpha=A; ctx.strokeStyle=col; ctx.lineWidth=lw*(big?4:2.4); ctx.shadowColor=col; ctx.shadowBlur=(big?8:4)*view.dpr;
+        ctx.beginPath(); ctx.roundRect(bx+lw,y+lw,bw-lw*2,cell-lw*2,rad); ctx.stroke(); ctx.shadowBlur=0;
+        const w=G_FOOT_WORD[f.st];
+        if(w && big) gLabel(w,bx+bw/2,y+cell/2,Math.max(10,Math.min(bw,cell)*.26),'#fff');
+      }
+      ctx.restore();
+    }
+  };
+  if(tt<=0) drawPose(pA,1); else { drawPose(pA,1-tt); drawPose(pB,tt); }
+  const p=tt<.5?pA:pB, badge=p.arms!=='open'?p.arms:p.armBadge;
+  if(badge) gArmGlyph(cx,y0-S*.1,Math.max(12,S*.13),badge,alpha);
+  if(big && !p.jump) gLabel('이 박은 뛰지 않아요',cx,y0+S+S*.08,Math.max(11,S*.05),`rgba(234,244,241,${.85*alpha})`);
+  ctx.restore();
+}
+function gGridBg(W,H,pulse){
+  let g=ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'#06201C'); g.addColorStop(.55,'#041714'); g.addColorStop(1,'#020B0A');
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  const glow=ctx.createRadialGradient(W*.34,H*.3,0,W*.34,H*.3,Math.max(W*.5,H*.7));
+  glow.addColorStop(0,`rgba(20,184,166,${.16+.04*pulse})`); glow.addColorStop(1,'rgba(2,11,10,0)');
+  ctx.fillStyle=glow; ctx.fillRect(0,0,W,H);
+}
+
+function gLane2(W,H,bf,pulse,LX,topF=.08){
+  const T=groupTotal(), laneW=Math.min(W*(W<H?.2:.1),H*.19), gp=laneW*.3;
+  const xs={L:LX-gp/2-laneW/2, R:LX+gp/2+laneW/2};
+  const top=H*topF, hitY=H*.8, bottom=H*.94, LOOK=3.2, perBeat=(hitY-top)/LOOK, nh=Math.max(10,laneW*.3);
+  ctx.save();
+  for(const side of ['L','R']){
+    const x=xs[side]-laneW/2, g=ctx.createLinearGradient(0,top,0,bottom);
+    g.addColorStop(0,'rgba(163,230,53,0)'); g.addColorStop(1,'rgba(163,230,53,.07)');
+    ctx.fillStyle=g; ctx.fillRect(x,top,laneW,bottom-top);
+    ctx.strokeStyle='rgba(163,230,53,.14)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(x,top); ctx.lineTo(x,bottom); ctx.moveTo(x+laneW,top); ctx.lineTo(x+laneW,bottom); ctx.stroke();
+    gLabel(side==='L'?'왼발':'오른발',xs[side],bottom+H*.025,Math.max(10,H*.022),`rgba(234,244,241,.6)`);
+  }
+  
+  const jx0=xs.L-laneW*.75, jx1=xs.R+laneW*.75;
+  ctx.strokeStyle='#fff'; ctx.lineWidth=(3+2*pulse)*view.dpr*.6; ctx.shadowColor='#A3E635'; ctx.shadowBlur=(10+14*pulse)*view.dpr;
+  ctx.beginPath(); ctx.moveTo(jx0,hitY); ctx.lineTo(jx1,hitY); ctx.stroke(); ctx.shadowBlur=0;
+  const bi=Math.floor(bf);
+  if(bf>=0 && bi<T) gLabel(String(gmod(bi,4)+1),jx0-laneW*.25,hitY,Math.max(16,laneW*.45),`rgba(190,242,100,${.5+.5*pulse})`,'right');   
+  
+  const base=Math.ceil(bf*2)/2;
+  for(let s=Math.ceil(LOOK*2);s>=0;s--){   
+    const nb=base+s*.5, dist=nb-bf; if(dist<-.25||dist>LOOK) continue;
+    const isHalf=Math.abs(gmod(nb,1))>.01, beatK=Math.round(isHalf?nb-.5:nb);
+    if(beatK<0||beatK>=T) continue;
+    const M=groupMoveAt(beatK), p=M.pose;
+    if(isHalf && !M.sk.ghost) continue;
+    const y=hitY-dist*perBeat;
+    let alpha=dist<0?Math.max(0,1+dist/.25):1;
+    alpha*=clamp((y-top)/(H*.08),0,1);
+    if(alpha<=.01) continue;
+    if(isHalf){
+      for(const side of ['L','R']){ ctx.save(); ctx.globalAlpha=alpha*.45; ctx.fillStyle=GCOL[side]; ctx.beginPath(); ctx.roundRect(xs[side]-laneW*.3,y-nh*.2,laneW*.6,nh*.4,nh*.2); ctx.fill(); ctx.restore(); }
+      continue;
+    }
+    if(M.local===0){
+      ctx.save(); ctx.globalAlpha=alpha*.85; ctx.strokeStyle='#BEF264'; ctx.lineWidth=2; ctx.setLineDash([8,7]);
+      ctx.beginPath(); ctx.moveTo(jx0,y-nh*1.4); ctx.lineTo(jx1,y-nh*1.4); ctx.stroke(); ctx.restore();
+      if(W<H) gLabel(shortName(M.sk),LX,y-nh*2.3,Math.max(10,nh*.62),`rgba(190,242,100,${alpha})`);   
+      else gLabel(shortName(M.sk),jx1+laneW*.2,y-nh*1.4,Math.max(10,nh*.62),`rgba(190,242,100,${alpha})`,'left');
+    }
+    for(const side of ['L','R']){
+      const f=p[side]; if(f.st==='air') continue;
+      const col=GCOL[side], w=laneW*(f.st==='tap'?.55:.84), x=xs[side]-w/2;
+      const lifted=['knee','back','kick'].includes(f.st);
+      ctx.save(); ctx.globalAlpha=alpha*(p.jump?1:.45);
+      if(lifted||!p.jump){
+        ctx.strokeStyle=col; ctx.lineWidth=3; ctx.shadowColor=col; ctx.shadowBlur=8*view.dpr;
+        ctx.beginPath(); ctx.roundRect(x,y-nh/2,w,nh,nh*.4); ctx.stroke();
+      }else{
+        ctx.fillStyle=col; ctx.shadowColor=col; ctx.shadowBlur=(dist<.15&&dist>-.2?22:12)*view.dpr;
+        ctx.beginPath(); ctx.roundRect(x,y-nh/2,w,nh,nh*.4); ctx.fill();
+      }
+      ctx.restore();
+      const word=G_FOOT_WORD[f.st]||((f.y||0)<-.5?'앞':(f.y||0)>.5?'뒤':Math.abs(f.x)>.8?'벌려':'');
+      if(word) gLabel(word,xs[side],y,Math.max(9,nh*.58),lifted?`rgba(255,255,255,${alpha})`:`rgba(4,23,20,${alpha})`);
+    }
+    const badge=p.arms!=='open'?p.arms:p.armBadge;
+    if(badge) gArmGlyph(LX,y,Math.max(11,nh*1.1),badge,alpha);
+  }
+  ctx.restore();
+}
+function drawGroupSceneGrid(now){
+  const W=view.W, H=view.H, bf=(now-gameStartPerf)/beatMs;
+  const pulse=bf>=0?Math.pow(1-gmod(bf,1),4):0;
+  gGridBg(W,H,pulse);
+  if(groupRunKind==='practice'){
+    const B=gCoachAt(bf,H*.5,W*.22,H*.8,pulse);
+    const S=Math.min(H*.46,W*.3), pcx=W*.58, pcy=H*.6;
+    gDrawGrid(pcx,pcy,S,B.pA,B.pB,B.tt,pulse,1,true);
+    const nS=S*.3, ny=pcy-S/2-H*.13-nS/2, nP=B.tt>.5?B.pC:B.pB, fs=Math.max(11,H*.026);
+    gDrawGrid(pcx,ny,nS,nP,nP,0,0,.72,false);
+    gLabel('다음',pcx-nS/2-nS*.3,ny,fs,'rgba(234,244,241,.66)','right');
+    gLabel(nP.t,pcx+nS/2+nS*.3,ny,fs,'rgba(190,242,100,.9)','left');
+  }else{
+    const M=groupMoveAt(Math.round(Math.max(0,bf))), cur=M.pose, port=H>W*1.05;
+    
+    const S=port?Math.min(W*.42,H*.22):Math.min(H*.5,W*.3), gcx=port?W*.5:W*.3, gcy=port?H*.2:H*.55;
+    const nameFs=Math.max(14,Math.min(H*.045,W*.055));
+    gDrawGrid(gcx,gcy,S,cur,cur,0,pulse,1,true);
+    gLabel('NOW',gcx,gcy+S/2+Math.max(12,nameFs*.7),Math.max(10,nameFs*.45),'rgba(163,230,53,.95)');
+    gLabel(shortName(M.sk),gcx,gcy+S/2+nameFs*1.7,nameFs,'#fff');
+    if(bf>-1 && M.left<=4 && M.hasNext && !M.nextSame){
+      const Nx=groupMoveAt(Math.round(Math.max(0,bf))+M.left), fade=clamp(4.6-M.left,0,1), pp=Nx.sk.cyc[0];
+      const nS=S*(port?.34:.28), fs=Math.max(10,Math.min(H*.024,W*.03));
+      const nx=port?gcx+S/2+nS*.9:gcx+S/2-nS/2, ny=port?gcy-S*.12:gcy-S/2-H*.1-nS/2;
+      gDrawGrid(nx,ny,nS,pp,pp,0,0,.85*fade,false);
+      if(port){ gLabel(`다음 · ${shortName(Nx.sk)}`,nx,ny+nS/2+fs*1.2,fs,`rgba(190,242,100,${fade})`); gLabel(`${M.left}박 후`,nx,ny+nS/2+fs*2.5,fs,`rgba(234,244,241,${fade*.85})`); }
+      else gLabel(`다음 · ${shortName(Nx.sk)} · ${M.left}박 후`,nx-nS/2-nS*.25,ny,fs,`rgba(190,242,100,${fade})`,'right');
+    }
+    if(port) gLane2(W,H,bf,pulse,W*.5,.44); else gLane2(W,H,bf,pulse,W*.68);
+  }
+}
+
 function drawGroupScene(now){
+  gApplyViewColors();
+  if(groupView==='grid') return drawGroupSceneGrid(now);   
   const W=view.W, H=view.H, bf=(now-gameStartPerf)/beatMs;
   const pulse=bf>=0?Math.pow(1-gmod(bf,1),4):0;
   if(groupRunKind==='practice'){
@@ -3529,6 +3706,7 @@ document.querySelectorAll('#duoSeg button').forEach(b=>b.addEventListener('click
 
 $('groupSkill').innerHTML=['발 모양','발 리듬','손 기술'].map(c=>`<optgroup label="${c}">${SKILLS.filter(s=>s.cat===c).map(s=>`<option value="${s.id}">${esc(s.n)}</option>`).join('')}</optgroup>`).join('');
 document.querySelectorAll('#groupSeg button').forEach(b=>b.addEventListener('click',()=>{ groupKind=b.dataset.gk; applyModeUI(); saveLobbyPrefs(); }));
+document.querySelectorAll('#groupViewSeg button').forEach(b=>b.addEventListener('click',()=>{ groupView=b.dataset.gv; applyModeUI(); saveLobbyPrefs(); }));
 $('groupMusic').addEventListener('change',e=>{groupMusicKey=e.target.value;groupMusicBuffer=null;groupMusicBufferKey='';applyModeUI();saveLobbyPrefs();});
 $('groupSkill').addEventListener('change',e=>{ groupSkillId=e.target.value; applyModeUI(); saveLobbyPrefs(); });
 $('groupEditBtn').addEventListener('click',()=>openRoutineEditor('play'));
