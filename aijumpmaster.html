@@ -428,6 +428,19 @@ body.jmp-lite-hud .jt-bars i{box-shadow:none}body.jmp-lite-hud .jt-wing{filter:n
   text-align:center;font-size:max(15px,calc(var(--u)*1.4));font-weight:900;color:#052B27;text-shadow:none;
   background:linear-gradient(110deg,var(--lime),var(--teal))}
 .rbtn2{display:block;width:100%;margin-top:6px;padding:10px;text-align:center;font-size:max(13px,calc(var(--u)*1.15));font-weight:800;color:rgba(255,255,255,.82)}
+
+.rbtn-row{display:flex;justify-content:center;gap:10px;margin-top:max(10px,calc(var(--u)*1))}
+.rbtn-row .rbtn,.rbtn-row .rbtn2{flex:0 0 auto;width:min(190px,44%);margin:0;box-sizing:border-box;
+  height:max(40px,calc(var(--u)*3.6));padding:0 12px;display:flex;align-items:center;justify-content:center;
+  border-radius:max(9px,calc(var(--u)*.8));font-size:max(14px,calc(var(--u)*1.2));font-weight:900;line-height:1}
+.rbtn-row .rbtn2{border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.06);color:rgba(255,255,255,.88)}
+#resultNext{display:none}
+#result.compact #resultBody,#result.compact .rhand-hint{display:none}
+#result.compact #resultNext{display:block;padding:max(8px,calc(var(--u)*.8)) 0}
+#resultNext .rn-main{font-size:max(22px,calc(var(--u)*2.4));font-weight:900;color:#fff}
+#resultNext .rn-sub{margin-top:6px;font-size:max(14px,calc(var(--u)*1.3));font-weight:800;color:#bfe9d4}
+#resultNext .rn-last{margin-top:8px;font-size:max(12px,calc(var(--u)*1.1));font-weight:800;color:rgba(255,255,255,.6)}
+.rhand-hint{margin-top:8px;font-size:max(11px,calc(var(--u)*1));font-weight:700;color:rgba(191,233,212,.75)}
 @media (max-width:700px),(max-height:560px){#result{width:min(860px,calc(100vw - 24px));max-height:calc(100vh - 20px)}#resultBody>.duo-result .rgrid{grid-template-columns:repeat(4,1fr)}#resultBody>.duo-result .rbox strong{font-size:max(20px,calc(var(--u)*2.3))}}
 
 .countdown{position:absolute;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -708,8 +721,14 @@ html body:not(.jmp-beta-on) #jumpLabModal{
 
   <section class="panel" id="result" hidden aria-live="polite">
     <div id="resultBody"></div>
-    <button class="rbtn" id="againBtn" type="button">한 번 더</button>
-    <button class="rbtn2" id="homeBtn" type="button">설정 바꾸기</button>
+    
+    <div id="resultNext"><div class="rn-main">다음 선수 들어오세요</div><div class="rn-sub">한 손을 머리 위로 2초 들면 시작해요</div><div class="rn-last" id="resultLast"></div></div>
+    
+    <div class="rbtn-row">
+      <button class="rbtn" id="againBtn" type="button">한 번 더</button>
+      <button class="rbtn2" id="homeBtn" type="button">설정 바꾸기</button>
+    </div>
+    <div class="rhand-hint" id="rhandHint">다음 선수는 한 손을 머리 위로 2초 들면 시작해요</div>
   </section>
 
   <div class="countdown" id="countdown" hidden><b id="cdNum">3</b><span id="cdSub"></span></div>
@@ -1796,23 +1815,65 @@ function hsRaised(lm){
   }
   return false;
 }
+
+function holoCss(){
+  if(document.getElementById('holoHudCss')) return;
+  const st=document.createElement('style'); st.id='holoHudCss';
+  st.textContent=`
+.holo{position:fixed;left:50%;transform:translateX(-50%);z-index:99980;pointer-events:none;white-space:nowrap;
+  color:#e9fdff;text-align:center;opacity:0;transition:opacity .18s ease;
+  --holo:#6ff2ff;--holo-dim:rgba(111,242,255,.32);
+  text-shadow:0 0 10px rgba(0,225,255,.75),0 1px 3px rgba(0,0,0,.95),0 0 18px rgba(0,0,0,.6)}
+.holo.on{opacity:1}
+.holo .h-tag{display:inline-flex;align-items:center;gap:10px;font-size:11px;font-weight:800;letter-spacing:.32em;
+  color:var(--holo);opacity:.85;animation:holoFlick 2.4s steps(1) infinite}
+.holo .h-tag::before,.holo .h-tag::after{content:"";width:34px;height:1px;background:linear-gradient(90deg,transparent,var(--holo));box-shadow:0 0 6px var(--holo)}
+.holo .h-tag::after{transform:scaleX(-1)}
+.holo .h-ring{position:relative;width:148px;height:148px;margin:8px auto 6px;filter:drop-shadow(0 0 6px rgba(0,225,255,.55))}
+.holo .h-ring svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.holo .h-spin{transform-origin:74px 74px;animation:holoSpin 14s linear infinite}
+.holo .h-spin2{transform-origin:74px 74px;animation:holoSpin 3.2s linear infinite reverse}
+.holo .h-pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-size:34px;font-weight:900;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.holo .h-pct small{font-size:13px;font-weight:800;margin-left:2px;color:var(--holo)}
+.holo .h-main{font-size:24px;font-weight:900;letter-spacing:.04em}
+.holo .h-sub{margin-top:4px;font-size:13px;font-weight:700;color:#bff8ff;opacity:.9}
+.holo .h-frame{position:relative;padding:12px 26px 14px}
+.holo .h-frame::before,.holo .h-frame::after{content:"";position:absolute;width:16px;height:16px;border:1.5px solid var(--holo);
+  filter:drop-shadow(0 0 4px rgba(0,225,255,.8))}
+.holo .h-frame::before{left:0;top:0;border-right:0;border-bottom:0}
+.holo .h-frame::after{right:0;bottom:0;border-left:0;border-top:0}
+@keyframes holoSpin{to{transform:rotate(360deg)}}
+@keyframes holoFlick{0%,100%{opacity:.85}47%{opacity:.85}48%{opacity:.4}50%{opacity:.85}}
+`;
+  document.head.appendChild(st);
+}
 function hsShow(p){
   try{
     if(!hsEl){
-      hsEl=document.createElement('div'); hsEl.id='handStartGauge';
-      hsEl.style.cssText='position:fixed;left:50%;top:24%;transform:translateX(-50%);z-index:99980;'
-        +'pointer-events:none;padding:16px 26px 18px;border-radius:18px;background:rgba(6,16,31,.86);'
-        +'border:1px solid rgba(120,255,190,.5);box-shadow:0 14px 50px rgba(0,0,0,.55);'
-        +'color:#fff;text-align:center;font-weight:900;opacity:0;transition:opacity .15s;min-width:260px;';
-      hsEl.innerHTML='<div style="font-size:26px;line-height:1.2;">✋ 그대로!</div>'
-        +'<div style="font-size:14px;color:#bfe9d4;margin:4px 0 12px;font-weight:700;">손을 들고 있으면 곧 시작합니다</div>'
-        +'<div style="height:10px;border-radius:99px;background:rgba(255,255,255,.14);overflow:hidden;">'
-        +'<div class="hsBar" style="height:100%;width:0%;background:linear-gradient(90deg,#54ffad,#b6ff5c);"></div></div>';
+      holoCss();
+      hsEl=document.createElement('div'); hsEl.id='handStartGauge'; hsEl.className='holo';
+      hsEl.style.top='20%';
+      const C=2*Math.PI*46;
+      hsEl.innerHTML='<div class="h-tag">HAND SIGNAL</div>'
+        +'<div class="h-ring"><svg viewBox="0 0 148 148">'
+        +'<g class="h-spin"><circle cx="74" cy="74" r="68" fill="none" stroke="rgba(111,242,255,.45)" stroke-width="1" stroke-dasharray="2 7"/>'
+        +'<path d="M74 2 A72 72 0 0 1 132 32" fill="none" stroke="#6ff2ff" stroke-width="1.5" opacity=".8"/>'
+        +'<path d="M16 116 A72 72 0 0 1 4 74" fill="none" stroke="#6ff2ff" stroke-width="1.5" opacity=".6"/></g>'
+        +'<circle cx="74" cy="74" r="56" fill="none" stroke="rgba(111,242,255,.55)" stroke-width="6" stroke-dasharray="1 4.86"/>'
+        +'<circle cx="74" cy="74" r="46" fill="none" stroke="rgba(111,242,255,.16)" stroke-width="4"/>'
+        +'<circle class="hsArc" cx="74" cy="74" r="46" fill="none" stroke="#7ff5ff" stroke-width="4" stroke-linecap="round"'
+        +' stroke-dasharray="'+C.toFixed(1)+'" stroke-dashoffset="'+C.toFixed(1)+'" transform="rotate(-90 74 74)"/>'
+        +'<g class="h-spin2"><circle cx="74" cy="74" r="36" fill="none" stroke="rgba(111,242,255,.5)" stroke-width="1" stroke-dasharray="26 200"/></g>'
+        +'</svg><div class="h-pct"><span class="hsPct">0</span><small>%</small></div></div>'
+        +'<div class="h-main">그대로 유지</div>'
+        +'<div class="h-sub">손을 들고 있으면 곧 시작합니다</div>';
       document.body.appendChild(hsEl);
     }
-    const on=p>0;
-    hsEl.style.opacity=on?'1':'0';
-    const b=hsEl.querySelector('.hsBar'); if(b) b.style.width=Math.min(100,Math.round(p*100))+'%';
+    const on=p>0, v=Math.max(0,Math.min(1,p)), C=2*Math.PI*46;
+    hsEl.classList.toggle('on',on);
+    const a=hsEl.querySelector('.hsArc'); if(a) a.setAttribute('stroke-dashoffset',(C*(1-v)).toFixed(1));
+    const t=hsEl.querySelector('.hsPct'); if(t) t.textContent=Math.round(v*100);
   }catch(e){}
 }
 function hsReset(){ hsT0=0; hsLastUp=0; hsShow(0); }
@@ -1844,10 +1905,10 @@ function hsCanStart(){
   if(bootBusy || document.hidden || mode==='group') return false;
   const ls=$('loginScreen'); if(ls && !ls.hidden) return false;
   if(document.querySelector('.modal:not([hidden])')) return false;
-  try{ if(labPending) return false; }catch(e){}
+
   return true;
 }
-function hsDoStart(){ boot(); }
+function hsDoStart(){ try{ labKeepPendingNoTruth(); }catch(e){} boot(); }
 
 function handlePose(lms,t){
   handStartObserve(lms);   
@@ -2268,6 +2329,7 @@ function layoutHud(){
 
 async function boot(){
   if(bootBusy) return;
+  try{ labKeepPendingNoTruth(); }catch(e){}   
   bootBusy=true; $('playBtn').disabled=true;
   setLobbyError('');
   saveLobbyPrefs();
@@ -2424,6 +2486,7 @@ async function resumeRound(){
 }
 
 let roundEndPerf=0, stoppedEarly=false;
+let resultCompactTimer=null;   
 function finish(cancelled){
   if(appState!=='running' && appState!=='countdown') return;
   const m=lastRoundMode;
@@ -2434,6 +2497,19 @@ function finish(cancelled){
   groupFrozenAt = m==='group' ? Math.min(endPerf, gameStartPerf+groupTotal()*beatMs) : 0;
   $('resultBody').innerHTML = resultHtml(m);
   appState='result'; layoutHud();
+  { const hh=$('rhandHint'); if(hh) hh.hidden=(m==='group'); }   
+
+  $('result').classList.remove('compact');
+  clearTimeout(resultCompactTimer);
+  if(m!=='group'){
+    let last='';
+    try{
+      if(m==='solo') last='방금 기록 '+players[0].count+'개';
+      else if(m==='duo') last='방금 기록 · 청 '+players[0].count+' · 홍 '+players[1].count;
+    }catch(e){}
+    $('resultLast').textContent=last;
+    resultCompactTimer=setTimeout(()=>{ if(appState==='result') $('result').classList.add('compact'); },3000);
+  }
   labRoundFinished(m);   
 }
 
@@ -4227,6 +4303,13 @@ function labRoundFinished(m){
     }))
   };
   labRenderTruth();
+}
+/* 2026-09-23 · 정답을 안 적은 판도 버리지 않는다(개수·속도 기록은 쓸모 있다). */
+function labKeepPendingNoTruth(){
+  if(!labPending) return;
+  labRounds.push(labPending);
+  if(labRounds.length>LAB_ROUNDS_MAX) labRounds.splice(0,labRounds.length-LAB_ROUNDS_MAX);
+  labPending=null; labRoundsSave(); labRenderTruth();
 }
 function labRenderTruth(){
   const box=$('labTruthBox'); if(!box) return;

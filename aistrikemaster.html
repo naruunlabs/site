@@ -3672,7 +3672,9 @@ body.akm-lite-fx .kt-wing{filter:none}body.akm-lite-fx .kt-bars i,body.akm-lite-
 @media (max-width:700px),(max-height:520px){.kt-wing{transform:scale(.8)}.kt-wing.left{transform-origin:right top}.kt-wing.right{transform-origin:left top}}
 
 </style>
-<style>body.training-held .stage *,body.training-held #camWrap *{animation-play-state:paused!important}</style>
+<style>body.training-held .stage *,body.training-held #camWrap *{animation-play-state:paused!important}
+#autoNextBtn1,#autoNextBtn2{display:none!important}
+</style>
 </head>
 <body class="hud-v21 akm-ui">
 
@@ -3815,6 +3817,11 @@ body.akm-lite-fx .kt-wing{filter:none}body.akm-lite-fx .kt-bars i,body.akm-lite-
       <button type="button" class="diff-btn drill-mode-btn" data-drill-run-mode="auto" onclick="setDrillRunMode('auto')">자동모드</button>
     </div>
 
+    <div id="punchRunPanel" class="difficulty-panel drill-mode-panel punch-run-panel" aria-label="펀치 훈련 방식 선택" style="display:none">
+      <button type="button" class="diff-btn punch-run-btn active" data-punch-run="manual" onclick="setPunchRunMode('manual')">수동모드</button>
+      <button type="button" class="diff-btn punch-run-btn" data-punch-run="auto" onclick="setPunchRunMode('auto')">자동모드</button>
+    </div>
+
     <div id="kickLevelPanel" class="difficulty-panel kick-level-panel" aria-label="킥 판정 난이도 선택">
       <button type="button" class="diff-btn kick-level-btn" data-kick-level="easy" onclick="setKickLevel('easy')">쉬움</button>
       <button type="button" class="diff-btn kick-level-btn active" data-kick-level="hard" onclick="setKickLevel('hard')">어려움</button>
@@ -3939,7 +3946,7 @@ body.akm-lite-fx .kt-wing{filter:none}body.akm-lite-fx .kt-bars i,body.akm-lite-
         <button type="button" data-lead="right" onclick="setPunchLeadHand('right')">오른손</button>
       </div>
       <div class="drill-count-row">
-        <label>펀치 시간</label>
+        <label id="punchTimeLbl">펀치 시간</label>
         <select id="punchTimeSel">
           <option value="15">15초</option>
           <option value="30" selected>30초</option>
@@ -4627,6 +4634,8 @@ function beginAutoDrillStage(index, announce=true){
 }
 window.returnToTrainingSelection=()=>{
   drillResult.classList.remove('show','auto-summary','final-result');
+  
+  if(currentMode==='punch' && punchRunMode==='auto'){ punchAutoIndex=0; applyPunchTechniqueUi(PUNCH_AUTO_SEQ[0]); }
   drillResultSub.classList.remove('auto-result-summary');
   autoDrillIndex=0; autoDrillResults={}; autoDrillTransitioning=false;
 
@@ -4666,6 +4675,8 @@ let punchAutoLeadHand='left';
 let punchLeadDepthEma=0;
 let punchLeadCandidate=null;
 let punchLeadCandidateFrames=0;
+let punchLeadConfirmed=false;   
+let punchLeadChangedT=0;        
 let punchTypeCounts={straight:0,hook:0,upper:0,punch:0};   
 let punchScores=[];   
 let punchDebugLog=[];
@@ -4726,10 +4737,16 @@ function punchAspect(){
   return (w>0&&h>0)?(w/h):(16/9);
 }
 
+function updateAutoLeadLabel(){
+  const b=document.querySelector('.punch-lead-row button[data-lead="auto"]');
+  if(!b) return;
+  b.textContent=(punchLeadConfirmed)?('자동·'+(punchAutoLeadHand==='left'?'왼':'오른')):'자동';
+}
 window.setPunchLeadHand=function(side){
   if(!['auto','left','right'].includes(side)) return;
   if(running) stopGame();
   punchLeadHand=side;
+  try{ localStorage.setItem('asm_punch_lead',side); }catch(e){}   
   document.querySelectorAll('.punch-lead-row button').forEach(btn=>btn.classList.toggle('active',btn.dataset.lead===side));
   pushPunchLog({event:'lead_hand_changed',leadHand:side});
   const el=document.getElementById('punchResult');
@@ -4770,8 +4787,117 @@ function buildPunchDiagnostic(){
   };
 }
 
+const PUNCH_AUTO_SEQ=['jab','cross','hook','upper'];
+const PUNCH_TECH_NAME={free:'자유',jab:'잽',cross:'스트레이트',hook:'훅',upper:'어퍼컷'};
+let punchRunMode='manual', punchAutoIndex=0, punchAutoResults=[], punchAutoTransition=false,
+    punchAutoTimer=null, punchStageStartCount=0, punchStageScoreStart=0;
+function applyPunchTechniqueUi(kind){
+  punchTechnique=kind;
+  document.querySelectorAll('.punch-tech-btn').forEach(btn=>btn.classList.toggle('active',btn.dataset.punch===kind));
+  const msg={
+    free:'자유: 잽·스트레이트, 훅, 어퍼컷을 모두 셉니다.',
+    jab:'앞손 잽: 앞손으로 짧고 빠르게 뻗고 즉시 가드 복귀',
+    cross:'뒷손 스트레이트: 뒷손을 충분히 길게 뻗고 어깨를 회전',
+    hook:'훅: 팔꿈치 75~125° 유지 → 바깥으로 빼는 준비 동작 제외 → 타깃 방향으로 회전',
+    upper:'어퍼컷: 팔꿈치 70~125° 유지 → 몸 중심 가까이에서 충분히 위로 상승'
+  };
+  const el=document.getElementById('punchCriteriaText');
+  if(el) el.textContent=(punchRunMode==='auto'?'자동: 잽 → 스트레이트 → 훅 → 어퍼컷 · ':'')+msg[kind];
+  try{ updateModeBadge(); }catch(e){}
+}
+window.setPunchRunMode=function(mode){
+  if(mode!=='manual' && mode!=='auto') return;
+  if(running) stopGame();
+  punchRunMode=mode;
+  try{ localStorage.setItem('asm_punch_run_mode',mode); }catch(e){}
+  document.querySelectorAll('.punch-run-btn').forEach(b=>b.classList.toggle('active',b.dataset.punchRun===mode));
+  document.body.classList.toggle('punch-auto-selected',mode==='auto');
+  const lbl=document.getElementById('punchTimeLbl');
+  if(lbl) lbl.textContent=(mode==='auto')?'기술당 시간':'펀치 시간';
+  punchAutoIndex=0;
+  applyPunchTechniqueUi(mode==='auto'?PUNCH_AUTO_SEQ[0]:(punchTechnique||'free'));
+  statusEl.style.opacity='1';
+  statusEl.textContent=(mode==='auto')
+    ?'자동모드: 잽 → 스트레이트 → 훅 → 어퍼컷을 순서대로 이어서 합니다.'
+    :'수동모드: 원하는 기술을 골라 연습하세요.';
+  setStartBtn(false,'시작!');
+};
+function initPunchRunMode(){
+  let saved='manual';
+  try{ saved=localStorage.getItem('asm_punch_run_mode')||'manual'; }catch(e){}
+  if(saved!=='manual' && saved!=='auto') saved='manual';
+  punchRunMode=saved;
+  document.querySelectorAll('.punch-run-btn').forEach(b=>b.classList.toggle('active',b.dataset.punchRun===saved));
+  document.body.classList.toggle('punch-auto-selected',saved==='auto');
+  const lbl=document.getElementById('punchTimeLbl');
+  if(lbl) lbl.textContent=(saved==='auto')?'기술당 시간':'펀치 시간';
+  if(saved==='auto') applyPunchTechniqueUi(PUNCH_AUTO_SEQ[0]);
+  
+  let lead='auto';
+  try{ lead=localStorage.getItem('asm_punch_lead')||'auto'; }catch(e){}
+  if(['auto','left','right'].includes(lead)){
+    punchLeadHand=lead;
+    document.querySelectorAll('.punch-lead-row button').forEach(btn=>btn.classList.toggle('active',btn.dataset.lead===lead));
+  }
+}
+function resetPunchTrackIdle(){
+  for(const hand of ['left','right']){
+    const o=punchTrack[hand]; o.phase='idle'; o.points=[]; o.guardFrames=0;
+  }
+}
+function beginPunchAuto(){
+  punchAutoIndex=0; punchAutoResults=[];
+  startPunchAutoStage(0);
+}
+function startPunchAutoStage(i){
+  if(punchAutoTimer){ clearTimeout(punchAutoTimer); punchAutoTimer=null; }
+  punchAutoIndex=i;
+  applyPunchTechniqueUi(PUNCH_AUTO_SEQ[i]);
+  punchStageStartCount=punchCount;
+  punchStageScoreStart=punchScores.length;
+  resetPunchTrackIdle();
+  punchAutoTransition=false;
+  statusEl.style.opacity='1';
+  statusEl.textContent=(i+1)+' / '+PUNCH_AUTO_SEQ.length+' · '+PUNCH_TECH_NAME[PUNCH_AUTO_SEQ[i]]+' 시작!';
+  setTimeout(()=>{ if(running && currentMode==='punch' && !punchAutoTransition){ statusEl.textContent=''; statusEl.style.opacity='0'; } },1400);
+  startTimed(parseInt(punchTimeSel?.value||'30'),endPunchAutoStage);
+}
+function endPunchAutoStage(){
+  if(!running || currentMode!=='punch') return;
+  const tech=PUNCH_AUTO_SEQ[punchAutoIndex];
+  const sc=punchScores.slice(punchStageScoreStart);
+  punchAutoResults.push({tech,count:punchCount-punchStageStartCount,avg:avgOf(sc)});
+  if(punchAutoIndex+1<PUNCH_AUTO_SEQ.length){
+    punchAutoTransition=true;
+    resetPunchTrackIdle();
+    const nextTech=PUNCH_AUTO_SEQ[punchAutoIndex+1];
+    statusEl.style.opacity='1';
+    statusEl.textContent='다음 동작: '+PUNCH_TECH_NAME[nextTech]+' · '+(punchAutoIndex+2)+' / '+PUNCH_AUTO_SEQ.length;
+    try{ sndCount(); }catch(e){}
+    punchAutoTimer=setTimeout(()=>{
+      punchAutoTimer=null;
+      if(!running || currentMode!=='punch') return;
+      try{ sndGo(); }catch(e){}
+      startPunchAutoStage(punchAutoIndex+1);
+    },1800);
+    renderStats();
+  }else{
+    punchAutoTransition=false;
+    finishPunch();
+  }
+}
+function punchAutoBreakdown(){
+  return punchAutoResults.map(r=>PUNCH_TECH_NAME[r.tech]+' '+r.count+'회').join(' · ');
+}
+
 window.setPunchTechnique=function(kind){
   if(!['free','jab','cross','hook','upper'].includes(kind)) return;
+  
+  if(punchRunMode==='auto'){
+    statusEl.style.opacity='1';
+    statusEl.textContent='자동모드에서는 잽 → 스트레이트 → 훅 → 어퍼컷 순서로 진행됩니다. 수동모드에서 고르세요.';
+    return;
+  }
   if(running) stopGame();
   punchTechnique=kind;
   document.querySelectorAll('.punch-tech-btn').forEach(btn=>btn.classList.toggle('active',btn.dataset.punch===kind));
@@ -5645,6 +5771,12 @@ function renderStats(){
     valB.style.color=lastColor||'var(--gold)';
     lblC.textContent='평균 점수'; valC.textContent=(pAvg==null?'—':pAvg);
     if(scoreGrade){ scoreGrade.style.display='block'; scoreGrade.textContent=lastGrade||''; scoreGrade.style.color=lastColor||'var(--gold)'; }
+    
+    if(sparringTimeBox){
+      sparringTimeBox.style.display=running?'block':'none';
+      valTime.textContent=running?(punchAutoTransition?'다음':Math.max(0,gameRemain)):'—';
+      const lt=document.getElementById('lblTime'); if(lt) lt.textContent='남은 시간';
+    }
   } else if(currentMode==='balloon'){
     lblA.textContent='격파'; valA.textContent=balloonCount;
     lblB.textContent='남은 시간'; valB.textContent=(running?gameRemain+'초':'—'); valB.style.color='var(--gold)';
@@ -5669,6 +5801,7 @@ function renderStats(){
     if(sparringTimeBox){
       sparringTimeBox.style.display=running?'block':'none';
       valTime.textContent=running?Math.max(0,gameRemain):'—';
+      const lt=document.getElementById('lblTime'); if(lt) lt.textContent='TIME';
     }
   } else if(isDrillMode()){
     lblA.textContent='횟수'; valA.textContent=drillDone+'/'+drillTarget;
@@ -5725,7 +5858,10 @@ function modeTitleText(){
       hook :['펀치 · 훅','팔꿈치를 굽힌 채 옆에서 안으로 돌려 치기'],
       upper:['펀치 · 어퍼컷','몸 가까이에서 아래에서 위로 올려치기']
     };
-    return PT_TITLE[punchTechnique] || PT_TITLE.free;
+    const t=PT_TITLE[punchTechnique] || PT_TITLE.free;
+    
+    if(punchRunMode==='auto') return ['자동 '+(punchAutoIndex+1)+'/'+PUNCH_AUTO_SEQ.length+' · '+(PUNCH_TECH_NAME[punchTechnique]||'펀치'), t[1]];
+    return t;
   }
   if(currentMode==='sparring'){
     if(sparringMode==='speed'){
@@ -5866,13 +6002,28 @@ const KICK_TYPE={};
 
 const KIND_STRICT={ LAT:0.25, SW:0.70 };
 
+const KIND_FOOT={ FOOT:65, LAT_MAX:1.0 };   
+
+const KIND_PORTRAIT={ LAT_MIN:0.15, HIPW:0.50, FOOT:45 };
+function kindLatT(f){
+  const a=f.aspect;
+  return (Number.isFinite(a) && a>0 && a<1) ? f.latT*a/(16/9) : f.latT;
+}
+
 function classifyKick(f){
+  const portrait=Number.isFinite(f.aspect) && f.aspect>0 && f.aspect<1;
+  const lat=kindLatT(f);
+  if(portrait && lat>=KIND_PORTRAIT.LAT_MIN &&
+     ((Number.isFinite(f.hipWRatio) && f.hipWRatio<KIND_PORTRAIT.HIPW) ||
+      (Number.isFinite(f.footAng) && f.footAng<=KIND_PORTRAIT.FOOT))) return 'dollo';
+  if(Number.isFinite(f.footAng) && f.footAng>=KIND_FOOT.FOOT &&
+     Number.isFinite(lat) && lat<KIND_FOOT.LAT_MAX) return 'apcha';
 
   if(Number.isFinite(f.shoulderWRatio) &&
      f.shoulderWRatio>=KICK_TYPE.SW_FRONT &&
-     f.latT<KICK_TYPE.LAT_HARD_DOLLO) return 'apcha';
-  if(f.latT>=KICK_TYPE.LAT_DOLLO) return 'dollo';
-  if(f.latT< KICK_TYPE.LAT_APCHA) return 'apcha';
+     lat<KICK_TYPE.LAT_HARD_DOLLO) return 'apcha';
+  if(lat>=KICK_TYPE.LAT_DOLLO) return 'dollo';
+  if(lat< KICK_TYPE.LAT_APCHA) return 'apcha';
   return (f.hipWRatio<=KICK_TYPE.HIPW_AMBIG) ? 'dollo' : 'apcha';
 }
 
@@ -6439,6 +6590,8 @@ function analyzeTraj(peakPctValue=null){
     shoulderWRatio,
     kneeMin3D:(kneeMin3D==null)?null:kneeMin3D,
     footAng:footAngPeak,   
+    
+    aspect:(video && video.videoWidth && video.videoHeight) ? video.videoWidth/video.videoHeight : null,
     kneeMarkPre, kneeMarkPost   
   };
   const want=drillKickType();               
@@ -7610,7 +7763,9 @@ window.startGame=()=>{
     }
     running=true; setPlayingUi(true); statusEl.textContent=''; statusEl.style.opacity='0';
     if(currentMode==='punch'){
-      startTimed(parseInt(punchTimeSel?.value||'30'),finishPunch);
+      
+      if(punchRunMode==='auto') beginPunchAuto();
+      else startTimed(parseInt(punchTimeSel?.value||'30'),finishPunch);
     }
     else if(currentMode==='balloon'){
       const sec=parseInt(balloonTimeSel?.value||'30');
@@ -7728,6 +7883,9 @@ function stopGame(){
   setReadyUi(false);
   running=false;
   if(gameTimer){ clearInterval(gameTimer); gameTimer=null; }
+  
+  if(typeof punchAutoTimer!=='undefined' && punchAutoTimer){ clearTimeout(punchAutoTimer); punchAutoTimer=null; }
+  if(typeof punchAutoTransition!=='undefined') punchAutoTransition=false;
   timerBadge.classList.remove('show'); readyOverlay.classList.remove('show');
   if(typeof f1Set==='function') f1Set(-1);   
   clearBalloons();
@@ -8217,6 +8375,8 @@ window.setMode=(mode)=>{
   if(levelPanel) levelPanel.style.setProperty('display',drillSelected?'flex':'none','important');
   if(diffPanel) diffPanel.style.setProperty('display',(mode==='balloon')?'flex':'none','important');
   if(sparPanel) sparPanel.style.setProperty('display',(mode==='sparring')?'flex':'none','important');
+  const punchRunPanel=document.getElementById('punchRunPanel');   
+  if(punchRunPanel) punchRunPanel.style.setProperty('display',(mode==='punch')?'flex':'none','important');
   const all=activeKickModes().concat(['punch','balloon','sparring']);
   all.forEach(m=>{ const el=document.getElementById('m_'+m); if(el) el.classList.toggle('active',m===mode); });
   const isDrill=MODE_CFG[mode].isDrill;
@@ -9632,7 +9792,8 @@ function classifyPunchTrajectory(f,side,effectiveLead){
 
   let type=null, ambiguous=false, handMiss=false;
 
-  const handLocked = (punchLeadHand!=='auto');
+  const handLocked = (punchLeadHand!=='auto') ||
+    (punchLeadConfirmed && (performance.now()-punchLeadChangedT)>1500);
   if(sel==='jab'){
     if(!checks.straightOk) type=null;
     else if(handLocked && !isLead){ type=null; handMiss=true; }
@@ -9696,6 +9857,12 @@ function evaluatePunchTrajectory(side,effectiveLead,reason){
     return null;
   }
   const r=classifyPunchTrajectory(f,side,effectiveLead);
+  
+  if(!r.type && r.reason==='wrong_hand' && currentMode==='punch'){
+    const keep=lastScore; lastScore=null;
+    popup(punchTechnique==='jab'?'앞손으로 잽!':'뒷손으로 스트레이트!','#FFB14A');
+    lastScore=keep;
+  }
   if(!r.type){ pushPunchLog({event:'trajectory_attempt',hand:side,selected:punchTechnique,effectiveLead,finishReason:reason,accepted:false,predicted:null,rejection:r.reason||'no_rule_matched',checks:r.checks,scores:r.score,features:f}); return null; }
   return {side,effectiveLead,reason,features:f,points,result:r,quality:punchQuality(f,r.type,reason)};
 }
@@ -9800,8 +9967,7 @@ function acceptStrikeHandHit(cand){
   enemyHitMotion(zone);
   flashEdge(null);
   sndHit(zone, sparringCombo, dmg);
-  
-  lastScore=cand.quality; popup(cand.quality+'점','#4caf50');
+
   if(sparringHp<=0){ sndKO(); setTimeout(finishSparring,500); }
   return true;
 }
@@ -9810,20 +9976,25 @@ function processPunchTrajectoryFrame(lm,wlm){
   if(!running||twoPlayerMode) return;
   
   if(currentMode!=='punch' && !strikeHandActive()) return;
+  if(currentMode==='punch' && punchAutoTransition) return;   
   const PT=PUNCH_THRESHOLDS;
   const now=performance.now();
 
-  if(punchLeadHand==='auto' && lm[23] && lm[24]){
+  const punchBothGuard=(punchTrack.left.phase!=='tracking' && punchTrack.right.phase!=='tracking');
+  if(punchLeadHand==='auto' && lm[23] && lm[24] && punchBothGuard){
     const d=(lm[23].z||0)-(lm[24].z||0);
     punchLeadDepthEma=punchLeadDepthEma*.86+d*.14;
     if(Math.abs(punchLeadDepthEma)>.10){
       const n=punchLeadDepthEma<0?'left':'right';
-      if(n===punchAutoLeadHand){punchLeadCandidate=null;punchLeadCandidateFrames=0;}
-      else if(n===punchLeadCandidate)punchLeadCandidateFrames++;
+      if(n===punchLeadCandidate) punchLeadCandidateFrames++;
       else{punchLeadCandidate=n;punchLeadCandidateFrames=1;}
-      if(n!==punchAutoLeadHand&&punchLeadCandidateFrames>=8){
-        punchAutoLeadHand=n;punchLeadCandidate=null;punchLeadCandidateFrames=0;
-        pushPunchLog({event:'auto_lead_changed',leadHand:n,depthDelta:+punchLeadDepthEma.toFixed(4)});
+      if(punchLeadCandidateFrames>=14){
+        if(n!==punchAutoLeadHand){
+          punchAutoLeadHand=n; punchLeadChangedT=performance.now();
+          pushPunchLog({event:'auto_lead_changed',leadHand:n,depthDelta:+punchLeadDepthEma.toFixed(4)});
+        }
+        if(!punchLeadConfirmed){ punchLeadConfirmed=true; punchLeadChangedT=performance.now(); }
+        updateAutoLeadLabel();
       }
     }else{punchLeadCandidate=null;punchLeadCandidateFrames=0;}
   }
@@ -9905,9 +10076,12 @@ function finishPunch(){
   setStartBtn(false,'다시!'); statusEl.style.opacity='1'; statusEl.textContent='완료! 펀치 '+punchCount+'회';
   drillResultIcon.textContent='훈련 완료'; drillResultText.textContent=(pAvg==null?'펀치 훈련 완료!':'펀치 훈련 완료! 평균 '+pAvg+'점');
   drillResultText.style.color='#4ca3ff'; drillResultSub.className='';
-  drillResultSub.textContent='펀치 '+punchCount+'회'+avgTxt+' · '+breakdown+' · 최고콤보 '+punchBestCombo;
+  drillResultSub.textContent=(punchRunMode==='auto' && punchAutoResults.length)
+    ? '자동 '+punchAutoBreakdown()+' · 합계 '+punchCount+'회'+avgTxt+' · 최고콤보 '+punchBestCombo
+    : '펀치 '+punchCount+'회'+avgTxt+' · '+breakdown+' · 최고콤보 '+punchBestCombo;
   drillResult.classList.remove('auto-summary'); drillResult.classList.add('final-result','show');
   sndRecord(); if(punchCount>=15) confetti(punchCount>=30);
+  renderStats();   
 }
 
 const STRIKE_KICK_TH={
@@ -9924,12 +10098,15 @@ const STRIKE_KICK_TH={
     returnSpeedMax:.030,    
     returnKneeBelow:-.60    
   },
+
   knee:{
     homeBelowHip:.22,  
     fireAtHip:.02,     
     kneeAngleMax:115,  
-    shinDropMin:.30,   
-    riseMin:.012       
+    shinDropMin:.50,   
+    riseMin:.02,       
+    snapMaxMs:900,     
+    lateralMax:.80     
   }
 };
 
@@ -10000,6 +10177,8 @@ function processStrikeSpecialFrame(lm){
       if(!(kneeAngle < K.kneeAngleMax))                  fail.push('정강이가 덜 접힘');
       if(!(ankle.y > knee.y + K.shinDropMin*torso))      fail.push('발이 무릎보다 안 낮음');
       if(!(kneeRise > K.riseMin))                        fail.push('올라오는 중이 아님');
+      if(!(lateral < K.lateralMax))                      fail.push('발이 옆으로 돌아감');
+      if(st.att && (performance.now()-st.att.t0) > K.snapMaxMs) fail.push('천천히 들어 올림');
       fire = fail.length===0;
     }
 
@@ -10014,11 +10193,32 @@ function processStrikeSpecialFrame(lm){
       armed:!!st.armed, home, homeFrames:st.homeFrames||0
     };
 
+    {
+      const nowA=performance.now();
+      if(!home && st.armed && !st.att)
+        st.att={t0:nowA,maxOver:-9,maxRise:-9,maxLat:0,minAng:999,maxSpd:0,peakMs:0,failAtPeak:null,accepted:false};
+      const A=st.att;
+      if(A){
+        if(kneeOverHip>A.maxOver){ A.maxOver=kneeOverHip; A.peakMs=Math.round(nowA-A.t0); A.failAtPeak=fail.slice(); }
+        A.maxRise=Math.max(A.maxRise,kneeRise); A.maxLat=Math.max(A.maxLat,lateral);
+        A.minAng=Math.min(A.minAng,kneeAngle); A.maxSpd=Math.max(A.maxSpd,ankleSpeed);
+        if((home && st.homeFrames>=1) || nowA-A.t0>3000){
+          if(nowA-A.t0>120) pushStrikeKickLog({event:'kick_attempt',kind:special,foot:side,mode:currentMode,
+            accepted:A.accepted,durMs:Math.round(nowA-A.t0),peakMs:A.peakMs,
+            maxKneeOverHip:+A.maxOver.toFixed(3),maxKneeRise:+A.maxRise.toFixed(4),
+            maxLateral:+A.maxLat.toFixed(3),minKneeAngle:+A.minAng.toFixed(1),maxAnkleSpeed:+A.maxSpd.toFixed(4),
+            torso:+torso.toFixed(4),failAtPeak:A.failAtPeak});
+          st.att=null;
+        }
+      }
+    }
+
     if(st.armed && fire){
       st.armed=false; st.homeFrames=0;
       const label=special==='lowkick'?'로킥':'니킥';
       const before=drillDone;
       acceptStrikeKick(label);
+      if(st.att && drillDone>before) st.att.accepted=true;
 
       pushStrikeKickLog({event:(drillDone>before)?'accepted_kick':'blocked_kick',
         kind:special, label, foot:side, mode:currentMode,
@@ -10618,23 +10818,65 @@ function hsRaised(lm){
   }
   return false;
 }
+
+function holoCss(){
+  if(document.getElementById('holoHudCss')) return;
+  const st=document.createElement('style'); st.id='holoHudCss';
+  st.textContent=`
+.holo{position:fixed;left:50%;transform:translateX(-50%);z-index:99980;pointer-events:none;white-space:nowrap;
+  color:#e9fdff;text-align:center;opacity:0;transition:opacity .18s ease;
+  --holo:#6ff2ff;--holo-dim:rgba(111,242,255,.32);
+  text-shadow:0 0 10px rgba(0,225,255,.75),0 1px 3px rgba(0,0,0,.95),0 0 18px rgba(0,0,0,.6)}
+.holo.on{opacity:1}
+.holo .h-tag{display:inline-flex;align-items:center;gap:10px;font-size:11px;font-weight:800;letter-spacing:.32em;
+  color:var(--holo);opacity:.85;animation:holoFlick 2.4s steps(1) infinite}
+.holo .h-tag::before,.holo .h-tag::after{content:"";width:34px;height:1px;background:linear-gradient(90deg,transparent,var(--holo));box-shadow:0 0 6px var(--holo)}
+.holo .h-tag::after{transform:scaleX(-1)}
+.holo .h-ring{position:relative;width:148px;height:148px;margin:8px auto 6px;filter:drop-shadow(0 0 6px rgba(0,225,255,.55))}
+.holo .h-ring svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.holo .h-spin{transform-origin:74px 74px;animation:holoSpin 14s linear infinite}
+.holo .h-spin2{transform-origin:74px 74px;animation:holoSpin 3.2s linear infinite reverse}
+.holo .h-pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-size:34px;font-weight:900;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.holo .h-pct small{font-size:13px;font-weight:800;margin-left:2px;color:var(--holo)}
+.holo .h-main{font-size:24px;font-weight:900;letter-spacing:.04em}
+.holo .h-sub{margin-top:4px;font-size:13px;font-weight:700;color:#bff8ff;opacity:.9}
+.holo .h-frame{position:relative;padding:12px 26px 14px}
+.holo .h-frame::before,.holo .h-frame::after{content:"";position:absolute;width:16px;height:16px;border:1.5px solid var(--holo);
+  filter:drop-shadow(0 0 4px rgba(0,225,255,.8))}
+.holo .h-frame::before{left:0;top:0;border-right:0;border-bottom:0}
+.holo .h-frame::after{right:0;bottom:0;border-left:0;border-top:0}
+@keyframes holoSpin{to{transform:rotate(360deg)}}
+@keyframes holoFlick{0%,100%{opacity:.85}47%{opacity:.85}48%{opacity:.4}50%{opacity:.85}}
+`;
+  document.head.appendChild(st);
+}
 function hsShow(p){
   try{
     if(!hsEl){
-      hsEl=document.createElement('div'); hsEl.id='handStartGauge';
-      hsEl.style.cssText='position:fixed;left:50%;top:24%;transform:translateX(-50%);z-index:99980;'
-        +'pointer-events:none;padding:16px 26px 18px;border-radius:18px;background:rgba(6,16,31,.86);'
-        +'border:1px solid rgba(120,255,190,.5);box-shadow:0 14px 50px rgba(0,0,0,.55);'
-        +'color:#fff;text-align:center;font-weight:900;opacity:0;transition:opacity .15s;min-width:260px;';
-      hsEl.innerHTML='<div style="font-size:26px;line-height:1.2;">✋ 그대로!</div>'
-        +'<div style="font-size:14px;color:#bfe9d4;margin:4px 0 12px;font-weight:700;">손을 들고 있으면 곧 시작합니다</div>'
-        +'<div style="height:10px;border-radius:99px;background:rgba(255,255,255,.14);overflow:hidden;">'
-        +'<div class="hsBar" style="height:100%;width:0%;background:linear-gradient(90deg,#54ffad,#b6ff5c);"></div></div>';
+      holoCss();
+      hsEl=document.createElement('div'); hsEl.id='handStartGauge'; hsEl.className='holo';
+      hsEl.style.top='20%';
+      const C=2*Math.PI*46;
+      hsEl.innerHTML='<div class="h-tag">HAND SIGNAL</div>'
+        +'<div class="h-ring"><svg viewBox="0 0 148 148">'
+        +'<g class="h-spin"><circle cx="74" cy="74" r="68" fill="none" stroke="rgba(111,242,255,.45)" stroke-width="1" stroke-dasharray="2 7"/>'
+        +'<path d="M74 2 A72 72 0 0 1 132 32" fill="none" stroke="#6ff2ff" stroke-width="1.5" opacity=".8"/>'
+        +'<path d="M16 116 A72 72 0 0 1 4 74" fill="none" stroke="#6ff2ff" stroke-width="1.5" opacity=".6"/></g>'
+        +'<circle cx="74" cy="74" r="56" fill="none" stroke="rgba(111,242,255,.55)" stroke-width="6" stroke-dasharray="1 4.86"/>'
+        +'<circle cx="74" cy="74" r="46" fill="none" stroke="rgba(111,242,255,.16)" stroke-width="4"/>'
+        +'<circle class="hsArc" cx="74" cy="74" r="46" fill="none" stroke="#7ff5ff" stroke-width="4" stroke-linecap="round"'
+        +' stroke-dasharray="'+C.toFixed(1)+'" stroke-dashoffset="'+C.toFixed(1)+'" transform="rotate(-90 74 74)"/>'
+        +'<g class="h-spin2"><circle cx="74" cy="74" r="36" fill="none" stroke="rgba(111,242,255,.5)" stroke-width="1" stroke-dasharray="26 200"/></g>'
+        +'</svg><div class="h-pct"><span class="hsPct">0</span><small>%</small></div></div>'
+        +'<div class="h-main">그대로 유지</div>'
+        +'<div class="h-sub">손을 들고 있으면 곧 시작합니다</div>';
       document.body.appendChild(hsEl);
     }
-    const on=p>0;
-    hsEl.style.opacity=on?'1':'0';
-    const b=hsEl.querySelector('.hsBar'); if(b) b.style.width=Math.min(100,Math.round(p*100))+'%';
+    const on=p>0, v=Math.max(0,Math.min(1,p)), C=2*Math.PI*46;
+    hsEl.classList.toggle('on',on);
+    const a=hsEl.querySelector('.hsArc'); if(a) a.setAttribute('stroke-dashoffset',(C*(1-v)).toFixed(1));
+    const t=hsEl.querySelector('.hsPct'); if(t) t.textContent=Math.round(v*100);
   }catch(e){}
 }
 function hsReset(){ hsT0=0; hsLastUp=0; hsShow(0); }
@@ -10661,6 +10903,54 @@ function handStartObserve(lms){
   }
 }
 
+const HAND_NEXT={ RESULT_MS:3000 };
+let hnArmed=false, hnPhase='off', hnT0=0, hnEl=null;
+function hnPrompt(on){
+  try{
+    if(!hnEl){
+      holoCss();   
+      hnEl=document.createElement('div'); hnEl.id='handNextPrompt'; hnEl.className='holo';
+      hnEl.style.top='56%';
+      hnEl.innerHTML='<div class="h-frame"><div class="h-tag">NEXT PLAYER</div>'
+        +'<div class="h-main" style="margin-top:6px">다음 선수 입장</div>'
+        +'<div class="h-sub">한 손을 머리 위로 2초 들면 시작해요</div></div>';
+      document.body.appendChild(hnEl);
+    }
+    hnEl.classList.toggle('on',!!on);
+  }catch(e){}
+}
+function hnCloseResult(){
+  try{
+    if(twoPlayerMode && typeof window.closeP2Result==='function') window.closeP2Result();
+    const dr=document.getElementById('drillResult');
+    if(dr) dr.classList.remove('show','auto-summary','final-result');
+  }catch(e){}
+}
+function handNextTick(){
+  if(typeof autoNextOn!=='undefined' && autoNextOn){ if(hnPhase!=='off'){ hnPhase='off'; hnPrompt(false); } return; }
+  if(running || readyTimer){
+    hnArmed=true; autoNextManualStop=false;
+    if(hnPhase!=='off'){ hnPhase='off'; hnPrompt(false); }
+    return;
+  }
+  if(autoDrillTransitioning || auto2pTransitioning || p2StageResultTimer) return;
+  const now=performance.now();
+  if(hnPhase==='off'){
+    if(!hnArmed) return;
+    hnArmed=false;
+    if(autoNextManualStop) return;       
+    hnPhase='result'; hnT0=now; return;
+  }
+  if(hnPhase==='result' && now-hnT0>=HAND_NEXT.RESULT_MS){
+    hnCloseResult(); hnPhase='wait';
+  }
+  if(hnPhase==='wait'){
+    
+    hnPrompt(!(typeof hsT0!=='undefined' && hsT0));
+  }
+}
+
+document.addEventListener('pointerdown',()=>{ if(hnPhase==='wait'){ hnPhase='off'; hnPrompt(false); } },true);
 function hsCanStart(){
   if(running || readyTimer || modelLoading || modelPreparing) return false;
   if(document.hidden) return false;
@@ -10680,6 +10970,8 @@ function loop(){
   requestAnimationFrame(loop);
   if(window.__groupOverlayOpen) return;   
   watchRuntimeCamera();
+
+  try{ handNextTick(); }catch(e){}
   if(trainingClock.paused || document.hidden)return;
   try{
   if(!modelLoading && !modelPreparing && poseLandmarker && video.readyState>=2 && video.currentTime!==lastVideoTime){
@@ -10874,6 +11166,7 @@ initBackdropFx();
 
 syncAutoDrillSequence();
 initDrillRunMode();
+try{ initPunchRunMode(); }catch(e){}   
 initSparringMode();
 
 (function initDwiArrow(){
@@ -10881,7 +11174,8 @@ initSparringMode();
   applyDwiArrowFlip();
 })();
 (function initAutoNext(){
-  try{ autoNextOn = localStorage.getItem('asm_autonext_v1')==='1'; }catch(e){ autoNextOn=false; }
+
+  autoNextOn=false;
   autoNextTeam=0; autoNextManualStop=false; autoNextArmed=false;
   autoNextSyncBtn();
 })();
@@ -11376,6 +11670,8 @@ html.akm-phone body.hud-v21 .title{
 html.akm-phone body.hud-v21 .title *{ pointer-events:none !important; }
 html.akm-phone body.hud-v21 .hud-settings-btn,
 html.akm-phone body.hud-v21.akm-ui .hud-settings-btn{ pointer-events:auto !important; }
+
+html.akm-phone body.hud-v21.beta-on .hud-lab-top{ pointer-events:auto !important; }
 
 html.akm-phone body.hud-v21 .title{
   transform:scale(.80) !important;
@@ -12497,6 +12793,8 @@ html.akm-portrait body.hud-v21 .title *{pointer-events:none !important;}
 html.akm-portrait body.hud-v21 .hud-settings-btn,
 html.akm-portrait body.hud-v21.akm-ui .hud-settings-btn{pointer-events:auto !important;}
 
+html.akm-portrait body.hud-v21.beta-on .hud-lab-top{pointer-events:auto !important;}
+
 html.akm-portrait body.hud-v21 .hud-punch-row{top:clamp(142px,16.5dvh,180px) !important;}
 html.akm-portrait body.hud-v21 .hud-drill-row{top:clamp(176px,20.5dvh,218px) !important;}
 html.akm-portrait body.hud-v21 .hud-balloon-row{top:clamp(210px,24.5dvh,256px) !important;}
@@ -12851,6 +13149,9 @@ body.hud-v21.akm-ui #enemyTarget .enemyBody,body.hud-v21.akm-ui .enemy-target .e
 @keyframes chromeImgCritical{0%{transform:translate(-50%,-50%) rotate(0)}22%{transform:translate(calc(-50% + 13px),-50%) rotate(3deg)}48%{transform:translate(calc(-50% - 6px),-50%) rotate(-1.5deg)}100%{transform:translate(-50%,-50%) rotate(0)}}
 
 html body.akm-lite-fx #enemyTarget .chromeFighterImg,html body.akm-lite-fx .enemy-target .chromeFighterImg{filter:brightness(.72) contrast(1.45) saturate(.85) drop-shadow(0 0 2px rgba(0,0,0,.95)) drop-shadow(0 7px 7px rgba(0,0,0,.7))!important}
+
+html body.hud-v21.akm-ui #enemyTarget,
+html body.hud-v21.akm-ui .enemy-target{opacity:.88!important}
 </style>
 </body>
 </html>
