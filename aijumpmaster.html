@@ -435,12 +435,14 @@ body.jmp-lite-hud .jt-bars i{box-shadow:none}body.jmp-lite-hud .jt-wing{filter:n
   border-radius:max(9px,calc(var(--u)*.8));font-size:max(14px,calc(var(--u)*1.2));font-weight:900;line-height:1}
 .rbtn-row .rbtn2{border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.06);color:rgba(255,255,255,.88)}
 #resultNext{display:none}
+
+#resultNext .rn-main,#resultNext .rn-sub,.rhand-hint{word-break:keep-all;line-height:1.25}
 #result.compact #resultBody,#result.compact .rhand-hint{display:none}
 #result.compact #resultNext{display:block;padding:max(8px,calc(var(--u)*.8)) 0}
-#resultNext .rn-main{font-size:max(22px,calc(var(--u)*2.4));font-weight:900;color:#fff}
-#resultNext .rn-sub{margin-top:6px;font-size:max(14px,calc(var(--u)*1.3));font-weight:800;color:#bfe9d4}
-#resultNext .rn-last{margin-top:8px;font-size:max(12px,calc(var(--u)*1.1));font-weight:800;color:rgba(255,255,255,.6)}
-.rhand-hint{margin-top:8px;font-size:max(11px,calc(var(--u)*1));font-weight:700;color:rgba(191,233,212,.75)}
+#resultNext .rn-main{font-size:max(44px,calc(var(--u)*4.8));font-weight:900;color:#fff}
+#resultNext .rn-sub{margin-top:10px;font-size:max(28px,calc(var(--u)*2.6));font-weight:800;color:#bfe9d4}
+#resultNext .rn-last{margin-top:12px;font-size:max(24px,calc(var(--u)*2.2));font-weight:800;color:rgba(255,255,255,.6)}
+.rhand-hint{margin-top:10px;font-size:max(22px,calc(var(--u)*2));font-weight:700;color:rgba(191,233,212,.75)}
 @media (max-width:700px),(max-height:560px){#result{width:min(860px,calc(100vw - 24px));max-height:calc(100vh - 20px)}#resultBody>.duo-result .rgrid{grid-template-columns:repeat(4,1fr)}#resultBody>.duo-result .rbox strong{font-size:max(20px,calc(var(--u)*2.3))}}
 
 .countdown{position:absolute;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -849,7 +851,7 @@ body.hf-dim #jmpPilotGraph .jt-wing{display:none!important}
 
 <script type="module">
 
-const APP_VERSION = '3.6.0';   
+const APP_VERSION = '3.6.2';   
 
 const MP_VERSION  = '1.0.1';
 const MP_LOCAL    = './vendor/mediapipe/';
@@ -1330,6 +1332,7 @@ function makePlayer(id){
            lastJumpT:null, paired:true, flashUntil:0, trackX:null, poseHist:[],
            altBaseL:null,altBaseR:null,altUpL:false,altUpR:false,altPendingFoot:'',altPendingAt:0,altLastAt:0,altLift:0 };
   attachFastEngine(p);   
+  attachCatchGuard(p);   
   return p;
 }
 function neededPoses(){ return mode==='duo'?2:1; }
@@ -1712,6 +1715,68 @@ function attachFastEngine(p){
   e.markStart=function(t){ oMark(t); fe.markStart(t); };
   e.recalibrate=function(){ oRecal(); fe.recalibrate(); p.fast.roi=null; p.fast.ref=null; p.fast.offset=null; };
 }
+
+const CG={
+  ZONE_TOP:.25, ZONE_BOT:.75,    
+  OUT_MS:250,                    
+  SLOW_R:.35, SLOW_MIN_MS:300,   
+  GO_R:.60,                      
+  READY_JUMPS:8,                 
+  RESUME_HITS:2,                 
+  VIS:.35
+};
+function attachCatchGuard(p){
+  const e=p.engine, oReset=e.resetCount;
+  e.resetCount=function(){ oReset(); cgReset(p); };
+  cgReset(p);
+}
+function cgReset(p){
+  p.cg={count:0,catches:0,filtered:0,ready:false,jumps:0,ref:0,spd:0,last:null,lastT:0,
+        outSince:0,slowSince:0,caught:false,catchSince:false,resumeHits:0};
+}
+function cgFrame(p,lm,torso,t){
+  if(!jmpIsLab() || !p.cg || !(torso>0.02)) return;
+  const C=p.cg, shY=(lm[11].y+lm[12].y)/2, hipY=(lm[23].y+lm[24].y)/2, hipX=(lm[23].x+lm[24].x)/2;
+  const ws=[15,16].map(i=>lm[i]).filter(q=>q && (q.visibility??1)>=CG.VIS);
+  if(!ws.length){ C.last=null; return; }                       
+  const inZone=ws.some(q=>q.y>=shY+CG.ZONE_TOP*torso && q.y<=hipY+CG.ZONE_BOT*torso);
+  const rel=ws.map(q=>[(q.x-hipX)/torso,(q.y-hipY)/torso]);   
+  if(C.last && C.last.length===rel.length && t>C.lastT){
+    let d=0; rel.forEach((r,i)=>{ d+=Math.hypot(r[0]-C.last[i][0],r[1]-C.last[i][1]); });
+    const v=d/rel.length/((t-C.lastT)/1000);
+    C.spd=C.spd?C.spd*.6+v*.4:v;
+  }
+  C.last=rel; C.lastT=t;
+  const per=Math.max(250,p.engine.periodMs||400);
+  const jumping=p.engine.counting && p.lastCountAt && (performance.now()-p.lastCountAt)<per*1.6;
+  if(jumping && inZone && !C.caught) C.ref = C.ref ? C.ref*.97+C.spd*.03 : C.spd;   
+  if(!C.ready) return;
+  const slow=C.spd<C.ref*CG.SLOW_R;
+  C.outSince = inZone?0:(C.outSince||t);
+  C.slowSince = slow?(C.slowSince||t):0;
+  if(!C.caught && ((C.outSince && t-C.outSince>=CG.OUT_MS) || (C.slowSince && t-C.slowSince>=Math.max(CG.SLOW_MIN_MS,per)))){
+    C.caught=true; C.catchSince=true; C.catches++; C.resumeHits=0;
+  }
+  C.turning = inZone && C.spd>=C.ref*CG.GO_R;
+}
+function cgOnCount(p,ev,n){
+  const C=p.cg; if(!C) return;
+  if(!C.ready){
+    C.count+=n; if(ev.type==='jump'){ C.jumps++; if(C.jumps>=CG.READY_JUMPS && C.ref>0) C.ready=true; }
+    return;
+  }
+  if(ev.type==='backfill'){
+    if(C.caught || C.catchSince){ C.filtered+=n; return; }     
+    C.count+=n; return;
+  }
+  if(C.caught){
+    if(C.turning){ C.resumeHits++; if(C.resumeHits>=CG.RESUME_HITS){ C.caught=false; C.count+=C.resumeHits; C.catchSince=false; C.resumeHits=0; } }
+    else { C.resumeHits=0; C.filtered++; }
+    return;
+  }
+  C.count+=1; C.catchSince=false;
+}
+
 function onFastEvent(p,ev){
   if(!running || !p.fastEngine.counting) return;
   p.fastCount += ev.type==='backfill' ? ev.n : 1;
@@ -2017,6 +2082,7 @@ function updatePlayer(p,f,t){
     }else if(p.poseHist.length) p.poseHist.length=0;
     p.trackX=p.trackX==null?f.sx:p.trackX*.72+f.sx*.28;
     updateRig(p,f.lm);
+    try{ cgFrame(p,f.lm,f.torso,t); }catch(e){}   
     p.engine.feed(f.sigY,f.torso,t,ev=>onEngineEvent(p,ev));   
     p.fast.aiY=f.sigY; p.fast.aiT=t; p.fast.aiUsed=false; p.fastTorso=f.torso;
     if(running && labRecording && jmpIsLab() && p.rawAI.length<8000)
@@ -2132,6 +2198,7 @@ function onEngineEvent(p,ev){
   if(mode==='solo' && soloJumpType==='double' && ev.type==='jump' && !doubleAccept(p,ev.t)) return;   
   const n = ev.type==='backfill' ? ev.n : 1;
   const t = ev.type==='jump' ? ev.t : null;
+  if(jmpIsLab()) try{ cgOnCount(p,ev,n); }catch(e){}   
   if(mode==='solo') soloCounted(p,n);
   else if(mode==='duo') duoCounted(p,n,t);
   else if(mode==='relay') relayCounted(p,n);
@@ -4405,6 +4472,7 @@ function labTick(now){
     const tag=ps.length>1?`P${i} `:'', per=p.engine.periodMs>0?p.engine.periodMs/1000:0;
     cmp += labCell(tag+'지금 방식', String(p.count));
     cmp += labCell(tag+'고속 방식', fastEnabled()?String(p.fastCount):'꺼짐');
+    if(p.cg){ cmp += labCell(tag+'걸림 보정', p.cg.ready?String(p.cg.count):String(p.cg.count)+' (배우는 중)', p.cg.caught?'warn':''); cmp += labCell(tag+'걸림 감지', p.cg.catches+'회 · 뺀 것 '+p.cg.filtered); }
     cmp += labCell(tag+'한 박 표본 AI', per?labNum(inferHz*per,1):'—', per&&inferHz*per<4?'warn':'');
     if(fastEnabled()){
       cmp += labCell(tag+'한 박 표본 고속', per?labNum(p.fast.hz*per,1):'—', per&&p.fast.hz*per>=8?'good':'');
@@ -4541,6 +4609,7 @@ function labRoundFinished(m){
     cam_hz:labRound(camHz,1), infer_hz:labRound(inferHz,1), infer_px:inferPx||null, fast_on:fastEnabled(),
     players:players.map(p=>({
       pid:p.id??0, main:p.count, fast:fastEnabled()?p.fastCount:null, truth:null,
+      guard:p.cg?p.cg.count:null, catches:p.cg?p.cg.catches:null, guard_cut:p.cg?p.cg.filtered:null,   // 2026-09-24 걸림 보정
       period_ms:labRound(p.engine.periodMs,1), fast_hz:fastEnabled()?labRound(p.fast.hz,1):null,
       fast_q:fastEnabled()?labRound(p.fast.q,2):null,
       raw_ai:labRecording?p.rawAI.slice():null, raw_fast:(labRecording&&fastEnabled())?p.rawFast.slice():null
@@ -4560,7 +4629,7 @@ function labRenderTruth(){
   const note=fastAutoOffNote?`<div class="lab-note">${esc(fastAutoOffNote)}</div>`:'';   // 09-21 고속 자동 끔 안내
   if(!labPending){ box.innerHTML=note; }
   else{
-    const ins=labPending.players.map(q=>`<span>${labPending.players.length>1?(q.pid===0?'청':'홍')+' ':''}지금 ${q.main}${q.fast!=null?' · 고속 '+q.fast:''} → 실제</span>
+    const ins=labPending.players.map(q=>`<span>${labPending.players.length>1?(q.pid===0?'청':'홍')+' ':''}지금 ${q.main}${q.fast!=null?' · 고속 '+q.fast:''}${q.guard!=null?' · 걸림보정 '+q.guard:''} → 실제</span>
       <input type="number" min="0" inputmode="numeric" data-pid="${q.pid}" placeholder="개수">`).join('');
     box.innerHTML=`<div class="lab-truth"><span>방금 판</span>${ins}<button class="m-act" id="labTruthSave" type="button">정답 저장</button><button class="m-act home" id="labTruthSkip" type="button">버리기</button></div>`+note;
   }
@@ -4572,14 +4641,14 @@ function labRenderRounds(){
   if(!done.length){ box.innerHTML=''; return; }
   const err=(v,t)=>v==null||t==null?null:v-t;
   const cell=e=>e==null?'—':`<span class="${Math.abs(e)<=2?'lab-err-good':(Math.abs(e)>=5?'lab-err-bad':'')}">${e>0?'+':''}${e}</span>`;
-  let sM=0,nM=0,sF=0,nF=0;
+  let sM=0,nM=0,sF=0,nF=0,sG=0,nG=0;
   const rows=done.slice(-12).reverse().map(r=>r.players.filter(q=>q.truth!=null).map(q=>{
-    const eM=err(q.main,q.truth), eF=err(q.fast,q.truth);
-    return `<tr><td>${esc(r.ts.slice(5,16).replace('T',' '))}</td><td>${r.mode==='duo'?(q.pid?'홍':'청'):'1인'}</td><td>${q.truth}</td><td>${q.main} (${cell(eM)})</td><td>${q.fast==null?'—':q.fast+' ('+cell(eF)+')'}</td><td>${q.period_ms?Math.round(60000/q.period_ms):'—'}</td></tr>`;
+    const eM=err(q.main,q.truth), eF=err(q.fast,q.truth), eG=err(q.guard,q.truth);
+    return `<tr><td>${esc(r.ts.slice(5,16).replace('T',' '))}</td><td>${r.mode==='duo'?(q.pid?'홍':'청'):'1인'}</td><td>${q.truth}</td><td>${q.main} (${cell(eM)})</td><td>${q.fast==null?'—':q.fast+' ('+cell(eF)+')'}</td><td>${q.guard==null?'—':q.guard+' ('+cell(eG)+')'+(q.catches?' · 걸림'+q.catches:'')}</td><td>${q.period_ms?Math.round(60000/q.period_ms):'—'}</td></tr>`;
   }).join('')).join('');
-  done.forEach(r=>r.players.forEach(q=>{ if(q.truth==null) return; sM+=Math.abs(q.main-q.truth); nM++; if(q.fast!=null){ sF+=Math.abs(q.fast-q.truth); nF++; } }));
-  box.innerHTML=`<table class="lab-tbl"><thead><tr><th>시각</th><th>누구</th><th>정답</th><th>지금 방식(오차)</th><th>고속(오차)</th><th>분당</th></tr></thead><tbody>${rows}</tbody></table>
-    <div class="lab-note">평균 오차 — 지금 방식 <b>${nM?(sM/nM).toFixed(1):'—'}개</b> (${nM}판) · 고속 방식 <b>${nF?(sF/nF).toFixed(1):'—'}개</b> (${nF}판)</div>`;
+  done.forEach(r=>r.players.forEach(q=>{ if(q.truth==null) return; sM+=Math.abs(q.main-q.truth); nM++; if(q.fast!=null){ sF+=Math.abs(q.fast-q.truth); nF++; } if(q.guard!=null){ sG+=Math.abs(q.guard-q.truth); nG++; } }));
+  box.innerHTML=`<table class="lab-tbl"><thead><tr><th>시각</th><th>누구</th><th>정답</th><th>지금 방식(오차)</th><th>고속(오차)</th><th>걸림보정(오차)</th><th>분당</th></tr></thead><tbody>${rows}</tbody></table>
+    <div class="lab-note">평균 오차 — 지금 방식 <b>${nM?(sM/nM).toFixed(1):'—'}개</b> (${nM}판) · 고속 방식 <b>${nF?(sF/nF).toFixed(1):'—'}개</b> (${nF}판) · 걸림 보정 <b>${nG?(sG/nG).toFixed(1):'—'}개</b> (${nG}판)</div>`;
 }
 $('labTruthBox')?.addEventListener('click',e=>{
   if(!jmpIsLab()||!labPending) return;
