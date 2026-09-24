@@ -587,6 +587,7 @@ table.cg tfoot td.num{text-align:right}
       <span id="pageSub">발급·수정·기기 관리</span>
     </div>
     <div class="top-actions">
+      <button class="btn-sm-act btn-ghost" onclick="downloadBackup()" title="라이선스·고객 장부·상담 이력·아카데미웹을 한 파일로 받습니다 (읽기만 합니다)">백업 받기</button>
       <button class="btn-sm-act btn-ghost" onclick="window.open('/','_blank')">사이트 보기</button>
       <button class="btn-sm-act btn-ghost" onclick="openPwModal()">비밀번호</button>
       <button class="btn-sm-act btn-danger-soft" onclick="logoutAdmin()">로그아웃</button>
@@ -607,6 +608,15 @@ table.cg tfoot td.num{text-align:right}
   </div>
 
   <div class="tab-content active" id="tab-license">
+    
+    <div class="today-box" id="todayBox">
+      <div class="today-head" onclick="toggleToday()">
+        <b>오늘 할 일</b><span class="today-count" id="todayCount">-</span>
+        <span class="today-sub">킥·점프·스트 전체 · 고객 장부 '다음 할 일' 포함</span>
+        <span class="today-arrow" id="todayArrow">접기</span>
+      </div>
+      <div class="today-body" id="todayBody"></div>
+    </div>
     <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
       <button class="home-subtab-btn active" id="license-subtab-kick-btn" onclick="switchLicenseSubtab('kick')">킥마스터 라이선스</button>
       <button class="home-subtab-btn" id="license-subtab-jump-btn" onclick="switchLicenseSubtab('jump')">점프마스터 라이선스</button>
@@ -634,6 +644,7 @@ table.cg tfoot td.num{text-align:right}
         <option value="soon">만료 임박</option>
         <option value="expired">만료됨</option>
         <option value="off">중지</option>
+        <option value="cold">2주 넘게 안 씀</option>
       </select>
       <select id="sortSelect" class="select-filter" onchange="renderTable()">
         <option value="expire">만료 임박순</option>
@@ -642,7 +653,9 @@ table.cg tfoot td.num{text-align:right}
         <option value="verified">최근 인증순</option>
       </select>
       <button class="btn-add btn-ghost" onclick="clearFilters()">초기화</button>
+      <button class="btn-add btn-ghost" onclick="exportLicensesCsv()" title="킥·점프·스트 라이선스 전체를 엑셀 파일로 받습니다">엑셀로 저장</button>
     </div>
+    <div class="cross-hint" id="crossHint"></div>
 
     <div class="table-wrap">
       <table>
@@ -663,7 +676,7 @@ table.cg tfoot td.num{text-align:right}
       <div class="stat-card" data-cfilter="all" onclick="pickCustStat('all')"><div class="num" id="cstTotal">-</div><div class="label">전체 회원</div></div>
       <div class="stat-card" data-cfilter="customer" onclick="pickCustStat('customer')"><div class="num n-live" id="cstPaid">-</div><div class="label">구매 고객</div></div>
       <div class="stat-card" data-cfilter="due" onclick="pickCustStat('due')"><div class="num n-expired" id="cstDue">-</div><div class="label">오늘 연락할 곳</div></div>
-      <div class="stat-card" data-cfilter="all" onclick="pickCustStat('all')"><div class="num n-money" id="cstRevenue">-</div><div class="label">누적 매출</div></div>
+      <div class="stat-card" data-cfilter="all" onclick="pickCustStat('all')"><div class="num n-money" id="cstRevenue">-</div><div class="label">누적 매출</div><div class="rev-sub" id="cstRevenueSub"></div></div>
     </div>
 
     <div class="cg-wrap">
@@ -689,12 +702,13 @@ table.cg tfoot td.num{text-align:right}
 
         <div class="cg-spacer"></div>
 
-        <div class="cg-legend">
-          <span><i style="background:#fff;border-color:#cbd5e1"></i>잠재</span>
-          <span><i style="background:#F2F8FF"></i>체험</span>
-          <span><i style="background:#F2FBF6"></i>고객</span>
-          <span><i style="background:#F6F7F9"></i>이탈</span>
-          <span><i style="background:#dc2626"></i>연락할 때</span>
+        <div class="cg-legend" title="도장명 왼쪽 세로 띠 색 = 연결된 라이선스 상태">
+          <span><i style="background:var(--st-live)"></i>정식</span>
+          <span><i style="background:var(--st-trial)"></i>체험</span>
+          <span><i style="background:var(--st-soon)"></i>만료 임박</span>
+          <span><i style="background:var(--st-expired)"></i>만료</span>
+          <span><i style="background:var(--st-off)"></i>중지·없음</span>
+          <span><em class="due-chip">연락</em>할 때</span>
         </div>
 
         <button class="cg-btn" onclick="custZoom(-1)">축소 −</button>
@@ -738,29 +752,36 @@ table.cg tfoot td.num{text-align:right}
 
   <div class="tab-content" id="tab-home">
     <div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap">
-      <button class="home-subtab-btn active" id="subtab-index-btn" onclick="switchHomeSubtab('index')">메인</button>
-      <button class="home-subtab-btn" id="subtab-kick-btn" onclick="switchHomeSubtab('kick')">AI KICK MASTER</button>
+      <button class="home-subtab-btn active" id="subtab-index-btn" onclick="switchHomeSubtab('index')">사이트 연락처</button>
+      
+      <button class="home-subtab-btn" id="subtab-kick-btn" onclick="switchHomeSubtab('kick')" style="display:none">AI KICK MASTER</button>
       <div style="flex:1"></div>
       <button class="btn-add btn-ghost" onclick="loadHomeFields()">불러오기</button>
       <button class="btn-add btn-gold" onclick="saveHomeData()">저장</button>
     </div>
 
     <div class="home-subtab-content" id="home-subtab-index">
-      <div class="edit-section">
-        <h3>핵심 링크</h3>
-        <div class="field-row"><div class="field-group"><div class="field-label">킥 프로그램 링크</div><input id="f_index_program_url" class="f-input" type="text"></div><div class="field-group"><div class="field-label">관리자 링크</div><input id="f_index_admin_url" class="f-input" type="text"></div></div>
-        <div class="field-row"><div class="field-group"><div class="field-label">카카오톡 문의 링크</div><input id="f_index_kakao_url" class="f-input" type="url"></div><div class="field-group"><div class="field-label">전화 링크</div><input id="f_index_tel_url" class="f-input" type="text"></div></div>
+      
+      <div class="edit-section"><h3>사이트 연락처 <span class="live-tag">실제 사이트에 반영</span></h3>
+        <div class="field-hint" style="margin-bottom:12px">모든 홈페이지와 프로그램의 '카카오톡 상담'·'전화 문의' 버튼이 이 값을 씁니다.</div>
+        <div class="field-row"><div class="field-group"><div class="field-label">카카오톡 문의 링크</div><input id="f_index_kakao_url" class="f-input" type="url"></div><div class="field-group"><div class="field-label">전화 링크</div><input id="f_index_tel_url" class="f-input" type="text"><div class="field-hint">예) tel:01012345678</div></div></div>
+        <div class="field-row single"><div class="field-group"><div class="field-label">전화번호 표시</div><input id="f_index_phone" class="f-input"></div></div>
       </div>
-      <div class="edit-section"><h3>첫 화면</h3>
-        <div class="field-row single"><div class="field-group"><div class="field-label">상단 작은 문구</div><input id="f_index_hero_eyebrow" class="f-input"></div></div>
-        <div class="field-row single"><div class="field-group"><div class="field-label">메인 타이틀 HTML</div><textarea id="f_index_hero_title" class="f-textarea"></textarea><div class="field-hint">강조: &lt;em&gt;단어&lt;/em&gt;, 줄바꿈: &lt;br&gt;</div></div></div>
-        <div class="field-row single"><div class="field-group"><div class="field-label">메인 설명</div><textarea id="f_index_hero_desc" class="f-textarea"></textarea></div></div>
-      </div>
-      <div class="edit-section"><h3>문의 정보</h3>
-        <div class="field-row single"><div class="field-group"><div class="field-label">문의 설명</div><textarea id="f_index_contact_desc" class="f-textarea"></textarea></div></div>
-        <div class="field-row"><div class="field-group"><div class="field-label">전화번호 표시</div><input id="f_index_phone" class="f-input"></div><div class="field-group"><div class="field-label">상담 안내</div><input id="f_index_hours" class="f-input"></div></div>
-        <div class="field-row single"><div class="field-group"><div class="field-label">저작권 문구</div><input id="f_index_copyright" class="f-input"></div></div>
-      </div>
+      <details class="old-fields">
+        <summary>보관 중인 옛 항목 — 지금 사이트에는 나가지 않습니다</summary>
+        <div class="edit-section"><h3>핵심 링크</h3>
+          <div class="field-row"><div class="field-group"><div class="field-label">킥 프로그램 링크</div><input id="f_index_program_url" class="f-input" type="text"></div><div class="field-group"><div class="field-label">관리자 링크</div><input id="f_index_admin_url" class="f-input" type="text"></div></div>
+        </div>
+        <div class="edit-section"><h3>첫 화면</h3>
+          <div class="field-row single"><div class="field-group"><div class="field-label">상단 작은 문구</div><input id="f_index_hero_eyebrow" class="f-input"></div></div>
+          <div class="field-row single"><div class="field-group"><div class="field-label">메인 타이틀 HTML</div><textarea id="f_index_hero_title" class="f-textarea"></textarea></div></div>
+          <div class="field-row single"><div class="field-group"><div class="field-label">메인 설명</div><textarea id="f_index_hero_desc" class="f-textarea"></textarea></div></div>
+        </div>
+        <div class="edit-section"><h3>문의 정보</h3>
+          <div class="field-row single"><div class="field-group"><div class="field-label">문의 설명</div><textarea id="f_index_contact_desc" class="f-textarea"></textarea></div></div>
+          <div class="field-row"><div class="field-group"><div class="field-label">상담 안내</div><input id="f_index_hours" class="f-input"></div><div class="field-group"><div class="field-label">저작권 문구</div><input id="f_index_copyright" class="f-input"></div></div>
+        </div>
+      </details>
     </div>
 
     <div class="home-subtab-content" id="home-subtab-kick" style="display:none">
@@ -866,6 +887,12 @@ table.cg tfoot td.num{text-align:right}
       <div class="mem-hint" id="memPickHint"></div>
     </div>
 
+    <div class="convert-box" id="convertBox" style="display:none">
+      <div><b>체험 → 정식 전환</b><span>종류·금액·결제일을 채워 드립니다. 확인 후 저장을 눌러야 반영됩니다.</span></div>
+      <button type="button" class="btn-sm btn-cross" onclick="convertToLifetime()">정식으로 전환</button>
+      <div class="convert-note" id="convertNote"></div>
+    </div>
+
     <div class="modal-section">
       <div class="modal-section-title">고객 정보 <span class="ledger-tag">회원 장부에 함께 저장</span></div>
       <div class="m-row">
@@ -927,7 +954,7 @@ table.cg tfoot td.num{text-align:right}
     </div>
     <input id="mMaxDevices" type="hidden" value="2" />
     <div class="modal-section" id="deviceSlotSection" style="display:none;">
-      <div class="modal-section-title">기기 슬롯</div>
+      <div class="modal-section-title">기기 슬롯 <span class="now-tag">버튼을 누르는 즉시 적용</span></div>
       <div id="slotIpWarn" class="slot-ip-warn" style="display:none;"></div>
       <div id="deviceSlotsBox" class="admin-slot-grid"></div>
       <button type="button" class="btn-sm btn-toggle" style="margin-top:10px;" onclick="resetDeviceSlots()">전체 기기 초기화 (재발급 시 사용)</button>
@@ -967,7 +994,7 @@ table.cg tfoot td.num{text-align:right}
       </div>
 
       <div class="modal-section" id="trialExtendBox" style="display:none;">
-        <div class="modal-section-title">기간 늘려주기</div>
+        <div class="modal-section-title">기간 늘려주기 <span class="now-tag">'체험 다시 시작'은 즉시 적용</span></div>
 
         <label>오늘부터 며칠 더 줄까요?</label>
         <div style="display:flex;gap:8px;align-items:flex-start;">
@@ -995,7 +1022,7 @@ table.cg tfoot td.num{text-align:right}
       </div>
     </div>
     <div class="modal-section">
-      <div class="modal-section-title">결제 정보</div>
+      <div class="modal-section-title" id="paySectionTitle">결제 정보</div>
       <div class="input-row" style="margin-bottom:14px">
         <div>
           <label>결제 금액 (원)</label>
@@ -1019,6 +1046,19 @@ table.cg tfoot td.num{text-align:right}
       <button class="btn-cancel" onclick="closeModal()">닫기</button>
       <button class="btn-save btn-save-ghost" id="saveBtn" onclick="saveLicense(false)">발급</button>
       <button class="btn-save" id="saveCopyBtn" onclick="saveLicense(true)">발급하고 카톡 복사</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="msgModalBg">
+  <div class="modal msg-modal">
+    <h3 id="msgTitle">카톡 <span>안내문</span></h3>
+    <div class="msg-kinds" id="msgKinds"></div>
+    <label>미리보기 <span style="font-weight:600">— 여기서 고쳐서 복사해도 됩니다</span></label>
+    <textarea id="msgText" class="f-textarea msg-text"></textarea>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeMsgPicker()">닫기</button>
+      <button class="btn-save" onclick="copyPickedMsg()">복사하기</button>
     </div>
   </div>
 </div>
@@ -1115,7 +1155,7 @@ const PAGE_TITLES = {
   license : ['라이선스 관리', '발급 · 수정 · 기기 관리'],
   customer: ['고객 관리',   '고객 장부 · 판매 기록 · 상담 이력'],
   academy : ['아카데미웹',  '홈페이지 제작 고객 · 진행 · 일정 · 수금'],
-  home    : ['홈페이지 관리', 'naruunlabs.kr 에 나가는 문구']
+  home    : ['홈페이지 관리', '사이트 카톡·전화 연락처']
 };
 function setPageTitle(tab) {
   const t = PAGE_TITLES[tab] || PAGE_TITLES.license;
@@ -1426,10 +1466,13 @@ function renderTable() {
     const hay = [d.dojang_name, d.license_key, d.phone||'', d.memo||''].join(' ').toLowerCase();
     const qHit = !q || hay.includes(q)
       || (qd && String(d.phone||'').replace(/[^0-9]/g,'').includes(qd));
-    const statusMatch = LIC_STATES.includes(filter) ? (licenseState(d) === filter) : true;
+    const statusMatch = filter === 'cold' ? isColdLicense(d)
+                      : LIC_STATES.includes(filter) ? (licenseState(d) === filter) : true;
     return qHit && statusMatch;
   });
   rows = sortRows(rows, document.getElementById('sortSelect').value);
+  renderCrossHint(q, qd);
+  renderToday();
   if (!rows.length) { tbody.innerHTML = '<tr><td colspan="8" class="empty-msg">표시할 라이선스가 없습니다.</td></tr>'; return; }
   tbody.innerHTML = rows.map(d => {
     const days = daysUntil(d.expire_date);
@@ -1482,12 +1525,12 @@ function renderTable() {
       <td class="cell-who" data-label="관장님 · 지역">${whoCell}</td>
       <td data-label="종류">${typeLabel}</td>
       <td data-label="만료일" style="font-size:13px">${expireDisplay}</td>
-      <td data-label="최근 인증" style="font-size:13px">${escapeHtml(lastVerified)}</td>
+      <td data-label="최근 인증" style="font-size:13px">${lastUseCell(d)}</td>
       <td data-label="결제" style="font-size:13px">${payDisplay}</td>
       <td data-label="상태"><span class="badge ${statusCls}">${statusText}</span></td>
       <td class="cell-act"><div class="action-btns">
         <button class="btn-sm btn-edit" onclick="openEditModal('${encoded}')">회원정보</button>
-        <button class="btn-sm btn-copy" onclick="copyLicenseMsg('${encoded}')">카톡</button>
+        <button class="btn-sm btn-copy" onclick="openMsgPicker('${encoded}')">카톡</button>
         ${inLedger
           ? `<button class="btn-sm btn-ledger done" onclick="gotoLedger('${escapeHtml(d.license_key)}')">장부 ✓</button>`
           : `<button class="btn-sm btn-ledger" onclick="sendToLedger('${d.id}')">장부로</button>`}
@@ -1505,6 +1548,15 @@ function onTypeChange(fromUser) {
 
   const extendBox = document.getElementById('trialExtendBox');
   if (extendBox) extendBox.style.display = (type === 'trial' && currentEditLicenseId) ? 'block' : 'none';
+  
+  const cBox = document.getElementById('convertBox');
+  if (cBox) cBox.style.display = (type === 'trial' && currentEditLicenseId) ? 'flex' : 'none';
+
+  if (!currentEditLicenseId) {
+    const pay = document.getElementById('mPayAmount');
+    if (type === 'lifetime' && !pay.value) pay.value = DEFAULT_PRICE;
+    else if (type !== 'lifetime' && Number(pay.value) === DEFAULT_PRICE) pay.value = '';
+  }
   
   if (type === 'trial') {
     document.getElementById('mMaxDevices').value = 1;
@@ -1711,6 +1763,7 @@ function openAddModal() {
   currentEditTrialStartedAt = null;
   currentEditDeviceSlots = [];
   currentEditLicenseId = null;
+  const cn0 = document.getElementById('convertNote'); if (cn0) cn0.textContent = '';
   document.getElementById('deviceSlotSection').style.display = 'none';
   document.getElementById('usageSection').style.display = 'none';
   document.getElementById('ownedSection').style.display = 'none';   
@@ -1828,6 +1881,7 @@ function openEditModal(encoded) {
   currentEditTrialStartedAt = d.trial_started_at || null;
   currentEditDeviceSlots = Array.isArray(d.device_slots) ? d.device_slots : [];
   currentEditLicenseId = d.id;
+  const cn1 = document.getElementById('convertNote'); if (cn1) cn1.textContent = '';
   document.getElementById('deviceSlotSection').style.display = 'block';
   renderDeviceSlotsUI();
   showUsage(d.license_key);
@@ -2206,6 +2260,10 @@ function regenerateKey(){
 }
 
 async function toggleActive(id, current) {
+  
+  const d = LICENSES.find(x => String(x.id) === String(id));
+  const nm = d ? d.dojang_name : '';
+  if (current && !confirm(`'${nm}' 라이선스를 중지할까요?\n\n누르는 즉시 이 도장의 프로그램이 막힙니다.\n(다시 '활성'을 누르면 풀립니다)`)) return;
   try { await edgeCall('UPDATE_LICENSE', { id, is_active: !current }); await loadLicenses(); }
   catch(err) { alert('상태 변경 실패: ' + err.message); }
 }
@@ -2223,8 +2281,7 @@ async function deleteLicense(id, name) {
   catch(err) { alert('삭제 실패: ' + err.message); }
 }
 
-async function copyLicenseMsg(encoded) {
-  const d = JSON.parse(decodeURIComponent(encoded));
+function licenseIssueMsg(d) {
   
   const prod = productOfKey(d.license_key);
   const productName = prod.name;
@@ -2242,6 +2299,11 @@ async function copyLicenseMsg(encoded) {
   const msg = isTrial
     ? `[${productName} ${trialDays}일 체험판 안내]\n\n안녕하세요, ${d.dojang_name} 관장님!\n${productName}를 직접 써보실 수 있는 체험판 키를 보내드립니다.\n\n체험판 라이선스 키\n${d.license_key}\n\n체험 기간: 처음 인증하신 시점부터 ${trialDays}일\n   (키를 받은 날이 아니라, 처음 여신 날부터 계산됩니다)\n사용 가능 기기: 최대 ${maxDevices}대\n\n접속 링크: ${loginUrl}\n\n사용 방법\n1. 위 홈페이지로 접속하세요\n2. [${actionLabel}] 버튼을 누르세요\n3. 체험판 키를 입력하세요\n4. 최초 1회 입력 후 자동으로 실행됩니다\n\n편하실 때 여셔도 ${trialDays}일이 그대로 보장되니 부담 없이 사용해보세요.\n체험 후 궁금한 점은 카카오톡으로 편하게 문의 주세요!`
     : `[${productName} 구매 완료 안내]\n\n안녕하세요, ${d.dojang_name} 관장님!\n${productName} 구매 및 정식 라이선스 발급이 완료되었습니다.\n\n■ 라이선스 키\n${d.license_key}\n\n■ 구매 정보\n• 라이선스 종류: ${typeLabel}\n${paymentLine}• 사용 가능 기기: 최대 ${maxDevices}대\n• 월 구독료: 없음\n${expireLine}\n■ 접속 방법\n1. ${loginUrl}에 접속해 주세요.\n2. [${actionLabel}] 버튼을 눌러주세요.\n3. 위 라이선스 키를 입력해 주세요.\n4. 최초 인증 후에는 자동으로 실행됩니다.\n\n첫 수업 전 실제 사용하실 기기에서 카메라와 동작 인식을 한 번 확인해 주세요.\n\n라이선스 키는 소중히 보관해 주세요.\n사용 중 궁금한 점은 카카오톡으로 편하게 문의해 주세요.`;
+  return msg;
+}
+async function copyLicenseMsg(encoded) {
+  const d = JSON.parse(decodeURIComponent(encoded));
+  const msg = licenseIssueMsg(d);
   try { await navigator.clipboard.writeText(msg); showToast('카톡 안내문을 복사했습니다!'); }
   catch { prompt('복사 실패. 아래 내용을 직접 복사하세요.', msg); }
 }
@@ -2557,6 +2619,8 @@ function renderCustomers() {
   const rows = customerRowsNow();
   
   const W = computeCustWidths(rows, cols);
+  
+  if (W.dojang_name) W.dojang_name += 58;
   document.getElementById('cgHead').innerHTML =
     '<tr>' + cols.map(c => `<th class="${c.name?'cg-name':''}"${c.h?` title="${escapeHtml(c.h)}"`:''} style="min-width:${W[c.f]}px;width:${W[c.f]}px">${c.t}</th>`).join('')
     + '<th style="min-width:96px;width:96px">관리</th></tr>';
@@ -2578,7 +2642,7 @@ function renderCustomers() {
     const cls = ['cg-row', 's-' + (c.status || 'lead'), 'lic-' + customerLicenseState(c)];
     if (isDue(c)) cls.push('due');
     let html = `<tr class="${cls.join(' ')}" data-id="${c.id}">`
-      + cols.map(col => `<td class="${col.name?'cg-name':''}">${custCell(c, col)}</td>`).join('')
+      + cols.map(col => `<td class="${col.name?'cg-name':''}">${col.name ? `<div class="cg-namewrap">${custCell(c, col)}${custBadges(c)}</div>` : custCell(c, col)}</td>`).join('')
       + `<td><div style="display:flex;gap:4px;padding:0 5px">
            <button class="btn-sm ${openNotesFor===c.id?'btn-toggle is-open':'btn-edit'}" onclick="toggleNotes('${c.id}')">${openNotesFor===c.id?'닫기':'이력'}</button>
            <button class="btn-sm btn-del" onclick="deleteCustomer('${c.id}')">삭제</button>
@@ -2626,8 +2690,13 @@ function custCell(c, col) {
     
     const keys = LICENSES.map(l => l.license_key).filter(Boolean);
     if (raw && !keys.includes(raw)) keys.unshift(raw);   
+    
+    const licLabel = k => {
+      const l = LICENSES.find(x => x.license_key === k);
+      return l ? `${k} · ${l.dojang_name || ''} (${productOfKey(k).short})` : k;
+    };
     return `<select class="cg-in" ${at}><option value="">—</option>` + keys.map(k =>
-      `<option value="${escapeHtml(k)}"${raw===k?' selected':''}>${escapeHtml(k)}</option>`).join('') + '</select>';
+      `<option value="${escapeHtml(k)}"${raw===k?' selected':''}>${escapeHtml(licLabel(k))}</option>`).join('') + '</select>';
   }
   if (col.date) {
     return `<input type="date" class="cg-in" value="${escapeHtml(raw||'')}" ${at}>`;
@@ -2663,6 +2732,7 @@ function updateCustStats() {
   document.getElementById('cstPaid').textContent = paidCnt;
   document.getElementById('cstDue').textContent = dueCnt;
   document.getElementById('cstRevenue').textContent = revenue ? (revenue/10000).toLocaleString('ko-KR') + '만' : '0';
+  renderRevenueSub();
 }
 
 function recalcMoney(c, f) {
@@ -2728,7 +2798,7 @@ async function drainCustomerSave(id){
         const patch={...st.draft},rev={...st.revisions};
         const c=CUSTOMERS.find(x=>x.id===id);if(!c)break;
         const linked=Object.hasOwn(patch,'status')?LICENSES.find(x=>x.license_key===c.license_key):null;
-        if(linked&&(patch.status==='trial'||patch.status==='customer')&&linked.license_type!==(patch.status==='trial'?'trial':'lifetime')){
+        if(linked&&(patch.status==='trial'||patch.status==='customer')&&!(patch.status==='trial'?['trial']:['lifetime','package']).includes(linked.license_type)){
           const toTrial=patch.status==='trial';
           const fields={license_type:toTrial?'trial':'lifetime',expire_date:null,trial_days:toTrial?(Number(linked.trial_days)||3):null};
           await edgeCall('UPDATE_LICENSE',{id:linked.id,...fields});Object.assign(linked,fields);
@@ -2747,6 +2817,17 @@ async function onCustCell(el){
   const id=el.dataset.id,f=el.dataset.f,c=CUSTOMERS.find(x=>x.id===id);if(!c)return;
   let v=el.type==='checkbox'?el.checked:el.type==='number'?(el.value===''?null:Number(el.value)):(el.value===''?null:el.value);
   if(f==='phone'&&v){v=formatPhone(v);el.value=v;}
+
+  if(f==='status'){
+    const lk=LICENSES.find(x=>x.license_key===c.license_key);
+    const want=v==='trial'?['trial']:v==='customer'?['lifetime','package']:null;
+    if(lk&&want&&!want.includes(lk.license_type)){
+      const to=v==='trial'?'체험판(3일)':'정식';
+      if(!confirm(`'${c.dojang_name}' 상태를 바꾸면 연결된 라이선스(${lk.license_key})도\n${to}으로 바뀝니다.\n\n고객이 쓰는 프로그램에 바로 적용됩니다. 바꿀까요?`)){
+        el.value=c.status||'lead';return;
+      }
+    }
+  }
   const before={...c};c[f]=v;const moneyChanged=recalcMoney(c,f),st=customerSaveState(id);
   for(const key of new Set([f,...Object.keys(c).filter(k=>c[k]!==before[k])])){
     st.draft[key]=c[key];st.revisions[key]=++st.seq;
@@ -3034,6 +3115,311 @@ if (savedToken) {
 }
 </script>
 
+<script id="naruun-admin-convenience-20260925">
+
+const DEFAULT_PRICE = 369000;          
+const COLD_DAYS     = 14;              
+const NUDGE_DAYS    = 2;               
+
+function isoToYmd(iso){ if(!iso) return ''; const t=new Date(iso); return isFinite(t) ? ymdLocal(t) : String(iso).slice(0,10); }
+function agoText(n){ return n===0?'오늘':n===1?'어제':`${n}일 전`; }
+function trialEndsAt(d){
+  if (d.license_type !== 'trial' || !d.trial_started_at) return null;
+  return new Date(new Date(d.trial_started_at).getTime() + (Number(d.trial_days)||3) * 86400000);
+}
+
+function isColdLicense(d){
+  if (!d.is_active || d.license_type === 'trial') return false;
+  if (licenseState(d) === 'expired') return false;
+  const base = d.last_verified_at || d.created_at;
+  if (!base) return false;
+  const n = daysAgo(isoToYmd(base));
+  return n !== null && n >= COLD_DAYS;
+}
+function lastUseCell(d){
+  if (!d.last_verified_at) return '<span class="lu-none">미사용</span>';
+  const ymd = isoToYmd(d.last_verified_at);
+  const n = daysAgo(ymd);
+  const cold = isColdLicense(d);
+  return `<b class="lu${cold?' lu-cold':''}" title="${cold?COLD_DAYS+'일 넘게 사용 기록이 없습니다':''}">${agoText(n)}</b><span class="sub-text">${escapeHtml(ymd)}</span>`;
+}
+
+function renderCrossHint(q, qd){
+  const box = document.getElementById('crossHint'); if (!box) return;
+  if (!q) { box.innerHTML = ''; box.style.display = 'none'; return; }
+  const hit = d => {
+    const hay = [d.dojang_name, d.license_key, d.phone||'', d.memo||''].join(' ').toLowerCase();
+    return hay.includes(q) || (qd && String(d.phone||'').replace(/[^0-9]/g,'').includes(qd));
+  };
+  const parts = [];
+  for (const id of PRODUCT_ORDER) {
+    if (id === currentLicenseProduct) continue;
+    const n = LICENSES.filter(d => productOfKey(d.license_key).key === id && hit(d)).length;
+    if (n) parts.push(`<button type="button" onclick="switchLicenseSubtab('${id}')">${PRODUCTS[id].short} ${n}건 보기</button>`);
+  }
+  box.innerHTML = parts.length ? `<span>다른 제품에도 있습니다</span>${parts.join('')}` : '';
+  box.style.display = parts.length ? 'flex' : 'none';
+}
+
+let todayOpen = true;
+try { todayOpen = localStorage.getItem('nl_admin_today_open') !== '0'; } catch(e) {}
+function toggleToday(){
+  todayOpen = !todayOpen;
+  try { localStorage.setItem('nl_admin_today_open', todayOpen ? '1' : '0'); } catch(e) {}
+  renderToday();
+}
+function todayItems(){
+  const out = [];
+  const now = Date.now();
+  const enc = d => encodeURIComponent(JSON.stringify(d));
+  for (const d of (LICENSES||[])) {
+    if (!d.is_active) continue;
+    const P = productOfKey(d.license_key);
+    const base = { d, P, enc: enc(d) };
+    if (d.license_type === 'trial') {
+      const ends = trialEndsAt(d);
+      if (!ends) {
+        const n = daysAgo(isoToYmd(d.created_at));
+        if (n !== null && n >= NUDGE_DAYS && n <= 60)
+          out.push({ ...base, g:'nudge', why:`체험 키를 보낸 지 ${n}일째 · 아직 시작 안 함`, msg:'nudge' });
+        continue;
+      }
+      const left = ends.getTime() - now;
+      if (left > 0 && left <= 2 * 86400000) {
+        const h = Math.round(left / 3600000);
+        out.push({ ...base, g:'ending', why:`체험 ${h < 24 ? h + '시간' : Math.round(h/24) + '일'} 남음 · ${ends.toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'numeric'})} 종료`, msg:'trial_end', convert:true });
+      } else if (left <= 0 && -left <= 30 * 86400000) {
+        out.push({ ...base, g:'ended', why:`체험 끝난 지 ${Math.floor(-left/86400000)}일 · 아직 정식 전환 안 됨`, msg:'trial_end', convert:true });
+      }
+      continue;
+    }
+    const st = licenseState(d);
+    if (st === 'soon') out.push({ ...base, g:'expire', why:`사용 기간 ${d.expire_date} 만료 (D-${daysUntil(d.expire_date)})`, msg:'expire_soon' });
+    else if (isColdLicense(d)) {
+      const n = daysAgo(isoToYmd(d.last_verified_at || d.created_at));
+      out.push({ ...base, g:'cold', why: d.last_verified_at ? `${n}일째 사용 기록 없음` : `발급 ${n}일째 · 한 번도 안 씀`, msg:'checkin' });
+    }
+  }
+  for (const c of (CUSTOMERS||[])) {
+    if (!isDue(c)) continue;
+    const late = daysAgo(c.next_action_at);
+    out.push({ g:'ledger', c, why: `${c.next_action || '다음 할 일'}${late > 0 ? ` · ${late}일 지남` : ' · 오늘'}` });
+  }
+  return out;
+}
+const TODAY_GROUPS = [
+  ['ending', '체험이 곧 끝나요'],
+  ['ended',  '체험이 끝났는데 정식 전환 전'],
+  ['nudge',  '체험 키를 보냈는데 시작을 안 했어요'],
+  ['expire', '사용 기간 만료 임박'],
+  ['cold',   `${COLD_DAYS}일 넘게 안 쓰는 곳`],
+  ['ledger', '고객 장부 · 다음 할 일 날짜가 됐어요']
+];
+function renderToday(){
+  const body = document.getElementById('todayBody'), cnt = document.getElementById('todayCount');
+  if (!body || !cnt) return;
+  const items = todayItems();
+  cnt.textContent = items.length + '건';
+  cnt.classList.toggle('zero', !items.length);
+  document.getElementById('todayArrow').textContent = todayOpen ? '접기' : '펼치기';
+  body.style.display = todayOpen ? '' : 'none';
+  if (!todayOpen) return;
+  if (!items.length) { body.innerHTML = '<div class="today-empty">오늘 챙길 곳이 없습니다.</div>'; return; }
+  body.innerHTML = TODAY_GROUPS.map(([g, title]) => {
+    const list = items.filter(x => x.g === g);
+    if (!list.length) return '';
+    return `<div class="today-group g-${g}"><div class="today-gt">${title} <span>${list.length}</span></div>` +
+      list.map(x => {
+        if (g === 'ledger') {
+          const c = x.c;
+          return `<div class="today-row"><b>${escapeHtml(c.dojang_name||'')}</b><em>장부</em>`
+               + `<span class="today-why">${escapeHtml(x.why)}</span>`
+               + `<button type="button" class="btn-sm btn-edit" onclick="gotoCustomer('${c.id}')">장부 보기</button></div>`;
+        }
+        const d = x.d;
+        return `<div class="today-row"><b>${escapeHtml(d.dojang_name||'')}</b><em class="p-${x.P.key}">${escapeHtml(x.P.short)}</em>`
+             + `<span class="today-why">${escapeHtml(x.why)}</span>`
+             + (x.convert ? `<button type="button" class="btn-sm btn-cross" onclick="openConvert('${d.id}')">정식 전환</button>` : '')
+             + `<button type="button" class="btn-sm btn-copy" onclick="openMsgPicker('${x.enc}','${x.msg}')">카톡</button>`
+             + `<button type="button" class="btn-sm btn-edit" onclick="openOwnedLicense('${d.id}')">회원정보</button></div>`;
+      }).join('') + '</div>';
+  }).join('');
+}
+
+function gotoCustomer(id){
+  const c = (CUSTOMERS||[]).find(x => String(x.id) === String(id));
+  switchTab('customer');
+  if (!c) return;
+  custFilter = 'all';
+  document.getElementById('cgSearch').value = c.dojang_name || '';
+  renderCustomers();
+  setTimeout(() => {
+    const tr = document.querySelector(`tr.cg-row[data-id="${c.id}"]`);
+    if (!tr) return;
+    tr.classList.add('flash');
+    if (tr.scrollIntoView) tr.scrollIntoView({ block:'center', behavior:'smooth' });
+    setTimeout(() => tr.classList.remove('flash'), 2200);
+  }, 60);
+}
+
+function convertToLifetime(){
+  const t = document.getElementById('mLicenseType');
+  t.value = 'lifetime';
+  onTypeChange(true);
+  const pay = document.getElementById('mPayAmount'), date = document.getElementById('mPayDate');
+  if (!pay.value) pay.value = DEFAULT_PRICE;
+  if (!date.value) date.value = todayStr();
+  if (document.getElementById('deviceSlotSection').style.display === 'block') renderDeviceSlotsUI();
+  const note = document.getElementById('convertNote');
+  if (note) note.textContent = '';
+  const box = document.getElementById('convertBox');
+  if (box) box.style.display = 'flex';          
+  if (note) note.innerHTML = '정식으로 채웠습니다 · 금액 <b>' + Number(pay.value||0).toLocaleString('ko-KR') + '원</b> · 결제일 <b>' + escapeHtml(date.value) + '</b><br>아직 저장 전입니다. 확인하고 아래 <b>저장하고 카톡 복사</b>를 누르세요.';
+  
+  if (box && box.scrollIntoView) box.scrollIntoView({ block:'start', behavior:'smooth' });
+}
+function openConvert(id){
+  openOwnedLicense(id);
+  convertToLifetime();
+}
+
+const MSG_KINDS = [
+  ['issue',        '발급 안내'],
+  ['nudge',        '체험 시작 권유'],
+  ['trial_end',    '체험 종료 · 구매 안내'],
+  ['trial_extend', '체험 연장 안내'],
+  ['device_reset', '기기 초기화 안내'],
+  ['expire_soon',  '만료 임박 안내'],
+  ['checkin',      '안부 (오래 안 씀)']
+];
+let msgPickData = null, msgPickKind = 'issue';
+function buildMsg(kind, d){
+  const P = productOfKey(d.license_key), name = d.dojang_name || '';
+  const days = Number(d.trial_days) || 3;
+  if (kind === 'issue') return licenseIssueMsg(d);
+  if (kind === 'nudge') return `안녕하세요, ${name} 관장님! 나른랩스입니다.\n보내 드린 ${P.name} 체험판 키가 아직 사용 전이라 연락드렸습니다.\n\n체험 기간은 키를 받은 날이 아니라 처음 여신 날부터 ${days}일이라, 편하실 때 시작하셔도 됩니다.\n\n• 체험 키: ${d.license_key}\n• 접속: ${P.url} → [프로그램 실행] → 키 입력\n\n기기 준비나 사용 방법이 어려우시면 편하게 말씀해 주세요.`;
+  if (kind === 'trial_end') return `[${P.name} 체험 종료 안내]\n\n안녕하세요, ${name} 관장님!\n${P.name}를 체험해 주셔서 감사합니다.\n\n아이들 반응은 어떠셨나요? 불편하셨던 점이나 궁금한 점이 있으면 편하게 말씀해 주세요.\n\n■ 정식 구매 안내\n• 가격: ${DEFAULT_PRICE.toLocaleString('ko-KR')}원 (부가세 포함 · 1회 구매)\n• 월 구독료 없음 · 최대 2대 기기\n• 업데이트는 추가 비용 없이 자동 적용\n\n구매가 확인되면 바로 정식으로 전환해 드립니다.\n자세히 보기: ${P.url}`;
+  if (kind === 'trial_extend') {
+    const ends = trialEndsAt(d);
+    const when = ends ? `${ends.toLocaleString('ko-KR',{month:'long',day:'numeric',hour:'numeric'})}까지` : `처음 여신 날부터 ${days}일`;
+    return `[${P.name} 체험 연장 안내]\n\n안녕하세요, ${name} 관장님!\n말씀하신 대로 체험 기간을 늘려 드렸습니다.\n\n• 체험 기간: ${when}\n• 체험 키: ${d.license_key}\n• 접속: ${P.url}\n\n앱을 다시 여시면 이어서 사용하실 수 있습니다.`;
+  }
+  if (kind === 'device_reset') return `[${P.name} 기기 등록 초기화 안내]\n\n안녕하세요, ${name} 관장님!\n요청하신 기기 등록을 초기화했습니다.\n\n사용하실 기기에서 ${P.url} 에 접속해 [프로그램 실행]을 누르고 라이선스 키를 한 번 다시 입력해 주세요.\n\n• 라이선스 키: ${d.license_key}\n• 사용 가능 기기: 최대 ${Number(d.max_devices)||2}대`;
+  if (kind === 'expire_soon') {
+    const n = daysUntil(d.expire_date);
+    return `[${P.name} 사용 기간 안내]\n\n안녕하세요, ${name} 관장님!\n${P.name} 사용 기간이 ${d.expire_date || '-'}에 끝납니다${n !== null && n >= 0 ? ` (D-${n})` : ''}.\n\n계속 사용을 원하시면 카카오톡으로 편하게 말씀해 주세요.`;
+  }
+  if (kind === 'checkin') return `안녕하세요, ${name} 관장님! 나른랩스입니다.\n${P.name} 잘 쓰고 계신지 안부 여쭙니다.\n\n요즘 사용이 뜸하신 것 같아 혹시 불편하신 점이 있으셨는지 궁금합니다.\n기기를 바꾸셨거나 설정이 어려우시면 편하게 말씀해 주세요. 바로 도와드리겠습니다.`;
+  return '';
+}
+function suggestMsgKind(d){
+  if (d.license_type === 'trial') {
+    if (!d.trial_started_at) return 'issue';
+    const e = trialEndsAt(d);
+    return (e && e.getTime() - Date.now() <= 2 * 86400000) ? 'trial_end' : 'issue';
+  }
+  if (licenseState(d) === 'soon') return 'expire_soon';
+  if (isColdLicense(d)) return 'checkin';
+  return 'issue';
+}
+function openMsgPicker(encoded, kind){
+  msgPickData = JSON.parse(decodeURIComponent(encoded));
+  msgPickKind = kind || suggestMsgKind(msgPickData);
+  document.getElementById('msgTitle').innerHTML = `${escapeHtml(msgPickData.dojang_name||'')} <span>카톡 안내문</span>`;
+  renderMsgPicker();
+  document.getElementById('msgModalBg').classList.add('show');
+}
+function pickMsgKind(k){ msgPickKind = k; renderMsgPicker(); }
+function renderMsgPicker(){
+  document.getElementById('msgKinds').innerHTML = MSG_KINDS.map(([k,t]) =>
+    `<button type="button" class="${k===msgPickKind?'on':''}" onclick="pickMsgKind('${k}')">${t}</button>`).join('');
+  document.getElementById('msgText').value = buildMsg(msgPickKind, msgPickData);
+}
+function closeMsgPicker(){ document.getElementById('msgModalBg').classList.remove('show'); }
+async function copyPickedMsg(){
+  const msg = document.getElementById('msgText').value;
+  try { await navigator.clipboard.writeText(msg); showToast('카톡 안내문을 복사했습니다!'); closeMsgPicker(); }
+  catch { const t = document.getElementById('msgText'); t.focus(); t.select(); showToast('자동 복사가 막혔습니다. 선택된 글을 Ctrl+C 로 복사하세요.'); }
+}
+
+function custBadges(c){
+  const name = String(c.dojang_name||'').trim();
+  const own = new Set();
+  for (const l of (LICENSES||[])) {
+    if (l.license_key === c.license_key || (name && String(l.dojang_name||'').trim() === name))
+      own.add(productOfKey(l.license_key).key);
+  }
+  const tag = { kick:'K', jump:'J', strike:'S' };
+  let h = PRODUCT_ORDER.filter(id => own.has(id))
+    .map(id => `<i class="pb p-${id}" title="${PRODUCTS[id].short} 보유">${tag[id]||'?'}</i>`).join('');
+  if (isDue(c)) h += `<em class="due-chip" title="${escapeHtml(c.next_action||'다음 할 일')}">연락</em>`;
+  return h ? `<span class="cg-badges">${h}</span>` : '';
+}
+
+function renderRevenueSub(){
+  const el = document.getElementById('cstRevenueSub'); if (!el) return;
+  const now = new Date();
+  const ym = ymdLocal(now).slice(0,7);
+  const prev = ymdLocal(new Date(now.getFullYear(), now.getMonth() - 1, 1)).slice(0,7);
+  let thisM = 0, lastM = 0; const byP = {};
+  for (const c of (CUSTOMERS||[])) {
+    const paid = Number(c.paid_amount)||0, extra = Number(c.extra_amount)||0;
+    const sm = String(c.sold_at||'').slice(0,7), em = String(c.extra_at||'').slice(0,7);
+    if (sm === ym) thisM += paid; if (sm === prev) lastM += paid;
+    if (em === ym) thisM += extra; if (em === prev) lastM += extra;
+    const pk = c.license_key ? productOfKey(c.license_key).short : '기타';
+    byP[pk] = (byP[pk]||0) + paid + extra;
+  }
+  const man = v => v ? (v/10000).toLocaleString('ko-KR') + '만' : '0';
+  const prod = Object.entries(byP).filter(([,v]) => v).map(([k,v]) => `${k.replace('마스터','')} ${man(v)}`).join(' · ');
+  el.innerHTML = `이번 달 <b>${man(thisM)}</b> · 지난달 ${man(lastM)}` + (prod ? `<br>${escapeHtml(prod)}` : '');
+}
+
+function downloadFile(name, text, type){
+  const blob = new Blob([text], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
+function exportLicensesCsv(){
+  const list = LICENSES || [];
+  if (!list.length) { showToast('내보낼 라이선스가 없습니다'); return; }
+  const q = v => `"${String(v ?? '').replace(/"/g,'""')}"`;
+  const typeName = t => t==='trial'?'체험':t==='package'?'패키지':'정식';
+  const stName = { live:'정식 사용중', trial:'체험 진행중', soon:'만료 임박', expired:'만료됨', off:'중지' };
+  const head = ['제품','도장명','연락처','라이선스 키','종류','상태','체험일수','체험 시작','만료일','발급일','최근 인증','기기(사용/최대)','결제금액','결제일','결제메모','메모'];
+  const body = PRODUCT_ORDER.flatMap(id => list.filter(d => productOfKey(d.license_key).key === id)).map(d => [
+    productOfKey(d.license_key).short, d.dojang_name, d.phone, d.license_key, typeName(d.license_type),
+    stName[licenseState(d)] || '', d.license_type==='trial' ? (Number(d.trial_days)||3) : '',
+    isoToYmd(d.trial_started_at), d.expire_date, isoToYmd(d.created_at), isoToYmd(d.last_verified_at),
+    `${(d.device_slots||[]).length}/${d.max_devices||2}`, d.pay_amount, d.pay_date, d.pay_memo, d.memo
+  ].map(q).join(','));
+  downloadFile(`라이선스목록_${todayStr()}.csv`, '﻿' + head.map(q).join(',') + '\n' + body.join('\n'), 'text/csv;charset=utf-8');
+  showToast('라이선스 목록을 엑셀 파일로 받았습니다');
+}
+async function downloadBackup(){
+  if (!ADMIN_TOKEN) return;
+  showToast('백업을 모으는 중입니다…');
+  try {
+    const licenses  = await edgeCall('GET_LICENSES', {}) || [];
+    const customers = await edgeCall('GET_CUSTOMERS', {}) || [];
+    let academy = [];
+    try { academy = await edgeCall('GET_ACADEMY_PROJECTS', {}) || []; } catch(e) {}
+    const notes = {};
+    for (const c of customers) {
+      try { const n = await edgeCall('GET_CUSTOMER_NOTES', { customer_id: c.id }) || []; if (n.length) notes[c.id] = n; } catch(e) {}
+    }
+    const data = { kind:'naruunlabs-admin-backup', exported_at: new Date().toISOString(),
+      counts:{ licenses:licenses.length, customers:customers.length, academy_projects:academy.length, customers_with_notes:Object.keys(notes).length },
+      licenses, customers, academy_projects: academy, customer_notes: notes };
+    downloadFile(`나른랩스_백업_${todayStr()}.json`, JSON.stringify(data, null, 2), 'application/json');
+    showToast(`백업 완료 · 라이선스 ${licenses.length} · 고객 ${customers.length} · 제작 ${academy.length}건`);
+  } catch(err) { showToast('백업 실패: ' + err.message); }
+}
+</script>
+
 <script id="akm-v5-ui-polish-js">
 (function(){
   function setSyncLabel(){
@@ -3172,6 +3558,77 @@ tr.cg-row.flash td{background:#FFF3CC !important;transition:background .5s}
   tr.st-off     {border-left:4px solid var(--st-off)}
   tr.st-expired td,tr.st-soon td,tr.st-off td{background:transparent!important}
 }
+</style>
+
+<style id="naruun-admin-convenience-css">
+
+.today-box{background:#fff;border:1px solid #E3E9F2;border-radius:18px;margin-bottom:16px;box-shadow:0 1px 2px rgba(7,28,73,.04)}
+.today-head{display:flex;align-items:center;gap:10px;padding:14px 18px;cursor:pointer;user-select:none}
+.today-head b{font-size:15px;font-weight:900;color:#071C49}
+.today-count{min-width:34px;text-align:center;padding:3px 9px;border-radius:999px;background:#DC2626;color:#fff;font-size:12px;font-weight:900}
+.today-count.zero{background:#E7F8EF;color:#0C8D54}
+.today-sub{font-size:12px;color:#8a93a0;font-weight:700}
+.today-arrow{margin-left:auto;font-size:12px;color:#0757D8;font-weight:800}
+.today-body{padding:0 18px 14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:12px}
+.today-empty{color:#8a93a0;font-weight:700;font-size:13px;padding:4px 0 6px}
+.today-group{border:1px solid #EEF2F7;border-radius:14px;padding:10px 12px;border-left:4px solid #8494A8}
+.today-group.g-ending{border-left-color:#E08700}.today-group.g-ended{border-left-color:#DC2626}
+.today-group.g-nudge{border-left-color:#2F7BF6}.today-group.g-expire{border-left-color:#E08700}
+.today-group.g-cold{border-left-color:#8494A8}.today-group.g-ledger{border-left-color:#DC2626}
+.today-gt{font-size:12px;font-weight:900;color:#475467;margin-bottom:6px}
+.today-gt span{color:#0757D8;margin-left:4px}
+.today-row{display:flex;align-items:center;gap:6px;padding:6px 0;border-top:1px dashed #EEF2F7;font-size:13px}
+.today-row:first-of-type{border-top:0}
+.today-row b{font-weight:900;white-space:nowrap}
+.today-row em{font-style:normal;font-size:10.5px;font-weight:900;padding:2px 6px;border-radius:6px;background:#EDF0F4;color:#475467;white-space:nowrap}
+.today-row em.p-kick{background:#FDEAEC;color:#E3172E}.today-row em.p-jump{background:#E0F7F4;color:#0F9384}.today-row em.p-strike{background:#F3E8FF;color:#9333EA}
+.today-why{flex:1;min-width:0;color:#667085;font-weight:700;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.today-row .btn-sm{flex:none;white-space:nowrap}
+@media(max-width:700px){.today-body{grid-template-columns:1fr}.today-sub{display:none}.today-row{flex-wrap:wrap}.today-why{flex-basis:100%;order:5;white-space:normal}}
+
+.cross-hint{display:none;align-items:center;gap:8px;flex-wrap:wrap;margin:-4px 0 12px;padding:9px 14px;border-radius:12px;background:#FFF8E6;border:1px solid #F8E3A8;font-size:13px;font-weight:800;color:#8A5A00}
+.cross-hint button{border:1px solid #E7C66B;background:#fff;color:#8A5A00;border-radius:8px;padding:4px 10px;font:inherit;font-size:12px;cursor:pointer}
+
+.lu{font-weight:800}.lu-cold{color:#E08700}
+.lu-cold::before{content:"● ";font-size:9px;vertical-align:1px}
+.lu-none{color:#8a93a0}
+
+.convert-box{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:#EEF6FF;border:1px solid #CFE2FF;border-radius:14px;padding:12px 14px;margin:0 0 6px}
+.convert-box>div:first-child{flex:1;min-width:200px}
+.convert-box b{display:block;font-size:13px;font-weight:900;color:#0757D8}
+.convert-box span{font-size:12px;color:#5B6B80;font-weight:700}
+.convert-box .btn-sm{padding:9px 14px}
+.convert-note{flex-basis:100%;font-size:12px;color:#12A15C;font-weight:800;line-height:1.5}
+.convert-note:empty{display:none}
+
+.now-tag,.live-tag{display:inline-block;margin-left:6px;padding:2px 7px;border-radius:6px;font-size:10px;letter-spacing:0;text-transform:none;font-weight:900;vertical-align:1px}
+.now-tag{background:#FFF3DC;color:#A96A00}
+.live-tag{background:#E7F8EF;color:#0C8D54}
+
+.modal .modal-btns{position:sticky;bottom:-30px;margin:20px -30px -30px;padding:14px 30px 22px;background:var(--panel,#fff);border-top:1px solid var(--line,#E3E9F2);z-index:5}
+@media(max-width:768px){.modal .modal-btns{bottom:-24px;margin:20px -24px -24px;padding:12px 24px 18px}}
+
+.msg-modal{width:620px}
+.msg-kinds{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.msg-kinds button{border:1px solid #D8E1EC;background:#fff;border-radius:999px;padding:7px 12px;font:inherit;font-size:12.5px;font-weight:800;color:#475467;cursor:pointer}
+.msg-kinds button.on{background:#071C49;border-color:#071C49;color:#fff}
+.msg-text{min-height:300px;font-size:13px;line-height:1.6}
+
+.cg-namewrap{display:flex;align-items:center;height:31px}
+.cg-namewrap .cg-in{flex:1}
+.cg-badges{display:flex;gap:3px;padding-right:6px;flex:none}
+.pb{font-style:normal;width:17px;height:17px;border-radius:5px;display:grid;place-items:center;font-size:10px;font-weight:900;color:#fff;font-family:ui-monospace,monospace}
+.pb.p-kick{background:#E3172E}.pb.p-jump{background:#14B8A6}.pb.p-strike{background:#A855F7}
+.due-chip{font-style:normal;font-size:10px;font-weight:900;color:#fff;background:#DC2626;border-radius:5px;padding:2px 5px;margin-right:2px}
+
+.rev-sub{margin-top:6px;font-size:11px;font-weight:700;color:#667085;line-height:1.5}
+.rev-sub b{color:#071C49}
+
+details.old-fields{margin-top:6px}
+details.old-fields>summary{cursor:pointer;font-size:13px;font-weight:800;color:#8a93a0;padding:10px 4px}
+#tab-license .toolbar{grid-template-columns:1fr auto auto auto auto}
+@media(max-width:900px){#tab-license .toolbar{grid-template-columns:1fr 1fr}}
+@media(max-width:560px){#tab-license .toolbar{grid-template-columns:1fr}}
 </style>
 
 </body>
