@@ -1,9 +1,9 @@
 {
-  "id": "/aistrikemaster",
+  "id": "/strikemaster",
   "name": "AI STRIKE MASTER",
   "short_name": "STRIKE MASTER",
-  "description": "어린이 AI 타격 훈련 시스템",
-  "start_url": "/aistrikemaster",
+  "description": "AI 타격 훈련 시스템 소개",
+  "start_url": "/strikemaster",
   "scope": "/",
   "display": "standalone",
   "orientation": "any",
@@ -11,10 +11,34 @@
   "theme_color": "#A855F7",
   "icons": [
     {
+      "src": "./icon-strikemaster-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-strikemaster-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-strikemaster-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "./icon-strikemaster-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
       "src": "./icon-strikemaster.svg",
       "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ]
 }

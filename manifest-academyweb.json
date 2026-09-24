@@ -1,41 +1,41 @@
 {
-  "id": "/jumpmaster",
-  "name": "AI JUMP MASTER",
-  "short_name": "JUMP MASTER",
-  "description": "AI 줄넘기 훈련 시스템 소개",
-  "start_url": "/jumpmaster",
+  "id": "/academyweb",
+  "name": "ACADEMY WEB",
+  "short_name": "ACADEMY WEB",
+  "description": "태권도장 홈페이지 제작 서비스",
+  "start_url": "/academyweb",
   "scope": "/",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#0A1628",
-  "theme_color": "#0A1628",
+  "background_color": "#071C49",
+  "theme_color": "#1288F8",
   "icons": [
     {
-      "src": "./icon-jumpmaster-192.png",
+      "src": "./icon-academyweb-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "./icon-jumpmaster-512.png",
+      "src": "./icon-academyweb-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "./icon-jumpmaster-maskable-192.png",
+      "src": "./icon-academyweb-maskable-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "./icon-jumpmaster-maskable-512.png",
+      "src": "./icon-academyweb-maskable-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "./icon-jumpmaster.svg",
+      "src": "./icon-academyweb.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"

@@ -69,27 +69,34 @@ p{margin:0}
 .hd{position:sticky;top:0;z-index:50;background:rgba(6,9,18,.78);backdrop-filter:blur(14px) saturate(1.4);-webkit-backdrop-filter:blur(14px) saturate(1.4);
   border-bottom:1px solid rgba(255,255,255,.08)}
 .hd-in{width:var(--wrap);margin:0 auto;height:68px;display:flex;align-items:center;gap:18px}
-.hd-logo img{height:26px;width:auto}
-.hd-logo.brand img{height:30px}
+.hd-logo{display:flex;align-items:center;flex:none}
+/* 2026-09-25 새 로고는 SVG 안 위아래 여백이 커서 26px 이면 글자가 작게 보였다 → 키움 */
+.hd-logo img{height:46px;width:auto}
+.hd-logo.brand img{height:48px}
 .switch{display:flex;gap:6px;margin:0 auto;padding:4px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08)}
 .switch a{display:flex;align-items:center;gap:7px;height:34px;padding:0 14px;border-radius:999px;color:#AEB8CC;font-size:13.5px;font-weight:800;letter-spacing:-.01em;transition:background .2s,color .2s}
 .switch a i{font-style:normal;display:grid;place-items:center;width:20px;height:20px;border-radius:6px;font-family:var(--mono);font-size:11px;font-weight:700;color:#fff;background:var(--sc)}
 .switch a:hover{color:#fff}
+.switch a{white-space:nowrap}
 .switch a[aria-current="page"]{background:#fff;color:#0B1220}
 .switch a.web i{background:#2B3A55}
 .hd-act{display:flex;gap:8px;align-items:center}
 .hd-act .btn{min-height:40px;padding:0 16px;font-size:13.5px}
 .hd-run{color:#fff;border-color:rgba(255,255,255,.28)}
+@media (max-width:1180px){ .hd-logo img{height:38px} .hd-logo.brand img{height:42px} }
 @media (max-width:960px){ .switch a span{display:none} .switch a{padding:0 10px} }
 @media (max-width:680px){
   .hd-in{height:58px;gap:10px}
-  .hd-logo img{height:20px}
-  .hd-logo.brand img{height:24px}
+  .hd-logo img{height:28px}
+  .hd-logo.brand img{height:32px}
   .hd-act .hd-talk{display:none}
   .switch{padding:3px;gap:3px}
   .switch a{height:30px;padding:0 8px}
   .switch a.web{display:none}
 }
+
+/* 2026-09-25 아주 좁은 폰: 로고를 키운 대신 K·J·S 전환 알약은 숨김 (밝은 페이지는 520px 부터 이미 숨김) */
+@media (max-width:430px){ .switch{display:none} .hd-logo{margin-right:auto} .hd-logo img{height:26px} .hd-logo.brand img{height:30px} }
 
 /* ---------- mobile bottom bar ---------- */
 .mbar{display:none}

@@ -17,7 +17,7 @@
 //    그러면 예전 캐시가 통째로 비워집니다.
 // =========================================================
 
-const CACHE_NAME = 'naruunlabs-2026-09-25-logo-refresh';
+const CACHE_NAME = 'naruunlabs-2026-09-25-icon-png';
 
 const APP_SHELL = [
   './',
