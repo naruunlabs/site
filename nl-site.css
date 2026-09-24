@@ -392,7 +392,7 @@ p{margin:0}
 .door.lit::before,.door:hover::before{opacity:1}
 .door .dk{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:12px;letter-spacing:.14em;color:#9AA6BD}
 .door .dk i{font-style:normal;display:grid;place-items:center;width:26px;height:26px;border-radius:8px;background:var(--dc);color:#fff;font-weight:700}
-.door img{height:22px;width:auto}
+.door img{height:44px;width:auto;max-width:100%}
 .door h2{font-size:22px;color:#fff;letter-spacing:-.04em}
 .door p{font-size:14.5px;color:#9AA6BD;line-height:1.65}
 .door .ft2{display:flex;justify-content:space-between;align-items:center;gap:10px;padding-top:12px;border-top:1px solid rgba(255,255,255,.08);font-size:13.5px}
@@ -401,6 +401,7 @@ p{margin:0}
 .web-row{position:relative;z-index:1;width:var(--wrap);margin:14px auto 0;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 20px;padding:20px 24px;border-radius:18px;
   background:linear-gradient(90deg,rgba(18,136,248,.14),rgba(18,136,248,.04));border:1px solid rgba(18,136,248,.3);color:#C9D2E3}
 .web-row b{color:#fff;font-size:17px}
+.web-row img{width:240px;height:auto;display:block;flex:0 0 auto}
 .web-row .meta{font-size:14px;color:#9AA6BD}
 .web-row .go{font-weight:800;color:#7FB2FF}
 @media (max-width:900px){ .b-top{grid-template-columns:1fr} .b-fig{order:-1;height:260px} .doors{grid-template-columns:1fr} }
