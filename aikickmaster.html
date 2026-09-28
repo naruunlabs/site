@@ -5749,9 +5749,11 @@ function scoreMeasureOnly(f,want){
   const rot = (sw===null) ? 0.5 : c01(1 - sw/0.85);
   let factor = 0.70 + 0.30*rot;
   let kneeMarkGrade=0;   
+  let hfC=null, hfK=null;   
   if(want==='yeop'){
     const ch=Number.isFinite(f.kneeChamber3D)?f.kneeChamber3D:null;
     const cScore=(ch===null)?0.5:c01((ch-20)/(75-20)); 
+    hfC=cScore;
     factor *= (0.78 + 0.22*cScore);
 
     if(f.kneeMarkPre && f.kneeMarkPost){ factor *= KNEE_MARK.BONUS_BOTH; kneeMarkGrade=2; }
@@ -5766,6 +5768,7 @@ function scoreMeasureOnly(f,want){
 
   if(want==='dwi' && dch!==null){
     const kScore=c01((dch-DWI_KNEE.LO)/(DWI_KNEE.HI-DWI_KNEE.LO));
+    hfK=kScore;
     factor *= (1 - DWI_KNEE.PENALTY*(1-kScore));
   }
   const score=Math.max(P.BASE,Math.min(100,Math.round(P.BASE+P.SPAN*hScore*factor)));
@@ -5783,7 +5786,11 @@ function scoreMeasureOnly(f,want){
 
   return {ok:true,score,reason:'measure_only',msg,
           hScore:+hScore.toFixed(3), rot:+rot.toFixed(3), factor:+factor.toFixed(3),
-          kneeMarkGrade};   
+          kneeMarkGrade,   
+
+          parts: want==='yeop' ? {kind:'yeop', h:hScore, rot, c:(hfC==null?.5:hfC),
+                                  mark:(f.kneeMarkPre||f.kneeMarkSeen>0)?kneeMarkGrade/2:null}
+               : want==='dwi'  ? {kind:'dwi', h:hScore, rot, k:(hfK==null?.5:hfK)} : null};
 }
 
 const KNEE_MARK={ BONUS_PRE:1.05, BONUS_BOTH:1.15 };
@@ -5969,6 +5976,9 @@ function analyzeTrajShort(peakPctValue=null){
 
   return {
     score, ok:true, msg, reason:'short_ok',
+    
+    parts: want==='yeop' ? {kind:'yeop', h:hScore, rot, c:cScore, mark:shortKneeMark?.5:null}
+         : want==='dwi'  ? {kind:'dwi', h:hScore, rot, k:(kneeChamber3D==null?.5:c01((kneeChamber3D-DWI_KNEE.LO)/(DWI_KNEE.HI-DWI_KNEE.LO)))} : null,
     riseTFront,
     kneeChamber:(kneeChamber3D==null)?0:kneeChamber3D,
     kneeDataOk:(kneeChamber3D!=null),
@@ -9732,13 +9742,15 @@ function hsShow(p){
 
 const HF_COL = { accent:'#6ff2ff', warm:'#ffb35c', blue:'#4ca3ff', red:'#ff5a6e', rear:'#ff7a59' };
 let hfWasPlaying=false;
-try{ if(window.HoloFX) HoloFX.init({host:camWrap, z:6, accent:HF_COL.accent, warm:HF_COL.warm, safeL:.19, safeR:.18, top:.45, topR:.6}); }catch(e){}
+try{ if(window.HoloFX) HoloFX.init({host:camWrap, z:6, accent:HF_COL.accent, warm:HF_COL.warm, safeL:.19, safeR:.18, top:.45, topR:.6, portraitPanels:true}); }catch(e){}
 function hfBody(){
   try{
     if(smHipX==null || smHipY==null || !smTorso) return null;
     const c=footPointToViewport(smHipX, smHipY-smTorso*0.5);
     const h=camWrap.getBoundingClientRect().height;
-    return {cx:c.x, cy:c.y, half:Math.max(80, smTorso*h*0.7)};
+    
+    const hd=footPointToViewport(smHipX, smHipY-smTorso*1.7), ft=footPointToViewport(smHipX, smHipY+smTorso*1.85);
+    return {cx:c.x, cy:c.y, half:Math.max(80, smTorso*h*0.7), headY:hd.y, footY:ft.y, legHalf:Math.max(36, smTorso*h*0.4)};
   }catch(e){ return null; }
 }
 function hfSync(){
@@ -9764,18 +9776,24 @@ function hfTrajPts(){
   try{ return trajX.map((x,i)=>footPointToViewport(x,trajY[i])); }catch(e){ return []; }
 }
 const HF_KICK_HINT={ '높이':'더 높이 차요!', '무릎 접기':'무릎을 접었다 펴요!', '곧게':'곧게 앞으로 차요!',
-                     '돌리기':'옆으로 크게 돌려요!', '허리 회전':'허리를 더 돌려요!' };
+                     '돌리기':'옆으로 크게 돌려요!', '허리 회전':'허리를 더 돌려요!',
+                     '몸 돌리기':'몸을 더 옆으로 돌려요!', '옆선 찍기':'무릎으로 옆선을 찍어요!',
+                     '등 보이기':'등을 더 보이며 차요!' };
 function hfKick(result,peak,pts){
   try{
     if(!hfReady()) return;
+    if(pts&&pts.length) HoloFX.setKickX(pts[0].x);   
     const side=twoPlayerMode?((typeof active2pSlot!=='undefined'&&active2pSlot===slot2p.c)?'c':'h'):null;
     HoloFX.trail(pts,{color:side==='c'?HF_COL.blue:(side==='h'?HF_COL.red:HF_COL.accent),
       label:side?null:(Math.round(Math.min(100,Math.max(0,peak)))+'%'), sub:'PEAK HEIGHT'});
     if(twoPlayerMode) return;
     const p=result&&result.parts;
     if(p){
-      const axes = p.kind==='apcha'
-        ? [{name:'높이',v:p.h},{name:'무릎 접기',v:p.c},{name:'곧게',v:p.s}]
+      
+      const axes = p.kind==='apcha' ? [{name:'높이',v:p.h},{name:'무릎 접기',v:p.c},{name:'곧게',v:p.s}]
+        : p.kind==='yeop' ? [{name:'높이',v:p.h},{name:'몸 돌리기',v:p.rot},{name:'무릎 접기',v:p.c}]
+                              .concat(p.mark==null?[]:[{name:'옆선 찍기',v:p.mark}])
+        : p.kind==='dwi'  ? [{name:'높이',v:p.h},{name:'등 보이기',v:p.rot},{name:'무릎 접기',v:p.k}]
         : [{name:'높이',v:p.h},{name:'무릎 접기',v:p.c},{name:'돌리기',v:p.l},{name:'허리 회전',v:p.hip}];
       HoloFX.radar(axes,{tag:'KICK ANALYSIS', hint:i=>HF_KICK_HINT[axes[i].name]||''});
     }
@@ -10751,7 +10769,7 @@ const _AKM_CACHE_DAYS  = 7;
 const _AKM_TRIAL_CACHE_DAYS = 1;   
 const _AKM_FETCH_TIMEOUT_MS = 8 * 1000;   
 
-const _AKM_VERSION     = '3.2.4';
+const _AKM_VERSION     = '3.2.5';
 
 let _akmFailCount = 0;
 let _akmFailLockUntil = 0;
@@ -11876,7 +11894,8 @@ html body #handNextPrompt .h-frame::before,html body #handNextPrompt .h-frame::a
   const NS='http://www.w3.org/2000/svg';
   const HF={ enabled:false, playing:false, panels:false, lite:false, lowPerf:false, portrait:false };
   window.HoloFX=HF;
-  let cfg={ host:null, z:6, accent:'#6ff2ff', warm:'#ffb35c', safeL:.18, safeR:.17, top:.46, topR:null };
+  let cfg={ host:null, z:6, accent:'#6ff2ff', warm:'#ffb35c', safeL:.18, safeR:.17, top:.46, topR:null,
+            portraitPanels:false, pTop:.07 };   
   let root=null, fxSvg=null, pL=null, pR=null, trails=[];
   let lastBody=null;
 
@@ -11923,6 +11942,11 @@ html body #handNextPrompt .h-frame::before,html body #handNextPrompt .h-frame::a
   background:rgba(0,10,20,.35);text-shadow:0 1px 2px #000}
 #holoFx .hf-chips b.w{border-color:var(--hfw)}
 #holoFx .hf-chips b.last{background:rgba(255,255,255,.22)}
+#holoFx.pstack .hf-right{width:var(--hfsize)}
+#holoFx.pstack .hf-left .hf-hint{white-space:nowrap}
+#holoFx.pstack .hf-tag{font-size:11px;letter-spacing:.2em}
+#holoFx.pstack .hf-big{font-size:17px}
+#holoFx.pstack .hf-hint{font-size:18px}
 #holoFx.lite .hf-glow{filter:none}
 #holoFx.lite .hf-spin{animation:none}
 @keyframes hfSpin{to{transform:rotate(360deg)}}
@@ -11955,7 +11979,9 @@ html body #handNextPrompt .h-frame::before,html body #handNextPrompt .h-frame::a
     Object.assign(HF,s||{});
     HF.portrait=(innerHeight>innerWidth);
     root.classList.toggle('on',!!(HF.enabled&&HF.playing));
-    root.classList.toggle('panels',!!(HF.enabled&&HF.playing&&HF.panels&&!HF.portrait));
+    const ps=!!(HF.portrait&&cfg.portraitPanels);   
+    root.classList.toggle('panels',!!(HF.enabled&&HF.playing&&HF.panels&&(!HF.portrait||ps)));
+    root.classList.toggle('pstack',ps);
     root.classList.toggle('lite',!!HF.lite);
     if(!(HF.enabled&&HF.playing)) clearTrails();
   };
@@ -11963,13 +11989,49 @@ html body #handNextPrompt .h-frame::before,html body #handNextPrompt .h-frame::a
   HF.reset=function(){
     if(!root) return;
     pL.innerHTML=''; pR.innerHTML=''; pL.classList.remove('has'); pR.classList.remove('has');
-    clearTrails(); HF._trend=[]; HF._prevRadar=null; HF._best=0; HF._chips=[]; HF._streakBest=0;
+    clearTrails(); HF._kickX=null; HF._pside=null; HF._trend=[]; HF._prevRadar=null; HF._best=0; HF._chips=[]; HF._streakBest=0;
   };
+
+  function layoutPortrait(r){
+    const W=r.width, H=r.height, b=lastBody;
+    const cx=b?Math.max(0,Math.min(W,b.cx-r.left)):W/2;
+    const headY=(b&&isFinite(b.headY))?b.headY-r.top:H*.28;
+    const footY=(b&&isFinite(b.footY))?b.footY-r.top:H*.88;
+    const leg=(b&&isFinite(b.legHalf))?b.legHalf:W*.12;
+    const setSize=(p,size)=>{
+      p.style.visibility=''; p.style.setProperty('--hfsize',size+'px');
+      const sv=p.querySelector('svg.hf-main'), ar=sv?(+sv.dataset.ar||1):1;
+      if(sv){ sv.style.width=size+'px'; sv.style.height=(size*ar)+'px'; }
+      return size*ar;
+    };
+    const top0=H*cfg.pTop, capL=62;
+    const rs=Math.min(W*.62, 300, headY-top0-capL-8);
+    if(rs<110) pL.style.visibility='hidden';
+    else{
+      const h=setSize(pL,rs)+capL;
+      pL.style.left=Math.max(rs/2+8,Math.min(W-rs/2-8,cx))+'px';
+      pL.style.top=(top0+h/2)+'px';
+    }
+    if(HF._kickX!=null) HF._pside=(HF._kickX-r.left>cx)?'L':'R';
+    const side=HF._pside||'R';
+    const avail=(side==='L'?(cx-leg):(W-(cx+leg)))-12;
+    const ts=Math.min(avail, W*.46, 260);
+    if(ts<100) pR.style.visibility='hidden';
+    else{
+      const h=setSize(pR,ts)+56;
+      const bottom=Math.min(H-8, footY+16);
+      pR.style.left=(side==='L'?8+ts/2:W-8-ts/2)+'px';
+      pR.style.top=Math.max(h/2+8,bottom-h/2)+'px';
+    }
+  }
+  
+  HF.setKickX=function(x){ HF._kickX=isFinite(x)?x:null; };
 
   HF.layout=function(body){
     if(!root) return;
     if(body) lastBody=body;
     const r=root.getBoundingClientRect(); if(!r.width) return;
+    if(HF.portrait && cfg.portraitPanels) return layoutPortrait(r);
     const b=lastBody||{cx:r.left+r.width/2, cy:r.top+r.height*.5, half:r.width*.1};
     const cx=b.cx-r.left, half=Math.max(80,b.half);
     const L0=r.width*cfg.safeL, R1=r.width*(1-cfg.safeR);
@@ -12097,7 +12159,9 @@ html body #handNextPrompt .h-frame::before,html body #handNextPrompt .h-frame::a
     const gw=el('g',{class:'hf-glow'},s);
     const tg=opts.target||80;
     el('line',{x1:0,y1:Y(tg),x2:W,y2:Y(tg),stroke:'#fff','stroke-width':1.5,'stroke-dasharray':'4 6',opacity:.65},gw);
-    const tl=el('text',{x:0,y:Y(tg)-6,'text-anchor':'start',class:'hf-txt','font-size':14,fill:'#fff'},s); tl.textContent='목표 '+tg;
+    if(!root.classList.contains('pstack')){   
+      const tl=el('text',{x:0,y:Y(tg)-6,'text-anchor':'start',class:'hf-txt','font-size':14,fill:'#fff'},s); tl.textContent='목표 '+tg;
+    }
     el('line',{x1:0,y1:H-pad,x2:W,y2:H-pad,stroke:cfg.warm,'stroke-width':1,opacity:.4},gw);
     if(n>=2){
       const d=a.map((v,i)=>(i?'L':'M')+X(i).toFixed(1)+' '+Y(v).toFixed(1)).join(' ');

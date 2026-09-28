@@ -853,7 +853,7 @@ body.hf-dim #jmpPilotGraph .jt-wing{display:none!important}
 
 <script type="module">
 
-const APP_VERSION = '3.6.2';   
+const APP_VERSION = '3.6.3';   
 
 const MP_VERSION  = '1.0.1';
 const MP_LOCAL    = './vendor/mediapipe/';
@@ -4726,7 +4726,8 @@ if('serviceWorker' in navigator){
   const NS='http://www.w3.org/2000/svg';
   const HF={ enabled:false, playing:false, panels:false, lite:false, lowPerf:false, portrait:false };
   window.HoloFX=HF;
-  let cfg={ host:null, z:6, accent:'#6ff2ff', warm:'#ffb35c', safeL:.18, safeR:.17, top:.46, topR:null };
+  let cfg={ host:null, z:6, accent:'#6ff2ff', warm:'#ffb35c', safeL:.18, safeR:.17, top:.46, topR:null,
+            portraitPanels:false, pTop:.07 };   
   let root=null, fxSvg=null, pL=null, pR=null, trails=[];
   let lastBody=null;
 
@@ -4773,6 +4774,11 @@ if('serviceWorker' in navigator){
   background:rgba(0,10,20,.35);text-shadow:0 1px 2px #000}
 #holoFx .hf-chips b.w{border-color:var(--hfw)}
 #holoFx .hf-chips b.last{background:rgba(255,255,255,.22)}
+#holoFx.pstack .hf-right{width:var(--hfsize)}
+#holoFx.pstack .hf-left .hf-hint{white-space:nowrap}
+#holoFx.pstack .hf-tag{font-size:11px;letter-spacing:.2em}
+#holoFx.pstack .hf-big{font-size:17px}
+#holoFx.pstack .hf-hint{font-size:18px}
 #holoFx.lite .hf-glow{filter:none}
 #holoFx.lite .hf-spin{animation:none}
 @keyframes hfSpin{to{transform:rotate(360deg)}}
@@ -4805,7 +4811,9 @@ if('serviceWorker' in navigator){
     Object.assign(HF,s||{});
     HF.portrait=(innerHeight>innerWidth);
     root.classList.toggle('on',!!(HF.enabled&&HF.playing));
-    root.classList.toggle('panels',!!(HF.enabled&&HF.playing&&HF.panels&&!HF.portrait));
+    const ps=!!(HF.portrait&&cfg.portraitPanels);   
+    root.classList.toggle('panels',!!(HF.enabled&&HF.playing&&HF.panels&&(!HF.portrait||ps)));
+    root.classList.toggle('pstack',ps);
     root.classList.toggle('lite',!!HF.lite);
     if(!(HF.enabled&&HF.playing)) clearTrails();
   };
@@ -4813,13 +4821,49 @@ if('serviceWorker' in navigator){
   HF.reset=function(){
     if(!root) return;
     pL.innerHTML=''; pR.innerHTML=''; pL.classList.remove('has'); pR.classList.remove('has');
-    clearTrails(); HF._trend=[]; HF._prevRadar=null; HF._best=0; HF._chips=[]; HF._streakBest=0;
+    clearTrails(); HF._kickX=null; HF._pside=null; HF._trend=[]; HF._prevRadar=null; HF._best=0; HF._chips=[]; HF._streakBest=0;
   };
+
+  function layoutPortrait(r){
+    const W=r.width, H=r.height, b=lastBody;
+    const cx=b?Math.max(0,Math.min(W,b.cx-r.left)):W/2;
+    const headY=(b&&isFinite(b.headY))?b.headY-r.top:H*.28;
+    const footY=(b&&isFinite(b.footY))?b.footY-r.top:H*.88;
+    const leg=(b&&isFinite(b.legHalf))?b.legHalf:W*.12;
+    const setSize=(p,size)=>{
+      p.style.visibility=''; p.style.setProperty('--hfsize',size+'px');
+      const sv=p.querySelector('svg.hf-main'), ar=sv?(+sv.dataset.ar||1):1;
+      if(sv){ sv.style.width=size+'px'; sv.style.height=(size*ar)+'px'; }
+      return size*ar;
+    };
+    const top0=H*cfg.pTop, capL=62;
+    const rs=Math.min(W*.62, 300, headY-top0-capL-8);
+    if(rs<110) pL.style.visibility='hidden';
+    else{
+      const h=setSize(pL,rs)+capL;
+      pL.style.left=Math.max(rs/2+8,Math.min(W-rs/2-8,cx))+'px';
+      pL.style.top=(top0+h/2)+'px';
+    }
+    if(HF._kickX!=null) HF._pside=(HF._kickX-r.left>cx)?'L':'R';
+    const side=HF._pside||'R';
+    const avail=(side==='L'?(cx-leg):(W-(cx+leg)))-12;
+    const ts=Math.min(avail, W*.46, 260);
+    if(ts<100) pR.style.visibility='hidden';
+    else{
+      const h=setSize(pR,ts)+56;
+      const bottom=Math.min(H-8, footY+16);
+      pR.style.left=(side==='L'?8+ts/2:W-8-ts/2)+'px';
+      pR.style.top=Math.max(h/2+8,bottom-h/2)+'px';
+    }
+  }
+  
+  HF.setKickX=function(x){ HF._kickX=isFinite(x)?x:null; };
 
   HF.layout=function(body){
     if(!root) return;
     if(body) lastBody=body;
     const r=root.getBoundingClientRect(); if(!r.width) return;
+    if(HF.portrait && cfg.portraitPanels) return layoutPortrait(r);
     const b=lastBody||{cx:r.left+r.width/2, cy:r.top+r.height*.5, half:r.width*.1};
     const cx=b.cx-r.left, half=Math.max(80,b.half);
     const L0=r.width*cfg.safeL, R1=r.width*(1-cfg.safeR);
@@ -4947,7 +4991,9 @@ if('serviceWorker' in navigator){
     const gw=el('g',{class:'hf-glow'},s);
     const tg=opts.target||80;
     el('line',{x1:0,y1:Y(tg),x2:W,y2:Y(tg),stroke:'#fff','stroke-width':1.5,'stroke-dasharray':'4 6',opacity:.65},gw);
-    const tl=el('text',{x:0,y:Y(tg)-6,'text-anchor':'start',class:'hf-txt','font-size':14,fill:'#fff'},s); tl.textContent='목표 '+tg;
+    if(!root.classList.contains('pstack')){   
+      const tl=el('text',{x:0,y:Y(tg)-6,'text-anchor':'start',class:'hf-txt','font-size':14,fill:'#fff'},s); tl.textContent='목표 '+tg;
+    }
     el('line',{x1:0,y1:H-pad,x2:W,y2:H-pad,stroke:cfg.warm,'stroke-width':1,opacity:.4},gw);
     if(n>=2){
       const d=a.map((v,i)=>(i?'L':'M')+X(i).toFixed(1)+' '+Y(v).toFixed(1)).join(' ');
