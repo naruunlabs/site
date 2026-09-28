@@ -712,7 +712,6 @@ table.cg tfoot td.num{text-align:right}
           <span><i style="background:var(--st-soon)"></i>만료 임박</span>
           <span><i style="background:var(--st-expired)"></i>만료</span>
           <span><i style="background:var(--st-off)"></i>중지·없음</span>
-          <span><em class="due-chip">연락</em>할 때</span>
         </div>
 
         <button class="cg-btn" onclick="custZoom(-1)">축소 −</button>
@@ -3361,7 +3360,6 @@ function custBadges(c){
   const tag = { kick:'K', jump:'J', strike:'S' };
   let h = PRODUCT_ORDER.filter(id => own.has(id))
     .map(id => `<i class="pb p-${id}" title="${PRODUCTS[id].short} 보유">${tag[id]||'?'}</i>`).join('');
-  if (isDue(c)) h += `<em class="due-chip" title="${escapeHtml(c.next_action||'다음 할 일')}">연락</em>`;
   return h ? `<span class="cg-badges">${h}</span>` : '';
 }
 
@@ -3707,6 +3705,16 @@ body{background:var(--canvas);color:var(--ink)}
 #modalBg .modal-btns button{min-height:43px;border-radius:9px;box-shadow:none}
 #modalBg .btn-save{background:var(--blue)}
 #modalBg .btn-save-ghost{background:#fff;color:var(--blue);border:1px solid #AFC8EB}
+
+body{font-weight:400}
+.top-title h1,.section-title h2,.card-title,.cg-title{font-weight:700}
+.tab-btn,.btn-primary,.btn-add,.btn-sm-act,.btn-save,.btn-sm,.cg-btn{font-weight:600}
+.f-input,.f-textarea,.select-filter,.cg-search,.cg-in,.cg-note-add input,.cg-note-add select{font-weight:500}
+th,table.cg thead th,.field-label,.cg-seg button,.cg-legend{font-weight:600}
+td,.sub-text,.cg-sub,.cg-ro,.cg-note,.cg-note p,.today-sub,.today-why{font-weight:400}
+.badge,.today-arrow,.today-row b,.today-row em,.today-gt{font-weight:600}
+table.cg tfoot td,.sidebar-foot .sf-row b{font-weight:700}
+tr.cg-row.s-trial select.cg-in[data-f="status"],tr.cg-row.s-customer select.cg-in[data-f="status"],tr.cg-row.s-churned select.cg-in[data-f="status"]{font-weight:600}
 
 @media(max-width:1050px){.stats-row.six{grid-template-columns:repeat(3,1fr)}#tab-license .toolbar{grid-template-columns:1fr 1fr 1fr}.tab-content{width:calc(100% - 36px);padding:20px 0 48px}.top-bar{padding:0 18px}}
 @media(max-width:980px){#dashboard.show{padding-left:0}.tab-bar{width:100%}.top-bar{width:100%;left:auto}.tab-content{width:calc(100% - 28px);margin:0 auto}}
