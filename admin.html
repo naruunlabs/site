@@ -1041,6 +1041,11 @@ table.cg tfoot td.num{text-align:right}
       <textarea id="mMemo" class="f-textarea" placeholder="특이사항, 계약 조건 등"></textarea>
     </div>
 
+    <div class="issue-summary" id="issueSummary" aria-live="polite">
+      <div class="issue-summary-icon">✓</div>
+      <div><b>발급 내용</b><span id="issueSummaryText">고객과 이용 정보를 입력하면 여기에 요약됩니다.</span></div>
+    </div>
+
     <div class="err-msg" id="modalErr"></div>
     <div class="modal-btns">
       <button class="btn-cancel" onclick="closeModal()">닫기</button>
@@ -3630,6 +3635,97 @@ details.old-fields>summary{cursor:pointer;font-size:13px;font-weight:800;color:#
 @media(max-width:900px){#tab-license .toolbar{grid-template-columns:1fr 1fr}}
 @media(max-width:560px){#tab-license .toolbar{grid-template-columns:1fr}}
 </style>
+
+<style id="naruun-admin-clean-redesign-20260928">
+
+:root{--navy:#071C49;--blue:#1265E8;--canvas:#F5F7FA;--ink:#12213A;--sub:#667085;--hair:#E3E9F2}
+body{background:var(--canvas);color:var(--ink)}
+.tab-bar{width:220px;padding:24px 14px;background:var(--navy);box-shadow:none}
+.sidebar-brand{padding:0 12px 24px;margin:0 0 14px;border-bottom:1px solid rgba(255,255,255,.12)}
+.sidebar-company-logo{max-width:154px}
+.tab-btn{min-height:46px;margin:4px 0;padding:0 15px;border-radius:10px;font-size:14px;letter-spacing:-.2px;color:rgba(255,255,255,.72)}
+.tab-btn:hover{background:rgba(255,255,255,.08);color:#fff}
+.tab-btn.active{background:#1554AD;color:#fff;box-shadow:none}
+.sidebar-foot{left:26px;right:26px;color:rgba(255,255,255,.64)}
+.top-bar{left:220px;height:76px;padding:0 34px;background:rgba(255,255,255,.96);border-bottom:1px solid var(--hair);box-shadow:none}
+.top-title h1{font-size:23px;color:var(--navy)}
+.top-title span{font-size:12px;color:var(--sub)}
+.tab-content{margin-left:220px;width:calc(100% - 220px);padding:28px 34px 54px;max-width:none}
+.top-actions .btn-sm-act{border-radius:9px;box-shadow:none}
+
+#tab-license>.today-box{border-radius:12px;box-shadow:none;border-color:var(--hair);margin-bottom:22px}
+#tab-license>.today-box .today-head{padding:15px 18px}
+#tab-license>.today-box .today-body{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+#tab-license>div:nth-of-type(2){margin-bottom:20px!important}
+.home-subtab-btn{height:40px;border-radius:8px!important;padding:0 18px!important;background:#fff!important;border:1px solid var(--hair)!important;color:#475467!important}
+.home-subtab-btn.active{background:var(--blue)!important;border-color:var(--blue)!important;color:#fff!important}
+.btn-add{border-radius:9px!important;box-shadow:none!important}
+.stats-row{gap:12px;margin-bottom:18px}
+.stats-row.six{grid-template-columns:repeat(6,minmax(120px,1fr))}
+.stat-card{min-height:92px;padding:17px 18px;border:1px solid var(--hair);border-radius:12px;box-shadow:none;background:#fff}
+.stat-card:hover{transform:none;border-color:#BFD0E5;box-shadow:none}
+.stat-card .num{font-size:27px;line-height:1.15}
+.stat-card .label{margin-top:7px;font-size:12px;color:var(--sub)}
+.stat-card.picked{outline:2px solid var(--blue);outline-offset:-2px}
+#tab-license .toolbar{grid-template-columns:minmax(320px,1fr) 170px 170px auto auto;gap:10px;margin:0;padding:14px;background:#fff;border:1px solid var(--hair);border-bottom:0;border-radius:12px 12px 0 0}
+#tab-license .toolbar .f-input,#tab-license .toolbar select,#tab-license .toolbar button{height:42px;margin:0;border-radius:8px}
+#tab-license .table-wrap{margin:0;border:1px solid var(--hair);border-radius:0 0 12px 12px;box-shadow:none;background:#fff}
+#tab-license table{font-size:13px}
+#tab-license thead th{height:48px;padding:0 16px;background:#FAFBFC;color:#475467;border-bottom:1px solid var(--hair);font-size:11px;letter-spacing:.01em}
+#tab-license tbody td{padding:14px 16px;border-bottom:1px solid #EEF2F6}
+#tab-license tbody tr:hover td{background:#F8FAFD!important}
+#tab-license tbody tr{border-left-width:3px}
+#tab-license .btn-sm{border-radius:7px;box-shadow:none}
+
+#modalBg{align-items:stretch;justify-content:flex-end;padding:0;background:rgba(7,28,73,.54);backdrop-filter:none}
+#modalBg .modal{width:min(660px,100vw);max-width:none;height:100vh;max-height:none;margin:0;padding:0 30px 0;border-radius:0;overflow-y:auto;box-shadow:-18px 0 50px rgba(7,28,73,.18);background:#fff}
+#modalBg .modal>h3{position:sticky;top:0;z-index:8;margin:0 -30px 20px;padding:25px 30px 18px;background:rgba(255,255,255,.98);border-bottom:1px solid var(--hair);font-size:22px;color:var(--navy)}
+#modalBg .modal>h3:after{content:'고객과 제품 정보를 확인한 뒤 저장합니다';display:block;margin-top:6px;font-size:12px;font-weight:600;color:var(--sub)}
+#modalBg .mem-pick{margin:0 0 14px;padding:16px;border:1px solid #CFE0F8;border-radius:12px;background:#F6FAFF}
+#modalBg .mem-pick:before{content:'1';display:grid;place-items:center;float:left;width:24px;height:24px;margin:-2px 9px 0 0;border-radius:50%;background:var(--navy);color:#fff;font-size:12px;font-weight:900}
+#modalBg .mem-pick label{font-size:13px;color:var(--navy)}
+#modalBg .modal-section{margin:14px 0 0;padding:18px;border:1px solid var(--hair);border-radius:12px;background:#fff}
+#modalBg .modal-section-title{display:flex;align-items:center;margin-bottom:16px;color:var(--navy);font-size:13px;letter-spacing:0;text-transform:none}
+#modalBg .modal-section-title:before{display:grid;place-items:center;width:24px;height:24px;margin-right:9px;border-radius:50%;background:var(--navy);color:#fff;font-size:12px;font-weight:900}
+#modalBg .modal-section:nth-of-type(1) .modal-section-title:before{content:'1'}
+#modalBg .modal-section:nth-of-type(2) .modal-section-title:before{content:'2'}
+#modalBg .m-row,#modalBg .input-row{gap:12px}
+#modalBg label{font-size:11.5px;color:#475467}
+#modalBg .f-input,#modalBg .f-textarea{border-color:#D5DDE8;border-radius:8px;background:#fff;box-shadow:none}
+#modalBg .f-input:focus,#modalBg .f-textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(18,101,232,.10)}
+#modalBg .modal-help,#modalBg .field-hint{color:var(--sub);line-height:1.55}
+#modalBg .issue-summary{display:flex;gap:12px;align-items:flex-start;margin:14px 0;padding:15px 16px;border:1px solid #CFE0F8;border-radius:12px;background:#F3F8FF}
+.issue-summary-icon{display:grid;place-items:center;flex:none;width:28px;height:28px;border-radius:8px;background:var(--blue);color:#fff;font-weight:900}
+.issue-summary b{display:block;margin-bottom:4px;font-size:12px;color:var(--blue)}
+.issue-summary span{display:block;font-size:13px;font-weight:800;color:var(--navy);line-height:1.45}
+#modalBg .modal-btns{position:sticky;bottom:0;z-index:9;margin:18px -30px 0;padding:14px 30px 18px;background:rgba(255,255,255,.98);border-top:1px solid var(--hair);box-shadow:0 -8px 24px rgba(7,28,73,.06)}
+#modalBg .modal-btns button{min-height:43px;border-radius:9px;box-shadow:none}
+#modalBg .btn-save{background:var(--blue)}
+#modalBg .btn-save-ghost{background:#fff;color:var(--blue);border:1px solid #AFC8EB}
+
+@media(max-width:1050px){.stats-row.six{grid-template-columns:repeat(3,1fr)}#tab-license .toolbar{grid-template-columns:1fr 1fr 1fr}.tab-content{padding:22px}.top-bar{padding:0 22px}}
+@media(max-width:760px){.tab-bar{width:72px}.tab-btn{font-size:0;padding:0}.tab-btn:before{content:'•';font-size:20px;margin:auto}.sidebar-brand img{display:none}.top-bar{left:72px}.tab-content{margin-left:72px;width:calc(100% - 72px)}.stats-row.six{grid-template-columns:repeat(2,1fr)}#tab-license .toolbar{grid-template-columns:1fr}#modalBg .modal{width:100vw}}
+</style>
+
+<script id="naruun-admin-clean-redesign-js">
+
+(function(){
+  const ids=['mDojang','mLicenseType','mMaxDevices','mPayAmount','mPayDate'];
+  function text(id){const el=document.getElementById(id);return el?String(el.value||'').trim():''}
+  function updateIssueSummary(){
+    const out=document.getElementById('issueSummaryText');if(!out)return;
+    const dojang=text('mDojang')||'고객 미선택';
+    const type={lifetime:'정식',trial:'체험',package:'태블릿 패키지'}[text('mLicenseType')]||'이용 유형 미선택';
+    const product=(typeof curProduct==='function'&&curProduct().short)||'제품';
+    const devices=text('mLicenseType')==='trial'?'기기 1대':'기기 '+(text('mMaxDevices')||'2')+'대';
+    const pay=text('mPayAmount');
+    out.textContent=[dojang,product,type,devices,pay?Number(pay).toLocaleString('ko-KR')+'원':null].filter(Boolean).join(' · ');
+  }
+  ids.forEach(id=>{const el=document.getElementById(id);if(el){el.addEventListener('input',updateIssueSummary);el.addEventListener('change',updateIssueSummary)}});
+  const bg=document.getElementById('modalBg');if(bg)new MutationObserver(updateIssueSummary).observe(bg,{attributes:true,attributeFilter:['class']});
+  updateIssueSummary();
+})();
+</script>
 
 </body>
 </html>
