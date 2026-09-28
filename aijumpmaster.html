@@ -853,7 +853,7 @@ body.hf-dim #jmpPilotGraph .jt-wing{display:none!important}
 
 <script type="module">
 
-const APP_VERSION = '3.6.3';   
+const APP_VERSION = '3.6.4';   
 
 const MP_VERSION  = '1.0.1';
 const MP_LOCAL    = './vendor/mediapipe/';
@@ -4727,7 +4727,7 @@ if('serviceWorker' in navigator){
   const HF={ enabled:false, playing:false, panels:false, lite:false, lowPerf:false, portrait:false };
   window.HoloFX=HF;
   let cfg={ host:null, z:6, accent:'#6ff2ff', warm:'#ffb35c', safeL:.18, safeR:.17, top:.46, topR:null,
-            portraitPanels:false, pTop:.07 };   
+            portraitPanels:false, pTop:.07, blue:'#4ca3ff', red:'#ff5a6e' };   
   let root=null, fxSvg=null, pL=null, pR=null, trails=[];
   let lastBody=null;
 
@@ -4779,6 +4779,25 @@ if('serviceWorker' in navigator){
 #holoFx.pstack .hf-tag{font-size:11px;letter-spacing:.2em}
 #holoFx.pstack .hf-big{font-size:17px}
 #holoFx.pstack .hf-hint{font-size:18px}
+#holoFx .hf-duo,#holoFx .hf-tug{position:absolute;display:none}
+#holoFx.duo .hf-tug,#holoFx.duo .hf-duo.has{display:block}
+#holoFx .hf-duo{text-align:center}
+#holoFx .hf-duo svg{display:block;width:80%;height:auto;margin:0 auto;overflow:visible}
+#holoFx .hf-duo .hf-tag{font-size:11px;letter-spacing:.22em}
+#holoFx .hf-duo .hf-hint{font-size:clamp(14px,1.4vw,20px)}
+#holoFx .hf-bars{display:flex;gap:4px;justify-content:center;align-items:flex-end;height:34px;margin-top:6px}
+#holoFx .hf-bars i{width:12px;border-radius:3px 3px 0 0;opacity:.8}
+#holoFx .hf-bars i.last{opacity:1;box-shadow:0 0 0 2px rgba(255,255,255,.85)}
+#holoFx .hf-cap{font-size:11px;color:#b9cbd6;margin-top:2px;text-shadow:0 1px 2px #000}
+#holoFx .hf-tug{transform:translateX(-50%)}
+#holoFx .hf-tug-lab{display:flex;justify-content:space-between;font-weight:900;font-size:15px;margin-bottom:3px;
+  text-shadow:0 0 3px #000,0 2px 6px #000}
+#holoFx .hf-tug-bar{position:relative;height:14px;border-radius:99px;overflow:hidden;box-shadow:0 0 0 2px rgba(255,255,255,.3)}
+#holoFx .hf-tug-bar i{position:absolute;left:0;top:0;bottom:0;width:50%;transition:width .5s cubic-bezier(.2,1.3,.4,1)}
+#holoFx .hf-tug-bar em{position:absolute;left:50%;top:0;bottom:0;width:2px;background:#fff;opacity:.75}
+#holoFx .hf-tug-msg{text-align:center;margin-top:2px;font-weight:900;font-size:17px;min-height:1.3em;
+  text-shadow:0 0 3px #000,0 2px 6px #000}
+#holoFx.lite .hf-tug-bar i{transition:none}
 #holoFx.lite .hf-glow{filter:none}
 #holoFx.lite .hf-spin{animation:none}
 @keyframes hfSpin{to{transform:rotate(360deg)}}
@@ -4814,6 +4833,7 @@ if('serviceWorker' in navigator){
     const ps=!!(HF.portrait&&cfg.portraitPanels);   
     root.classList.toggle('panels',!!(HF.enabled&&HF.playing&&HF.panels&&(!HF.portrait||ps)));
     root.classList.toggle('pstack',ps);
+    root.classList.toggle('duo',!!(HF.enabled&&HF.playing&&HF.duo&&!HF.portrait));   
     root.classList.toggle('lite',!!HF.lite);
     if(!(HF.enabled&&HF.playing)) clearTrails();
   };
@@ -4821,7 +4841,7 @@ if('serviceWorker' in navigator){
   HF.reset=function(){
     if(!root) return;
     pL.innerHTML=''; pR.innerHTML=''; pL.classList.remove('has'); pR.classList.remove('has');
-    clearTrails(); HF._kickX=null; HF._pside=null; HF._trend=[]; HF._prevRadar=null; HF._best=0; HF._chips=[]; HF._streakBest=0;
+    clearTrails(); duoReset(); HF._kickX=null; HF._pside=null; HF._trend=[]; HF._prevRadar=null; HF._best=0; HF._chips=[]; HF._streakBest=0;
   };
 
   function layoutPortrait(r){
@@ -4856,7 +4876,96 @@ if('serviceWorker' in navigator){
       pR.style.top=Math.max(h/2+8,bottom-h/2)+'px';
     }
   }
-  
+
+  let dEl=null;
+  const duoNew=()=>({sum:0,hist:[],prev:null,body:null,axes:null});
+  let duoSt={b:duoNew(),r:duoNew(),lead:null};
+  function duoEls(){
+    if(dEl||!root) return;
+    const mk=c=>{ const d=document.createElement('div'); d.className=c; root.appendChild(d); return d; };
+    dEl={b:mk('hf-duo hf-duo-b'), r:mk('hf-duo hf-duo-r'), tug:mk('hf-tug')};
+    dEl.tug.innerHTML=`<div class="hf-tug-lab"><span style="color:${cfg.blue}">청 <b class="tb">0</b></span>`
+      +`<span style="color:${cfg.red}"><b class="tr">0</b> 홍</span></div>`
+      +`<div class="hf-tug-bar" style="background:${cfg.red}"><i style="background:${cfg.blue}"></i><em></em></div><div class="hf-tug-msg"></div>`;
+  }
+  function duoReset(){
+    duoSt={b:duoNew(),r:duoNew(),lead:null};
+    if(!dEl) return;
+    ['b','r'].forEach(s=>{ dEl[s].innerHTML=''; dEl[s].classList.remove('has'); });
+    duoTug();
+  }
+  function duoTug(){
+    if(!dEl) return;
+    const b=duoSt.b.sum, r=duoSt.r.sum, t=b+r, p=t?b/t*100:50;
+    dEl.tug.querySelector('i').style.width=p+'%';
+    dEl.tug.querySelector('.tb').textContent=Math.round(b); dEl.tug.querySelector('.tr').textContent=Math.round(r);
+    const now=b>r?'b':(r>b?'r':null), m=dEl.tug.querySelector('.hf-tug-msg');
+    if(now && duoSt.lead && now!==duoSt.lead){
+      m.textContent=(now==='b'?'청':'홍')+' 역전!'; m.style.color=now==='b'?cfg.blue:cfg.red;
+      clearTimeout(duoTug._t); duoTug._t=setTimeout(()=>{ m.textContent=''; },1400);
+    }
+    if(now) duoSt.lead=now;
+  }
+  function duoRadar(axes,color,prev){
+    const n=axes.length, R=48, vb=100, s=document.createElementNS(NS,'svg');
+    s.setAttribute('viewBox',`${-vb} ${-vb} ${vb*2} ${vb*2}`);
+    const pt=(i,v)=>{ const a=-Math.PI/2+i*2*Math.PI/n; return [Math.cos(a)*R*v, Math.sin(a)*R*v]; };
+    const poly=vs=>vs.map((v,i)=>pt(i,Math.max(.06,v)).map(x=>x.toFixed(1)).join(',')).join(' ');
+    const cur=axes.map(a=>c01(a.v)); let weak=0; cur.forEach((v,i)=>{ if(v<cur[weak]) weak=i; });
+    el('circle',{r:70,fill:'none',stroke:color,'stroke-width':1.2,'stroke-dasharray':'2 8',opacity:.7},s);
+    [1,.66,.33].forEach(k=>el('polygon',{points:poly(cur.map(()=>k)),fill:k===1?'rgba(0,12,24,.3)':'none',stroke:color,'stroke-width':1.2,opacity:.5},s));
+    if(prev && prev.length===n) el('polygon',{points:poly(prev),fill:'none',stroke:'#fff','stroke-width':1.5,'stroke-dasharray':'4 5',opacity:.55},s);
+    el('polygon',{points:poly(cur),fill:color,'fill-opacity':.3,stroke:color,'stroke-width':3.5,'stroke-linejoin':'round'},s);
+    cur.forEach((v,i)=>{ const [x,y]=pt(i,Math.max(.06,v)); el('circle',{cx:x,cy:y,r:i===weak?7:4,fill:i===weak?cfg.warm:'#fff'},s); });
+    axes.forEach((a,i)=>{ const [x,y]=pt(i,1.33);
+      const t=el('text',{x:x.toFixed(1),y:(y+5).toFixed(1),'text-anchor':Math.abs(x)<6?'middle':(x>0?'start':'end'),
+        class:'hf-txt','font-size':13,fill:i===weak?cfg.warm:'#fff'},s);
+      t.textContent=a.name+' '+Math.round(cur[i]*100); });
+    return {svg:s, weak, cur};
+  }
+  HF.duoKick=function(side,axes,score,opts){
+    if(!root || !isFinite(score) || (side!=='b'&&side!=='r')) return;
+    duoEls(); opts=opts||{};
+    const st=duoSt[side], color=side==='b'?cfg.blue:cfg.red, box=dEl[side];
+    st.sum+=score; st.hist.push(score); if(st.hist.length>5) st.hist.shift();
+    if(opts.body) st.body=opts.body;
+    let hint='';
+    box.innerHTML='';
+    if(axes && axes.length>=3){
+      const r=duoRadar(axes,color,st.prev); st.prev=r.cur; box.appendChild(r.svg);
+      hint=opts.hint?opts.hint(r.weak):'';
+    }
+    const h=st.hist, bars=h.map((v,i)=>`<i class="${i===h.length-1?'last':''}" style="background:${color};height:${Math.max(12,Math.min(100,(v-40)/60*100)).toFixed(0)}%"></i>`).join('');
+    box.insertAdjacentHTML('beforeend',`<div class="hf-tag" style="color:${color}">${side==='b'?'청':'홍'} · ${esc(opts.tag||'KICK ANALYSIS')}</div>`
+      +(hint?`<div class="hf-hint">${esc(hint)}</div>`:'')
+      +`<div class="hf-bars">${bars}</div><div class="hf-cap">최근 ${h.length}번 점수</div>`);
+    box.classList.add('has');
+    duoTug(); duoLayout();
+  };
+  function duoLayout(){
+    if(!root||!dEl) return;
+    const r=root.getBoundingClientRect(); if(!r.width) return;
+    const W=r.width, H=r.height;
+    const hud=document.getElementById('p2Hud'), stt=document.getElementById('p2Status');
+    const hr=hud?hud.getBoundingClientRect():null, sr=stt?stt.getBoundingClientRect():null;
+    const top0=Math.min(H*.42, (hr&&hr.height)?hr.bottom-r.top+10:H*.26);
+    const tw=Math.min(W*.26,320);
+    dEl.tug.style.width=tw+'px'; dEl.tug.style.left=(W/2)+'px';
+    dEl.tug.style.top=((sr&&sr.height)?sr.bottom-r.top+6:108)+'px';
+    ['b','r'].forEach(s=>{
+      const box=dEl[s], b=duoSt[s].body, cap=Math.min(240,W*.22);
+      let w=cap, cx;
+      if(b && isFinite(b.cx)){
+        const bx=b.cx-r.left, hf=(b.half||80)*.65;
+        const outer=s==='b'?bx-hf:W-(bx+hf);
+        w=Math.max(130,Math.min(cap,outer-10));
+        cx=s==='b'?Math.max(8+w/2,Math.min(bx-hf-w/2,W/2-w/2-8)):Math.min(W-8-w/2,Math.max(bx+hf+w/2,W/2+w/2+8));
+      }else cx=s==='b'?8+w/2:W-8-w/2;
+      box.style.width=w+'px'; box.style.left=(cx-w/2)+'px'; box.style.top=top0+'px';
+    });
+  }
+  HF.duoLayout=duoLayout;
+
   HF.setKickX=function(x){ HF._kickX=isFinite(x)?x:null; };
 
   HF.layout=function(body){
