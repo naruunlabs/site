@@ -614,11 +614,12 @@ table.cg tfoot td.num{text-align:right}
   <div class="tab-content active" id="tab-license">
     
     <div class="today-box" id="todayBox">
-      <div class="today-head" onclick="toggleToday()">
-        <b>오늘 할 일</b><span class="today-count" id="todayCount">-</span>
-        <span class="today-sub">킥·점프·스트 전체 · 고객 장부 '다음 할 일' 포함</span>
-        <span class="today-arrow" id="todayArrow">접기</span>
+      <div class="today-head">
+        <b>관리할 항목</b><span class="today-count" id="todayCount">-</span>
+        <span class="today-sub">세 제품과 고객 장부</span>
+        <button type="button" class="today-arrow" id="todayArrow" onclick="toggleToday()" aria-controls="todayBody" aria-expanded="true">접기</button>
       </div>
+      <div class="today-views" id="todayViews" role="group" aria-label="할 일 보기"></div>
       <div class="today-body" id="todayBody"></div>
     </div>
     <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
@@ -659,6 +660,7 @@ table.cg tfoot td.num{text-align:right}
       <button class="btn-add btn-ghost" onclick="clearFilters()">초기화</button>
       <button class="btn-add btn-ghost" onclick="exportLicensesCsv()" title="킥·점프·스트 라이선스 전체를 엑셀 파일로 받습니다">엑셀로 저장</button>
     </div>
+    <button class="btn-add btn-ghost" id="repairExpiryBtn" style="display:none;margin:8px 0" onclick="repairLifetimeExpiry()"></button>
     <div class="cross-hint" id="crossHint"></div>
 
     <div class="table-wrap">
@@ -1210,6 +1212,7 @@ async function adminLogin() {
     document.getElementById('loginWrap').classList.add('hidden');
     document.getElementById('dashboard').classList.add('show');
     loadLicenses();
+    loadAdminTasks();
     loadHomeFields();
     
     loadCustomers();
@@ -1292,7 +1295,10 @@ async function loadLicenses() {
 
     LICENSES.forEach(d => { if (d.phone) d.phone = formatPhone(d.phone); });
     updateStats(); renderTable(); markSynced(); tickSidebar();
-    repairLifetimeExpiry();   
+    const broken = LICENSES.filter(d => d.license_type === 'lifetime' && d.expire_date);
+    const repairBtn = document.getElementById('repairExpiryBtn');
+    repairBtn.style.display = broken.length ? '' : 'none';
+    repairBtn.textContent = `정식 만료일 오류 ${broken.length}건 확인`;
   } catch(err) {
     tbody.innerHTML = `<tr><td colspan="8" class="empty-msg">불러오기 실패: ${escapeHtml(err.message)}</td></tr>`;
   }
@@ -1301,18 +1307,22 @@ async function loadLicenses() {
 async function repairLifetimeExpiry() {
   const broken = LICENSES.filter(d => d.license_type === 'lifetime' && d.expire_date);
   if (!broken.length) return;
+  if (!confirm(`정식 라이선스 ${broken.length}건의 잘못된 만료일을 지울까요? 변경 내역은 서버에 저장됩니다.`)) return;
   let fixed = 0;
+  let failed = 0;
   for (const d of broken) {
     try {
       await edgeCall('UPDATE_LICENSE', { id: d.id, expire_date: null });
       d.expire_date = null;
       fixed++;
-    } catch (e) {  }
+    } catch (e) { failed++; }
   }
   if (fixed) {
     updateStats(); renderTable();
-    showToast(`정식 라이선스 ${fixed}곳에 남아 있던 만료일을 지웠습니다.`);
   }
+  document.getElementById('repairExpiryBtn').style.display = failed ? '' : 'none';
+  document.getElementById('repairExpiryBtn').textContent = `정식 만료일 오류 ${failed}건 확인`;
+  showToast(`만료일 정리: 성공 ${fixed}건${failed ? ` · 실패 ${failed}건 (다시 시도 가능)` : ''}`);
 }
 
 function currentProductPrefix(){ return curProduct().prefix; }
@@ -1527,6 +1537,7 @@ function renderTable() {
       <td class="cell-main" data-label="도장">
         <span class="dojang-name" title="등록 ${(d.created_at||'').slice(0,10)||'-'} · ${escapeHtml(d.license_key)}">${escapeHtml(d.dojang_name)}</span>
         <button class="key-btn" title="${escapeHtml(d.license_key)}" onclick="copyKeyOnly('${escapeHtml(d.license_key)}')">키 복사</button>
+        <button type="button" class="mobile-expand" onclick="toggleMobileCard(this)" aria-expanded="false">상세 보기</button>
         <span class="dojang-line">${line2}</span>
         ${d.memo?`<span class="dojang-memo" title="${escapeHtml(d.memo)}">${escapeHtml(d.memo)}</span>`:''}
       </td>
@@ -2607,7 +2618,7 @@ function customerRowsNow() {
     const qHit = !q || hay.includes(q)
       || (qd && String(c.phone||'').replace(/[^0-9]/g,'').includes(qd));
     let m = true;
-    if (custFilter === 'due') m = isDue(c);
+    if (custFilter === 'due') m = isDueOpen(c);
     else if (custFilter !== 'all') m = (c.status || 'lead') === custFilter;
     return qHit && m;
   });
@@ -2648,9 +2659,9 @@ function renderCustomers() {
 
   document.getElementById('cgBody').innerHTML = rows.map(c => {
     const cls = ['cg-row', 's-' + (c.status || 'lead'), 'lic-' + customerLicenseState(c)];
-    if (isDue(c)) cls.push('due');
+    if (isDueOpen(c)) cls.push('due');
     let html = `<tr class="${cls.join(' ')}" data-id="${c.id}">`
-      + cols.map(col => `<td class="${col.name?'cg-name':''}" data-field="${col.f}" data-label="${escapeHtml(col.t)}">${col.name ? `<div class="cg-namewrap">${custCell(c, col)}${custBadges(c)}</div>` : custCell(c, col)}</td>`).join('')
+      + cols.map(col => `<td class="${col.name?'cg-name':''}" data-field="${col.f}" data-label="${escapeHtml(col.t)}">${col.name ? `<div class="cg-namewrap">${custCell(c, col)}${custBadges(c)}<button type="button" class="mobile-expand" onclick="toggleMobileCard(this)" aria-expanded="false">상세 보기</button></div>` : custCell(c, col)}</td>`).join('')
       + `<td class="cg-actions" data-label="관리"><div style="display:flex;gap:4px;padding:0 5px">
            <button class="btn-sm ${openNotesFor===c.id?'btn-toggle is-open':'btn-edit'}" onclick="toggleNotes('${c.id}')">${openNotesFor===c.id?'닫기':'이력'}</button>
            <button class="btn-sm btn-del" onclick="deleteCustomer('${c.id}')">삭제</button>
@@ -2734,7 +2745,7 @@ function renderCustFoot(rows, cols) {
 
 function updateCustStats() {
   const paidCnt = CUSTOMERS.filter(c => c.status === 'customer').length;
-  const dueCnt  = CUSTOMERS.filter(isDue).length;
+  const dueCnt  = CUSTOMERS.filter(isDueOpen).length;
   const revenue = CUSTOMERS.reduce((a,c) => a + (Number(c.paid_amount)||0) + (Number(c.extra_amount)||0), 0);
   document.getElementById('cstTotal').textContent = CUSTOMERS.length;
   document.getElementById('cstPaid').textContent = paidCnt;
@@ -2998,13 +3009,13 @@ function renderAcademyProjects() {
   const customerOptions = id => CUSTOMERS.map(c => `<option value="${c.id}" ${c.id===id?'selected':''}>${escapeHtml(c.dojang_name)}${c.owner_name?' · '+escapeHtml(c.owner_name):''}</option>`).join('');
   const inp = (p,f,type='',cls='') => `<input class="aw-in ${cls}" data-id="${p.id}" data-f="${f}" ${type?`type="${type}"`:''} value="${escapeHtml(p[f]??'')}" onchange="saveAcademyCell(this)">`;
   body.innerHTML = rows.map(p => `<tr class="aw-row s-${p.status}${academyDue(p)?' due':''}" data-id="${p.id}">
-    <td><select class="aw-in aw-customer" data-id="${p.id}" data-f="customer_id" onchange="saveAcademyCell(this)">${customerOptions(p.customer_id)}</select></td>
-    <td><select class="aw-in" data-id="${p.id}" data-f="status" onchange="saveAcademyCell(this)">${statusOptions(p.status)}</select></td>
-    <td>${inp(p,'quoted_amount','number')}</td><td>${inp(p,'paid_amount','number')}</td>
-    <td>${inp(p,'started_at','date')}</td><td>${inp(p,'due_at','date')}</td><td>${inp(p,'launched_at','date')}</td>
-    <td>${inp(p,'domain','','aw-wide')}</td><td>${inp(p,'site_url','url','aw-url')}</td>
-    <td>${inp(p,'next_action','','aw-wide')}</td><td>${inp(p,'next_action_at','date')}</td><td>${inp(p,'memo','','aw-wide')}</td>
-    <td><button class="btn-sm btn-del" onclick="deleteAcademyProject('${p.id}')">삭제</button></td></tr>`).join('');
+    <td data-field="customer_id" data-label="고객"><select class="aw-in aw-customer" data-id="${p.id}" data-f="customer_id" onchange="saveAcademyCell(this)">${customerOptions(p.customer_id)}</select><button type="button" class="mobile-expand" onclick="toggleMobileCard(this)" aria-expanded="false">상세 보기</button></td>
+    <td data-field="status" data-label="진행 상태"><select class="aw-in" data-id="${p.id}" data-f="status" onchange="saveAcademyCell(this)">${statusOptions(p.status)}</select></td>
+    <td data-field="quoted_amount" data-label="견적">${inp(p,'quoted_amount','number')}</td><td data-field="paid_amount" data-label="받은 금액">${inp(p,'paid_amount','number')}</td>
+    <td data-field="started_at" data-label="시작일">${inp(p,'started_at','date')}</td><td data-field="due_at" data-label="공개 예정">${inp(p,'due_at','date')}</td><td data-field="launched_at" data-label="공개일">${inp(p,'launched_at','date')}</td>
+    <td data-field="domain" data-label="도메인">${inp(p,'domain','','aw-wide')}</td><td data-field="site_url" data-label="홈페이지 주소">${inp(p,'site_url','url','aw-url')}</td>
+    <td data-field="next_action" data-label="다음 할 일">${inp(p,'next_action','','aw-wide')}</td><td data-field="next_action_at" data-label="언제">${inp(p,'next_action_at','date')}</td><td data-field="memo" data-label="메모">${inp(p,'memo','','aw-wide')}</td>
+    <td data-field="actions" data-label="관리"><button class="btn-sm btn-del" onclick="deleteAcademyProject('${p.id}')">삭제</button></td></tr>`).join('');
 }
 
 let academyAddMode = 'new';
@@ -3117,6 +3128,7 @@ if (savedToken) {
   document.getElementById('loginWrap').classList.add('hidden');
   document.getElementById('dashboard').classList.add('show');
   loadLicenses();
+  setTimeout(loadAdminTasks, 0);
   loadHomeFields();
   loadCustomers();
   loadAcademyProjects();
@@ -3205,7 +3217,7 @@ function todayItems(){
     if (st === 'soon') out.push({ ...base, g:'expire', why:`사용 기간 ${d.expire_date} 만료 (D-${daysUntil(d.expire_date)})`, msg:'expire_soon' });
     else if (isColdLicense(d)) {
       const n = daysAgo(isoToYmd(d.last_verified_at || d.created_at));
-      out.push({ ...base, g:'cold', why: d.last_verified_at ? `${n}일째 사용 기록 없음` : `발급 ${n}일째 · 한 번도 안 씀`, msg:'checkin' });
+      out.push({ ...base, g:'cold', why: d.last_verified_at ? `${n}일째 인증 기록 없음` : `발급 ${n}일째 · 인증 기록 없음`, msg:'checkin' });
     }
   }
   for (const c of (CUSTOMERS||[])) {
@@ -3803,6 +3815,193 @@ tr.cg-row.s-trial select.cg-in[data-f="status"],tr.cg-row.s-customer select.cg-i
   const bg=document.getElementById('modalBg');if(bg)new MutationObserver(updateIssueSummary).observe(bg,{attributes:true,attributeFilter:['class']});
   updateIssueSummary();
 })();
+</script>
+
+<style id="naruun-admin-task-board-css-20260928">
+.mobile-expand{display:none}
+.stat-card:focus-visible,.today-view:focus-visible,.today-arrow:focus-visible,.mobile-expand:focus-visible{outline:3px solid #0757d8;outline-offset:2px}
+#tab-license>.today-box{margin-bottom:16px}
+.today-head{cursor:default}
+.today-arrow{border:0;background:transparent;cursor:pointer;min-height:36px;padding:0 6px;font:inherit}
+.today-views{display:flex;gap:8px;padding:0 18px 13px;border-bottom:1px solid #eef2f7;overflow-x:auto}
+.today-view{border:1px solid #e3e9f2;background:#fff;color:#475467;border-radius:9px;padding:8px 12px;font:inherit;font-size:12px;font-weight:700;white-space:nowrap;cursor:pointer}
+.today-view.active{border-color:#0757d8;background:#eef5ff;color:#0757d8}
+.today-view span{margin-left:4px;font-variant-numeric:tabular-nums}
+#tab-license>.today-box .today-body{display:block;padding:0 18px 12px}
+.today-group{border:0;border-left:0!important;border-radius:0;padding:10px 0 2px}
+.today-group+.today-group{border-top:1px solid #e3e9f2}
+.today-gt{margin:0 0 4px;font-size:12px;font-weight:700;color:#475467}
+.today-gt span{color:#0757d8}
+.today-row{display:grid;grid-template-columns:minmax(180px,1.2fr) minmax(180px,2fr) auto;align-items:center;gap:12px;min-height:54px;padding:8px 2px;border-top:1px solid #f0f3f7}
+.today-person{display:flex;align-items:center;gap:7px;min-width:0}
+.today-person b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}
+.today-person em{flex:none}
+.today-why{overflow:visible;text-overflow:clip;white-space:normal;line-height:1.4;font-size:12px}
+.today-actions{display:flex;align-items:center;justify-content:flex-end;gap:6px;white-space:nowrap}
+.today-actions .btn-sm{min-height:36px}
+.today-more{position:relative}
+.today-more summary{list-style:none;display:grid;place-items:center;min-height:36px;padding:0 10px;border:1px solid #dfe6ef;border-radius:8px;color:#475467;background:#fff;font-size:12px;font-weight:700;cursor:pointer}
+.today-more summary::-webkit-details-marker{display:none}
+.today-more-menu{position:absolute;right:0;top:calc(100% + 4px);z-index:25;display:grid;min-width:158px;padding:5px;border:1px solid #dfe6ef;border-radius:10px;background:#fff;box-shadow:0 10px 28px rgba(7,28,73,.16)}
+.today-more-menu button{border:0;background:#fff;padding:10px;text-align:left;font:inherit;font-size:12px;color:#344054;cursor:pointer;border-radius:6px}
+.today-more-menu button:hover{background:#eef5ff}
+.today-empty{padding:18px 0}
+@media(max-width:700px){
+  .top-bar{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;padding:10px 12px}
+  .top-title h1{font-size:18px}.top-title span{display:none}
+  .top-actions{order:2;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;width:100%}
+  .top-actions .btn-sm-act{min-width:0;min-height:38px;font-size:10.5px;white-space:nowrap}
+  .tab-bar{grid-template-columns:repeat(4,minmax(0,1fr));padding:5px;gap:3px}
+  .tab-btn{height:44px;min-height:44px;padding:0 2px;font-size:11px;line-height:1.15;white-space:normal;text-align:center}
+  #tab-license>.today-box .today-body{padding:0 12px 10px}
+  .today-head{padding:10px 12px!important}.today-sub{display:none}
+  .today-views{padding:0 12px 10px;gap:5px}.today-view{padding:7px 8px;font-size:11px}
+  .today-group{padding:10px 0 0}.today-row{grid-template-columns:minmax(0,1fr);gap:5px;padding:10px 0}
+  .today-person{grid-column:1}.today-person b{font-size:13px}.today-why{grid-column:1;grid-row:auto;font-size:12px}
+  .today-actions{grid-column:1;justify-content:flex-start}.today-actions .btn-sm,.today-more summary{min-height:40px}
+  #tab-license .stats-row.six{display:flex;grid-template-columns:none;gap:7px;overflow-x:auto;scroll-snap-type:x proximity;padding-bottom:3px}
+  #tab-license .stats-row.six .stat-card{flex:0 0 118px;min-height:68px;padding:11px;scroll-snap-align:start}
+  #tab-license .stats-row.six .stat-card .num{font-size:21px}
+  .mobile-expand{display:inline-flex;align-items:center;justify-content:center;min-height:40px;padding:0 11px;border:1px solid #d3dfef;border-radius:8px;background:#f4f8ff;color:#0757d8;font:inherit;font-size:11px;font-weight:700;cursor:pointer}
+  #tab-license tbody tr td:not(.cell-main):not([data-label="상태"]):not([data-label="만료일"]){display:none}
+  #tab-license tbody tr.mobile-open td{display:block!important}
+  #tab-license tbody td.cell-main .mobile-expand{float:right;margin-left:6px}
+  #tab-license tbody tr td.cell-act .btn-sm{min-height:40px;font-size:11px}
+  table.cg tr.cg-row td:not(.cg-name):not([data-field="status"]):not([data-field="next_action"]):not([data-field="next_action_at"]){display:none}
+  table.cg tr.cg-row.mobile-open td{display:block!important}
+  table.cg tr.cg-row td.cg-name .mobile-expand{margin-left:auto}
+  table.cg tr.cg-row td .cg-in{font-size:13px;min-height:40px}
+  table.cg.aw-table{min-width:0!important;width:100%!important}
+  table.cg.aw-table tbody{display:grid;gap:10px}
+  table.cg.aw-table tr.aw-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border:1px solid var(--hair);border-radius:12px;background:#fff;overflow:hidden}
+  table.cg.aw-table tr.aw-row td{display:block;position:static!important;min-width:0;width:auto;height:auto;padding:9px;border:0;border-bottom:1px solid #eef2f6;white-space:normal;background:#fff}
+  table.cg.aw-table tr.aw-row td::before{content:attr(data-label);display:block;margin-bottom:4px;color:#98a2b3;font-size:10px}
+  table.cg.aw-table tr.aw-row td[data-field="customer_id"]{grid-column:1/-1}
+  table.cg.aw-table tr.aw-row td:not([data-field="customer_id"]):not([data-field="status"]):not([data-field="next_action"]):not([data-field="next_action_at"]):not([data-field="due_at"]){display:none}
+  table.cg.aw-table tr.aw-row.mobile-open td{display:block!important}
+  table.cg.aw-table .aw-in{min-width:0;width:100%;min-height:40px;border:1px solid #e7ecf3;background:#fafbfc}
+  table.cg.aw-table .mobile-expand{margin:7px 0 0;width:100%}
+  #modalBg .modal-btns button,.aw-add-modal .modal-btns button{min-height:44px}
+}
+</style>
+
+<script id="naruun-admin-task-board-20260928">
+
+let ADMIN_TASK_STATES = new Map();
+let todayView = 'urgent';
+const URGENT_TASK_GROUPS = new Set(['ledger','ended','ending','expire']);
+const TASK_GROUP_LABELS = [
+  ['ledger','날짜가 지난 고객 연락'], ['ended','체험 종료 · 정식 전환 전'],
+  ['ending','체험 종료 임박'], ['expire','사용 기간 만료 임박'],
+  ['nudge','체험 키 발급 후 시작 전'], ['cold','14일 이상 인증 없음']
+];
+function toggleMobileCard(button){
+  const row = button.closest('tr'); if (!row) return;
+  const open = row.classList.toggle('mobile-open');
+  button.setAttribute('aria-expanded', String(open));
+  button.textContent = open ? '상세 접기' : '상세 보기';
+}
+function taskKey(x){
+  const owner = x.c || x.d;
+  const version = x.c ? x.c.next_action_at :
+    x.g === 'cold' ? (x.d.last_verified_at || x.d.created_at) :
+    x.g === 'expire' ? x.d.expire_date :
+    x.g === 'nudge' ? x.d.created_at : x.d.trial_started_at;
+  return `${x.g}:${owner.id}:${String(version || 'none').replace(/[^a-zA-Z0-9:._-]/g,'')}`;
+}
+function taskIsSaved(x){
+  const state = ADMIN_TASK_STATES.get(x.task_key);
+  return !!state && (state.disposition === 'done' ||
+    (state.disposition === 'snoozed' && state.snooze_until > todayStr()));
+}
+function isDueOpen(c){
+  return isDue(c) && !taskIsSaved({g:'ledger',c,task_key:taskKey({g:'ledger',c})});
+}
+async function loadAdminTasks(){
+  try {
+    const rows = await edgeCall('GET_ADMIN_TASKS', {}) || [];
+    ADMIN_TASK_STATES = new Map(rows.map(row => [row.task_key, row]));
+    renderToday();
+    if (CUSTOMERS.length) renderCustomers();
+  } catch(e) { showToast('할 일 상태를 불러오지 못했습니다: ' + e.message); }
+}
+function setTodayView(view){
+  todayView = ['urgent','watch','saved'].includes(view) ? view : 'urgent';
+  renderToday();
+}
+async function saveAdminTask(key, disposition){
+  const day = new Date(); day.setDate(day.getDate() + 3);
+  const snooze_until = disposition === 'snoozed' ? ymdLocal(day) : null;
+  try {
+    const row = await edgeCall('SAVE_ADMIN_TASK', {task_key:key, disposition, snooze_until});
+    if (disposition === 'open') ADMIN_TASK_STATES.delete(key);
+    else ADMIN_TASK_STATES.set(key, row);
+    renderToday();
+    if (key.startsWith('ledger:')) renderCustomers();
+    showToast(disposition === 'done' ? '처리 완료로 표시했습니다' :
+      disposition === 'snoozed' ? '3일 뒤 다시 보여드립니다' : '다시 표시합니다');
+  } catch(e) { showToast('할 일 상태 저장 실패: ' + e.message); }
+}
+function renderToday(){
+  const body = document.getElementById('todayBody');
+  const count = document.getElementById('todayCount');
+  const views = document.getElementById('todayViews');
+  if (!body || !count || !views) return;
+  const items = todayItems().map(x => ({...x, task_key:taskKey(x)}));
+  const active = items.filter(x => !taskIsSaved(x));
+  const urgent = active.filter(x => URGENT_TASK_GROUPS.has(x.g));
+  const watch = active.filter(x => !URGENT_TASK_GROUPS.has(x.g));
+  const saved = items.filter(taskIsSaved);
+  count.textContent = active.length + '건';
+  count.classList.toggle('zero', !active.length);
+  const arrow = document.getElementById('todayArrow');
+  arrow.textContent = todayOpen ? '접기' : '펼치기';
+  arrow.setAttribute('aria-expanded', String(todayOpen));
+  views.style.display = todayOpen ? '' : 'none';
+  body.style.display = todayOpen ? '' : 'none';
+  if (!todayOpen) return;
+  const totals = {urgent:urgent.length, watch:watch.length, saved:saved.length};
+  views.innerHTML = [['urgent','처리 필요'],['watch','계속 확인'],['saved','완료·미룸']].map(([id,label]) =>
+    `<button type="button" class="today-view${todayView===id?' active':''}" aria-pressed="${todayView===id}" onclick="setTodayView('${id}')">${label} <span>${totals[id]}</span></button>`).join('');
+  const shown = todayView === 'urgent' ? urgent : todayView === 'watch' ? watch : saved;
+  if (!shown.length) {
+    body.innerHTML = `<div class="today-empty">${todayView==='saved'?'완료하거나 미룬 항목이 없습니다.':'이 목록에 표시할 곳이 없습니다.'}</div>`;
+    return;
+  }
+  body.innerHTML = TASK_GROUP_LABELS.map(([group,label]) => {
+    const list = shown.filter(x => x.g === group);
+    if (!list.length) return '';
+    const rows = list.map(x => {
+      const entity = x.c || x.d;
+      const isLedger = !!x.c;
+      const product = isLedger ? '장부' : x.P.short;
+      const productClass = isLedger ? '' : ` p-${x.P.key}`;
+      const state = ADMIN_TASK_STATES.get(x.task_key);
+      const savedText = todayView === 'saved' ?
+        ` · ${state?.disposition === 'snoozed' ? state.snooze_until + ' 다시 알림' : '완료'}` : '';
+      const primary = isLedger ? `<button type="button" class="btn-sm btn-edit" onclick="gotoCustomer('${entity.id}')">장부 보기</button>` :
+        x.convert ? `<button type="button" class="btn-sm btn-cross" onclick="openConvert('${entity.id}')">정식 전환</button>` :
+        `<button type="button" class="btn-sm btn-copy" onclick="openMsgPicker('${x.enc}','${x.msg}')">카톡 문구</button>`;
+      const more = todayView === 'saved' ?
+        `<button type="button" class="btn-sm btn-edit" onclick="saveAdminTask('${x.task_key}','open')">다시 표시</button>` :
+        `<details class="today-more"><summary>더보기</summary><div class="today-more-menu">`+
+        (isLedger ? '' : (x.convert ? `<button type="button" onclick="openMsgPicker('${x.enc}','${x.msg}')">카톡 문구</button>` : '')+
+          `<button type="button" onclick="openOwnedLicense('${entity.id}')">회원정보</button>`)+
+        `<button type="button" onclick="saveAdminTask('${x.task_key}','done')">처리 완료</button>`+
+        `<button type="button" onclick="saveAdminTask('${x.task_key}','snoozed')">3일 뒤 다시 알림</button></div></details>`;
+      return `<div class="today-row"><div class="today-person"><b>${escapeHtml(entity.dojang_name||'')}</b><em class="${productClass}">${escapeHtml(product)}</em></div>`+
+        `<span class="today-why">${escapeHtml(x.why)}${savedText}</span><div class="today-actions">${primary}${more}</div></div>`;
+    }).join('');
+    return `<section class="today-group g-${group}"><h3 class="today-gt">${label} <span>${list.length}</span></h3>${rows}</section>`;
+  }).join('');
+}
+document.querySelectorAll('.stat-card[onclick]').forEach(card => {
+  card.setAttribute('role','button');
+  card.setAttribute('tabindex','0');
+  card.addEventListener('keydown', event => {
+    if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); card.click(); }
+  });
+});
 </script>
 
 </body>
