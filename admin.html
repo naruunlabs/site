@@ -1524,7 +1524,7 @@ function renderTable() {
     ].filter(Boolean).join(' · ');
 
     return `<tr class="${stripe}">
-      <td class="cell-main">
+      <td class="cell-main" data-label="도장">
         <span class="dojang-name" title="등록 ${(d.created_at||'').slice(0,10)||'-'} · ${escapeHtml(d.license_key)}">${escapeHtml(d.dojang_name)}</span>
         <button class="key-btn" title="${escapeHtml(d.license_key)}" onclick="copyKeyOnly('${escapeHtml(d.license_key)}')">키 복사</button>
         <span class="dojang-line">${line2}</span>
@@ -1536,7 +1536,7 @@ function renderTable() {
       <td data-label="최근 인증" style="font-size:13px">${lastUseCell(d)}</td>
       <td data-label="결제" style="font-size:13px">${payDisplay}</td>
       <td data-label="상태"><span class="badge ${statusCls}">${statusText}</span></td>
-      <td class="cell-act"><div class="action-btns">
+      <td class="cell-act" data-label="관리"><div class="action-btns">
         <button class="btn-sm btn-edit" onclick="openEditModal('${encoded}')">회원정보</button>
         <button class="btn-sm btn-copy" onclick="openMsgPicker('${encoded}')">카톡</button>
         ${inLedger
@@ -2650,8 +2650,8 @@ function renderCustomers() {
     const cls = ['cg-row', 's-' + (c.status || 'lead'), 'lic-' + customerLicenseState(c)];
     if (isDue(c)) cls.push('due');
     let html = `<tr class="${cls.join(' ')}" data-id="${c.id}">`
-      + cols.map(col => `<td class="${col.name?'cg-name':''}">${col.name ? `<div class="cg-namewrap">${custCell(c, col)}${custBadges(c)}</div>` : custCell(c, col)}</td>`).join('')
-      + `<td><div style="display:flex;gap:4px;padding:0 5px">
+      + cols.map(col => `<td class="${col.name?'cg-name':''}" data-field="${col.f}" data-label="${escapeHtml(col.t)}">${col.name ? `<div class="cg-namewrap">${custCell(c, col)}${custBadges(c)}</div>` : custCell(c, col)}</td>`).join('')
+      + `<td class="cg-actions" data-label="관리"><div style="display:flex;gap:4px;padding:0 5px">
            <button class="btn-sm ${openNotesFor===c.id?'btn-toggle is-open':'btn-edit'}" onclick="toggleNotes('${c.id}')">${openNotesFor===c.id?'닫기':'이력'}</button>
            <button class="btn-sm btn-del" onclick="deleteCustomer('${c.id}')">삭제</button>
          </div></td></tr>`;
@@ -3719,6 +3719,70 @@ tr.cg-row.s-trial select.cg-in[data-f="status"],tr.cg-row.s-customer select.cg-i
 @media(max-width:1050px){.stats-row.six{grid-template-columns:repeat(3,1fr)}#tab-license .toolbar{grid-template-columns:1fr 1fr 1fr}.tab-content{width:calc(100% - 36px);padding:20px 0 48px}.top-bar{padding:0 18px}}
 @media(max-width:980px){#dashboard.show{padding-left:0}.tab-bar{width:100%}.top-bar{width:100%;left:auto}.tab-content{width:calc(100% - 28px);margin:0 auto}}
 @media(max-width:760px){.stats-row.six{grid-template-columns:repeat(2,1fr)}#tab-license .toolbar{grid-template-columns:1fr}#modalBg .modal{width:100vw}}
+
+@media(max-width:700px){
+  html,body{overflow-x:hidden}
+  #dashboard.show{display:flex;flex-direction:column;padding-left:0;min-height:100vh}
+  .top-bar{order:1;position:static;top:auto;display:flex;height:auto;min-height:66px;padding:12px 14px;gap:10px;background:#fff}
+  .top-title h1{font-size:20px;line-height:1.2}.top-title span{font-size:11px}
+  .top-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;width:100%;order:3}
+  .top-actions .btn-sm-act{height:36px;padding:0 5px;font-size:11px}
+  .tab-bar{order:2;position:sticky;top:0;bottom:auto;z-index:70;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%;height:auto;min-height:0;padding:6px 8px;gap:4px;overflow:visible;box-shadow:0 2px 8px rgba(7,28,73,.16)}
+  .sidebar-brand,.sidebar-foot{display:none!important}
+  .tab-btn{width:100%;min-width:0;min-height:38px;height:38px;margin:0;padding:0 8px;border-radius:9px;font-size:12.5px;justify-content:center}
+  .tab-content{order:3;width:calc(100% - 20px);margin:0 auto;padding:14px 0 34px}
+
+  .stats-row,.stats-row.six{width:100%;min-width:0;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .stat-card{min-width:0;min-height:82px;padding:14px}.stat-card .num{font-size:24px}.stat-card .label{font-size:11px}
+  #tab-license>div:nth-of-type(2){gap:6px!important}
+  .home-subtab-btn{height:36px!important;padding:0 11px!important;font-size:12px!important}
+  #licenseAddBtn{width:100%;margin-top:4px}
+
+  .today-box{margin-bottom:12px}.today-head{padding:12px!important}.today-body{padding:0 10px 10px;gap:8px}
+  .today-group{padding:9px 10px}.today-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:5px;padding:9px 0}
+  .today-row b{min-width:0;overflow:hidden;text-overflow:ellipsis;font-size:12.5px}
+  .today-row em{font-size:9.5px}.today-why{grid-column:1/-1;grid-row:2;white-space:normal;font-size:11px}
+  .today-row .btn-sm{height:28px;padding:0 8px;font-size:10px}
+
+  #tab-license .toolbar{padding:9px;border-radius:10px 10px 0 0;gap:7px}
+  #tab-license .toolbar .f-input,#tab-license .toolbar select,#tab-license .toolbar button{height:38px;font-size:12px}
+  #tab-license .table-wrap{overflow:visible;border:0;background:transparent}
+  #tab-license table{display:block;min-width:0!important;width:100%}
+  #tab-license thead{display:none}
+  #tab-license tbody{display:grid;gap:10px}
+  #tab-license tbody tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border:1px solid var(--hair);border-left-width:4px;border-radius:12px;background:#fff;overflow:hidden}
+  #tab-license tbody td{display:block;min-width:0;padding:9px 11px;border:0;border-bottom:1px solid #EEF2F6;font-size:12px!important}
+  #tab-license tbody td::before{content:attr(data-label);display:block;margin-bottom:4px;color:#98A2B3;font-size:9.5px;font-weight:600}
+  #tab-license tbody td.cell-main,#tab-license tbody td.cell-act{grid-column:1/-1}
+  #tab-license tbody td.cell-main::before{display:none}
+  #tab-license tbody td.cell-main{padding:12px}.dojang-name{font-size:14px}.dojang-line{font-size:11px}
+  #tab-license tbody td.cell-act::before{display:none}.action-btns{display:flex;flex-wrap:wrap;gap:5px}
+  #tab-license tbody td.cell-act .btn-sm{flex:1 1 auto;height:30px;padding:0 8px;font-size:10px}
+  #tab-license tbody tr:has(.empty-msg){display:block}.empty-msg{padding:30px!important;text-align:center}
+
+  .cg-wrap{overflow:visible;border:0;background:transparent;box-shadow:none}
+  .cg-top{gap:7px;padding:10px;border:1px solid var(--hair);border-radius:12px;background:#fff}
+  .cg-title{width:100%;font-size:14px}.cg-sub{font-size:10px}.cg-spacer{display:none}
+  .cg-seg{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);width:100%;max-width:100%;overflow:visible}.cg-seg button{min-width:0;padding:6px 5px;font-size:10.5px}
+  .cg-search{order:4;width:100%;height:38px;font-size:12px}
+  .cg-legend{order:5;width:100%;gap:7px;font-size:9.5px}
+  .cg-btn{height:32px;padding:0 9px;font-size:10px}.cg-btn.primary{width:100%;height:38px}
+  .cg-scroll{margin-top:10px;overflow:visible;max-height:none;min-height:0;background:transparent}
+  table.cg{display:block;min-width:0!important;width:100%!important;table-layout:auto;font-size:12px}
+  table.cg thead,table.cg tfoot{display:none}
+  table.cg tbody{display:grid;gap:10px}
+  table.cg tr.cg-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border:1px solid var(--hair);border-radius:12px;background:#fff;overflow:hidden}
+  table.cg tr.cg-row td{display:block;position:static!important;left:auto!important;width:auto!important;min-width:0!important;height:auto;padding:8px;border:0;border-bottom:1px solid #EEF2F6;white-space:normal;background:#fff}
+  table.cg tr.cg-row td::before{content:attr(data-label);display:block;margin-bottom:4px;color:#98A2B3;font-size:9.5px;font-weight:600}
+  table.cg tr.cg-row td.cg-name{grid-column:1/-1;border-right:0;padding:10px 8px}
+  table.cg tr.cg-row td.cg-name::before{display:none}.cg-namewrap{height:auto;min-height:38px}.cg-namewrap .cg-in{font-size:14px}
+  table.cg tr.cg-row td.cg-actions{grid-column:1/-1}.cg-actions::before{display:none!important}.cg-actions>div{padding:0!important;justify-content:flex-end}
+  .cg-in,.cg-ro{height:36px;padding:0 7px;border:1px solid #E7ECF3;border-radius:7px;background:#FAFBFC}
+  .cg-chk{height:36px}.cg-badges{padding-right:2px}
+  tr.cg-notes{display:block!important}.cg-note-box{position:static;width:100%;max-width:none;padding:10px}
+
+  #modalBg .modal{padding:0 16px}.modal .m-row,.modal .input-row{grid-template-columns:1fr}.modal .modal-btns{margin-left:-16px;margin-right:-16px;padding-left:16px;padding-right:16px}
+}
 </style>
 
 <script id="naruun-admin-clean-redesign-js">
