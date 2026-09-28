@@ -853,7 +853,7 @@ body.hf-dim #jmpPilotGraph .jt-wing{display:none!important}
 
 <script type="module">
 
-const APP_VERSION = '3.6.4';   
+const APP_VERSION = '3.6.5';   
 
 const MP_VERSION  = '1.0.1';
 const MP_LOCAL    = './vendor/mediapipe/';
@@ -1117,7 +1117,7 @@ function createJumpEngine(){
             gapFill = (mx>=C.LF_EVID*Math.max(E.ampNow,1e-6)) ? want : 0;
           } else gapFill=0;
         }
-        if(E.counting && gapFill) onEvent({type:'backfill',n:gapFill});
+        if(E.counting && gapFill) onEvent({type:'backfill',n:gapFill,gap:true});   
         E.jumpLastT=now;
         if(E.counting){ onEvent({type:'jump', t:E.runMaxT-C.FILTER_LAG_MS}); E.hasCountedPeak=true; }
         (E.cntTs||(E.cntTs=[])).push(now); if(E.cntTs.length>8) E.cntTs.shift();   
@@ -1335,6 +1335,7 @@ function makePlayer(id){
            altBaseL:null,altBaseR:null,altUpL:false,altUpR:false,altPendingFoot:'',altPendingAt:0,altLastAt:0,altLift:0 };
   attachFastEngine(p);   
   attachCatchGuard(p);   
+  attachCountFix(p);     
   return p;
 }
 function neededPoses(){ return mode==='duo'?2:1; }
@@ -1779,6 +1780,46 @@ function cgOnCount(p,ev,n){
   C.count+=1; C.catchSince=false;
 }
 
+const JCR={
+  ON:true,
+  STOP_R:2.5, STOP_MS:1200,   
+  FAST_MS:330,                
+  FILL_TOL:.45, MAX_STEP:3,   
+  HIST:8, MIN_HIST:5, OK_R:1.6   
+};
+function attachCountFix(p){
+  const e=p.engine, oReset=e.resetCount;
+  e.resetCount=function(){ oReset(); jcrReset(p); };
+  jcrReset(p);
+}
+function jcrReset(p){ p.jcr={lastT:null,iv:[],pendB:0,raw:0,skip:0,fill:0,cut:0}; }
+function jcrAdjust(p,ev,n){
+  const J=p.jcr; if(!J) return n;
+  J.raw+=n;
+  if(!JCR.ON || mode!=='solo' || !p.engine.recoverGaps) return n;
+  if(ev.type==='backfill'){
+    if(ev.gap){ J.pendB+=n; return 0; }   
+    return n;                             
+  }
+  const now=p.engine.gridT;
+  let add=1, extra=0, pend=J.pendB; J.pendB=0;
+  if(J.lastT!=null && now>J.lastT){
+    const g=now-J.lastT;
+    let m=0;
+    if(J.iv.length>=JCR.MIN_HIST){ const s=[...J.iv].sort((a,b)=>a-b); m=s[s.length>>1]; }
+    if(m>0){
+      if(g>=JCR.STOP_R*m && g>=JCR.STOP_MS){ J.cut+=pend; pend=0; add=0; J.skip++; }   
+      else if(m<=JCR.FAST_MS && pend===0){                                            
+        const ratio=g/m, steps=Math.round(ratio);
+        if(steps>=2 && steps<=JCR.MAX_STEP && Math.abs(ratio-steps)<=JCR.FILL_TOL){ extra=steps-1; J.fill+=extra; }
+      }
+    }
+    if(!m || g<JCR.OK_R*m){ J.iv.push(g); if(J.iv.length>JCR.HIST) J.iv.shift(); }
+  }
+  J.lastT=now;
+  return pend+add+extra;
+}
+
 function onFastEvent(p,ev){
   if(!running || !p.fastEngine.counting) return;
   p.fastCount += ev.type==='backfill' ? ev.n : 1;
@@ -2198,9 +2239,11 @@ function onEngineEvent(p,ev){
   labRecordJump(p,ev);   
   jmpPilotPush(p,ev);    
   if(mode==='solo' && soloJumpType==='double' && ev.type==='jump' && !doubleAccept(p,ev.t)) return;   
-  const n = ev.type==='backfill' ? ev.n : 1;
+  let n = ev.type==='backfill' ? ev.n : 1;
   const t = ev.type==='jump' ? ev.t : null;
   if(jmpIsLab()) try{ cgOnCount(p,ev,n); }catch(e){}   
+  try{ n=jcrAdjust(p,ev,n); }catch(e){}                 
+  if(!(n>0)) return;
   if(mode==='solo') soloCounted(p,n);
   else if(mode==='duo') duoCounted(p,n,t);
   else if(mode==='relay') relayCounted(p,n);
@@ -4612,6 +4655,7 @@ function labRoundFinished(m){
     players:players.map(p=>({
       pid:p.id??0, main:p.count, fast:fastEnabled()?p.fastCount:null, truth:null,
       guard:p.cg?p.cg.count:null, catches:p.cg?p.cg.catches:null, guard_cut:p.cg?p.cg.filtered:null,   // 2026-09-24 걸림 보정
+      pre:p.jcr?p.jcr.raw:null, jcr_skip:p.jcr?p.jcr.skip:null, jcr_fill:p.jcr?p.jcr.fill:null, jcr_cut:p.jcr?p.jcr.cut:null,   // 2026-09-28 JCR 전 개수·걸림·채움
       period_ms:labRound(p.engine.periodMs,1), fast_hz:fastEnabled()?labRound(p.fast.hz,1):null,
       fast_q:fastEnabled()?labRound(p.fast.q,2):null,
       raw_ai:labRecording?p.rawAI.slice():null, raw_fast:(labRecording&&fastEnabled())?p.rawFast.slice():null
