@@ -421,6 +421,15 @@ table.cg thead th{position:sticky;top:0;z-index:3;background:#F7FAFE;color:#4754
 table.cg th.cg-name,table.cg td.cg-name{position:sticky;left:0;z-index:2;
   border-right:2px solid #cbd5e1}
 table.cg thead th.cg-name{z-index:5;background:#F7FAFE}
+table.cg th .cg-sort-head{display:flex;align-items:center;gap:5px;width:100%;padding:0;border:0;background:none;color:inherit;font:inherit;text-align:left;white-space:nowrap;cursor:pointer}
+table.cg th .cg-sort-head:hover{color:#0757D8}
+table.cg th .cg-sort-head:focus-visible{outline:2px solid #0757D8;outline-offset:2px;border-radius:3px}
+table.cg th[aria-sort=ascending] .cg-sort-head,table.cg th[aria-sort=descending] .cg-sort-head{color:#0757D8}
+table.cg th[aria-sort=ascending] .cg-sort-head::after{content:'▲';font-size:8px}
+table.cg th[aria-sort=descending] .cg-sort-head::after{content:'▼';font-size:8px}
+.cg-mobile-sort{display:none}
+
+.cg-date-help{padding:8px 13px;color:var(--muted2);font-size:11px;line-height:1.4}
 
 table.cg td{height:33px}
 .cg-in{width:100%;min-width:0;height:31px;border:0;background:transparent;font-family:inherit;
@@ -705,6 +714,14 @@ table.cg tfoot td.num{text-align:right}
         </div>
 
         <input class="cg-search" id="cgSearch" placeholder="도장·관장님·전화 검색" oninput="renderCustomers()">
+        <label class="cg-mobile-sort">정렬 <select id="cgSortMobile" onchange="setCustSortFromSelect(this)">
+          <option value="created_at:desc">장부 등록일 · 최신순</option><option value="created_at:asc">장부 등록일 · 오래된순</option>
+          <option value="dojang_name:asc">도장명 · 가나다순</option><option value="dojang_name:desc">도장명 · 역순</option>
+          <option value="status:asc">상태 · 순서대로</option><option value="status:desc">상태 · 역순</option>
+          <option value="license_key:asc">라이선스 · 오름차순</option><option value="license_key:desc">라이선스 · 내림차순</option>
+          <option value="next_action_at:asc">다음 할 일 날짜 · 빠른순</option><option value="next_action_at:desc">다음 할 일 날짜 · 늦은순</option>
+          <option value="sold_at:desc">판매일 · 최신순</option><option value="sold_at:asc">판매일 · 오래된순</option>
+        </select></label>
 
         <div class="cg-spacer"></div>
 
@@ -723,6 +740,7 @@ table.cg tfoot td.num{text-align:right}
         <button class="cg-btn primary" onclick="addCustomerRow()">+ 회원 추가</button>
       </div>
 
+      <div class="cg-date-help">‘장부 등록일’은 이 장부에 처음 기록된 날입니다. ‘다음 할 일 날짜’는 예정일을 입력한 경우에만 표시됩니다.</div>
       <div class="cg-scroll" id="cgScroll">
         <table class="cg" id="cgTable">
           <thead id="cgHead"></thead>
@@ -750,7 +768,7 @@ table.cg tfoot td.num{text-align:right}
         <button class="cg-btn" onclick="loadAcademyProjects()">새로고침</button>
         <button class="cg-btn primary" onclick="openAcademyAddModal()">+ 제작 고객 추가</button>
       </div>
-      <div class="cg-scroll"><table class="cg aw-table"><thead><tr><th>고객</th><th>진행 상태</th><th>견적</th><th>받은 금액</th><th>시작일</th><th>공개 예정</th><th>공개일</th><th>도메인</th><th>홈페이지 주소</th><th>다음 할 일</th><th>언제</th><th>메모</th><th>관리</th></tr></thead><tbody id="awBody"><tr><td colspan="13" class="cg-empty">불러오는 중…</td></tr></tbody></table></div>
+      <div class="cg-scroll"><table class="cg aw-table"><thead><tr><th>고객</th><th>진행 상태</th><th>견적</th><th>받은 금액</th><th>시작일</th><th>공개 예정</th><th>공개일</th><th>도메인</th><th>홈페이지 주소</th><th>다음 할 일</th><th>다음 할 일 날짜</th><th>메모</th><th>관리</th></tr></thead><tbody id="awBody"><tr><td colspan="13" class="cg-empty">불러오는 중…</td></tr></tbody></table></div>
     </div>
     <div class="footer-note">기존 고객을 선택해 홈페이지 제작 건을 연결합니다 · 라이선스와 기존 고객 장부는 그대로 유지됩니다</div>
   </div>
@@ -2444,6 +2462,7 @@ async function saveHomeData(){
 let CUSTOMERS = [];
 let custView = 'sales';      
 let custFilter = 'all';      
+let custSort = { field:'created_at', direction:'desc' };
 let custZoomLevel = 0;       
 let openNotesFor = null;     
 
@@ -2457,6 +2476,7 @@ const CUST_SIDO   = ['', '서울','부산','대구','인천','광주','대전','
 
 const CUST_COLS = [
   { f:'dojang_name',     t:'도장명',     v:['sales','money','all'], name:true },
+  { f:'created_at',      t:'장부 등록일', v:['sales','money','all'], ro:true, h:'고객 장부에 처음 기록된 날짜 (가입일·판매일과 다름)' },
   { f:'owner_name',      t:'관장님',     v:['sales','all'] },
   { f:'phone',           t:'전화',       v:['sales','all'] },
   { f:'sido',            t:'시/도',      v:['sales','all'], sel:CUST_SIDO },
@@ -2485,7 +2505,7 @@ const CUST_COLS = [
   { f:'students',        t:'관원수',     v:['all'], num:true },
   { f:'device',          t:'기기',       v:['all'] },
   { f:'next_action',     t:'다음 할 일', v:['sales','all'], wide:true },
-  { f:'next_action_at',  t:'언제',       v:['sales','all'], date:true },
+  { f:'next_action_at',  t:'다음 할 일 날짜', v:['sales','all'], date:true, h:'다음 할 일을 할 예정일. 입력하지 않으면 비어 있습니다' },
   { f:'memo',            t:'메모',       v:['sales','all'], wide:true }
 ];
 function custColsNow(){ return CUST_COLS.filter(c => c.v.includes(custView)); }
@@ -2588,7 +2608,13 @@ function isDue(c) {
   return !!c.next_action_at && c.next_action_at <= todayStr() && c.status !== 'churned';
 }
 
+function customerRegisteredAt(c) {
+  if (!c.created_at) return '';
+  const d = new Date(c.created_at);
+  return Number.isNaN(d.getTime()) ? String(c.created_at).slice(0,10) : new Date(d.getTime() + 9 * 3600000).toISOString().slice(0,10);
+}
 function derivedCust(c, f) {
+  if (f === 'created_at') return customerRegisteredAt(c);
   const l = LICENSES.find(x => x.license_key === c.license_key);
   if (!l) return '';
   if (f === '_licIssued') return (l.created_at || '').slice(0,10);
@@ -2608,11 +2634,46 @@ function customerLicenseState(c) {
   return 'off';
 }
 
+function customerSortValue(c, field) {
+  if (field === 'created_at') return customerRegisteredAt(c);
+  if (field === '_licIssued') return derivedCust(c, field);
+  if (field === '_licExpire') {
+    const l = LICENSES.find(x => x.license_key === c.license_key);
+    return l ? (l.license_type === 'lifetime' ? '9999-12-31' : l.expire_date || '') : '';
+  }
+  if (field === 'status') return Math.max(0, CUST_STATUS.findIndex(([key]) => key === (c.status || 'lead')));
+  return c[field];
+}
+function sortCustomerRows(rows) {
+  const {field,direction} = custSort;
+  const numeric = CUST_COLS.some(col => col.f === field && col.num) || field === 'status';
+  return rows.slice().sort((a,b) => {
+    const av = customerSortValue(a,field), bv = customerSortValue(b,field);
+    const ae = av === null || av === undefined || av === '';
+    const be = bv === null || bv === undefined || bv === '';
+    if (ae !== be) return ae ? 1 : -1;
+    let cmp = 0;
+    if (!ae) cmp = numeric ? Number(av) - Number(bv) : String(av).localeCompare(String(bv),'ko',{numeric:true,sensitivity:'base'});
+    if (cmp) return direction === 'asc' ? cmp : -cmp;
+    return String(a.dojang_name || '').localeCompare(String(b.dojang_name || ''),'ko') || String(a.id || '').localeCompare(String(b.id || ''));
+  });
+}
+function toggleCustSort(field) {
+  if (!CUST_COLS.some(col => col.f === field)) return;
+  custSort = {field,direction:custSort.field === field && custSort.direction === 'asc' ? 'desc' : 'asc'};
+  renderCustomers();
+}
+function setCustSortFromSelect(el) {
+  const [field,direction] = el.value.split(':');
+  if (!CUST_COLS.some(col => col.f === field) || !['asc','desc'].includes(direction)) return;
+  custSort = {field,direction};
+  renderCustomers();
+}
 function customerRowsNow() {
   const q = document.getElementById('cgSearch').value.trim().toLowerCase();
   
   const qd = /^[0-9]{3,}$/.test(q) ? q : '';
-  return CUSTOMERS.filter(c => {
+  const rows = CUSTOMERS.filter(c => {
     const hay = [c.dojang_name, c.owner_name, c.phone, c.sigungu, c.license_key, c.memo, c.next_action]
       .filter(Boolean).join(' ').toLowerCase();
     const qHit = !q || hay.includes(q)
@@ -2622,6 +2683,7 @@ function customerRowsNow() {
     else if (custFilter !== 'all') m = (c.status || 'lead') === custFilter;
     return qHit && m;
   });
+  return sortCustomerRows(rows);
 }
 
 function renderCustomers() {
@@ -2636,12 +2698,14 @@ function renderCustomers() {
 
   const cols = custColsNow();
   const rows = customerRowsNow();
+  const mobileSort = document.getElementById('cgSortMobile');
+  if (mobileSort && [...mobileSort.options].some(o => o.value === `${custSort.field}:${custSort.direction}`)) mobileSort.value = `${custSort.field}:${custSort.direction}`;
   
   const W = computeCustWidths(rows, cols);
   
   if (W.dojang_name) W.dojang_name += 58;
   document.getElementById('cgHead').innerHTML =
-    '<tr>' + cols.map(c => `<th class="${c.name?'cg-name':''}"${c.h?` title="${escapeHtml(c.h)}"`:''} style="min-width:${W[c.f]}px;width:${W[c.f]}px">${c.t}</th>`).join('')
+    '<tr>' + cols.map(c => `<th class="${c.name?'cg-name':''}" aria-sort="${custSort.field===c.f?(custSort.direction==='asc'?'ascending':'descending'):'none'}" style="min-width:${W[c.f]}px;width:${W[c.f]}px"><button type="button" class="cg-sort-head" onclick="toggleCustSort('${c.f}')" title="${escapeHtml(c.h || c.t + ' 기준 정렬. 다시 누르면 방향 전환')}">${c.t}</button></th>`).join('')
     + '<th style="min-width:96px;width:96px">관리</th></tr>';
 
   updateCustStats();
@@ -3014,7 +3078,7 @@ function renderAcademyProjects() {
     <td data-field="quoted_amount" data-label="견적">${inp(p,'quoted_amount','number')}</td><td data-field="paid_amount" data-label="받은 금액">${inp(p,'paid_amount','number')}</td>
     <td data-field="started_at" data-label="시작일">${inp(p,'started_at','date')}</td><td data-field="due_at" data-label="공개 예정">${inp(p,'due_at','date')}</td><td data-field="launched_at" data-label="공개일">${inp(p,'launched_at','date')}</td>
     <td data-field="domain" data-label="도메인">${inp(p,'domain','','aw-wide')}</td><td data-field="site_url" data-label="홈페이지 주소">${inp(p,'site_url','url','aw-url')}</td>
-    <td data-field="next_action" data-label="다음 할 일">${inp(p,'next_action','','aw-wide')}</td><td data-field="next_action_at" data-label="언제">${inp(p,'next_action_at','date')}</td><td data-field="memo" data-label="메모">${inp(p,'memo','','aw-wide')}</td>
+    <td data-field="next_action" data-label="다음 할 일">${inp(p,'next_action','','aw-wide')}</td><td data-field="next_action_at" data-label="다음 할 일 날짜">${inp(p,'next_action_at','date')}</td><td data-field="memo" data-label="메모">${inp(p,'memo','','aw-wide')}</td>
     <td data-field="actions" data-label="관리"><button class="btn-sm btn-del" onclick="deleteAcademyProject('${p.id}')">삭제</button></td></tr>`).join('');
 }
 
@@ -3777,6 +3841,8 @@ tr.cg-row.s-trial select.cg-in[data-f="status"],tr.cg-row.s-customer select.cg-i
   .cg-title{width:100%;font-size:14px}.cg-sub{font-size:10px}.cg-spacer{display:none}
   .cg-seg{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);width:100%;max-width:100%;overflow:visible}.cg-seg button{min-width:0;padding:6px 5px;font-size:10.5px}
   .cg-search{order:4;width:100%;height:38px;font-size:12px}
+  .cg-mobile-sort{display:flex;order:4;align-items:center;gap:8px;width:100%;font-size:11px;color:var(--muted2)}
+  .cg-mobile-sort select{flex:1;min-width:0;height:38px;padding:0 9px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--text);font:inherit}
   .cg-legend{order:5;width:100%;gap:7px;font-size:9.5px}
   .cg-btn{height:32px;padding:0 9px;font-size:10px}.cg-btn.primary{width:100%;height:38px}
   .cg-scroll{margin-top:10px;overflow:visible;max-height:none;min-height:0;background:transparent}
