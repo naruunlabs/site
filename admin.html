@@ -641,6 +641,8 @@ table.cg tfoot td.num{text-align:right}
       <button class="btn-add" id="licenseAddBtn" onclick="openAddModal()">+ 라이선스 발급</button>
     </div>
 
+    <div id="licenseIpSummary" class="license-ip-summary" hidden></div>
+
     <div class="stats-row six">
       <div class="stat-card" data-filter="all" onclick="pickStatFilter('all')"><div class="num" id="statTotal">-</div><div class="label">전체 도장</div></div>
       <div class="stat-card" data-filter="live" onclick="pickStatFilter('live')"><div class="num n-live" id="statLive">-</div><div class="label">정식 사용중</div></div>
@@ -734,14 +736,14 @@ table.cg tfoot td.num{text-align:right}
           <span><i style="background:var(--st-off)"></i>중지·없음</span>
         </div>
 
-        <button class="cg-btn" onclick="custZoom(-1)">축소 −</button>
-        <button class="cg-btn" onclick="custZoom(1)">확대 +</button>
+        <button class="cg-btn cg-zoom-btn" onclick="custZoom(-1)">축소 −</button>
+        <button class="cg-btn cg-zoom-btn" onclick="custZoom(1)">확대 +</button>
         <button class="cg-btn" onclick="exportCustomersCsv()">엑셀로 저장</button>
         <button class="cg-btn" onclick="loadCustomers()">새로고침</button>
         <button class="cg-btn primary" onclick="addCustomerRow()">+ 회원 추가</button>
       </div>
 
-      <div class="cg-date-help">‘장부 등록일’은 이 장부에 처음 기록된 날입니다. ‘다음 할 일 날짜’는 예정일을 입력한 경우에만 표시됩니다.</div>
+      <div class="cg-date-help">‘장부 등록일’은 이 장부에 처음 기록된 날입니다. ‘후속 연락·확인’에는 체험 종료 후 전화나 설치 확인처럼 직접 챙길 일을 적습니다. 비워둬도 됩니다.</div>
       <div class="cg-scroll" id="cgScroll">
         <table class="cg" id="cgTable">
           <thead id="cgHead"></thead>
@@ -1313,7 +1315,7 @@ async function loadLicenses() {
     LICENSES = await edgeCall('GET_LICENSES', {}) || [];
 
     LICENSES.forEach(d => { if (d.phone) d.phone = formatPhone(d.phone); });
-    updateStats(); renderTable(); markSynced(); tickSidebar();
+    updateStats(); renderTable(); if (CUSTOMERS.length) renderCustomers(); markSynced(); tickSidebar();
     const broken = LICENSES.filter(d => d.license_type === 'lifetime' && d.expire_date);
     const repairBtn = document.getElementById('repairExpiryBtn');
     repairBtn.style.display = broken.length ? '' : 'none';
@@ -1497,6 +1499,7 @@ function renderTable() {
   const q = document.getElementById('searchInput').value.trim().toLowerCase();
   const filter = document.getElementById('statusFilter').value;
   syncStatCards();   
+  renderLicenseIpSummary();
 
   const qd = /^[0-9]{3,}$/.test(q) ? q : '';
   let rows = licensesForCurrentProduct().filter(d => {
@@ -1536,6 +1539,7 @@ function renderTable() {
     const inLedger = !!customerForLicense(d.license_key);
 
     const slotOver = slotUsed > slotMax;
+    const ipRisk = licenseIpRisk(d);
 
     const led = customerForLicense(d.license_key);
     const whoName = (led && led.owner_name)
@@ -1555,6 +1559,7 @@ function renderTable() {
     return `<tr class="${stripe}">
       <td class="cell-main" data-label="도장">
         <span class="dojang-name" title="등록 ${(d.created_at||'').slice(0,10)||'-'} · ${escapeHtml(d.license_key)}">${escapeHtml(d.dojang_name)}</span>
+        ${ipRisk?'<span class="license-ip-flag" title="기기별 접속 IP 앞자리가 다릅니다. 실제 거리는 알 수 없으니 확인해 주세요">접속망 확인</span>':''}
         <button class="key-btn" title="${escapeHtml(d.license_key)}" onclick="copyKeyOnly('${escapeHtml(d.license_key)}')">키 복사</button>
         <button type="button" class="mobile-expand" onclick="toggleMobileCard(this)" aria-expanded="false">상세 보기</button>
         <span class="dojang-line">${line2}</span>
@@ -2077,6 +2082,30 @@ function describeSlotIpRisk(slots) {
          '다만 집에서 쓰거나 LTE·핫스팟을 쓰면 달라질 수 있으니, 막지 말고 먼저 통화로 확인해 주세요.</span>';
 }
 
+function licenseIpRisk(d) {
+  return !!describeSlotIpRisk(d && d.device_slots);
+}
+function licenseIpPrefixes(d) {
+  return [...new Set((Array.isArray(d.device_slots) ? d.device_slots : [])
+    .map(s => ipPrefix(s && (s.last_ip || s.first_ip))).filter(Boolean))];
+}
+function renderLicenseIpSummary() {
+  const box = document.getElementById('licenseIpSummary');
+  if (!box) return;
+  const risks = LICENSES.filter(licenseIpRisk);
+  box.hidden = !risks.length;
+  if (!risks.length) { box.innerHTML = ''; return; }
+  box.innerHTML = `<div class="license-ip-summary-head"><strong>접속망 확인 ${risks.length}건</strong><span>기기별 접속 IP가 다릅니다. 실제 거리는 알 수 없으니 먼저 확인해 주세요.</span></div>` +
+    `<div class="license-ip-summary-list">` + risks.map(d =>
+      `<button type="button" onclick="openIpRiskLicense('${escapeHtml(String(d.id))}')">${escapeHtml(d.dojang_name)} <small>${escapeHtml(productOfKey(d.license_key).short)}</small><em>${licenseIpPrefixes(d).map(escapeHtml).join(' · ')}</em></button>`
+    ).join('') + '</div>';
+}
+function openIpRiskLicense(id) {
+  const d = LICENSES.find(x => String(x.id) === String(id));
+  if (!d) return;
+  switchLicenseSubtab(productOfKey(d.license_key).key);
+  openEditModal(encodeURIComponent(JSON.stringify(d)));
+}
 function renderDeviceSlotsUI() {
   const box = document.getElementById('deviceSlotsBox');
   if (!box) return;
@@ -2505,8 +2534,8 @@ const CUST_COLS = [
   { f:'extra_at',        t:'추가일',     v:['money','all'], date:true },
   { f:'students',        t:'관원수',     v:['all'], num:true },
   { f:'device',          t:'기기',       v:['all'] },
-  { f:'next_action',     t:'다음 할 일', v:['sales','all'], wide:true },
-  { f:'next_action_at',  t:'다음 할 일 날짜', v:['sales','all'], date:true, h:'다음 할 일을 할 예정일. 입력하지 않으면 비어 있습니다' },
+  { f:'next_action',     t:'후속 연락·확인', v:['sales','all'], wide:true, h:'예: 체험 종료 후 전화, 설치 확인. 필요할 때만 입력' },
+  { f:'next_action_at',  t:'처리 예정일', v:['sales','all'], date:true, h:'후속 연락·확인을 할 예정일. 필요할 때만 입력' },
   { f:'memo',            t:'메모',       v:['sales','all'], wide:true }
 ];
 function custColsNow(){ return CUST_COLS.filter(c => c.v.includes(custView)); }
@@ -2687,6 +2716,22 @@ function customerRowsNow() {
   return sortCustomerRows(rows);
 }
 
+function customerLicenses(c) {
+  const name = String(c.dojang_name || '').trim();
+  return LICENSES.filter(l => (c.license_key && l.license_key === c.license_key) ||
+    (name && String(l.dojang_name || '').trim() === name));
+}
+function customerMobileSummary(c) {
+  const linked = customerLicenses(c);
+  const status = (CUST_STATUS.find(([key]) => key === (c.status || 'lead')) || CUST_STATUS[0])[1];
+  const verified = linked.map(l => l.last_verified_at).filter(Boolean).sort().at(-1);
+  const ago = verified ? daysAgo(isoToYmd(verified)) : null;
+  const activity = !linked.length ? '라이선스 없음' : ago === null ? '인증 전' : `인증 ${agoText(Math.max(0,ago))}`;
+  const risk = linked.some(licenseIpRisk);
+  return `<div class="cg-mobile-summary"><span class="cg-mobile-owner">${escapeHtml(c.owner_name || '관장명 미입력')}</span>` +
+    `<span class="cg-mobile-status">${escapeHtml(status)}</span><span class="cg-mobile-activity">${escapeHtml(activity)}</span>` +
+    (risk ? '<strong class="license-ip-flag">접속망 확인</strong>' : '') + '</div>';
+}
 function renderCustomers() {
 
   const act = document.activeElement;
@@ -2726,7 +2771,7 @@ function renderCustomers() {
     const cls = ['cg-row', 's-' + (c.status || 'lead'), 'lic-' + customerLicenseState(c)];
     if (isDueOpen(c)) cls.push('due');
     let html = `<tr class="${cls.join(' ')}" data-id="${c.id}">`
-      + cols.map(col => `<td class="${col.name?'cg-name':''}" data-field="${col.f}" data-label="${escapeHtml(col.t)}">${col.name ? `<div class="cg-namewrap">${custCell(c, col)}${custBadges(c)}<button type="button" class="mobile-expand" onclick="toggleMobileCard(this)" aria-expanded="false">상세 보기</button></div>` : custCell(c, col)}</td>`).join('')
+      + cols.map(col => `<td class="${col.name?'cg-name':''}" data-field="${col.f}" data-label="${escapeHtml(col.t)}">${col.name ? `<div class="cg-namewrap">${custCell(c, col)}${custBadges(c)}<button type="button" class="mobile-expand" onclick="toggleMobileCard(this)" aria-expanded="false">상세 보기</button></div>${customerMobileSummary(c)}` : custCell(c, col)}</td>`).join('')
       + `<td class="cg-actions" data-label="관리"><div style="display:flex;gap:4px;padding:0 5px">
            <button class="btn-sm ${openNotesFor===c.id?'btn-toggle is-open':'btn-edit'}" onclick="toggleNotes('${c.id}')">${openNotesFor===c.id?'닫기':'이력'}</button>
            <button class="btn-sm btn-del" onclick="deleteCustomer('${c.id}')">삭제</button>
@@ -2788,7 +2833,7 @@ function custCell(c, col) {
   if (col.num) {
     return `<input type="number" class="cg-in num" value="${raw ?? ''}" ${at}>`;
   }
-  return `<input type="text" class="cg-in" value="${escapeHtml(raw||'')}" ${at}>`;
+  return `<input type="text" class="cg-in" value="${escapeHtml(raw||'')}" ${f==='next_action'?'placeholder="예: 체험 종료 후 전화"':''} ${at}>`;
 }
 
 function renderCustFoot(rows, cols) {
@@ -3934,7 +3979,7 @@ tr.cg-row.s-trial select.cg-in[data-f="status"],tr.cg-row.s-customer select.cg-i
   #tab-license tbody tr.mobile-open td{display:block!important}
   #tab-license tbody td.cell-main .mobile-expand{float:right;margin-left:6px}
   #tab-license tbody tr td.cell-act .btn-sm{min-height:40px;font-size:11px}
-  table.cg tr.cg-row td:not(.cg-name):not([data-field="status"]):not([data-field="next_action"]):not([data-field="next_action_at"]){display:none}
+  #tab-customer table.cg tr.cg-row:not(.mobile-open) td:not(.cg-name){display:none!important}
   table.cg tr.cg-row.mobile-open td{display:block!important}
   table.cg tr.cg-row td.cg-name .mobile-expand{margin-left:auto}
   table.cg tr.cg-row td .cg-in{font-size:13px;min-height:40px}
@@ -3949,6 +3994,34 @@ tr.cg-row.s-trial select.cg-in[data-f="status"],tr.cg-row.s-customer select.cg-i
   table.cg.aw-table .aw-in{min-width:0;width:100%;min-height:40px;border:1px solid #e7ecf3;background:#fafbfc}
   table.cg.aw-table .mobile-expand{margin:7px 0 0;width:100%}
   #modalBg .modal-btns button,.aw-add-modal .modal-btns button{min-height:44px}
+}
+.license-ip-summary[hidden]{display:none!important}
+.license-ip-summary{margin:0 0 13px;padding:11px 13px;border:1px solid #efc985;border-radius:11px;background:#fff9ed;color:#80500b}
+.license-ip-summary-head{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;font-size:12px}
+.license-ip-summary-head span{color:#926c35;font-size:11px}
+.license-ip-summary-list{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.license-ip-summary-list button{border:1px solid #f0d7aa;border-radius:7px;background:#fff;padding:5px 8px;color:#6c480e;font:inherit;font-size:11px;cursor:pointer}
+.license-ip-summary-list small{color:#9a6d27}.license-ip-summary-list em{margin-left:5px;font-style:normal;color:#9a6d27}
+.license-ip-flag{display:inline-flex;align-items:center;flex:none;margin-left:5px;padding:2px 5px;border:1px solid #efc985;border-radius:5px;background:#fff2d8;color:#86550f;font-size:10px;font-weight:700;white-space:nowrap}
+.cg-mobile-summary{display:none}
+@media(max-width:700px){
+  #tab-customer .stats-row{display:flex;gap:7px;overflow-x:auto;scroll-snap-type:x proximity;padding-bottom:3px}
+  #tab-customer .stats-row .stat-card{flex:0 0 112px;min-height:66px;padding:10px;scroll-snap-align:start}
+  #tab-customer .stats-row .stat-card .num{font-size:20px}
+  #tab-customer .cg-date-help,#tab-customer .cg-legend,#tab-customer .cg-zoom-btn{display:none}
+  #tab-customer table.cg tbody{gap:6px}
+  #tab-customer table.cg tr.cg-row{display:block;border-radius:10px}
+  #tab-customer table.cg tr.cg-row td.cg-name{padding:7px 9px;border-bottom:0}
+  #tab-customer table.cg tr.cg-row td.cg-name .cg-in{height:30px;min-height:30px;border:0;background:transparent;padding:0 4px;font-size:13px}
+  #tab-customer table.cg tr.cg-row td.cg-name .mobile-expand{flex:none;min-height:32px;padding:0 8px;font-size:10px}
+  #tab-customer .cg-namewrap{min-height:32px;height:32px;gap:3px}
+  #tab-customer .cg-mobile-summary{display:flex;align-items:center;gap:6px;min-width:0;height:22px;padding:0 3px;overflow:hidden;white-space:nowrap;font-size:10px;color:#667085}
+  #tab-customer .cg-mobile-owner{min-width:0;max-width:85px;overflow:hidden;text-overflow:ellipsis}
+  #tab-customer .cg-mobile-status{flex:none;color:#344054;font-weight:700}
+  #tab-customer .cg-mobile-activity{min-width:0;overflow:hidden;text-overflow:ellipsis}
+  #tab-customer .cg-mobile-summary .license-ip-flag{margin-left:auto;font-size:9px}
+  #tab-customer table.cg tr.cg-row.mobile-open td[data-field="next_action"]::after{content:'예: 체험 종료 후 전화, 설치 확인';display:block;margin-top:4px;color:#98a2b3;font-size:10px}
+  #tab-license tbody td.cell-main .license-ip-flag{margin-left:5px}
 }
 </style>
 
