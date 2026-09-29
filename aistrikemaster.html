@@ -9741,6 +9741,19 @@ function punchTrajectoryPoint(lm,wlm,side){
   };
 }
 
+function punchHookDirection(points){
+  if(!points?.length) return {inward:0,pastGuard:0};
+  const guardDist=Math.abs(points[0].x);
+  let outer=guardDist, inward=0, nearest=guardDist;
+  for(const p of points){
+    const d=Math.abs(p.x);
+    outer=Math.max(outer,d);
+    inward=Math.max(inward,outer-d);
+    nearest=Math.min(nearest,d);
+  }
+  return {inward,pastGuard:Math.max(0,guardDist-nearest)};
+}
+
 function punchTrajectoryFeatures(points){
   const PT=PUNCH_THRESHOLDS;
   if(!points||points.length<PT.minFrames) return null;
@@ -9766,11 +9779,14 @@ function punchTrajectoryFeatures(points){
   let rise=0,lowSoFar=ys[0];
   for(const v of ys){ if(v-lowSoFar>rise) rise=v-lowSoFar; if(v<lowSoFar) lowSoFar=v; }
   const extGain=extPeak-extStart;                      
+  const hookDirection=punchHookDirection(p);
   const features={
     frames:p.length, durMs:Math.round(durMs), peakIndex,
     extStart:+extStart.toFixed(1), extPeak:+extPeak.toFixed(1), extGain:+extGain.toFixed(1),
     reachStart:+start.reach.toFixed(3), reachPeak:+Math.max(...rs).toFixed(3),
     lateral:+lateral.toFixed(3), rise:+rise.toFixed(3),
+    hookInward:+hookDirection.inward.toFixed(3),
+    hookPastGuard:+hookDirection.pastGuard.toFixed(3),
     yRange:+(Math.max(...ys)-Math.min(...ys)).toFixed(3),
     startY:+start.y.toFixed(3), endY:+end.y.toFixed(3),
     outward:+(Math.abs(end.x)-Math.abs(start.x)).toFixed(3),
@@ -9808,6 +9824,7 @@ function classifyPunchTrajectory(f,side,effectiveLead){
                 && f.extGain>=G.straight.extGainMin
                 && f.lateral<=G.straight.lateralMax && f.rise<=G.straight.riseMax,
     hookOk:     f.lateral>=G.hook.lateralMin && f.lateral>=G.hook.lateralOverRise*Math.max(f.rise,.01)
+                && f.hookInward>=.20 && f.hookPastGuard>=.06
                 && f.extPeak<=G.hook.extPeakMax,
     upperOk:    f.rise>=G.upper.riseMin && f.rise>=G.upper.riseOverLateral*Math.max(f.lateral,.01)
                 && f.extPeak<=G.upper.extPeakMax
@@ -10098,7 +10115,8 @@ function processPunchTrajectoryFrame(lm,wlm){
   const PT=PUNCH_THRESHOLDS;
   const now=performance.now();
 
-  const punchBothGuard=(punchTrack.left.phase!=='tracking' && punchTrack.right.phase!=='tracking');
+  const punchBothGuard=(['idle','ready'].includes(punchTrack.left.phase)
+                     && ['idle','ready'].includes(punchTrack.right.phase));
   if(punchLeadHand==='auto' && lm[23] && lm[24] && punchBothGuard){
     const d=(lm[23].z||0)-(lm[24].z||0);
     punchLeadDepthEma=punchLeadDepthEma*.86+d*.14;
@@ -10141,6 +10159,21 @@ function processPunchTrajectoryFrame(lm,wlm){
 
     const step=prev?(Math.hypot(p.x-prev.x,p.y-prev.y)+Math.abs(p.ext-prev.ext)/90):0;
 
+    if(st.phase==='hook_prep'){
+      if(guard && step<PT.stopStep){
+        st.phase='ready'; st.guardFrames=PT.guardHoldFrames; st.guardPoint=p; st.points=[];
+      }else if(now-st.prepStartedT>1600){
+        st.phase='idle'; st.points=[]; st.guardFrames=0;
+      }else{
+        if(!st.prepPoint || Math.abs(p.x)>Math.abs(st.prepPoint.x)) st.prepPoint=p;
+        if(st.prepPoint && Math.abs(st.prepPoint.x)-Math.abs(p.x)>=.10 && step>=PT.stopStep){
+          st.phase='tracking'; st.startedT=now;
+          st.points=[st.guardPoint,st.prepPoint,p].filter(Boolean);
+          st.guardFrames=0;
+        }
+      }
+      continue;
+    }
     if(st.phase==='tracking'){
       st.points.push(p);
       const ff=fightFast();
@@ -10154,6 +10187,19 @@ function processPunchTrajectoryFrame(lm,wlm){
         if(best>=FIGHT_FAST.PUNCH_MIN_OUT && best-out(p)>=FIGHT_FAST.PUNCH_BACK) done='peak_return';
       }
       if(done){
+        if(currentMode==='punch' && punchTechnique==='hook'){
+          const dir=punchHookDirection(st.points);
+          if(dir.inward<.20 || dir.pastGuard<.06){
+            pushPunchLog({event:'hook_windup',hand:side,finishReason:done,
+              inward:+dir.inward.toFixed(3),pastGuard:+dir.pastGuard.toFixed(3)});
+            if(guard){
+              st.phase='ready'; st.guardFrames=PT.guardHoldFrames; st.guardPoint=p; st.points=[];
+            }else{
+              st.phase='hook_prep'; st.prepPoint=p; st.prepStartedT=now;
+            }
+            continue;
+          }
+        }
         const c=evaluatePunchTrajectory(side,effectiveLead,done);
         if(c) pending.push(c);
         st.guardFrames=guard?1:0; st.guardPoint=p;
