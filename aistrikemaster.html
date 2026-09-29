@@ -3853,15 +3853,18 @@ body.hf-dim #kickPilotGraph{display:none!important}
     <div class="mode-row hud-kick-row hud-kick-row1 hud-kick-tabs">
       <button class="drill-btn active" id="m_apcha_r" onclick="setMode('apcha_r')">푸시R</button>
       <button class="drill-btn" id="m_apcha_l" onclick="setMode('apcha_l')">푸시L</button>
-      <button class="drill-btn" id="m_dollo_r" onclick="setMode('dollo_r')">라운드R</button>
-      <button class="drill-btn" id="m_dollo_l" onclick="setMode('dollo_l')">라운드L</button>
+      <button class="drill-btn" id="m_high_r" onclick="setMode('high_r')">하이R</button>
+      <button class="drill-btn" id="m_high_l" onclick="setMode('high_l')">하이L</button>
+      <button class="drill-btn" id="m_dollo_r" onclick="setMode('dollo_r')">미들R</button>
+      <button class="drill-btn" id="m_dollo_l" onclick="setMode('dollo_l')">미들L</button>
       <button class="drill-btn" id="m_yeop_r" onclick="setMode('yeop_r')">로킥R</button>
       <button class="drill-btn" id="m_yeop_l" onclick="setMode('yeop_l')">로킥L</button>
       <button class="drill-btn" id="m_dwi_r" onclick="setMode('dwi_r')">니킥R</button>
       <button class="drill-btn" id="m_dwi_l" onclick="setMode('dwi_l')">니킥L</button>
       
       <button class="drill-btn" id="m_apcha_x" onclick="setMode('apcha_x')" style="display:none !important">푸시↔</button>
-      <button class="drill-btn" id="m_dollo_x" onclick="setMode('dollo_x')" style="display:none !important">라운드↔</button>
+      <button class="drill-btn" id="m_high_x" onclick="setMode('high_x')" style="display:none !important">하이↔</button>
+      <button class="drill-btn" id="m_dollo_x" onclick="setMode('dollo_x')" style="display:none !important">미들↔</button>
       <button class="drill-btn" id="m_yeop_x"  onclick="setMode('yeop_x')"  style="display:none !important">로킥↔</button>
       <button class="drill-btn" id="m_dwi_x"   onclick="setMode('dwi_x')"   style="display:none !important">니킥↔</button>
     </div>
@@ -3939,7 +3942,8 @@ body.hf-dim #kickPilotGraph{display:none!important}
         <button type="button" class="punch-tech-btn active" data-punch="free" onclick="setPunchTechnique('free')">자유</button>
         <button type="button" class="punch-tech-btn" data-punch="jab" onclick="setPunchTechnique('jab')">잽</button>
         <button type="button" class="punch-tech-btn" data-punch="cross" onclick="setPunchTechnique('cross')">스트레이트</button>
-        <button type="button" class="punch-tech-btn" data-punch="hook" onclick="setPunchTechnique('hook')">훅</button>
+        <button type="button" class="punch-tech-btn" data-punch="hook" data-hook-target="head" onclick="setPunchTechnique('hook','head')">얼굴 훅</button>
+        <button type="button" class="punch-tech-btn" data-punch="hook" data-hook-target="body" onclick="setPunchTechnique('hook','body')">몸통 훅</button>
         <button type="button" class="punch-tech-btn" data-punch="upper" onclick="setPunchTechnique('upper')">어퍼컷</button>
     </div>
 
@@ -4077,10 +4081,11 @@ body.hf-dim #kickPilotGraph{display:none!important}
     <div class="settings-pane on" id="setPane_train">
 
       <div class="settings-section">
-        <div class="settings-label">오늘의 킥 <span id="autoDrillCount">푸시·라운드를 양발로</span></div>
+        <div class="settings-label">오늘의 킥 <span id="autoDrillCount">푸시·하이·미들·로킥·니킥을 양발로</span></div>
         <div class="autodrill-grid">
           <button type="button" class="autodrill-chip" data-kind="apcha" onclick="toggleDrillKick('apcha')">푸시</button>
-          <button type="button" class="autodrill-chip" data-kind="dollo" onclick="toggleDrillKick('dollo')">라운드</button>
+          <button type="button" class="autodrill-chip" data-kind="high" onclick="toggleDrillKick('high')">하이</button>
+          <button type="button" class="autodrill-chip" data-kind="dollo" onclick="toggleDrillKick('dollo')">미들</button>
           <button type="button" class="autodrill-chip" data-kind="yeop"  onclick="toggleDrillKick('yeop')">로킥</button>
           <button type="button" class="autodrill-chip" data-kind="dwi"   onclick="toggleDrillKick('dwi')">니킥</button>
         </div>
@@ -4332,8 +4337,10 @@ const MODE_CFG={
   sparring: {rank:false, isDrill:false, unit:'점',   title:'파이트 모드'},
   apcha_r:  {rank:false, isDrill:true,  label:'푸시킥 오른발', kick:'apcha', foot:'right'},
   apcha_l:  {rank:false, isDrill:true,  label:'푸시킥 왼발',   kick:'apcha', foot:'left'},
-  dollo_r:  {rank:false, isDrill:true,  label:'라운드킥 오른발', kick:'dollo', foot:'right'},
-  dollo_l:  {rank:false, isDrill:true,  label:'라운드킥 왼발',   kick:'dollo', foot:'left'},
+  high_r:   {rank:false, isDrill:true,  label:'하이킥 오른발',   kick:'dollo', foot:'right',zone:'head'},
+  high_l:   {rank:false, isDrill:true,  label:'하이킥 왼발',     kick:'dollo', foot:'left', zone:'head'},
+  dollo_r:  {rank:false, isDrill:true,  label:'미들킥 오른발',   kick:'dollo', foot:'right',zone:'body'},
+  dollo_l:  {rank:false, isDrill:true,  label:'미들킥 왼발',     kick:'dollo', foot:'left', zone:'body'},
 
   yeop_r:   {rank:false, isDrill:true,  strikeSpecial:'lowkick', label:'로킥 오른발', kick:'yeop', foot:'right'},
   yeop_l:   {rank:false, isDrill:true,  strikeSpecial:'lowkick', label:'로킥 왼발',   kick:'yeop', foot:'left'},
@@ -4341,23 +4348,24 @@ const MODE_CFG={
   dwi_l:    {rank:false, isDrill:true,  strikeSpecial:'knee', label:'니킥 왼발', kick:'dwi',  foot:'left'},
 
   apcha_x:  {rank:false, isDrill:true,  label:'푸시킥 번갈아',   kick:'apcha', foot:'alt'},
-  dollo_x:  {rank:false, isDrill:true,  label:'라운드킥 번갈아', kick:'dollo', foot:'alt'},
+  high_x:   {rank:false, isDrill:true,  label:'하이킥 번갈아',   kick:'dollo', foot:'alt',zone:'head'},
+  dollo_x:  {rank:false, isDrill:true,  label:'미들킥 번갈아',   kick:'dollo', foot:'alt',zone:'body'},
   yeop_x:   {rank:false, isDrill:true,  strikeSpecial:'lowkick', label:'로킥 번갈아', kick:'yeop', foot:'alt'},
   dwi_x:    {rank:false, isDrill:true,  strikeSpecial:'knee', label:'니킥 번갈아', kick:'dwi',  foot:'alt'},
 };
 
 function isMeasureOnlyMode(){ return MODE_CFG[currentMode]?.measureOnly===true; }
 
-const ALL_KICK_MODES=['apcha_r','apcha_l','dollo_r','dollo_l','yeop_r','yeop_l','dwi_r','dwi_l'];
+const ALL_KICK_MODES=['apcha_r','apcha_l','high_r','high_l','dollo_r','dollo_l','yeop_r','yeop_l','dwi_r','dwi_l'];
 
-const ALT_KICK_MODES=['apcha_x','dollo_x','yeop_x','dwi_x'];
+const ALT_KICK_MODES=['apcha_x','high_x','dollo_x','yeop_x','dwi_x'];
 
 const EVERY_KICK_MODE=ALL_KICK_MODES.concat(ALT_KICK_MODES);
 
-const KICK_KINDS=['apcha','dollo','yeop','dwi'];
+const KICK_KINDS=['apcha','high','dollo','yeop','dwi'];
 
 const AUTODRILL_LS_KEY='asm_autodrill_v2';
-let drillKicks=['apcha','dollo'];   
+let drillKicks=['apcha','high','dollo','yeop','dwi'];
 let drillFoot='both';               
 (function loadDrillPick(){
   try{
@@ -4675,6 +4683,7 @@ let lastScore=null, lastGrade='', lastColor='var(--gold)';
 let balloons=[], balloonCount=0;
 let punchCount=0, punchCombo=0, punchBestCombo=0, punchLastHitT=0;
 let punchTechnique='free';
+let punchHookTarget='head';               
 let punchLeadHand='auto';
 let punchAutoLeadHand='left';
 let punchLeadDepthEma=0;
@@ -4798,12 +4807,13 @@ let punchRunMode='manual', punchAutoIndex=0, punchAutoResults=[], punchAutoTrans
     punchAutoTimer=null, punchStageStartCount=0, punchStageScoreStart=0;
 function applyPunchTechniqueUi(kind){
   punchTechnique=kind;
-  document.querySelectorAll('.punch-tech-btn').forEach(btn=>btn.classList.toggle('active',btn.dataset.punch===kind));
+  document.querySelectorAll('.punch-tech-btn').forEach(btn=>btn.classList.toggle('active',
+    btn.dataset.punch===kind && (kind!=='hook'||btn.dataset.hookTarget===punchHookTarget)));
   const msg={
     free:'자유: 잽·스트레이트, 훅, 어퍼컷을 모두 셉니다.',
     jab:'앞손 잽: 앞손으로 짧고 빠르게 뻗고 즉시 가드 복귀',
     cross:'뒷손 스트레이트: 뒷손을 충분히 길게 뻗고 어깨를 회전',
-    hook:'훅: 팔꿈치 75~125° 유지 → 바깥으로 빼는 준비 동작 제외 → 타깃 방향으로 회전',
+    hook:(punchHookTarget==='body'?'몸통 훅':'얼굴 훅')+': 낮은 곡선 가이드를 따라 옆에서 안으로 회전',
     upper:'어퍼컷: 팔꿈치 70~125° 유지 → 몸 중심 가까이에서 충분히 위로 상승'
   };
   const el=document.getElementById('punchCriteriaText');
@@ -4814,6 +4824,7 @@ window.setPunchRunMode=function(mode){
   if(mode!=='manual' && mode!=='auto') return;
   if(running) stopGame();
   punchRunMode=mode;
+  if(mode==='auto') punchHookTarget='head';
   try{ localStorage.setItem('asm_punch_run_mode',mode); }catch(e){}
   document.querySelectorAll('.punch-run-btn').forEach(b=>b.classList.toggle('active',b.dataset.punchRun===mode));
   document.body.classList.toggle('punch-auto-selected',mode==='auto');
@@ -4832,6 +4843,7 @@ function initPunchRunMode(){
   try{ saved=localStorage.getItem('asm_punch_run_mode')||'manual'; }catch(e){}
   if(saved!=='manual' && saved!=='auto') saved='manual';
   punchRunMode=saved;
+  if(saved==='auto') punchHookTarget='head';
   document.querySelectorAll('.punch-run-btn').forEach(b=>b.classList.toggle('active',b.dataset.punchRun===saved));
   document.body.classList.toggle('punch-auto-selected',saved==='auto');
   const lbl=document.getElementById('punchTimeLbl');
@@ -4895,7 +4907,7 @@ function punchAutoBreakdown(){
   return punchAutoResults.map(r=>PUNCH_TECH_NAME[r.tech]+' '+r.count+'회').join(' · ');
 }
 
-window.setPunchTechnique=function(kind){
+window.setPunchTechnique=function(kind,hookTarget){
   if(!['free','jab','cross','hook','upper'].includes(kind)) return;
   
   if(punchRunMode==='auto'){
@@ -4904,17 +4916,8 @@ window.setPunchTechnique=function(kind){
     return;
   }
   if(running) stopGame();
-  punchTechnique=kind;
-  document.querySelectorAll('.punch-tech-btn').forEach(btn=>btn.classList.toggle('active',btn.dataset.punch===kind));
-  const msg={
-    free:'자유: 잽·스트레이트, 훅, 어퍼컷을 모두 셉니다.',
-    jab:'앞손 잽: 앞손으로 짧고 빠르게 뻗고 즉시 가드 복귀',
-    cross:'뒷손 스트레이트: 뒷손을 충분히 길게 뻗고 어깨를 회전',
-    hook:'훅: 팔꿈치 75~125° 유지 → 바깥으로 빼는 준비 동작 제외 → 타깃 방향으로 회전',
-    upper:'어퍼컷: 팔꿈치 70~125° 유지 → 몸 중심 가까이에서 충분히 위로 상승'
-  };
-  const el=document.getElementById('punchCriteriaText');
-  if(el) el.textContent=msg[kind];
+  if(kind==='hook') punchHookTarget=hookTarget==='body'?'body':'head';
+  applyPunchTechniqueUi(kind);
 
   try{ updateModeBadge(); }catch(e){}
   setStartBtn(false,'시작!');
@@ -5890,8 +5893,10 @@ function modeTitleText(){
   }
   if(currentMode==='apcha_r') return [autoPrefix+'푸시킥 오른발','가드를 올리고 오른발로 앞쪽을 밀어 차기'];
   if(currentMode==='apcha_l') return [autoPrefix+'푸시킥 왼발','가드를 올리고 왼발로 앞쪽을 밀어 차기'];
-  if(currentMode==='dollo_r') return [autoPrefix+'라운드킥 오른발','오른발 정강이 궤적으로 회전'];
-  if(currentMode==='dollo_l') return [autoPrefix+'라운드킥 왼발','왼발 정강이 궤적으로 회전'];
+  if(currentMode==='high_r')  return [autoPrefix+'하이킥 오른발','오른발로 얼굴 높이를 향해 회전'];
+  if(currentMode==='high_l')  return [autoPrefix+'하이킥 왼발','왼발로 얼굴 높이를 향해 회전'];
+  if(currentMode==='dollo_r') return [autoPrefix+'미들킥 오른발','오른발로 몸통 높이를 향해 회전'];
+  if(currentMode==='dollo_l') return [autoPrefix+'미들킥 왼발','왼발로 몸통 높이를 향해 회전'];
   
   if(currentMode==='yeop_r') return ['로킥 오른발','오른 정강이 궤적으로 낮게 차기'];
   if(currentMode==='yeop_l') return ['로킥 왼발','왼 정강이 궤적으로 낮게 차기'];
@@ -6287,6 +6292,21 @@ function stableHipTurn(limit, endIndex=trajHipW.length-1, minFrames=JUDGE.ROUND.
 
 function clamp01(v){ return Math.max(0,Math.min(1,v)); }
 
+function applyRoundHeightZone(result){
+  const zone=MODE_CFG[currentMode]?.zone;
+  if(!result.ok || (zone!=='head' && zone!=='body')) return result;
+  const ys=trajY.filter(Number.isFinite);
+  if(!ys.length || !Number.isFinite(smHipY) || !(smTorso>0.02)) return result;
+  const height=(smHipY-Math.min(...ys))/smTorso;
+  const highEnough=height>=1.15;
+  const bodyRange=height>=0.25 && height<=1.25;
+  if(result.diag) result.diag.targetHeight=+height.toFixed(3);
+  if((zone==='head' && highEnough) || (zone==='body' && bodyRange)) return result;
+  return {...result,ok:false,score:null,
+    reason:zone==='head'?'wrong_height_high':'wrong_height_middle',
+    msg:zone==='head'?'얼굴 높이까지 차보세요!':height>1.25?'몸통 높이로 차보세요!':'몸통 높이까지 차보세요!'};
+}
+
 function analyzeTrajShort(peakPctValue=null){
   const P=V3();
   const c01=(v)=>Math.max(0,Math.min(1,v));
@@ -6354,7 +6374,7 @@ function analyzeTrajShort(peakPctValue=null){
             hip:'허리를 더 돌려보세요!',
             rot:(want==='dwi')?'등을 더 보이며 차보세요!':'몸을 더 옆으로 돌려보세요!'}[worst]||'좋아요!';
 
-  return {
+  return applyRoundHeightZone({
     score, ok:true, msg, reason:'short_ok',
     
     parts: want==='yeop' ? {kind:'yeop', h:hScore, rot, c:cScore, mark:shortKneeMark?.5:null}
@@ -6380,7 +6400,7 @@ function analyzeTrajShort(peakPctValue=null){
       kneeMarkSeen:trajKneeMark.filter(v=>v!==null).length,
       want:want||'', kind:'short'        
     }
-  };
+  });
 }
 
 function analyzeTraj(peakPctValue=null){
@@ -6613,7 +6633,7 @@ function analyzeTraj(peakPctValue=null){
   };
   const want=drillKickType();               
 
-  const r=isMeasureOnlyMode() ? scoreMeasureOnly(feat,want) : scoreKick(feat,want);
+  const r=applyRoundHeightZone(isMeasureOnlyMode() ? scoreMeasureOnly(feat,want) : scoreKick(feat,want));
   DIAG.kind=classifyKick(feat);             
   DIAG.want=want||'';                       
   if(r.hScore!==undefined){ DIAG.hScore=r.hScore; DIAG.cScore=r.cScore; DIAG.factor=r.factor; }
@@ -6829,8 +6849,11 @@ function drawDolloGuide(){
 
   const visualSide = (selectedFoot()==='right') ? 1 : -1;
 
-  const faceY=Math.max(H*0.14, Math.min(H*0.46, (smHipY - smTorso*0.98)*H));
-  const topY=faceY;
+  const zone=MODE_CFG[currentMode]?.zone;
+  const targetRatio=zone==='head'?1.45:zone==='body'?0.7:0.98;
+  const topY=zone
+    ? Math.max(H*0.12,Math.min(H*0.66,(smHipY-smTorso*targetRatio)*H))
+    : Math.max(H*0.14,Math.min(H*0.46,(smHipY-smTorso*targetRatio)*H));
   const baseY=Math.min(H*0.88, smHipY*H+H*0.15);
 
   const p={};
@@ -7771,7 +7794,8 @@ window.startGame=()=>{
              :sparringMode==='speed'   ?'삐 소리가 나면 최대한 빨리!'
              :                          '키에 맞춘 타겟을 공격하세요!'),
     apcha_r:'푸시킥 오른발 — 가드를 올리고 밀어 차요!', apcha_l:'푸시킥 왼발 — 가드를 올리고 밀어 차요!',
-    dollo_r:'라운드킥 오른발 — 정강이 궤적으로 회전!', dollo_l:'라운드킥 왼발 — 정강이 궤적으로 회전!',
+     high_r:'하이킥 오른발 — 얼굴 높이로!', high_l:'하이킥 왼발 — 얼굴 높이로!',
+     dollo_r:'미들킥 오른발 — 몸통 높이로!', dollo_l:'미들킥 왼발 — 몸통 높이로!',
     yeop_r:'로킥 오른발 — 정강이 궤적으로 낮게!', yeop_l:'로킥 왼발 — 정강이 궤적으로 낮게!',
     dwi_r:'니킥 오른발 — 가드를 올리고 무릎!', dwi_l:'니킥 왼발 — 가드를 올리고 무릎!'
   };
@@ -8416,7 +8440,7 @@ window.setMode=(mode)=>{
 };
 
 const KICK_BTN_SHORT={
-  apcha_r:'푸시R', apcha_l:'푸시L', dollo_r:'라운드R', dollo_l:'라운드L',
+  apcha_r:'푸시R', apcha_l:'푸시L', high_r:'하이R', high_l:'하이L', dollo_r:'미들R', dollo_l:'미들L',
   yeop_r:'로킥R', yeop_l:'로킥L', dwi_r:'니킥R', dwi_l:'니킥L'
 };
 
@@ -8447,7 +8471,7 @@ function syncAutoDrillSequence(){
     updateSelectedKickButtons(); updateModeBadge(); renderStats();
   }
 }
-const KICK_KIND_LABEL={apcha:'푸시', dollo:'라운드', yeop:'로킥', dwi:'니킥'};
+const KICK_KIND_LABEL={apcha:'푸시', high:'하이', dollo:'미들', yeop:'로킥', dwi:'니킥'};
 const FOOT_LABEL={right:'오른발로', left:'왼발로', both:'양발로', alt:'번갈아'};
 
 function drillPickSentence(){
@@ -10016,6 +10040,56 @@ function acceptStrikeHandHit(cand){
   return true;
 }
 
+function drawPunchGuide(lm){
+  if(!running||currentMode!=='punch'||punchAutoTransition||punchTechnique==='free') return;
+  if(!lm?.[11]||!lm?.[12]||!lm?.[23]||!lm?.[24]) return;
+  const sl=lm[11],sr=lm[12],hl=lm[23],hr=lm[24];
+  if(Math.min(sl.visibility??1,sr.visibility??1,hl.visibility??1,hr.visibility??1)<.3) return;
+  const W=canvas.width,H=canvas.height;
+  if(!W||!H)return;
+  const shoulderX=(sl.x+sr.x)*W*.5, shoulderY=(sl.y+sr.y)*H*.5;
+  const hipX=(hl.x+hr.x)*W*.5, hipY=(hl.y+hr.y)*H*.5;
+  const T=hipY-shoulderY, SW=Math.abs(sl.x-sr.x)*W;
+  if(T<28||SW<24)return;
+  const lead=punchLeadHand==='auto'?punchAutoLeadHand:punchLeadHand;
+  const hand=punchTechnique==='cross'?(lead==='left'?'right':'left'):lead;
+  const shoulder=hand==='left'?sl:sr;
+  const sideX=shoulder.x*W, side=Math.sign(sideX-shoulderX)||1;
+  const face=lm[0], faceY=face&&(face.visibility??1)>.3?face.y*H:shoulderY-T*.38;
+  const faceX=face&&(face.visibility??1)>.3?face.x*W:shoulderX;
+  const hookBody=punchTechnique==='hook'&&punchHookTarget==='body';
+  const hook=punchTechnique==='hook';
+  const upper=punchTechnique==='upper';
+  const sx=sideX+side*SW*(hookBody?.08:.05);
+  const sy=upper?shoulderY+T*.67:hookBody?shoulderY+T*.57:shoulderY+T*.15;
+  const tx=hookBody?shoulderX-side*SW*.08:faceX;
+  const ty=hookBody?shoulderY+T*.57:faceY;
+  const cx=hook?sx+side*SW*.44:upper?sx-side*SW*.08:(sx+tx)*.5;
+  const cy=hook?(sy+ty)*.5+T*(hookBody?.13:.08)
+          :upper?(sy+ty)*.5+T*.08:(sy+ty)*.5;
+  const bez=u=>({x:(1-u)*(1-u)*sx+2*(1-u)*u*cx+u*u*tx,
+                y:(1-u)*(1-u)*sy+2*(1-u)*u*cy+u*u*ty});
+  const path=()=>{ctx.beginPath();ctx.moveTo(sx,sy);ctx.quadraticCurveTo(cx,cy,tx,ty);};
+  const rgb=hand==='left'?'255,177,74':'85,223,255';
+  ctx.save();ctx.lineCap='round';ctx.lineJoin='round';ctx.setLineDash([]);
+  for(const [width,alpha] of [[Math.max(12,SW*.10),.07],[Math.max(6,SW*.045),.17],[3,.55]]){
+    path();ctx.lineWidth=width;ctx.strokeStyle=`rgba(${rgb},${alpha})`;ctx.stroke();
+  }
+  const u=(performance.now()%1500)/1500, p=bez(u);
+  ctx.shadowColor=`rgb(${rgb})`;ctx.shadowBlur=13;
+  ctx.fillStyle='rgba(255,255,255,.88)';ctx.beginPath();ctx.arc(p.x,p.y,Math.max(4,Math.min(9,SW*.034)),0,Math.PI*2);ctx.fill();
+  const q=bez(.76), q2=bez(.80), ang=Math.atan2(q2.y-q.y,q2.x-q.x);
+  ctx.save();ctx.translate(q.x,q.y);ctx.rotate(ang);ctx.strokeStyle=`rgba(${rgb},.95)`;
+  ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(-9,-7);ctx.lineTo(3,0);ctx.lineTo(-9,7);ctx.stroke();ctx.restore();
+  ctx.shadowBlur=0;ctx.strokeStyle=`rgba(${rgb},.8)`;ctx.lineWidth=3;
+  const r=Math.max(13,Math.min(25,SW*.10));
+  ctx.beginPath();ctx.arc(tx,ty,r,0,Math.PI*2);ctx.stroke();
+  ctx.strokeStyle='rgba(255,255,255,.5)';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.arc(tx,ty,r*.55,0,Math.PI*2);ctx.stroke();
+  ctx.fillStyle=`rgba(${rgb},.95)`;ctx.beginPath();ctx.arc(sx,sy,Math.max(4,r*.27),0,Math.PI*2);ctx.fill();
+  ctx.restore();
+}
+
 function processPunchTrajectoryFrame(lm,wlm){
   if(!running||twoPlayerMode) return;
   
@@ -10322,6 +10396,7 @@ function processPersonFrame(lm, wlm){
 
   if(currentMode==='punch'){
     processPunchTrajectoryFrame(lm,wlm);
+    drawPunchGuide(lm);
     return;
   }
 
@@ -11195,6 +11270,7 @@ function loop(){
     inferHist.push(inferMs); if(inferHist.length>90) inferHist.shift();  
 
     const mustRepaint = isDrillMode()
+      || (currentMode==='punch' && running)
       || (currentMode==='sparring' && sparringMode==='practice')
       || (twoPlayerMode && crop2pEnabled);
     skelDrawThisFrame = mustRepaint || (frameDtMs()<100) || ((skelFrameTick++ & 1)===0);
@@ -13178,7 +13254,7 @@ body.hud-v21.akm-ui.playing-ui #punchStartBtn{background:linear-gradient(90deg,#
 body.hud-v21 .punch-tech-tabs{
   display:none !important;position:absolute !important;left:50% !important;bottom:18px !important;
   transform:translateX(-50%) !important;width:min(620px,calc(100vw - 560px)) !important;
-  z-index:86 !important;grid-template-columns:repeat(5,minmax(72px,1fr)) !important;gap:8px !important;
+  z-index:86 !important;grid-template-columns:repeat(6,minmax(0,1fr)) !important;gap:6px !important;
 }
 body.hud-v21.punch-mode .punch-tech-tabs{display:grid !important;}
 body.hud-v21 .punch-tech-tabs .punch-tech-btn{
@@ -13281,6 +13357,13 @@ html body.hud-v21 .mode-row.hud-kick-tabs .drill-btn{
       row.style.setProperty('transform','translateX(-50%)','important');
       row.style.setProperty('gap',compact?'5px':'7px','important');
     });
+    const kickRow=document.querySelector('.mode-row.hud-kick-tabs');
+    if(kickRow){
+      kickRow.style.setProperty('width',compact?'min(430px,calc(100vw - 24px))':'min(508px,calc(100vw - 24px))','important');
+      kickRow.style.setProperty('max-width','calc(100vw - 24px)','important');
+      kickRow.style.setProperty('flex-wrap','wrap','important');
+      kickRow.style.setProperty('justify-content','center','important');
+    }
     document.querySelectorAll('.punch-tech-tabs .punch-tech-btn,.mode-row.hud-kick-tabs .drill-btn').forEach(btn=>{
       const w=buttonWidth+'px',h=buttonHeight+'px';
       btn.style.setProperty('box-sizing','border-box','important');
