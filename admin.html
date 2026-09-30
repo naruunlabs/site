@@ -691,8 +691,8 @@ table.cg tfoot td.num{text-align:right}
   <div class="tab-content" id="tab-customer">
 
     <div class="stats-row">
-      <div class="stat-card" data-cfilter="all" onclick="pickCustStat('all')"><div class="num" id="cstTotal">-</div><div class="label">전체 회원</div></div>
-      <div class="stat-card" data-cfilter="customer" onclick="pickCustStat('customer')"><div class="num n-live" id="cstPaid">-</div><div class="label">구매 고객</div></div>
+      <div class="stat-card" data-cfilter="all" onclick="pickCustStat('all')"><div class="num" id="cstTotal">-</div><div class="label">현재 회원</div></div>
+      <div class="stat-card" data-cfilter="customer" onclick="pickCustStat('customer')"><div class="num n-live" id="cstPaid">-</div><div class="label">정식 고객</div></div>
       <div class="stat-card" data-cfilter="due" onclick="pickCustStat('due')"><div class="num n-expired" id="cstDue">-</div><div class="label">오늘 연락할 곳</div></div>
       <div class="stat-card" data-cfilter="all" onclick="pickCustStat('all')"><div class="num n-money" id="cstRevenue">-</div><div class="label">누적 매출</div><div class="rev-sub" id="cstRevenueSub"></div></div>
     </div>
@@ -710,11 +710,11 @@ table.cg tfoot td.num{text-align:right}
 
         <div class="cg-seg" id="cgStatus">
           <button data-s="all" class="on" onclick="pickCustStat('all')">전체</button>
-          <button data-s="lead" onclick="pickCustStat('lead')">잠재</button>
+          <button data-s="customer" onclick="pickCustStat('customer')">정식</button>
           <button data-s="trial" onclick="pickCustStat('trial')">체험</button>
-          <button data-s="customer" onclick="pickCustStat('customer')">고객</button>
-          <button data-s="churned" onclick="pickCustStat('churned')">이탈</button>
+          <button data-s="lead" onclick="pickCustStat('lead')">잠재</button>
         </div>
+        <button class="cg-btn" id="cgArchiveBtn" type="button" onclick="toggleCustArchive()" aria-pressed="false">이탈 보관</button>
 
         <input class="cg-search" id="cgSearch" placeholder="도장·관장님·전화 검색" oninput="renderCustomers()">
         <label class="cg-mobile-sort">정렬 <select id="cgSortMobile" onchange="setCustSortFromSelect(this)">
@@ -2085,7 +2085,7 @@ function describeSlotIpRisk(slots) {
 function ipRiskTaskKey(d) {
   if (!d || !describeSlotIpRisk(d.device_slots)) return '';
   const signature = licenseIpPrefixes(d).sort().join('|');
-
+  
   let hash = 2166136261;
   for (let i = 0; i < signature.length; i++) {
     hash ^= signature.charCodeAt(i);
@@ -2532,7 +2532,7 @@ let custZoomLevel = 0;
 let openNotesFor = null;     
 
 const CUST_STATUS = [
-  ['lead','잠재'], ['trial','체험'], ['customer','고객'], ['churned','이탈']
+  ['lead','잠재'], ['trial','체험'], ['customer','정식'], ['churned','이탈']
 ];
 const CUST_SOURCE = ['', '유튜브', '인스타', '지인소개', '검색', '박람회', '기타'];
 const CUST_PAY    = ['', '계좌이체', '카드', '현금'];
@@ -2663,6 +2663,10 @@ function pickCustStat(f) {
   custFilter = (custFilter === f && f !== 'all') ? 'all' : f;
   renderCustomers();
 }
+function toggleCustArchive() {
+  custFilter = custFilter === 'churned' ? 'all' : 'churned';
+  renderCustomers();
+}
 function custZoom(d) {
   custZoomLevel = Math.max(-2, Math.min(2, custZoomLevel + d));
   document.getElementById('cgTable').style.setProperty('--cg-fs', custFontSize() + 'px');
@@ -2745,7 +2749,8 @@ function customerRowsNow() {
       || (qd && String(c.phone||'').replace(/[^0-9]/g,'').includes(qd));
     let m = true;
     if (custFilter === 'due') m = isDueOpen(c);
-    else if (custFilter !== 'all') m = (c.status || 'lead') === custFilter;
+    else if (custFilter === 'all') m = c.status !== 'churned';
+    else m = (c.status || 'lead') === custFilter;
     return qHit && m;
   });
   return sortCustomerRows(rows);
@@ -2776,6 +2781,11 @@ function renderCustomers() {
   document.querySelectorAll('#cgStatus button').forEach(b => b.classList.toggle('on', b.dataset.s === custFilter));
   document.querySelectorAll('#tab-customer .stat-card').forEach(c =>
     c.classList.toggle('is-on', c.dataset.cfilter === custFilter && custFilter !== 'all'));
+  const archiveBtn = document.getElementById('cgArchiveBtn');
+  const archived = custFilter === 'churned';
+  archiveBtn.textContent = archived ? '← 회원 장부' : `이탈 보관 (${CUSTOMERS.filter(c => c.status === 'churned').length})`;
+  archiveBtn.setAttribute('aria-pressed', String(archived));
+  archiveBtn.classList.toggle('on', archived);
 
   const cols = custColsNow();
   const rows = customerRowsNow();
@@ -2792,13 +2802,13 @@ function renderCustomers() {
   updateCustStats();
 
   if (!rows.length) {
-    const msg = CUSTOMERS.length
+    const msg = archived ? '보관된 이탈 회원이 없습니다.' : CUSTOMERS.length
       ? '조건에 맞는 회원이 없습니다.'
       : '아직 회원이 없습니다. 오른쪽 위 회원 추가 버튼을 눌러보세요.';
     document.getElementById('cgBody').innerHTML =
       `<tr><td class="cg-empty" colspan="${cols.length+1}">${msg}</td></tr>`;
     document.getElementById('cgFoot').innerHTML = '';
-    document.getElementById('cgSub').textContent = `${CUSTOMERS.length}명`;
+    document.getElementById('cgSub').textContent = archived ? '이탈 보관 · 0명' : `현재 ${CUSTOMERS.filter(c => c.status !== 'churned').length}명`;
     return;
   }
 
@@ -2821,8 +2831,9 @@ function renderCustomers() {
 
   rows.forEach(c=>{if(customerSaves.has(c.id))paintCustomerSave(c.id);});
   renderCustFoot(rows, cols);
-  document.getElementById('cgSub').textContent =
-    `${rows.length}명 표시 · 전체 ${CUSTOMERS.length}명`;
+  document.getElementById('cgSub').textContent = archived
+    ? `이탈 보관 · ${rows.length}명 표시`
+    : `${rows.length}명 표시 · 현재 ${CUSTOMERS.filter(c => c.status !== 'churned').length}명`;
 
   if (openNotesFor) loadNotes(openNotesFor);
 
@@ -2892,7 +2903,7 @@ function updateCustStats() {
   const paidCnt = CUSTOMERS.filter(c => c.status === 'customer').length;
   const dueCnt  = CUSTOMERS.filter(isDueOpen).length;
   const revenue = CUSTOMERS.reduce((a,c) => a + (Number(c.paid_amount)||0) + (Number(c.extra_amount)||0), 0);
-  document.getElementById('cstTotal').textContent = CUSTOMERS.length;
+  document.getElementById('cstTotal').textContent = CUSTOMERS.filter(c => c.status !== 'churned').length;
   document.getElementById('cstPaid').textContent = paidCnt;
   document.getElementById('cstDue').textContent = dueCnt;
   document.getElementById('cstRevenue').textContent = revenue ? (revenue/10000).toLocaleString('ko-KR') + '만' : '0';
@@ -3509,14 +3520,17 @@ async function copyPickedMsg(){
 
 function custBadges(c){
   const name = String(c.dojang_name||'').trim();
-  const own = new Set();
+  const own = new Map();
   for (const l of (LICENSES||[])) {
-    if (l.license_key === c.license_key || (name && String(l.dojang_name||'').trim() === name))
-      own.add(productOfKey(l.license_key).key);
+    if (l.license_key === c.license_key || (name && String(l.dojang_name||'').trim() === name)) {
+      const id = productOfKey(l.license_key).key;
+      const kind = l.license_type === 'trial' ? 'trial' : 'regular';
+      if (!own.has(id) || kind === 'regular') own.set(id, kind);
+    }
   }
   const tag = { kick:'K', jump:'J', strike:'S' };
   let h = PRODUCT_ORDER.filter(id => own.has(id))
-    .map(id => `<i class="pb p-${id}" title="${PRODUCTS[id].short} 보유">${tag[id]||'?'}</i>`).join('');
+    .map(id => `<i class="pb p-${id}${own.get(id)==='trial'?' trial':''}" title="${PRODUCTS[id].short} ${own.get(id)==='trial'?'체험':'정식'}">${tag[id]||'?'}</i>`).join('');
   return h ? `<span class="cg-badges">${h}</span>` : '';
 }
 
@@ -3783,6 +3797,8 @@ tr.cg-row.flash td{background:#FFF3CC !important;transition:background .5s}
 .cg-badges{display:flex;gap:3px;padding-right:6px;flex:none}
 .pb{font-style:normal;width:17px;height:17px;border-radius:5px;display:grid;place-items:center;font-size:10px;font-weight:900;color:#fff;font-family:ui-monospace,monospace}
 .pb.p-kick{background:#E3172E}.pb.p-jump{background:#14B8A6}.pb.p-strike{background:#A855F7}
+.pb.trial{opacity:.5}
+#cgArchiveBtn.on{background:#eef0f4;color:#475467;border-color:#cbd5e1}
 .due-chip{font-style:normal;font-size:10px;font-weight:900;color:#fff;background:#DC2626;border-radius:5px;padding:2px 5px;margin-right:2px}
 
 .rev-sub{margin-top:6px;font-size:11px;font-weight:700;color:#667085;line-height:1.5}
