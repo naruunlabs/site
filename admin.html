@@ -2082,8 +2082,39 @@ function describeSlotIpRisk(slots) {
          '다만 집에서 쓰거나 LTE·핫스팟을 쓰면 달라질 수 있으니, 막지 말고 먼저 통화로 확인해 주세요.</span>';
 }
 
+function ipRiskTaskKey(d) {
+  if (!d || !describeSlotIpRisk(d.device_slots)) return '';
+  const signature = licenseIpPrefixes(d).sort().join('|');
+
+  let hash = 2166136261;
+  for (let i = 0; i < signature.length; i++) {
+    hash ^= signature.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return `iprisk:${d.id}:${(hash >>> 0).toString(16)}`;
+}
+function ipRiskReviewed(d) {
+  const key = ipRiskTaskKey(d);
+  return !!key && ADMIN_TASK_STATES.get(key)?.disposition === 'done';
+}
 function licenseIpRisk(d) {
-  return !!describeSlotIpRisk(d && d.device_slots);
+  return !!ipRiskTaskKey(d) && !ipRiskReviewed(d);
+}
+async function setIpRiskReviewed(reviewed) {
+  const d = LICENSES.find(x => String(x.id) === String(currentEditLicenseId));
+  const key = ipRiskTaskKey(d);
+  if (!key) return;
+  try {
+    const row = await edgeCall('SAVE_ADMIN_TASK', {
+      task_key: key, disposition: reviewed ? 'done' : 'open'
+    });
+    if (reviewed) ADMIN_TASK_STATES.set(key, row);
+    else ADMIN_TASK_STATES.delete(key);
+    renderTable();
+    if (CUSTOMERS.length) renderCustomers();
+    renderDeviceSlotsUI();
+    showToast(reviewed ? '접속망 확인을 완료했습니다' : '접속망 알림을 다시 표시합니다');
+  } catch (e) { showToast('접속망 확인 상태 저장 실패: ' + e.message); }
 }
 function licenseIpPrefixes(d) {
   return [...new Set((Array.isArray(d.device_slots) ? d.device_slots : [])
@@ -2118,8 +2149,12 @@ function renderDeviceSlotsUI() {
   const ipWarn = describeSlotIpRisk(currentEditDeviceSlots);
   const warnBox = document.getElementById('slotIpWarn');
   if (warnBox) {
+    const d = LICENSES.find(x => String(x.id) === String(currentEditLicenseId));
+    const reviewed = d && ipRiskReviewed(d);
     warnBox.style.display = ipWarn ? 'block' : 'none';
-    warnBox.innerHTML = ipWarn || '';
+    warnBox.innerHTML = !ipWarn ? '' : reviewed
+      ? `<span>이 접속망 조합은 확인 완료했습니다. 접속망이 달라지면 다시 알립니다.</span> <button type="button" class="btn-sm btn-ghost" onclick="setIpRiskReviewed(false)">다시 알림</button>`
+      : `${ipWarn}<br><button type="button" class="btn-sm btn-toggle" onclick="setIpRiskReviewed(true)">확인 완료 · 알림 지우기</button>`;
   }
 
   let html = `<div style="flex:1 0 100%;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:2px;">
@@ -4065,7 +4100,9 @@ async function loadAdminTasks(){
     const rows = await edgeCall('GET_ADMIN_TASKS', {}) || [];
     ADMIN_TASK_STATES = new Map(rows.map(row => [row.task_key, row]));
     renderToday();
+    if (LICENSES.length) renderTable();
     if (CUSTOMERS.length) renderCustomers();
+    if (document.getElementById('modalBg').classList.contains('show') && currentEditLicenseId) renderDeviceSlotsUI();
   } catch(e) { showToast('할 일 상태를 불러오지 못했습니다: ' + e.message); }
 }
 function setTodayView(view){
