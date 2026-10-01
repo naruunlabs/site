@@ -4105,6 +4105,18 @@ body.hf-dim #kickPilotGraph{display:none!important}
         </div>
       </div>
 
+      <div class="settings-section">
+        <div class="settings-label">오늘의 펀치 (자동모드) <span id="punchPickCount">잽·스트레이트·얼굴 훅·어퍼컷</span></div>
+        <div class="autodrill-grid">
+          <button type="button" class="autodrill-chip" data-punch-pick="jab"       onclick="togglePunchPick('jab')">잽</button>
+          <button type="button" class="autodrill-chip" data-punch-pick="cross"     onclick="togglePunchPick('cross')">스트레이트</button>
+          <button type="button" class="autodrill-chip" data-punch-pick="hook"      onclick="togglePunchPick('hook')">얼굴 훅</button>
+          <button type="button" class="autodrill-chip" data-punch-pick="hook_body" onclick="togglePunchPick('hook_body')">몸통 훅</button>
+          <button type="button" class="autodrill-chip" data-punch-pick="upper"     onclick="togglePunchPick('upper')">어퍼컷</button>
+        </div>
+        <div class="settings-hint">펀치 자동모드는 고른 기술만 이 순서대로 이어 합니다. 수동모드는 아래 탭에서 바로 고릅니다.</div>
+      </div>
+
     </div>
 
     <div class="settings-pane" id="setPane_view">
@@ -4648,7 +4660,7 @@ function beginAutoDrillStage(index, announce=true){
 window.returnToTrainingSelection=()=>{
   drillResult.classList.remove('show','auto-summary','final-result');
   
-  if(currentMode==='punch' && punchRunMode==='auto'){ punchAutoIndex=0; applyPunchTechniqueUi(PUNCH_AUTO_SEQ[0]); }
+  if(currentMode==='punch' && punchRunMode==='auto'){ punchAutoIndex=0; applyPunchAutoItem(PUNCH_AUTO_SEQ[0]); }
   drillResultSub.classList.remove('auto-result-summary');
   autoDrillIndex=0; autoDrillResults={}; autoDrillTransitioning=false;
 
@@ -4721,6 +4733,8 @@ const PUNCH_THRESHOLDS={
 
   startStep:.10, stopStep:.06,
   motionMin:.26,        
+
+  hookDir:{inwardMin:.14, pastGuardMin:.03, reopenIn:.07},
 
   speedMin:8,           
   extGainFloor:30,      
@@ -4801,7 +4815,44 @@ function buildPunchDiagnostic(){
   };
 }
 
-const PUNCH_AUTO_SEQ=['jab','cross','hook','upper'];
+const PUNCH_PICK_ORDER=['jab','cross','hook','hook_body','upper'];
+const PUNCH_PICK_NAME={jab:'잽',cross:'스트레이트',hook:'얼굴 훅',hook_body:'몸통 훅',upper:'어퍼컷'};
+const PUNCH_PICK_LS_KEY='asm_punch_pick_v1';
+let PUNCH_AUTO_SEQ=['jab','cross','hook','upper'];
+try{
+  const raw=JSON.parse(localStorage.getItem(PUNCH_PICK_LS_KEY)||'null');
+  if(Array.isArray(raw)){
+    const ok=PUNCH_PICK_ORDER.filter(k=>raw.includes(k));
+    if(ok.length) PUNCH_AUTO_SEQ=ok;
+  }
+}catch(e){}
+function punchSeqText(){ return PUNCH_AUTO_SEQ.map(k=>PUNCH_PICK_NAME[k]).join(' → '); }
+
+function applyPunchAutoItem(item){
+  if(item==='hook_body'){ punchHookTarget='body'; applyPunchTechniqueUi('hook'); }
+  else{ if(item==='hook') punchHookTarget='head'; applyPunchTechniqueUi(item); }
+}
+function syncPunchPickUi(){
+  document.querySelectorAll('.autodrill-chip[data-punch-pick]').forEach(btn=>
+    btn.classList.toggle('on',PUNCH_AUTO_SEQ.includes(btn.dataset.punchPick)));
+  const cnt=document.getElementById('punchPickCount');
+  if(cnt) cnt.textContent=PUNCH_AUTO_SEQ.map(k=>PUNCH_PICK_NAME[k]).join('·');
+}
+window.togglePunchPick=function(item){
+  if(!PUNCH_PICK_ORDER.includes(item)) return;
+  const on=PUNCH_AUTO_SEQ.includes(item);
+  if(on && PUNCH_AUTO_SEQ.length<=1){
+    statusEl.style.opacity='1';
+    statusEl.textContent='펀치는 최소 하나는 남겨야 합니다.';
+    return;
+  }
+  if(running && currentMode==='punch' && punchRunMode==='auto') stopGame();
+  const next=on?PUNCH_AUTO_SEQ.filter(k=>k!==item):PUNCH_AUTO_SEQ.concat([item]);
+  PUNCH_AUTO_SEQ=PUNCH_PICK_ORDER.filter(k=>next.includes(k));
+  try{ localStorage.setItem(PUNCH_PICK_LS_KEY,JSON.stringify(PUNCH_AUTO_SEQ)); }catch(e){}
+  syncPunchPickUi();
+  if(!running && punchRunMode==='auto'){ punchAutoIndex=0; applyPunchAutoItem(PUNCH_AUTO_SEQ[0]); }
+};
 const PUNCH_TECH_NAME={free:'자유',jab:'잽',cross:'스트레이트',hook:'훅',upper:'어퍼컷'};
 let punchRunMode='manual', punchAutoIndex=0, punchAutoResults=[], punchAutoTransition=false,
     punchAutoTimer=null, punchStageStartCount=0, punchStageScoreStart=0;
@@ -4817,24 +4868,24 @@ function applyPunchTechniqueUi(kind){
     upper:'어퍼컷: 팔꿈치 70~125° 유지 → 몸 중심 가까이에서 충분히 위로 상승'
   };
   const el=document.getElementById('punchCriteriaText');
-  if(el) el.textContent=(punchRunMode==='auto'?'자동: 잽 → 스트레이트 → 훅 → 어퍼컷 · ':'')+msg[kind];
+  if(el) el.textContent=(punchRunMode==='auto'?'자동: '+punchSeqText()+' · ':'')+msg[kind];
   try{ updateModeBadge(); }catch(e){}
 }
 window.setPunchRunMode=function(mode){
   if(mode!=='manual' && mode!=='auto') return;
   if(running) stopGame();
   punchRunMode=mode;
-  if(mode==='auto') punchHookTarget='head';
   try{ localStorage.setItem('asm_punch_run_mode',mode); }catch(e){}
   document.querySelectorAll('.punch-run-btn').forEach(b=>b.classList.toggle('active',b.dataset.punchRun===mode));
   document.body.classList.toggle('punch-auto-selected',mode==='auto');
   const lbl=document.getElementById('punchTimeLbl');
   if(lbl) lbl.textContent=(mode==='auto')?'기술당 시간':'펀치 시간';
   punchAutoIndex=0;
-  applyPunchTechniqueUi(mode==='auto'?PUNCH_AUTO_SEQ[0]:(punchTechnique||'free'));
+  if(mode==='auto') applyPunchAutoItem(PUNCH_AUTO_SEQ[0]);
+  else applyPunchTechniqueUi(punchTechnique||'free');
   statusEl.style.opacity='1';
   statusEl.textContent=(mode==='auto')
-    ?'자동모드: 잽 → 스트레이트 → 훅 → 어퍼컷을 순서대로 이어서 합니다.'
+    ?'자동모드: '+punchSeqText()+' 순서로 이어서 합니다. (설정 › 오늘의 펀치에서 고르기)'
     :'수동모드: 원하는 기술을 골라 연습하세요.';
   setStartBtn(false,'시작!');
 };
@@ -4843,12 +4894,12 @@ function initPunchRunMode(){
   try{ saved=localStorage.getItem('asm_punch_run_mode')||'manual'; }catch(e){}
   if(saved!=='manual' && saved!=='auto') saved='manual';
   punchRunMode=saved;
-  if(saved==='auto') punchHookTarget='head';
   document.querySelectorAll('.punch-run-btn').forEach(b=>b.classList.toggle('active',b.dataset.punchRun===saved));
   document.body.classList.toggle('punch-auto-selected',saved==='auto');
   const lbl=document.getElementById('punchTimeLbl');
   if(lbl) lbl.textContent=(saved==='auto')?'기술당 시간':'펀치 시간';
-  if(saved==='auto') applyPunchTechniqueUi(PUNCH_AUTO_SEQ[0]);
+  if(saved==='auto') applyPunchAutoItem(PUNCH_AUTO_SEQ[0]);
+  syncPunchPickUi();
   
   let lead='auto';
   try{ lead=localStorage.getItem('asm_punch_lead')||'auto'; }catch(e){}
@@ -4869,13 +4920,13 @@ function beginPunchAuto(){
 function startPunchAutoStage(i){
   if(punchAutoTimer){ clearTimeout(punchAutoTimer); punchAutoTimer=null; }
   punchAutoIndex=i;
-  applyPunchTechniqueUi(PUNCH_AUTO_SEQ[i]);
+  applyPunchAutoItem(PUNCH_AUTO_SEQ[i]);
   punchStageStartCount=punchCount;
   punchStageScoreStart=punchScores.length;
   resetPunchTrackIdle();
   punchAutoTransition=false;
   statusEl.style.opacity='1';
-  statusEl.textContent=(i+1)+' / '+PUNCH_AUTO_SEQ.length+' · '+PUNCH_TECH_NAME[PUNCH_AUTO_SEQ[i]]+' 시작!';
+  statusEl.textContent=(i+1)+' / '+PUNCH_AUTO_SEQ.length+' · '+PUNCH_PICK_NAME[PUNCH_AUTO_SEQ[i]]+' 시작!';
   setTimeout(()=>{ if(running && currentMode==='punch' && !punchAutoTransition){ statusEl.textContent=''; statusEl.style.opacity='0'; } },1400);
   startTimed(parseInt(punchTimeSel?.value||'30'),endPunchAutoStage);
 }
@@ -4889,7 +4940,7 @@ function endPunchAutoStage(){
     resetPunchTrackIdle();
     const nextTech=PUNCH_AUTO_SEQ[punchAutoIndex+1];
     statusEl.style.opacity='1';
-    statusEl.textContent='다음 동작: '+PUNCH_TECH_NAME[nextTech]+' · '+(punchAutoIndex+2)+' / '+PUNCH_AUTO_SEQ.length;
+    statusEl.textContent='다음 동작: '+PUNCH_PICK_NAME[nextTech]+' · '+(punchAutoIndex+2)+' / '+PUNCH_AUTO_SEQ.length;
     try{ sndCount(); }catch(e){}
     punchAutoTimer=setTimeout(()=>{
       punchAutoTimer=null;
@@ -4904,7 +4955,7 @@ function endPunchAutoStage(){
   }
 }
 function punchAutoBreakdown(){
-  return punchAutoResults.map(r=>PUNCH_TECH_NAME[r.tech]+' '+r.count+'회').join(' · ');
+  return punchAutoResults.map(r=>(PUNCH_PICK_NAME[r.tech]||PUNCH_TECH_NAME[r.tech])+' '+r.count+'회').join(' · ');
 }
 
 window.setPunchTechnique=function(kind,hookTarget){
@@ -4912,7 +4963,7 @@ window.setPunchTechnique=function(kind,hookTarget){
   
   if(punchRunMode==='auto'){
     statusEl.style.opacity='1';
-    statusEl.textContent='자동모드에서는 잽 → 스트레이트 → 훅 → 어퍼컷 순서로 진행됩니다. 수동모드에서 고르세요.';
+    statusEl.textContent='자동모드에서는 '+punchSeqText()+' 순서로 진행됩니다. 기술은 설정 › 오늘의 펀치에서 고르세요.';
     return;
   }
   if(running) stopGame();
@@ -5868,7 +5919,7 @@ function modeTitleText(){
     };
     const t=PT_TITLE[punchTechnique] || PT_TITLE.free;
     
-    if(punchRunMode==='auto') return ['자동 '+(punchAutoIndex+1)+'/'+PUNCH_AUTO_SEQ.length+' · '+(PUNCH_TECH_NAME[punchTechnique]||'펀치'), t[1]];
+    if(punchRunMode==='auto') return ['자동 '+(punchAutoIndex+1)+'/'+PUNCH_AUTO_SEQ.length+' · '+(PUNCH_PICK_NAME[PUNCH_AUTO_SEQ[punchAutoIndex]]||PUNCH_TECH_NAME[punchTechnique]||'펀치'), t[1]];
     return t;
   }
   if(currentMode==='sparring'){
@@ -9824,7 +9875,7 @@ function classifyPunchTrajectory(f,side,effectiveLead){
                 && f.extGain>=G.straight.extGainMin
                 && f.lateral<=G.straight.lateralMax && f.rise<=G.straight.riseMax,
     hookOk:     f.lateral>=G.hook.lateralMin && f.lateral>=G.hook.lateralOverRise*Math.max(f.rise,.01)
-                && f.hookInward>=.20 && f.hookPastGuard>=.06
+                && f.hookInward>=PT.hookDir.inwardMin && f.hookPastGuard>=PT.hookDir.pastGuardMin
                 && f.extPeak<=G.hook.extPeakMax,
     upperOk:    f.rise>=G.upper.riseMin && f.rise>=G.upper.riseOverLateral*Math.max(f.lateral,.01)
                 && f.extPeak<=G.upper.extPeakMax
@@ -10166,7 +10217,7 @@ function processPunchTrajectoryFrame(lm,wlm){
         st.phase='idle'; st.points=[]; st.guardFrames=0;
       }else{
         if(!st.prepPoint || Math.abs(p.x)>Math.abs(st.prepPoint.x)) st.prepPoint=p;
-        if(st.prepPoint && Math.abs(st.prepPoint.x)-Math.abs(p.x)>=.10 && step>=PT.stopStep){
+        if(st.prepPoint && Math.abs(st.prepPoint.x)-Math.abs(p.x)>=PT.hookDir.reopenIn && step>=PT.stopStep){
           st.phase='tracking'; st.startedT=now;
           st.points=[st.guardPoint,st.prepPoint,p].filter(Boolean);
           st.guardFrames=0;
@@ -10189,7 +10240,7 @@ function processPunchTrajectoryFrame(lm,wlm){
       if(done){
         if(currentMode==='punch' && punchTechnique==='hook'){
           const dir=punchHookDirection(st.points);
-          if(dir.inward<.20 || dir.pastGuard<.06){
+          if(dir.inward<PT.hookDir.inwardMin || dir.pastGuard<PT.hookDir.pastGuardMin){
             pushPunchLog({event:'hook_windup',hand:side,finishReason:done,
               inward:+dir.inward.toFixed(3),pastGuard:+dir.pastGuard.toFixed(3)});
             if(guard){
