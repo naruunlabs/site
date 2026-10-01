@@ -4081,7 +4081,19 @@ body.hf-dim #kickPilotGraph{display:none!important}
     <div class="settings-pane on" id="setPane_train">
 
       <div class="settings-section">
-        <div class="settings-label">오늘의 킥 <span id="autoDrillCount">푸시·하이·미들·로킥·니킥을 양발로</span></div>
+        <div class="settings-label">펀치 설정 <span id="punchPickCount">잽·스트레이트·얼굴 훅·어퍼컷</span></div>
+        <div class="autodrill-grid">
+          <button type="button" class="autodrill-chip" data-punch-pick="jab"       onclick="togglePunchPick('jab')">잽</button>
+          <button type="button" class="autodrill-chip" data-punch-pick="cross"     onclick="togglePunchPick('cross')">스트레이트</button>
+          <button type="button" class="autodrill-chip" data-punch-pick="hook"      onclick="togglePunchPick('hook')">얼굴 훅</button>
+          <button type="button" class="autodrill-chip" data-punch-pick="hook_body" onclick="togglePunchPick('hook_body')">몸통 훅</button>
+          <button type="button" class="autodrill-chip" data-punch-pick="upper"     onclick="togglePunchPick('upper')">어퍼컷</button>
+        </div>
+        <div class="settings-hint">자동모드는 고른 기술만 이 순서대로 이어 합니다. 수동모드는 아래 탭에서 바로 고릅니다.</div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-label">킥 설정 <span id="autoDrillCount">푸시·하이·미들·로킥·니킥을 양발로</span></div>
         <div class="autodrill-grid">
           <button type="button" class="autodrill-chip" data-kind="apcha" onclick="toggleDrillKick('apcha')">푸시</button>
           <button type="button" class="autodrill-chip" data-kind="high" onclick="toggleDrillKick('high')">하이</button>
@@ -4103,18 +4115,6 @@ body.hf-dim #kickPilotGraph{display:none!important}
           <b style="color:var(--s-txt);font-weight:500">양발</b>은 오른발을 다 하고 왼발로 넘어갑니다.
           <b style="color:var(--s-txt);font-weight:500">번갈아</b>는 한 종목 안에서 오른발·왼발을 한 번씩 교대로 찹니다.
         </div>
-      </div>
-
-      <div class="settings-section">
-        <div class="settings-label">오늘의 펀치 (자동모드) <span id="punchPickCount">잽·스트레이트·얼굴 훅·어퍼컷</span></div>
-        <div class="autodrill-grid">
-          <button type="button" class="autodrill-chip" data-punch-pick="jab"       onclick="togglePunchPick('jab')">잽</button>
-          <button type="button" class="autodrill-chip" data-punch-pick="cross"     onclick="togglePunchPick('cross')">스트레이트</button>
-          <button type="button" class="autodrill-chip" data-punch-pick="hook"      onclick="togglePunchPick('hook')">얼굴 훅</button>
-          <button type="button" class="autodrill-chip" data-punch-pick="hook_body" onclick="togglePunchPick('hook_body')">몸통 훅</button>
-          <button type="button" class="autodrill-chip" data-punch-pick="upper"     onclick="togglePunchPick('upper')">어퍼컷</button>
-        </div>
-        <div class="settings-hint">펀치 자동모드는 고른 기술만 이 순서대로 이어 합니다. 수동모드는 아래 탭에서 바로 고릅니다.</div>
       </div>
 
     </div>
@@ -4885,7 +4885,7 @@ window.setPunchRunMode=function(mode){
   else applyPunchTechniqueUi(punchTechnique||'free');
   statusEl.style.opacity='1';
   statusEl.textContent=(mode==='auto')
-    ?'자동모드: '+punchSeqText()+' 순서로 이어서 합니다. (설정 › 오늘의 펀치에서 고르기)'
+    ?'자동모드: '+punchSeqText()+' 순서로 이어서 합니다. (설정 › 펀치 설정에서 고르기)'
     :'수동모드: 원하는 기술을 골라 연습하세요.';
   setStartBtn(false,'시작!');
 };
@@ -4963,7 +4963,7 @@ window.setPunchTechnique=function(kind,hookTarget){
   
   if(punchRunMode==='auto'){
     statusEl.style.opacity='1';
-    statusEl.textContent='자동모드에서는 '+punchSeqText()+' 순서로 진행됩니다. 기술은 설정 › 오늘의 펀치에서 고르세요.';
+    statusEl.textContent='자동모드에서는 '+punchSeqText()+' 순서로 진행됩니다. 기술은 설정 › 펀치 설정에서 고르세요.';
     return;
   }
   if(running) stopGame();
