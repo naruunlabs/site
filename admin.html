@@ -1625,7 +1625,7 @@ function trialStatusText(d) {
   return `체험 중 · 남은 기간 ${leftDays}일 ${leftHours}시간 (종료 ${ends.toLocaleString('ko-KR')})`;
 }
 
-const TRIAL_MAX_DAYS = 30;
+const TRIAL_MAX_DAYS = 30; 
 
 function calcTrialTotalDays(startedAtIso, addDays, currentDays = 3) {
   const n = Number(addDays), started = new Date(startedAtIso).getTime();
@@ -4080,6 +4080,9 @@ tr.cg-row.s-trial select.cg-in[data-f="status"],tr.cg-row.s-customer select.cg-i
 .tab-btn,.btn-sm-act,.cg-seg button,.cg-btn,.cg-legend,table.cg thead th{font-weight:600}
 .cg-in,.cg-in::placeholder,.cg-ro{font-weight:500}
 table.cg tfoot td{font-weight:600}
+
+#tab-license thead th,#tab-license .dojang-name,#tab-license .badge,#tab-license .btn-sm,#tab-license .key-btn{font-weight:600}
+#tab-license tbody td,#tab-license .who-name,#tab-license .who-none,#tab-license .dojang-line,#tab-license .dojang-memo,#tab-license .sub-text,#tab-license code{font-weight:500}
 </style>
 
 <script id="naruun-admin-task-board-20260928">
