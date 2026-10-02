@@ -530,7 +530,15 @@ html body:not(.jmp-beta-on) #jumpLabModal{
 body.hf-dim #video{filter:saturate(.78) brightness(.66) contrast(1.04);transition:filter .4s ease}
 body.hf-dim #jmpPilotGraph .jt-wing{display:none!important}
 </style>
-</head>
+<style>
+#paceSettings select,#paceSettings select option{background:#0d1c30!important;color:#fff!important;color-scheme:dark;}
+#paceSettings select{width:100%;border:1px solid #385346;border-radius:8px;}
+</style>
+<style>
+#paceBeatCue{display:flex;gap:8px;margin:20px 0 12px;height:42px;}#paceBeatCue[hidden]{display:none;}
+#paceBeatCue i{flex:1;border-radius:7px;background:#173f37;border:1px solid #3c7d69;}
+#paceBeatCue.on i{background:#bcf783;border-color:#dcffb9;}
+</style></head>
 <body>
 
 <div id="loginScreen" hidden>
@@ -636,7 +644,7 @@ body.hf-dim #jmpPilotGraph .jt-wing{display:none!important}
         <div class="st-state" id="railState">준비</div>
       </div>
       <div class="st" id="stGA" hidden><div class="st-lab" id="stGALab"></div><div class="st-val" id="stGAVal"></div><div class="st-name" id="stGAName"></div></div>
-      <div class="st" id="stGB" hidden><div class="st-lab" id="stGBLab"></div><div class="st-val" id="stGBVal"></div><div class="st-name" id="stGBName"></div></div>
+      <div class="st" id="stGB" hidden><div class="st-lab" id="stGBLab"></div><div class="st-val" id="stGBVal"></div><div class="st-name" id="stGBName"></div><div id="paceBeatCue" hidden aria-label="착지 박자"><i></i><i></i><i></i><i></i></div></div>
       <div class="st" id="stGC" hidden><div class="st-lab" id="stGCLab"></div><div class="st-val" id="stGCVal"></div><div class="st-name" id="stGCName"></div></div>
     </div>
 
@@ -696,22 +704,19 @@ body.hf-dim #jmpPilotGraph .jt-wing{display:none!important}
     <div class="opts" id="optGroup" hidden>
       <div class="seg two" id="groupActivitySeg">
         <button type="button" data-ga="rhythm" class="on">리듬게임</button>
-        <button type="button" data-ga="pace">속도 따라하기</button>
+        <button type="button" data-ga="pace">속도게임</button>
       </div>
       <div id="paceSettings" hidden>
         <label class="lfield"><i>훈련 시간</i><select id="paceTime"><option value="30">30초</option><option value="60">60초</option><option value="120">120초</option></select></label>
-        <label class="lfield"><i>목표 개수</i><input id="paceTarget" type="number" min="1" max="600" step="1" value="90"></label>
+        <label class="lfield"><i>목표 개수</i><select id="paceTarget"><option value="10">10개</option><option value="20">20개</option><option value="30">30개</option><option value="40">40개</option><option value="50">50개</option><option value="60">60개</option><option value="70">70개</option><option value="80">80개</option><option value="90" selected>90개</option><option value="100">100개</option><option value="110">110개</option><option value="120">120개</option><option value="130">130개</option><option value="140">140개</option><option value="150">150개</option><option value="160">160개</option><option value="170">170개</option><option value="180">180개</option><option value="190">190개</option><option value="200">200개</option><option value="210">210개</option><option value="220">220개</option><option value="230">230개</option><option value="240">240개</option><option value="250">250개</option><option value="260">260개</option><option value="270">270개</option><option value="280">280개</option><option value="290">290개</option><option value="300">300개</option><option value="310">310개</option><option value="320">320개</option><option value="330">330개</option><option value="340">340개</option><option value="350">350개</option><option value="360">360개</option><option value="370">370개</option><option value="380">380개</option><option value="390">390개</option><option value="400">400개</option><option value="410">410개</option><option value="420">420개</option><option value="430">430개</option><option value="440">440개</option><option value="450">450개</option><option value="460">460개</option><option value="470">470개</option><option value="480">480개</option><option value="490">490개</option><option value="500">500개</option><option value="510">510개</option><option value="520">520개</option><option value="530">530개</option><option value="540">540개</option><option value="550">550개</option><option value="560">560개</option><option value="570">570개</option><option value="580">580개</option><option value="590">590개</option><option value="600">600개</option></select></label>
         <div class="m-help" id="paceSummary">초당 3회 · 분당 180회</div>
       </div>
       <div id="rhythmSettings">
-      <div class="seg two" id="groupSeg">
-        <button type="button" data-gk="practice" class="on">연습 · 발판</button>
-        <button type="button" data-gk="play">실전 · 리듬게임</button>
-      </div>
+
       <span class="option-label">화면 방식</span>
       <div class="seg two" id="groupViewSeg">
-        <button type="button" data-gv="grid" class="on">격자 · 새 화면</button>
-        <button type="button" data-gv="foot">발 모양 · 종전</button>
+        <button type="button" data-gv="grid" class="on">격자</button>
+        <button type="button" data-gv="foot">발 모양</button>
       </div>
       <label class="lfield"><i>훈련 음악</i><select id="groupMusic"><option value="iron" selected>The Iron Pace · 120 BPM</option><option value="final">The Final Rep · 120 BPM</option><option value="none">음악 없음 · 박자음만</option></select></label>
       <div class="lfield" id="groupSkillWrap"><i>연습할 종목</i><div class="rsum"><span id="groupPracticeSum">1개 종목</span><button type="button" id="groupPracticeEditBtn">선택 ›</button></div><select id="groupSkill" hidden></select></div>
@@ -868,7 +873,7 @@ body.hf-dim #jmpPilotGraph .jt-wing{display:none!important}
 
 <script type="module">
 
-const APP_VERSION = '3.7.1';   
+const APP_VERSION = '3.7.3';   
 
 const MP_VERSION  = '1.0.1';
 const MP_LOCAL    = './vendor/mediapipe/';
@@ -1332,8 +1337,9 @@ let groupPracticeRoutine=[{id:'together',b:16}];
 const practiceTotal=()=>groupPracticeRoutine.reduce((s,m)=>s+m.b,0);
 function practiceSummary(){ const names=groupPracticeRoutine.slice(0,3).map(m=>shortName(skillById(m.id))).join(' · '); return `${groupPracticeRoutine.length}개 · ${names}${groupPracticeRoutine.length>3?' 외':''}`; }
 let groupActivity='rhythm', paceTarget=90, paceTime=30;
-
-let groupKind='practice';          
+const paceAthlete=new Image(); paceAthlete.src='assets/jump-athlete-v1.webp';
+const PACE_FRAMES=[{x:72,y:72,w:454,h:874,l:95,r:506,hy:440},{x:542,y:35,w:452,h:908,l:568,r:971,hy:430},{x:998,y:37,w:463,h:894,l:1028,r:1433,hy:430}];
+let groupKind='play';          
 let groupRunKind='practice';       
 let groupView='grid';              
 let groupSkillId='together';       
@@ -2407,8 +2413,9 @@ function restoreLobbyPrefs(){
   setSel('relayPlayers',p.relayPlayers); setSel('relayTarget',p.relayTarget); setSel('relayRounds',p.relayRounds); setSel('relayChange',p.relayChange);
   if(['rhythm','pace'].includes(p.groupActivity)) groupActivity=p.groupActivity;
   paceTarget=clamp(Math.round(+p.paceTarget||90),1,600); paceTime=[30,60,120].includes(+p.paceTime)?+p.paceTime:30;
+  if(![...$('paceTarget').options].some(o=>+o.value===paceTarget))$('paceTarget').add(new Option(paceTarget+'개',String(paceTarget)));
   $('paceTarget').value=paceTarget; $('paceTime').value=paceTime;
-  if(['practice','play'].includes(p.groupKind)) groupKind=p.groupKind;
+  groupKind='play'; 
   if(['grid','foot'].includes(p.groupView)) groupView=p.groupView;
   if(SKILL_BY_ID[p.groupSkill]) groupSkillId=p.groupSkill;
   if(p.groupMusic==='none'||GROUP_MUSIC[p.groupMusic]) groupMusicKey=p.groupMusic;
@@ -2439,7 +2446,7 @@ function applyModeUI(){
   $('optGroup').hidden = mode!=='group';
   document.querySelectorAll('#groupSeg button').forEach(b=>b.classList.toggle('on',b.dataset.gk===groupKind));
   document.querySelectorAll('#groupViewSeg button').forEach(b=>b.classList.toggle('on',b.dataset.gv===groupView));
-  $('groupSkillWrap').hidden = groupKind!=='practice';
+  $('groupSkillWrap').hidden = true;
   $('groupRoutineWrap').hidden = groupKind!=='play';
   $('groupSkill').value = groupSkillId;
   $('groupMusic').value = groupMusicKey;
@@ -2456,9 +2463,9 @@ function updateModeBadge(){
   if(mode==='solo'){ t=`${soloJumpLabel()} · ${MODES_SOLO[soloMode].title}`; s=MODES_SOLO[soloMode].sub; if(soloMode==='timed') s=`제한 ${$('soloTime').value}초 안에 최대한 많이`; if(soloMode==='target') s=`걸리지 않고 ${$('soloTarget').value}회 연속 성공`; }
   else if(mode==='duo'){ t=duoType==='battle'?'2인 대결':'2인 협동'; s=duoType==='battle'?`${$('duration').value}초 · 더 많이 뛰면 승리`:`${b} BPM · ${$('duration').value}초`; }
   else if(mode==='relay'){ t='릴레이'; s=`${$('relayPlayers').value}명 · ${$('relayTarget').value}회씩 · ${$('relayRounds').value}바퀴`; }
-  else if(groupActivity==='pace'){t='속도 따라하기';s=`${paceTime}초 · 목표 ${paceTarget}개 · 분당 ${Math.round(paceTarget*60/paceTime)}회`;}
+  else if(groupActivity==='pace'){t='속도게임';s=`${paceTime}초 · 목표 ${paceTarget}개 · 분당 ${Math.round(paceTarget*60/paceTime)}회`;}
   else if(groupKind==='practice'){ t='단체 리듬 · 연습'; s=practiceSummary(); }
-  else { t='단체 리듬 · 실전'; s=groupRoutineSummary(); }
+  else { t='단체 리듬게임'; s=groupRoutineSummary(); }
   setText($('mbTitle'),t); setText($('mbSub'),s);
 }
 
@@ -2521,6 +2528,7 @@ function layoutHud(){
   $('stCount').classList.toggle('has-bar', relayIn||targetIn);
   $('stTime').hidden = !(inGame && ((m==='solo'&&soloMode==='timed') || m==='relay'));
   $('stBest').hidden = $('stGauge').hidden = m!=='solo';
+  $('paceBeatCue').hidden=!(inGame&&m==='group'&&groupRunKind==='pace');
   const gIn=inGame && m==='group', gPrac=gIn && groupRunKind==='practice', gPlay=gIn && groupRunKind==='play';
   $('stGA').hidden = $('stGB').hidden = $('stGC').hidden = !gIn;
   $('grpPhase').hidden = $('skPrev').hidden = $('skNext').hidden = $('speedRow').hidden = !gPrac;
@@ -2793,13 +2801,13 @@ function resultHtml(m){
   }
   if(groupRunKind==='pace'){
     const elapsed=clamp((roundEndPerf-gameStartPerf)/1000,0,paceTime), n=Math.min(paceTarget,Math.floor(elapsed*paceTarget/paceTime));
-    return `<div class="res-label">단체 · 속도 따라하기</div><div class="res-title">${stoppedEarly?'훈련 중지':'훈련 완료!'}</div><div class="rbox big"><span>가상 선수 진행</span><strong>${n} / ${paceTarget}</strong></div><div class="rline">${elapsed.toFixed(1)}초 · 학생의 실제 성공 개수는 측정하지 않습니다.</div>`;
+    return `<div class="res-label">단체 · 속도게임</div><div class="res-title">${stoppedEarly?'훈련 중지':'훈련 완료!'}</div><div class="rbox big"><span>가상 선수 진행</span><strong>${n} / ${paceTarget}</strong></div><div class="rline">${elapsed.toFixed(1)}초 · 학생의 실제 성공 개수는 측정하지 않습니다.</div>`;
   }
   const gDone=!stoppedEarly;
   const gBeats=clamp(Math.floor((roundEndPerf-gameStartPerf)/beatMs),0,groupTotal());
   const gMove=Math.min(groupRoutine.length, groupMoveAt(Math.max(0,gBeats-1)).i+1);
   if(gDone) snd.finish();
-  return `<div class="res-label">단체 리듬 · 실전 · ${bpm} BPM</div>
+  return `<div class="res-label">단체 리듬게임 · ${bpm} BPM</div>
     <div class="res-title">${gDone?'마지막 동작까지 완주!':'중간에 멈췄어요'}</div>
     <div class="rgrid">
       <div class="rbox ${gDone?'win':''}"><span>동작</span><strong>${gDone?groupRoutine.length:gMove+' / '+groupRoutine.length}</strong></div>
@@ -3667,9 +3675,8 @@ function drawMergedGrid(W,H,bf,pulse){
       ctx.save(); ctx.globalAlpha=(dist<0?1+dist/.3:.25+.75*progress)*(half?.45:1);ctx.fillStyle=col;ctx.strokeStyle=col;ctx.lineWidth=2;
       if(dist>=0){
         ctx.translate(x,y);ctx.rotate(p[f.side].a||0);
-        if(p.twist)gSole(h,w);else {ctx.beginPath();ctx.roundRect(-w/2,-h/2,w,h,Math.max(2,h*.2));}
+        ctx.beginPath();ctx.roundRect(-w/2,-h/2,w,h,Math.max(2,h*.2));
         if(f.st==='land')ctx.fill();else {ctx.stroke();if(f.st==='air')ctx.setLineDash([4,4]);}
-        if(p.twist){ctx.beginPath();ctx.moveTo(0,h*.18);ctx.lineTo(0,-h*.3);ctx.lineTo(-w*.18,-h*.1);ctx.moveTo(0,-h*.3);ctx.lineTo(w*.18,-h*.1);ctx.strokeStyle='#06201c';ctx.stroke();}
         const label=G_FOOT_WORD[f.st]||'';if(label&&progress>.7)gLabel(label,0,0,Math.max(9,h*.3),'#fff');
       }else{
         const age=-dist/.3;ctx.globalAlpha=(1-age)*.7;ctx.fillRect(tx-w/2,ty-h/2,w,h);
@@ -3689,7 +3696,10 @@ function drawPaceScene(now){
   gGridBg(W,H,0);
   const cx=W*.47, ground=H*.77, u=Math.min(H*.59,W*.53);
   const active=b>0&&b<paceTarget, lift=active?Math.sin(Math.PI*phase)*u*.065:0;
-  const p=skillById('together').cyc[0], J=gJoints(p,u,cx,ground,lift);
+  const p=skillById('together').cyc[0];
+  const frame=!active||phase<.18||phase>.84?0:phase<.34||phase>.72?1:2,F=PACE_FRAMES[frame];
+  const scale=u/908, dx=cx-F.w*scale/2, dy=ground-F.h*scale-lift;
+  const J={hL:{x:dx+(F.l-F.x)*scale,y:dy+(F.hy-F.y)*scale},hR:{x:dx+(F.r-F.x)*scale,y:dy+(F.hy-F.y)*scale}};
   const angle=phase*Math.PI*2, handY=(J.hL.y+J.hR.y)/2, extent=(ground-handY)+u*.02;
   const rope=(front)=>{
     if((Math.sin(angle)>=0)!==front)return;
@@ -3702,18 +3712,12 @@ function drawPaceScene(now){
   };
   ctx.save();ctx.fillStyle='rgba(45,212,191,.12)';ctx.beginPath();ctx.ellipse(cx,ground+u*.015,u*.22,u*.025,0,0,Math.PI*2);ctx.fill();
   rope(false);
-  const metal=ctx.createLinearGradient(cx-u*.2,0,cx+u*.2,0);metal.addColorStop(0,'#56787f');metal.addColorStop(.35,'#d8e9e8');metal.addColorStop(.65,'#8fadb1');metal.addColorStop(1,'#29444e');
-  const limb=(A,B,width)=>{ctx.strokeStyle='#102b33';ctx.lineWidth=width+3;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(A.x,A.y);ctx.lineTo(B.x,B.y);ctx.stroke();ctx.strokeStyle=metal;ctx.lineWidth=width;ctx.stroke();};
-  for(const side of ['L','R']){
-    const leg=J['leg'+side];limb(J['hip'+side],leg.knee,u*.075);limb(leg.knee,leg.ankle,u*.06);
-    limb(leg.ankle,{x:leg.ankle.x+(side==='L'?-1:1)*u*.025,y:leg.ankle.y+u*.01},u*.055);
-    limb(J['sh'+side],J['e'+side],u*.052);limb(J['e'+side],J['h'+side],u*.044);
+  if(paceAthlete.complete&&paceAthlete.naturalWidth){
+    ctx.drawImage(paceAthlete,F.x,F.y,F.w,F.h,dx,dy,F.w*scale,F.h*scale);
+  }else{
+    
+    gDrawCoach(gJoints(p,u,cx,ground,lift),u,ground,p,0,b);
   }
-  ctx.fillStyle=metal;ctx.strokeStyle='#2c5059';ctx.lineWidth=2;
-  ctx.beginPath();ctx.moveTo(J.shL.x,J.shY);ctx.quadraticCurveTo(cx,J.shY-u*.035,J.shR.x,J.shY);ctx.lineTo(J.hipR.x+u*.013,J.hipR.y);ctx.quadraticCurveTo(cx,J.hipR.y+u*.055,J.hipL.x-u*.013,J.hipL.y);ctx.closePath();ctx.fill();ctx.stroke();
-  ctx.beginPath();ctx.ellipse(J.head.x,J.head.y,u*.055,u*.072,0,0,Math.PI*2);ctx.fill();ctx.stroke();
-  ctx.strokeStyle='#63efdf';ctx.lineWidth=Math.max(2,u*.006);ctx.beginPath();ctx.moveTo(cx-u*.032,J.head.y-u*.006);ctx.lineTo(cx+u*.032,J.head.y-u*.006);ctx.moveTo(cx,J.shY+u*.04);ctx.lineTo(cx,J.shY+u*.13);ctx.stroke();
-  for(const hand of [J.hL,J.hR]){ctx.fillStyle='#bcf783';ctx.beginPath();ctx.roundRect(hand.x-u*.012,hand.y-u*.026,u*.024,u*.052,u*.01);ctx.fill();}
   rope(true);ctx.restore();
   gLabel('선수의 착지에 맞춰 뛰어요',cx,H*.86,Math.max(14,H*.028),'#fff');
   gLabel(`선수 진행 ${Math.min(paceTarget,Math.floor(b))} / ${paceTarget}`,cx,H*.92,Math.max(15,H*.035),'#BEF264');
@@ -3767,8 +3771,9 @@ function buildGroupBar(){ $('grpBar').innerHTML=groupRoutine.map(m=>`<i style="f
 function updateGroupHud(now){
   if(groupRunKind==='pace'){
     const elapsed=clamp((now-gameStartPerf)/1000,0,paceTime), n=Math.min(paceTarget,Math.floor(elapsed/ (beatMs/1000)));
-    setText($('mbTitle'),'속도 따라하기'); setText($('mbSub'),`${paceTime}초 · 목표 ${paceTarget}개`);
-    setGStat('stGA','선수 진행',n,' / '+paceTarget); setGStat('stGB','속도',Math.round(bpm),'회/분'); setGStat('stGC','남은 시간',Math.ceil(paceTime-elapsed),'초'); return;
+    setText($('mbTitle'),'속도게임'); setText($('mbSub'),`${paceTime}초 · 목표 ${paceTarget}개`);
+    setGStat('stGA','선수 진행',n,' / '+paceTarget); setGStat('stGB','착지 박자',null,null,'선수와 함께',true);
+    $('paceBeatCue').classList.toggle('on',elapsed>0&&elapsed<paceTime&&gmod(elapsed*1000/beatMs,1)<.22); setGStat('stGC','남은 시간',Math.ceil(paceTime-elapsed),'초'); return;
   }
   const bf=(now-gameStartPerf)/beatMs;
   if(groupRunKind==='practice'){
@@ -3786,7 +3791,7 @@ function updateGroupHud(now){
     const T=groupTotal(), M=groupMoveAt(Math.round(Math.max(0,bf)));
     const Nx = M.hasNext&&!M.nextSame ? groupMoveAt(Math.round(Math.max(0,bf))+M.left).sk : null;
     if(running){ const kk=Math.floor(Math.max(0,bf)); groupRepeatExtend(kk); announceGroupAt(Math.round(Math.max(0,bf))); paintRepeatUi(); }
-    setText($('mbTitle'),'단체 리듬 · 실전'); setText($('mbSub'),`${bpm} BPM · ${groupRoutine.length}개 동작`);
+    setText($('mbTitle'),'단체 리듬게임'); setText($('mbSub'),`${bpm} BPM · ${groupRoutine.length}개 동작`);
     setText($('grpStep'),M.rep||groupRepeat&&groupRepeat.mi===M.i?`${M.i+1}번째 동작 · 구간 반복 중`:`${groupRoutine.length}개 동작 중 ${M.i+1}번째`);
     const secLeft=Math.max(0,Math.ceil((T-Math.max(0,bf))*beatMs/1000));
     setText($('grpLeft'),`남은 시간 ${Math.floor(secLeft/60)}:${String(secLeft%60).padStart(2,'0')}`);
