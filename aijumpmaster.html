@@ -59,6 +59,10 @@
 @font-face{font-family:'JM Noto KR';src:url('vendor/fonts/NotoSansKR-700.woff') format('woff');font-weight:550 799;font-style:normal;font-display:swap}
 @font-face{font-family:'JM Noto KR';src:url('vendor/fonts/NotoSansKR-900.woff') format('woff');font-weight:800 1000;font-style:normal;font-display:swap}
 @font-face{font-family:'JM Archivo';src:url('vendor/fonts/Archivo-latin.woff2') format('woff2');font-weight:100 900;font-stretch:62% 125%;font-style:normal;font-display:swap}
+
+#paceTarget{width:100%;box-sizing:border-box;background:#12231f;color:#f1faf6;border:1px solid #456052;border-radius:10px;padding:14px 16px;font-size:24px;font-weight:800;font-family:inherit;color-scheme:dark;}
+#paceTime,#paceTime option{background:#12231f;color:#f1faf6;color-scheme:dark;}
+#paceTarget:focus{outline:2px solid #a3e635;outline-offset:2px;}
 </style>
 <script>
 
@@ -864,7 +868,7 @@ body.hf-dim #jmpPilotGraph .jt-wing{display:none!important}
 
 <script type="module">
 
-const APP_VERSION = '3.7.0';   
+const APP_VERSION = '3.7.1';   
 
 const MP_VERSION  = '1.0.1';
 const MP_LOCAL    = './vendor/mediapipe/';
@@ -1328,7 +1332,7 @@ let groupPracticeRoutine=[{id:'together',b:16}];
 const practiceTotal=()=>groupPracticeRoutine.reduce((s,m)=>s+m.b,0);
 function practiceSummary(){ const names=groupPracticeRoutine.slice(0,3).map(m=>shortName(skillById(m.id))).join(' · '); return `${groupPracticeRoutine.length}개 · ${names}${groupPracticeRoutine.length>3?' 외':''}`; }
 let groupActivity='rhythm', paceTarget=90, paceTime=30;
-const paceImage=new Image(); paceImage.src='assets/chrome-fighter-guard.webp';
+
 let groupKind='practice';          
 let groupRunKind='practice';       
 let groupView='grid';              
@@ -3515,6 +3519,7 @@ function gDrawGrid(cx,cy,S,pA,pB,tt,pulse,alpha,big){
   const drawPose=(p,a)=>{
     if(a<=.01) return;
     for(const f of gGridFeet(p)){
+      if(f.st==='hidden')continue;
       const x=x0+f.c*(cell+gap), y=y0+f.r*(cell+gap);
       let bx=x, bw=cell;
       if(f.half==='l') bw=cell/2-gap*.25;
@@ -3640,10 +3645,12 @@ function drawGroupSceneGrid(now){
 }
 
 function drawMergedGrid(W,H,bf,pulse){
-  const cx=W*.48, cy=H*.63, S=Math.min(W*.58,H*.43), gap=S*.045, cell=(S-2*gap)/3;
+  const cx=W*.48, cy=H*.59, S=Math.min(W*.56,H*.39), gap=S*.045, cell=(S-2*gap)/3;
   const current=groupMoveAt(Math.max(0,Math.floor(bf))).pose;
-  const empty={...current,L:{...current.L,st:'air'},R:{...current.R,st:'air'},arms:'open',armBadge:null,jump:true};
+  const empty={...current,L:{...current.L,st:'hidden'},R:{...current.R,st:'hidden'},arms:'open',armBadge:null,jump:true};
   gDrawGrid(cx,cy,S,empty,empty,0,0,1,true);
+  const lifted=['L','R'].filter(side=>current[side].st==='air');
+  if(lifted.length===1)gLabel(`${lifted[0]==='L'?'왼발':'오른발'} 들고 유지`,cx,H*.23,Math.max(12,H*.024),'#d0dfd7');
   const originY=H*.19, LOOK=4;
   for(let k=Math.floor(bf)+4;k>=Math.max(0,Math.floor(bf)-1);k-=.5){
     if(k>=groupTotal())continue;
@@ -3651,6 +3658,7 @@ function drawMergedGrid(W,H,bf,pulse){
     const half=gmod(k,1)>.01, M=groupMoveAt(Math.floor(k)), p=M.pose;
     if(half&&!M.sk.ghost)continue;
     for(const f of gGridFeet(p)){
+      if(f.st==='air')continue; 
       const tx=cx-S/2+f.c*(cell+gap)+cell/2+(f.half?(f.half==='l'?-1:1)*cell*.24:0);
       const ty=cy-S/2+f.r*(cell+gap)+cell/2;
       const progress=clamp(1-dist/LOOK,0,1), scale=.18+.82*progress;
@@ -3658,9 +3666,11 @@ function drawMergedGrid(W,H,bf,pulse){
       const w=cell*(f.half?.38:.72)*scale,h=cell*.65*scale,col=GCOL[f.side];
       ctx.save(); ctx.globalAlpha=(dist<0?1+dist/.3:.25+.75*progress)*(half?.45:1);ctx.fillStyle=col;ctx.strokeStyle=col;ctx.lineWidth=2;
       if(dist>=0){
-        ctx.beginPath();ctx.roundRect(x-w/2,y-h/2,w,h,Math.max(2,h*.2));
+        ctx.translate(x,y);ctx.rotate(p[f.side].a||0);
+        if(p.twist)gSole(h,w);else {ctx.beginPath();ctx.roundRect(-w/2,-h/2,w,h,Math.max(2,h*.2));}
         if(f.st==='land')ctx.fill();else {ctx.stroke();if(f.st==='air')ctx.setLineDash([4,4]);}
-        const label=G_FOOT_WORD[f.st]||(f.st==='air'?'들기':'');if(label&&progress>.7)gLabel(label,x,y,Math.max(9,h*.3),'#fff');
+        if(p.twist){ctx.beginPath();ctx.moveTo(0,h*.18);ctx.lineTo(0,-h*.3);ctx.lineTo(-w*.18,-h*.1);ctx.moveTo(0,-h*.3);ctx.lineTo(w*.18,-h*.1);ctx.strokeStyle='#06201c';ctx.stroke();}
+        const label=G_FOOT_WORD[f.st]||'';if(label&&progress>.7)gLabel(label,0,0,Math.max(9,h*.3),'#fff');
       }else{
         const age=-dist/.3;ctx.globalAlpha=(1-age)*.7;ctx.fillRect(tx-w/2,ty-h/2,w,h);
         ctx.beginPath();ctx.arc(tx,ty,cell*(.25+.4*age),0,Math.PI*2);ctx.stroke();
@@ -3670,17 +3680,41 @@ function drawMergedGrid(W,H,bf,pulse){
     const badge=p.arms!=='open'?p.arms:p.armBadge;
     if(badge&&dist>=0)gArmGlyph(cx,originY+(cy-S*.65-originY)*clamp(1-dist/LOOK,0,1),S*.1,badge,.8);
   }
-  gLabel('왼발',cx-S*.22,cy+S*.61,Math.max(11,S*.055),GCOL.L);
-  gLabel('오른발',cx+S*.22,cy+S*.61,Math.max(11,S*.055),GCOL.R);
+  gLabel('왼발',cx-S*.65,cy,Math.max(11,S*.055),GCOL.L);
+  gLabel('오른발',cx+S*.65,cy,Math.max(11,S*.055),GCOL.R);
 }
+
 function drawPaceScene(now){
   const W=view.W,H=view.H,b=clamp((now-gameStartPerf)/beatMs,0,paceTarget), phase=gmod(b,1);
   gGridBg(W,H,0);
-  const cx=W*.47, ground=H*.78, h=Math.min(H*.53,W*.5), hop=Math.sin(Math.PI*phase)*h*.09;
-  ctx.save();ctx.fillStyle='rgba(163,230,53,.2)';ctx.beginPath();ctx.ellipse(cx,ground,h*.24,h*.035,0,0,Math.PI*2);ctx.fill();
-  if(paceImage.complete&&paceImage.naturalWidth){const w=h*paceImage.naturalWidth/paceImage.naturalHeight;ctx.drawImage(paceImage,cx-w/2,ground-h-hop,w,h);}
-  else {const p=skillById('together').cyc[0];gDrawGrid(cx,ground-h*.5,h*.6,p,p,0,phase<.15?1:0,1,true);}
-  ctx.strokeStyle='#BEF264';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(cx,ground-h*.48-hop,h*.34,Math.max(h*.02,Math.abs(Math.cos(phase*Math.PI*2))*h*.5),0,0,Math.PI*2);ctx.stroke();ctx.restore();
+  const cx=W*.47, ground=H*.77, u=Math.min(H*.59,W*.53);
+  const active=b>0&&b<paceTarget, lift=active?Math.sin(Math.PI*phase)*u*.065:0;
+  const p=skillById('together').cyc[0], J=gJoints(p,u,cx,ground,lift);
+  const angle=phase*Math.PI*2, handY=(J.hL.y+J.hR.y)/2, extent=(ground-handY)+u*.02;
+  const rope=(front)=>{
+    if((Math.sin(angle)>=0)!==front)return;
+    ctx.save();ctx.lineCap='round';
+    const g=ctx.createLinearGradient(J.hL.x,0,J.hR.x,0);g.addColorStop(0,'#2dd4bf');g.addColorStop(.5,'#d9ff8b');g.addColorStop(1,'#2dd4bf');
+    ctx.strokeStyle=g;ctx.lineWidth=Math.max(2,u*.008);ctx.globalAlpha=front?.95:.38;
+    ctx.beginPath();ctx.moveTo(J.hL.x,J.hL.y);
+    for(let i=1;i<=24;i++){const t=i/24, arch=Math.sin(Math.PI*t);ctx.lineTo(J.hL.x+(J.hR.x-J.hL.x)*t,handY+arch*extent*Math.cos(angle));}
+    ctx.stroke();ctx.restore();
+  };
+  ctx.save();ctx.fillStyle='rgba(45,212,191,.12)';ctx.beginPath();ctx.ellipse(cx,ground+u*.015,u*.22,u*.025,0,0,Math.PI*2);ctx.fill();
+  rope(false);
+  const metal=ctx.createLinearGradient(cx-u*.2,0,cx+u*.2,0);metal.addColorStop(0,'#56787f');metal.addColorStop(.35,'#d8e9e8');metal.addColorStop(.65,'#8fadb1');metal.addColorStop(1,'#29444e');
+  const limb=(A,B,width)=>{ctx.strokeStyle='#102b33';ctx.lineWidth=width+3;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(A.x,A.y);ctx.lineTo(B.x,B.y);ctx.stroke();ctx.strokeStyle=metal;ctx.lineWidth=width;ctx.stroke();};
+  for(const side of ['L','R']){
+    const leg=J['leg'+side];limb(J['hip'+side],leg.knee,u*.075);limb(leg.knee,leg.ankle,u*.06);
+    limb(leg.ankle,{x:leg.ankle.x+(side==='L'?-1:1)*u*.025,y:leg.ankle.y+u*.01},u*.055);
+    limb(J['sh'+side],J['e'+side],u*.052);limb(J['e'+side],J['h'+side],u*.044);
+  }
+  ctx.fillStyle=metal;ctx.strokeStyle='#2c5059';ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(J.shL.x,J.shY);ctx.quadraticCurveTo(cx,J.shY-u*.035,J.shR.x,J.shY);ctx.lineTo(J.hipR.x+u*.013,J.hipR.y);ctx.quadraticCurveTo(cx,J.hipR.y+u*.055,J.hipL.x-u*.013,J.hipL.y);ctx.closePath();ctx.fill();ctx.stroke();
+  ctx.beginPath();ctx.ellipse(J.head.x,J.head.y,u*.055,u*.072,0,0,Math.PI*2);ctx.fill();ctx.stroke();
+  ctx.strokeStyle='#63efdf';ctx.lineWidth=Math.max(2,u*.006);ctx.beginPath();ctx.moveTo(cx-u*.032,J.head.y-u*.006);ctx.lineTo(cx+u*.032,J.head.y-u*.006);ctx.moveTo(cx,J.shY+u*.04);ctx.lineTo(cx,J.shY+u*.13);ctx.stroke();
+  for(const hand of [J.hL,J.hR]){ctx.fillStyle='#bcf783';ctx.beginPath();ctx.roundRect(hand.x-u*.012,hand.y-u*.026,u*.024,u*.052,u*.01);ctx.fill();}
+  rope(true);ctx.restore();
   gLabel('선수의 착지에 맞춰 뛰어요',cx,H*.86,Math.max(14,H*.028),'#fff');
   gLabel(`선수 진행 ${Math.min(paceTarget,Math.floor(b))} / ${paceTarget}`,cx,H*.92,Math.max(15,H*.035),'#BEF264');
 }
