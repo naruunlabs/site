@@ -88,7 +88,7 @@ src="https://www.facebook.com/tr?id=1364933702413818&ev=PageView&noscript=1"
     <div>
       <span class="eyebrow" id="heroEyebrow">NARUUN LABS · AI SPORTS</span>
       <h1 id="heroTitle">수련에<br>기술을 더하다.</h1>
-      <p class="lead" id="heroLead">카메라 한 대가 아이들의 발차기·줄넘기·타격을 읽고, 반복 수업을 게임과 대결로 바꿉니다. 태권도장 현장에서 만들고 매일 수업에서 씁니다.</p>
+      <p class="lead" id="heroLead">카메라 한 대가 아이들의 발차기·줄넘기·타격을 읽고, 반복 수업을 게임과 대결로 바꿉니다. 실제 도장 수업에서 사용하고 확인한 뒤 공개합니다.</p>
     </div>
     <div class="b-fig" aria-hidden="true">
       <canvas data-pose="morph" data-cx=".5"></canvas>
@@ -132,8 +132,8 @@ src="https://www.facebook.com/tr?id=1364933702413818&ev=PageView&noscript=1"
       <article class="rv"><span class="k">SIMPLE</span><h3>복잡함을 줄입니다</h3><p>관장님이 쉽게 도입하고 오래 쓸 수 있도록 설명과 운영을 단순하게 만듭니다.</p></article>
     </div>
     <div class="proof rv">
-      <div class="n">매일<small>IN REAL CLASS</small></div>
-      <p><b>모든 제품은 국가대표마스터태권도장 수업에서 먼저 씁니다.</b> 아이들이 실제로 뛰고 찬 기록을 보고 판정을 다시 맞춘 뒤에 다른 도장에 내놓습니다.</p>
+      <div class="n">현장<small>IN REAL CLASS</small></div>
+      <p><b>모든 제품은 실제 도장 수업에서 먼저 사용합니다.</b> 실제 사용 기록을 확인하고 판정을 다듬은 뒤 공개합니다.</p>
     </div>
   </div>
 </section>
@@ -156,7 +156,7 @@ src="https://www.facebook.com/tr?id=1364933702413818&ev=PageView&noscript=1"
     <b>나른랩스 NARUUN LABS</b>
     <span>대표 이완수 · 사업자등록번호 554-65-00786</span>
     <span>통신판매업신고 제2025-경북구미-0614호 · <a href="https://www.ftc.go.kr/bizCommPop.do?wrkr_no=5546500786" target="_blank" rel="noopener">사업자정보 확인</a></span>
-    <span>경상북도 구미시 산동읍 신당3로 43 (골드클래스)</span>
+    <span>경상북도 구미시 산동읍 신당3로 43</span>
     <span><a href="mailto:naruunlabs@gmail.com">naruunlabs@gmail.com</a> · <a class="js-tel" data-tel="num" href="tel:01076573579">010-7657-3579</a></span>
     <span>호스팅 GitHub, Inc.</span>
   </div>
@@ -183,7 +183,7 @@ document.addEventListener('DOMContentLoaded',function(){
     if(d.admin_url) adminUrl=d.admin_url;
     function setText(id,v){ var el=document.getElementById(id); if(el&&v) el.textContent=v; }
     function setHtml(id,v){ var el=document.getElementById(id); if(el&&v) el.innerHTML=v; }
-    setText('heroEyebrow',d.hero_eyebrow); setHtml('heroTitle',d.hero_title); setText('heroLead',d.hero_desc);
+    setText('heroEyebrow',d.hero_eyebrow); setHtml('heroTitle',d.hero_title); setText('heroLead',d.hero_desc ? d.hero_desc.replace('태권도장 현장에서 만들고 매일 수업에서 씁니다.','실제 도장 수업에서 사용하고 확인한 뒤 공개합니다.') : d.hero_desc);
     setText('contactDesc',d.contact_desc); setText('copyrightText',d.copyright);
   });
 });
