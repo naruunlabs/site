@@ -873,7 +873,7 @@ body.hf-dim #jmpPilotGraph .jt-wing{display:none!important}
 
 <script type="module">
 
-const APP_VERSION = '3.7.3';   
+const APP_VERSION = '3.7.4';   
 
 const MP_VERSION  = '1.0.1';
 const MP_LOCAL    = './vendor/mediapipe/';
@@ -3163,8 +3163,7 @@ function gFootNote(x,y,pw,ph,color,alpha,ang,mode){
     const g=ctx.createLinearGradient(0,-len/2,0,len/2);g.addColorStop(0,gShade(color,1.12));g.addColorStop(1,gShade(color,.72));
     ctx.fillStyle=g;ctx.shadowColor=color;ctx.shadowBlur=Math.min(12,ph*.22)*view.dpr;ctx.fill();ctx.shadowBlur=0;
     ctx.strokeStyle='rgba(255,255,255,.88)';ctx.lineWidth=Math.max(1.2,ph*.065);ctx.stroke();
-    ctx.globalAlpha=alpha*.55;ctx.strokeStyle=gShade(color,.45);ctx.lineWidth=Math.max(1,ph*.035);
-    ctx.beginPath();ctx.moveTo(-wid*.34,len*.12);ctx.lineTo(wid*.34,len*.12);ctx.stroke();
+    
   }
   ctx.restore();
 }
@@ -3304,13 +3303,7 @@ function gDrawCoach(J,u,ground,p,glowK,bf){
 }
 
 function gSole(len,wid){
-  ctx.beginPath();
-  ctx.moveTo(0,-len*.5);
-  ctx.bezierCurveTo(wid*.62,-len*.5,wid*.6,-len*.1,wid*.44,len*.12);
-  ctx.bezierCurveTo(wid*.36,len*.34,wid*.36,len*.5,0,len*.5);
-  ctx.bezierCurveTo(-wid*.36,len*.5,-wid*.36,len*.34,-wid*.44,len*.12);
-  ctx.bezierCurveTo(-wid*.6,-len*.1,-wid*.62,-len*.5,0,-len*.5);
-  ctx.closePath();
+  ctx.beginPath();ctx.roundRect(-wid/2,-len/2,wid,len,Math.min(wid,len)*.2);
 }
 const G_PAD_WORD={knee:'무릎',back:'뒤로',kick:'차기',tap:'톡',air:'들기'};
 function gPadFoot(f){ 
@@ -3494,7 +3487,7 @@ function gLane(W,H,bf,pulse){
   if(beatPhase<.3 && bf>=0 && bf<T){ const q=beatPhase/.3; ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.globalAlpha=(1-q)*.7; ctx.strokeStyle='#BEF264'; ctx.lineWidth=(5-3*q)*S; ctx.beginPath(); ctx.ellipse(W/2,hitY,(90+260*q)*S,(10+30*q)*S,0,0,Math.PI*2); ctx.stroke(); ctx.restore(); }
 }
 
-const G_VIEW_COL={ grid:{L:'#A3E635',R:'#2DD4BF'}, foot:{L:'#38BDF8',R:'#FB7185'} };
+const G_VIEW_COL={ grid:{L:'#38BDF8',R:'#FB7185'}, foot:{L:'#38BDF8',R:'#FB7185'} };
 function gApplyViewColors(){ const c=G_VIEW_COL[groupView]||G_VIEW_COL.grid; GCOL.L=c.L; GCOL.R=c.R; }
 function gGridCell(f){
   const c=f.x<-.8?0:f.x>.8?2:1, y=f.y||0;
