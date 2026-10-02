@@ -649,7 +649,7 @@ body.hf-dim #jmpPilotGraph .jt-wing{display:none!important}
       <button class="choice" type="button" data-mode="solo" aria-pressed="true"><b>1인 모드</b></button>
       <button class="choice" type="button" data-mode="duo" aria-pressed="false"><b>2인 모드</b></button>
       <button class="choice" type="button" data-mode="relay" aria-pressed="false"><b>릴레이</b></button>
-      <button class="choice" type="button" data-mode="group" aria-pressed="false"><b>단체 리듬</b></button>
+      <button class="choice" type="button" data-mode="group" aria-pressed="false"><b>단체 모드</b></button>
     </div>
 
     <div class="opts" id="optSolo">
@@ -690,6 +690,16 @@ body.hf-dim #jmpPilotGraph .jt-wing{display:none!important}
     </div>
 
     <div class="opts" id="optGroup" hidden>
+      <div class="seg two" id="groupActivitySeg">
+        <button type="button" data-ga="rhythm" class="on">리듬게임</button>
+        <button type="button" data-ga="pace">속도 따라하기</button>
+      </div>
+      <div id="paceSettings" hidden>
+        <label class="lfield"><i>훈련 시간</i><select id="paceTime"><option value="30">30초</option><option value="60">60초</option><option value="120">120초</option></select></label>
+        <label class="lfield"><i>목표 개수</i><input id="paceTarget" type="number" min="1" max="600" step="1" value="90"></label>
+        <div class="m-help" id="paceSummary">초당 3회 · 분당 180회</div>
+      </div>
+      <div id="rhythmSettings">
       <div class="seg two" id="groupSeg">
         <button type="button" data-gk="practice" class="on">연습 · 발판</button>
         <button type="button" data-gk="play">실전 · 리듬게임</button>
@@ -704,6 +714,7 @@ body.hf-dim #jmpPilotGraph .jt-wing{display:none!important}
       <div class="lfield" id="groupRoutineWrap" hidden><i>루틴</i><div class="rsum"><span id="groupRoutineSum"></span><button type="button" id="groupEditBtn">편집 ›</button></div></div>
     </div>
 
+    </div>
     <div class="opts" id="optBeat" hidden>
       <label class="lfield" id="bpmWrap"><i id="bpmLabel">박자 속도</i>
         <select id="bpm"><option value="80">아주 느리게 · 80 BPM</option><option value="100">느리게 · 100 BPM</option><option value="120" selected>기본 · 120 BPM</option><option value="140">빠르게 · 140 BPM</option><option value="160">매우 빠르게 · 160 BPM</option></select></label>
@@ -853,7 +864,7 @@ body.hf-dim #jmpPilotGraph .jt-wing{display:none!important}
 
 <script type="module">
 
-const APP_VERSION = '3.6.5';   
+const APP_VERSION = '3.7.0';   
 
 const MP_VERSION  = '1.0.1';
 const MP_LOCAL    = './vendor/mediapipe/';
@@ -1316,6 +1327,8 @@ let groupPracticeRoutine=[{id:'together',b:16}];
   if(Array.isArray(saved)&&saved.length&&saved.every(m=>m&&SKILL_BY_ID[m.id]&&[8,16,32].includes(m.b))) groupPracticeRoutine=saved; }
 const practiceTotal=()=>groupPracticeRoutine.reduce((s,m)=>s+m.b,0);
 function practiceSummary(){ const names=groupPracticeRoutine.slice(0,3).map(m=>shortName(skillById(m.id))).join(' · '); return `${groupPracticeRoutine.length}개 · ${names}${groupPracticeRoutine.length>3?' 외':''}`; }
+let groupActivity='rhythm', paceTarget=90, paceTime=30;
+const paceImage=new Image(); paceImage.src='assets/chrome-fighter-guard.webp';
 let groupKind='practice';          
 let groupRunKind='practice';       
 let groupView='grid';              
@@ -1369,7 +1382,7 @@ function stopGroupMusic(){
 function startGroupMusic(at,elapsedSec=0){
   stopGroupMusic();
   const track=GROUP_MUSIC[groupMusicKey];
-  if(!track||!audio||!groupMusicBuffer||lastRoundMode!=='group') return;
+  if(groupRunKind==='pace'||!track||!audio||!groupMusicBuffer||lastRoundMode!=='group') return;
   const src=audio.createBufferSource(),gain=audio.createGain();
   src.buffer=groupMusicBuffer;src.loop=true;src.playbackRate.value=bpm/track.bpm;
   gain.gain.value=soundOn?.46:0;src.connect(gain).connect(audio.destination);
@@ -1414,10 +1427,10 @@ function startBeatScheduler(){
     const period=beatMs/1000;
     while(clockAudioStart + nextBeatIdx*period < audio.currentTime + .15){
       const t=clockAudioStart + nextBeatIdx*period;
-      if(mode==='group' && groupRunKind==='play' && nextBeatIdx>=groupTotal()) break;   
+      if(mode==='group' && ((groupRunKind==='play' && nextBeatIdx>=groupTotal())||(groupRunKind==='pace'&&nextBeatIdx>=paceTarget))) break;   
       if(t>=audio.currentTime-.03){
         if(!(mode==='duo'&&duoType==='battle')) drum(t, nextBeatIdx%4===0);
-        if(mode==='group' && gGhost(nextBeatIdx)) drum(t+period/2,false);                 
+        if(mode==='group' && groupRunKind!=='pace' && gGhost(nextBeatIdx)) drum(t+period/2,false);                 
       }
       nextBeatIdx++;
     }
@@ -2376,7 +2389,7 @@ function relayTick(now){
 const lobbyPrefs = store.json('jmp_lobby_v1',{}) || {};
 function saveLobbyPrefs(){
   store.set('jmp_lobby_v1',JSON.stringify({mode,soloMode,soloJumpType,alternateCountMode,duoType,soloTime:$('soloTime').value,soloTarget:$('soloTarget').value,bpm:$('bpm').value,duration:$('duration').value,
-    relayPlayers:$('relayPlayers').value,relayTarget:$('relayTarget').value,relayRounds:$('relayRounds').value,relayChange:$('relayChange').value,groupKind,groupView,groupSkill:groupSkillId,groupMusic:groupMusicKey}));
+    relayPlayers:$('relayPlayers').value,relayTarget:$('relayTarget').value,relayRounds:$('relayRounds').value,relayChange:$('relayChange').value,groupActivity,paceTarget,paceTime,groupKind,groupView,groupSkill:groupSkillId,groupMusic:groupMusicKey}));
 }
 function restoreLobbyPrefs(){
   const p=lobbyPrefs;
@@ -2388,13 +2401,19 @@ function restoreLobbyPrefs(){
   const setSel=(id,v)=>{ const el=$(id); if(v!=null && [...el.options].some(o=>o.value===String(v))) el.value=String(v); };
   setSel('soloTime',p.soloTime); setSel('soloTarget',p.soloTarget); setSel('bpm',p.bpm); setSel('duration',p.duration);
   setSel('relayPlayers',p.relayPlayers); setSel('relayTarget',p.relayTarget); setSel('relayRounds',p.relayRounds); setSel('relayChange',p.relayChange);
+  if(['rhythm','pace'].includes(p.groupActivity)) groupActivity=p.groupActivity;
+  paceTarget=clamp(Math.round(+p.paceTarget||90),1,600); paceTime=[30,60,120].includes(+p.paceTime)?+p.paceTime:30;
+  $('paceTarget').value=paceTarget; $('paceTime').value=paceTime;
   if(['practice','play'].includes(p.groupKind)) groupKind=p.groupKind;
   if(['grid','foot'].includes(p.groupView)) groupView=p.groupView;
   if(SKILL_BY_ID[p.groupSkill]) groupSkillId=p.groupSkill;
   if(p.groupMusic==='none'||GROUP_MUSIC[p.groupMusic]) groupMusicKey=p.groupMusic;
 }
 function applyModeUI(){
-  const musicLocked=mode==='group'&&groupMusicKey!=='none';
+  const musicLocked=mode==='group'&&groupActivity==='rhythm'&&groupMusicKey!=='none';
+  $('paceSettings').hidden=groupActivity!=='pace'; $('rhythmSettings').hidden=groupActivity!=='rhythm';
+  document.querySelectorAll('[data-ga]').forEach(b=>b.classList.toggle('on',b.dataset.ga===groupActivity));
+  setText($('paceSummary'),`초당 ${(paceTarget/paceTime).toFixed(1)}회 · 분당 ${Math.round(paceTarget*60/paceTime)}회`);
   if(musicLocked) $('bpm').value=String(GROUP_MUSIC[groupMusicKey].bpm);
   $('bpm').disabled=musicLocked;
   document.body.classList.toggle('jmp-pilot-solo',mode==='solo');
@@ -2409,7 +2428,7 @@ function applyModeUI(){
   $('optDuo').hidden = mode!=='duo';
   $('soloTimeWrap').hidden = soloMode!=='timed';
   $('soloTargetWrap').hidden = soloMode!=='target';
-  $('optBeat').hidden = mode==='solo';
+  $('optBeat').hidden = mode==='solo'||(mode==='group'&&groupActivity==='pace');
   $('durationWrap').hidden = mode!=='duo';
   $('bpmWrap').hidden = mode==='duo'&&duoType==='battle';
   $('optRelay').hidden = mode!=='relay';
@@ -2433,6 +2452,7 @@ function updateModeBadge(){
   if(mode==='solo'){ t=`${soloJumpLabel()} · ${MODES_SOLO[soloMode].title}`; s=MODES_SOLO[soloMode].sub; if(soloMode==='timed') s=`제한 ${$('soloTime').value}초 안에 최대한 많이`; if(soloMode==='target') s=`걸리지 않고 ${$('soloTarget').value}회 연속 성공`; }
   else if(mode==='duo'){ t=duoType==='battle'?'2인 대결':'2인 협동'; s=duoType==='battle'?`${$('duration').value}초 · 더 많이 뛰면 승리`:`${b} BPM · ${$('duration').value}초`; }
   else if(mode==='relay'){ t='릴레이'; s=`${$('relayPlayers').value}명 · ${$('relayTarget').value}회씩 · ${$('relayRounds').value}바퀴`; }
+  else if(groupActivity==='pace'){t='속도 따라하기';s=`${paceTime}초 · 목표 ${paceTarget}개 · 분당 ${Math.round(paceTarget*60/paceTime)}회`;}
   else if(groupKind==='practice'){ t='단체 리듬 · 연습'; s=practiceSummary(); }
   else { t='단체 리듬 · 실전'; s=groupRoutineSummary(); }
   setText($('mbTitle'),t); setText($('mbSub'),s);
@@ -2519,8 +2539,8 @@ async function boot(){
   saveLobbyPrefs();
   
   if(soundOn) await initAudio();
-  bpm=+$('bpm').value; beatMs=60000/bpm;
-  if(mode==='group'&&groupMusicKey!=='none'&&soundOn){try{await loadGroupMusic()}catch(e){console.warn('훈련 음악을 불러오지 못해 박자음만 사용합니다.',e);}}
+  bpm=mode==='group'&&groupActivity==='pace'?paceTarget*60/paceTime:+$('bpm').value; beatMs=60000/bpm;
+  if(mode==='group'&&groupActivity==='rhythm'&&groupMusicKey!=='none'&&soundOn){try{await loadGroupMusic()}catch(e){console.warn('훈련 음악을 불러오지 못해 박자음만 사용합니다.',e);}}
   if(mode==='group'){ stopCamera(); }
   else{
     let step='camera';
@@ -2542,13 +2562,13 @@ async function boot(){
     }
   }
   lastRoundMode=mode;
-  if(mode==='group'){ groupRunKind=groupKind; practiceOffset=0; setText($('spVal'),String(bpm)); }
+  if(mode==='group'){ groupRunKind=groupActivity==='pace'?'pace':groupKind; practiceOffset=0; setText($('spVal'),String(bpm)); }
   setupRound();
   appState='countdown'; layoutHud();
   const cdTotal=COUNTDOWN_MS.reduce((a,b)=>a+b,0);
   if(mode!=='solo') prepareClock(cdTotal);
   const subs={free:'멈추고 싶을 때 종료를 누르세요',timed:'제한 시간 안에 최대한 많이!',target:`걸리지 않고 ${$('soloTarget').value}회까지!`};
-  const sub = mode==='solo'?`${soloJumpLabel()} · ${subs[soloMode]}` : mode==='duo'?(duoType==='battle'?'제한시간 동안 더 많이 뛰면 승리!':'박자음에 맞춰 둘이 함께 뛰어요') : mode==='relay'?'1번 주자부터 시작합니다': groupKind==='practice'?'코치와 발판을 보고 따라 해요':'노트가 판정선에 닿을 때 뛰어요';
+  const sub = mode==='solo'?`${soloJumpLabel()} · ${subs[soloMode]}` : mode==='duo'?(duoType==='battle'?'제한시간 동안 더 많이 뛰면 승리!':'박자음에 맞춰 둘이 함께 뛰어요') : mode==='relay'?'1번 주자부터 시작합니다': groupActivity==='pace'?'가상 선수의 착지에 맞춰 뛰어요':groupKind==='practice'?'코치와 발판을 보고 따라 해요':'노트가 판정선에 닿을 때 뛰어요';
   const ok=await runCountdown(sub);
   bootBusy=false; $('playBtn').disabled=false;
   if(!ok) return;
@@ -2572,7 +2592,7 @@ function setupRound(){
   setText($('p0num'),0); setText($('p1num'),0); setText($('stCountVal'),0);
   Object.assign(relay,{players:+$('relayPlayers').value,target:+$('relayTarget').value,rounds:+$('relayRounds').value,changeMs:3000,
                        turn:0,turnCount:0,changing:false,resumeAt:0,goUntil:0,finishSec:0,done:false});
-  durationSec = mode==='duo' ? +$('duration').value : mode==='group' ? (groupKind==='play'?Math.ceil(groupTotal()*60/bpm):0) : +$('soloTime').value;
+  durationSec = mode==='duo' ? +$('duration').value : mode==='group' ? (groupActivity==='pace'?paceTime:groupKind==='play'?Math.ceil(groupTotal()*60/bpm):0) : +$('soloTime').value;
   gameEndPerf=Infinity;
   if(mode==='solo'){ setText($('stCountLab'), soloMode==='target'?'목표 도전':'줄넘기 개수'); updateBest(); }
   if(mode==='duo'){
@@ -2619,7 +2639,7 @@ function startRound(){
   }else if(mode==='relay'){
     const e=players[0].engine; e.resetCount(); e.markStart(now); e.recoverGaps=false; e.counting=true;
   }else if(mode==='group'){
-    gameEndPerf = groupRunKind==='play' ? gameStartPerf+groupTotal()*beatMs+400 : Infinity;   
+    gameEndPerf = groupRunKind==='pace' ? gameStartPerf+paceTime*1000 : groupRunKind==='play' ? gameStartPerf+groupTotal()*beatMs+400 : Infinity;   
   }
   layoutHud();
 }
@@ -2680,7 +2700,7 @@ function finish(cancelled){
   roundEndPerf=endPerf;
   stopRound();
   if(cancelled){ stoppedEarly=false; openLobby(); return; }
-  groupFrozenAt = m==='group' ? Math.min(endPerf, gameStartPerf+groupTotal()*beatMs) : 0;
+  groupFrozenAt = m==='group' ? Math.min(endPerf, gameStartPerf+(groupRunKind==='pace'?paceTime*1000:groupTotal()*beatMs)) : 0;
   $('resultBody').innerHTML = resultHtml(m);
   appState='result'; layoutHud();
   { const hh=$('rhandHint'); if(hh) hh.hidden=(m==='group'); }   
@@ -2766,6 +2786,10 @@ function resultHtml(m){
       <div class="res-title">${done?'모두 완주했어요!':'중간에 멈췄어요'}</div>
       <div class="rbox big ${done?'win':''}"><span>${done?'완주 기록':'여기까지 기록'}</span><strong>${min?min+'분 ':''}${sec}초</strong></div>
       <div class="rline">${done?`총 ${fmt(total)}회`:`${fmt(ranTotal)}회 / 목표 ${fmt(total)}회 · ${ranTurns+1}번째 차례에서 멈춤`} · 선수 교체 ${relay.changeMs/1000}초씩 포함</div>`;
+  }
+  if(groupRunKind==='pace'){
+    const elapsed=clamp((roundEndPerf-gameStartPerf)/1000,0,paceTime), n=Math.min(paceTarget,Math.floor(elapsed*paceTarget/paceTime));
+    return `<div class="res-label">단체 · 속도 따라하기</div><div class="res-title">${stoppedEarly?'훈련 중지':'훈련 완료!'}</div><div class="rbox big"><span>가상 선수 진행</span><strong>${n} / ${paceTarget}</strong></div><div class="rline">${elapsed.toFixed(1)}초 · 학생의 실제 성공 개수는 측정하지 않습니다.</div>`;
   }
   const gDone=!stoppedEarly;
   const gBeats=clamp(Math.floor((roundEndPerf-gameStartPerf)/beatMs),0,groupTotal());
@@ -3607,25 +3631,62 @@ function drawGroupSceneGrid(now){
     gLabel(nP.t,pcx+nS/2+nS*.3,ny,fs,'rgba(190,242,100,.9)','left');
   }else{
     const M=groupMoveAt(Math.round(Math.max(0,bf))), cur=M.pose, port=H>W*1.05;
-    
-    const S=port?Math.min(W*.42,H*.22):Math.min(H*.5,W*.3), gcx=port?W*.5:W*.3, gcy=port?H*.2:H*.55;
-    const nameFs=Math.max(14,Math.min(H*.045,W*.055));
-    gDrawGrid(gcx,gcy,S,cur,cur,0,pulse,1,true);
-    gLabel('NOW',gcx,gcy+S/2+Math.max(12,nameFs*.7),Math.max(10,nameFs*.45),'rgba(163,230,53,.95)');
-    gLabel(shortName(M.sk),gcx,gcy+S/2+nameFs*1.7,nameFs,'#fff');
-    if(bf>-1 && M.left<=4 && M.hasNext && !M.nextSame){
-      const Nx=groupMoveAt(Math.round(Math.max(0,bf))+M.left), fade=clamp(4.6-M.left,0,1), pp=Nx.sk.cyc[0];
-      const nS=S*(port?.34:.28), fs=Math.max(10,Math.min(H*.024,W*.03));
-      const nx=port?gcx+S/2+nS*.9:gcx+S/2-nS/2, ny=port?gcy-S*.12:gcy-S/2-H*.1-nS/2;
-      gDrawGrid(nx,ny,nS,pp,pp,0,0,.85*fade,false);
-      if(port){ gLabel(`다음 · ${shortName(Nx.sk)}`,nx,ny+nS/2+fs*1.2,fs,`rgba(190,242,100,${fade})`); gLabel(`${M.left}박 후`,nx,ny+nS/2+fs*2.5,fs,`rgba(234,244,241,${fade*.85})`); }
-      else gLabel(`다음 · ${shortName(Nx.sk)} · ${M.left}박 후`,nx-nS/2-nS*.25,ny,fs,`rgba(190,242,100,${fade})`,'right');
-    }
-    if(port) gLane2(W,H,bf,pulse,W*.5,.44); else gLane2(W,H,bf,pulse,W*.68);
+    drawMergedGrid(W,H,bf,pulse);
+    const fs=Math.max(14,Math.min(H*.035,W*.045));
+    gLabel(shortName(M.sk),W*.48,H*.89,fs,'#fff');
+    if(M.left<=4&&M.hasNext&&!M.nextSame){const nx=groupMoveAt(Math.round(Math.max(0,bf))+M.left);gLabel(`다음 · ${shortName(nx.sk)} · ${M.left}박 후`,W*.48,H*.94,fs*.65,'#BEF264');}
+
   }
 }
 
+function drawMergedGrid(W,H,bf,pulse){
+  const cx=W*.48, cy=H*.63, S=Math.min(W*.58,H*.43), gap=S*.045, cell=(S-2*gap)/3;
+  const current=groupMoveAt(Math.max(0,Math.floor(bf))).pose;
+  const empty={...current,L:{...current.L,st:'air'},R:{...current.R,st:'air'},arms:'open',armBadge:null,jump:true};
+  gDrawGrid(cx,cy,S,empty,empty,0,0,1,true);
+  const originY=H*.19, LOOK=4;
+  for(let k=Math.floor(bf)+4;k>=Math.max(0,Math.floor(bf)-1);k-=.5){
+    if(k>=groupTotal())continue;
+    const dist=k-bf; if(dist>LOOK||dist<-.3)continue;
+    const half=gmod(k,1)>.01, M=groupMoveAt(Math.floor(k)), p=M.pose;
+    if(half&&!M.sk.ghost)continue;
+    for(const f of gGridFeet(p)){
+      const tx=cx-S/2+f.c*(cell+gap)+cell/2+(f.half?(f.half==='l'?-1:1)*cell*.24:0);
+      const ty=cy-S/2+f.r*(cell+gap)+cell/2;
+      const progress=clamp(1-dist/LOOK,0,1), scale=.18+.82*progress;
+      const x=cx+(tx-cx)*progress, y=originY+(ty-originY)*progress;
+      const w=cell*(f.half?.38:.72)*scale,h=cell*.65*scale,col=GCOL[f.side];
+      ctx.save(); ctx.globalAlpha=(dist<0?1+dist/.3:.25+.75*progress)*(half?.45:1);ctx.fillStyle=col;ctx.strokeStyle=col;ctx.lineWidth=2;
+      if(dist>=0){
+        ctx.beginPath();ctx.roundRect(x-w/2,y-h/2,w,h,Math.max(2,h*.2));
+        if(f.st==='land')ctx.fill();else {ctx.stroke();if(f.st==='air')ctx.setLineDash([4,4]);}
+        const label=G_FOOT_WORD[f.st]||(f.st==='air'?'들기':'');if(label&&progress>.7)gLabel(label,x,y,Math.max(9,h*.3),'#fff');
+      }else{
+        const age=-dist/.3;ctx.globalAlpha=(1-age)*.7;ctx.fillRect(tx-w/2,ty-h/2,w,h);
+        ctx.beginPath();ctx.arc(tx,ty,cell*(.25+.4*age),0,Math.PI*2);ctx.stroke();
+      }
+      ctx.restore();
+    }
+    const badge=p.arms!=='open'?p.arms:p.armBadge;
+    if(badge&&dist>=0)gArmGlyph(cx,originY+(cy-S*.65-originY)*clamp(1-dist/LOOK,0,1),S*.1,badge,.8);
+  }
+  gLabel('왼발',cx-S*.22,cy+S*.61,Math.max(11,S*.055),GCOL.L);
+  gLabel('오른발',cx+S*.22,cy+S*.61,Math.max(11,S*.055),GCOL.R);
+}
+function drawPaceScene(now){
+  const W=view.W,H=view.H,b=clamp((now-gameStartPerf)/beatMs,0,paceTarget), phase=gmod(b,1);
+  gGridBg(W,H,0);
+  const cx=W*.47, ground=H*.78, h=Math.min(H*.53,W*.5), hop=Math.sin(Math.PI*phase)*h*.09;
+  ctx.save();ctx.fillStyle='rgba(163,230,53,.2)';ctx.beginPath();ctx.ellipse(cx,ground,h*.24,h*.035,0,0,Math.PI*2);ctx.fill();
+  if(paceImage.complete&&paceImage.naturalWidth){const w=h*paceImage.naturalWidth/paceImage.naturalHeight;ctx.drawImage(paceImage,cx-w/2,ground-h-hop,w,h);}
+  else {const p=skillById('together').cyc[0];gDrawGrid(cx,ground-h*.5,h*.6,p,p,0,phase<.15?1:0,1,true);}
+  ctx.strokeStyle='#BEF264';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(cx,ground-h*.48-hop,h*.34,Math.max(h*.02,Math.abs(Math.cos(phase*Math.PI*2))*h*.5),0,0,Math.PI*2);ctx.stroke();ctx.restore();
+  gLabel('선수의 착지에 맞춰 뛰어요',cx,H*.86,Math.max(14,H*.028),'#fff');
+  gLabel(`선수 진행 ${Math.min(paceTarget,Math.floor(b))} / ${paceTarget}`,cx,H*.92,Math.max(15,H*.035),'#BEF264');
+}
+
 function drawGroupScene(now){
+  if(groupRunKind==='pace') return drawPaceScene(now);
   gApplyViewColors();
   if(groupView==='grid') return drawGroupSceneGrid(now);   
   const W=view.W, H=view.H, bf=(now-gameStartPerf)/beatMs;
@@ -3670,6 +3731,11 @@ function setGStat(id,lab,val,unit,name,white){
 }
 function buildGroupBar(){ $('grpBar').innerHTML=groupRoutine.map(m=>`<i style="flex:${m.b}"></i>`).join(''); }
 function updateGroupHud(now){
+  if(groupRunKind==='pace'){
+    const elapsed=clamp((now-gameStartPerf)/1000,0,paceTime), n=Math.min(paceTarget,Math.floor(elapsed/ (beatMs/1000)));
+    setText($('mbTitle'),'속도 따라하기'); setText($('mbSub'),`${paceTime}초 · 목표 ${paceTarget}개`);
+    setGStat('stGA','선수 진행',n,' / '+paceTarget); setGStat('stGB','속도',Math.round(bpm),'회/분'); setGStat('stGC','남은 시간',Math.ceil(paceTime-elapsed),'초'); return;
+  }
   const bf=(now-gameStartPerf)/beatMs;
   if(groupRunKind==='practice'){
     const M=practiceMoveAt(Math.max(0,Math.round(bf))),sk=M.sk,n=sk.cyc.length;
@@ -3816,6 +3882,8 @@ document.querySelectorAll('#duoSeg button').forEach(b=>b.addEventListener('click
 }));
 ['soloTime','soloTarget','bpm','duration','relayPlayers','relayTarget','relayRounds','relayChange'].forEach(id=>$(id).addEventListener('change',()=>{ applyModeUI(); saveLobbyPrefs(); }));
 
+document.querySelectorAll('[data-ga]').forEach(b=>b.addEventListener('click',()=>{groupActivity=b.dataset.ga;applyModeUI();saveLobbyPrefs();}));
+['paceTime','paceTarget'].forEach(id=>$(id).addEventListener('change',()=>{paceTime=+$('paceTime').value;paceTarget=clamp(Math.round(+$('paceTarget').value||90),1,600);$('paceTarget').value=paceTarget;applyModeUI();saveLobbyPrefs();}));
 $('groupSkill').innerHTML=['발 모양','발 리듬','손 기술'].map(c=>`<optgroup label="${c}">${SKILLS.filter(s=>s.cat===c).map(s=>`<option value="${s.id}">${esc(s.n)}</option>`).join('')}</optgroup>`).join('');
 document.querySelectorAll('#groupSeg button').forEach(b=>b.addEventListener('click',()=>{ groupKind=b.dataset.gk; applyModeUI(); saveLobbyPrefs(); }));
 document.querySelectorAll('#groupViewSeg button').forEach(b=>b.addEventListener('click',()=>{ groupView=b.dataset.gv; applyModeUI(); saveLobbyPrefs(); }));
