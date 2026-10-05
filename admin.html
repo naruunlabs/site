@@ -2459,9 +2459,9 @@ const HOME_TARGET_DEFAULTS = {
     badge: "AI 자세 인식 · 발차기 훈련 프로그램",
     title: "발차기가<br><span>게임이 되는 순간.</span>",
     lead: "전면 카메라가 작동되는 태블릿/노트북에서 AI 자세 인식으로 발차기 훈련을 게임처럼 즐길 수 있습니다.",
-    regular_price: "399,000원",
-    sale_price: "339,000원",
-    price_note: "출시 기념 할인가",
+    regular_price: "369,000원",
+    sale_price: "369,000원",
+    price_note: "1회 구매 · 부가세 포함",
     cta_desc: "구매, 설치 환경, 사용 방법을 안내해드립니다.",
     feature1_title: "발차기 측정",
     feature1_desc: "AI 자세 인식으로 발차기 스피드와 임팩트를 실시간으로 측정합니다.",
@@ -3432,44 +3432,6 @@ function todayItems(){
     out.push({ g:'ledger', c, why: `${c.next_action || '다음 할 일'}${late > 0 ? ` · ${late}일 지남` : ' · 오늘'}` });
   }
   return out;
-}
-const TODAY_GROUPS = [
-  ['ending', '체험이 곧 끝나요'],
-  ['ended',  '체험이 끝났는데 정식 전환 전'],
-  ['nudge',  '체험 키를 보냈는데 시작을 안 했어요'],
-  ['expire', '사용 기간 만료 임박'],
-  ['cold',   `${COLD_DAYS}일 넘게 안 쓰는 곳`],
-  ['ledger', '고객 장부 · 다음 할 일 날짜가 됐어요']
-];
-function renderToday(){
-  const body = document.getElementById('todayBody'), cnt = document.getElementById('todayCount');
-  if (!body || !cnt) return;
-  const items = todayItems();
-  cnt.textContent = items.length + '건';
-  cnt.classList.toggle('zero', !items.length);
-  document.getElementById('todayArrow').textContent = todayOpen ? '접기' : '펼치기';
-  body.style.display = todayOpen ? '' : 'none';
-  if (!todayOpen) return;
-  if (!items.length) { body.innerHTML = '<div class="today-empty">오늘 챙길 곳이 없습니다.</div>'; return; }
-  body.innerHTML = TODAY_GROUPS.map(([g, title]) => {
-    const list = items.filter(x => x.g === g);
-    if (!list.length) return '';
-    return `<div class="today-group g-${g}"><div class="today-gt">${title} <span>${list.length}</span></div>` +
-      list.map(x => {
-        if (g === 'ledger') {
-          const c = x.c;
-          return `<div class="today-row"><b>${escapeHtml(c.dojang_name||'')}</b><em>장부</em>`
-               + `<span class="today-why">${escapeHtml(x.why)}</span>`
-               + `<button type="button" class="btn-sm btn-edit" onclick="gotoCustomer('${c.id}')">장부 보기</button></div>`;
-        }
-        const d = x.d;
-        return `<div class="today-row"><b>${escapeHtml(d.dojang_name||'')}</b><em class="p-${x.P.key}">${escapeHtml(x.P.short)}</em>`
-             + `<span class="today-why">${escapeHtml(x.why)}</span>`
-             + (x.convert ? `<button type="button" class="btn-sm btn-cross" onclick="openConvert('${d.id}')">정식 전환</button>` : '')
-             + `<button type="button" class="btn-sm btn-copy" onclick="openMsgPicker('${x.enc}','${x.msg}')">카톡</button>`
-             + `<button type="button" class="btn-sm btn-edit" onclick="openOwnedLicense('${d.id}')">회원정보</button></div>`;
-      }).join('') + '</div>';
-  }).join('');
 }
 
 function gotoCustomer(id){
