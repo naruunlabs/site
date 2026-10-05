@@ -616,6 +616,7 @@ table.cg tfoot td.num{text-align:right}
     <button class="tab-btn" onclick="switchTab('customer')">고객 관리</button>
     <button class="tab-btn" onclick="switchTab('academy')">아카데미웹</button>
     <button class="tab-btn" onclick="switchTab('home')">홈페이지 관리</button>
+    <button class="tab-btn" onclick="switchTab('errors')">오류 기록</button>
     
     <div class="sidebar-foot">
       <div class="sf-row"><span>자동 로그아웃</span><b id="sideExpiry">—</b></div>
@@ -777,6 +778,29 @@ table.cg tfoot td.num{text-align:right}
       <div class="cg-scroll"><table class="cg aw-table"><thead><tr><th>고객</th><th>진행 상태</th><th>견적</th><th>받은 금액</th><th>시작일</th><th>공개 예정</th><th>공개일</th><th>도메인</th><th>홈페이지 주소</th><th>다음 할 일</th><th>다음 할 일 날짜</th><th>메모</th><th>관리</th></tr></thead><tbody id="awBody"><tr><td colspan="13" class="cg-empty">불러오는 중…</td></tr></tbody></table></div>
     </div>
     <div class="footer-note">기존 고객을 선택해 홈페이지 제작 건을 연결합니다 · 라이선스와 기존 고객 장부는 그대로 유지됩니다</div>
+  </div>
+
+  <div class="tab-content" id="tab-errors">
+    <div class="stats-row">
+      <div class="stat-card"><div class="num" id="erDay" style="color:var(--red)">-</div><div class="label">최근 24시간</div></div>
+      <div class="stat-card"><div class="num" id="erWeek">-</div><div class="label">최근 7일</div></div>
+      <div class="stat-card"><div class="num" id="erKinds" style="color:#4f7cff">-</div><div class="label">오류 종류 (14일)</div></div>
+      <div class="stat-card"><div class="num" id="erDojang" style="color:var(--amber)">-</div><div class="label">오류가 난 도장 (14일)</div></div>
+    </div>
+    <div class="cg-wrap">
+      <div class="cg-top">
+        <div class="cg-title">프로그램 오류 기록</div><div class="cg-sub" id="erSub">불러오는 중…</div>
+        <select class="cg-search er-sel" id="erProduct" onchange="renderErrors()" aria-label="제품 고르기">
+          <option value="">전체 제품</option><option value="K">킥마스터</option><option value="J">점프마스터</option><option value="S">스트라이크마스터</option>
+        </select>
+        <input class="cg-search" id="erSearch" placeholder="도장·오류 내용 검색" oninput="renderErrors()">
+        <div class="cg-spacer"></div>
+        <button class="cg-btn" onclick="loadErrors()">새로고침</button>
+        <button class="cg-btn" onclick="clearErrors()">목록 비우기</button>
+      </div>
+      <div class="cg-scroll"><table class="er-table"><thead><tr><th>마지막 발생</th><th>제품 · 버전</th><th>오류 내용</th><th>난 자리</th><th>도장</th><th>기기</th><th>횟수</th></tr></thead><tbody id="erBody"></tbody></table></div>
+    </div>
+    <div class="footer-note">같은 오류는 한 줄로 묶어 보여 줍니다 · 줄을 누르면 자세한 내용이 펼쳐집니다 · 줄 번호는 배포본(site 폴더) 기준 · 영상·학생 정보는 담지 않으며 30일 뒤 자동 삭제됩니다</div>
   </div>
 
   <div class="tab-content" id="tab-home">
@@ -1181,7 +1205,7 @@ function showToast(msg) {
 
 function switchTab(tab) {
   
-  const names=['license','customer','academy','home'];
+  const names=['license','customer','academy','home','errors'];
   document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', names[i]===tab));
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
   document.getElementById('tab-'+tab).classList.add('active');
@@ -1190,13 +1214,15 @@ function switchTab(tab) {
   if (tab === 'customer') loadCustomers();
   if (tab === 'academy') { loadCustomers().then(loadAcademyProjects); }
   if (tab === 'home') loadHomeFields();
+  if (tab === 'errors') loadErrors();
 }
 
 const PAGE_TITLES = {
   license : ['라이선스 관리', '발급 · 수정 · 기기 관리'],
   customer: ['고객 관리',   '고객 장부 · 판매 기록 · 상담 이력'],
   academy : ['아카데미웹',  '홈페이지 제작 고객 · 진행 · 일정 · 수금'],
-  home    : ['홈페이지 관리', '사이트 카톡·전화 연락처']
+  home    : ['홈페이지 관리', '사이트 카톡·전화 연락처'],
+  errors  : ['오류 기록',   '고객 기기에서 난 프로그램 오류']
 };
 function setPageTitle(tab) {
   const t = PAGE_TITLES[tab] || PAGE_TITLES.license;
@@ -4026,7 +4052,7 @@ tr.cg-row.s-trial select.cg-in[data-f="status"],tr.cg-row.s-customer select.cg-i
   .top-title h1{font-size:18px}.top-title span{display:none}
   .top-actions{order:2;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;width:100%}
   .top-actions .btn-sm-act{min-width:0;min-height:38px;font-size:10.5px;white-space:nowrap}
-  .tab-bar{grid-template-columns:repeat(4,minmax(0,1fr));padding:5px;gap:3px}
+  .tab-bar{grid-template-columns:repeat(5,minmax(0,1fr));padding:5px;gap:3px}
   .tab-btn{height:44px;min-height:44px;padding:0 2px;font-size:11px;line-height:1.15;white-space:normal;text-align:center}
   #tab-license>.today-box .today-body{padding:0 12px 10px}
   .today-head{padding:10px 12px!important}.today-sub{display:none}
@@ -4220,5 +4246,170 @@ document.querySelectorAll('.stat-card[onclick]').forEach(card => {
 });
 </script>
 
+<style id="er-style">
+
+#tab-errors .er-sel{width:auto;min-width:118px;padding:0 8px}
+#tab-errors table.er-table{width:100%;border-collapse:collapse;font-size:12.5px;color:#101828}
+#tab-errors .er-table th{position:sticky;top:0;z-index:2;background:#F7FAFE;color:#475467;font-size:11.5px;font-weight:600;text-align:left;padding:9px 12px;border-bottom:1px solid #E8EDF3;white-space:nowrap}
+#tab-errors .er-table td{padding:10px 12px;border-bottom:1px solid #EEF2F6;vertical-align:top;background:#fff}
+#tab-errors .er-table td.cg-empty{text-align:center;padding:46px 12px;color:#98A2B3;font-weight:600}
+#tab-errors tr.er-row{cursor:pointer}
+#tab-errors tr.er-row:hover td{background:#F7FAFE}
+#tab-errors .er-time{white-space:nowrap;color:#475467}
+#tab-errors .er-pv{white-space:nowrap}
+#tab-errors .er-msg{font-weight:700;white-space:normal;word-break:break-word}
+#tab-errors .er-kind{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:6px;background:#EEF2F7;color:#475467;font-size:10.5px;font-weight:700;vertical-align:middle}
+#tab-errors .er-where,#tab-errors .er-dev{color:#475467;white-space:nowrap}
+#tab-errors .er-doj{white-space:normal;max-width:220px}
+#tab-errors .er-cnt{font-weight:800;text-align:right;white-space:nowrap}
+#tab-errors .er-cnt.hot{color:#D92D20}
+#tab-errors .er-prod{display:inline-block;padding:2px 8px;border-radius:7px;font-size:11.5px;font-weight:800;color:#fff}
+#tab-errors .er-prod.K{background:#E3172E}#tab-errors .er-prod.J{background:#14B8A6}#tab-errors .er-prod.S{background:#A855F7}
+#tab-errors .er-ver{margin-left:6px;color:#475467;font-size:11.5px}
+#tab-errors tr.er-detail td{background:#FAFBFD;white-space:normal;padding:12px}
+#tab-errors .er-stack{margin:0 0 10px;padding:10px 12px;border-radius:9px;background:#0F172A;color:#E2E8F0;font:11.5px/1.55 ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap;word-break:break-all;max-height:220px;overflow:auto}
+#tab-errors .er-occ{display:grid;grid-template-columns:auto auto 1fr auto;gap:4px 14px;font-size:11.5px;color:#475467}
+#tab-errors .er-occ b{color:#101828;font-weight:700}
+@media(max-width:760px){
+  #tab-errors table.er-table,#tab-errors .er-table tbody{display:block}
+  #tab-errors .er-table thead{display:none}
+  #tab-errors .er-table tr.er-row{display:grid;grid-template-columns:1fr auto;gap:5px 10px;padding:12px;border-bottom:1px solid #EEF2F6;background:#fff}
+  #tab-errors .er-table tr.er-row td{display:block;padding:0;border:0;background:none}
+  #tab-errors .er-table tr.er-row td.er-msg-cell{grid-column:1/-1;order:-2;font-size:13px}
+  #tab-errors .er-table tr.er-row td.er-pv{order:-1}
+  #tab-errors .er-table tr.er-row td.er-time{order:-1;text-align:right}
+  #tab-errors .er-table tr.er-row td.er-where,#tab-errors .er-table tr.er-row td.er-dev{grid-column:1/-1;white-space:normal;font-size:11.5px}
+  #tab-errors .er-table tr.er-row td.er-doj{max-width:none}
+  #tab-errors .er-table tr.er-detail,#tab-errors .er-table tr.er-detail td{display:block}
+  #tab-errors .er-table tr:not(.er-row):not(.er-detail),#tab-errors .er-table td.cg-empty{display:block}
+  #tab-errors .er-occ{grid-template-columns:auto 1fr;gap:2px 10px}
+  #tab-errors .er-occ span:nth-child(4n+3),#tab-errors .er-occ span:nth-child(4n){grid-column:1/-1}
+  #tab-errors .er-occ span:nth-child(4n){margin-bottom:6px}
+}
+</style>
+<script id="er-script">
+
+let ERROR_LOGS = [];
+let ERROR_OPEN = {};
+const ER_COLS = 7;   
+function erTime(iso){
+  const d = new Date(iso); if (isNaN(d)) return '-';
+  const k = new Date(d.getTime() + 9*3600*1000), p = n => String(n).padStart(2,'0');
+  return `${p(k.getUTCMonth()+1)}-${p(k.getUTCDate())} ${p(k.getUTCHours())}:${p(k.getUTCMinutes())}`;
+}
+
+function erDevice(ua){
+  ua = String(ua||''); if (!ua) return '-';
+  let os = '기타';
+  if (/iPad|Macintosh.*Mobile/.test(ua)) os = 'iPad';
+  else if (/iPhone/.test(ua)) os = 'iPhone';
+  else if (/Android/.test(ua)) os = /Mobile/.test(ua) ? 'Android 폰' : 'Android 태블릿';
+  else if (/Windows/.test(ua)) os = 'Windows';
+  else if (/Macintosh/.test(ua)) os = 'Mac';
+  else if (/CrOS/.test(ua)) os = '크롬북';
+  let br = '';
+  let m;
+  if ((m = ua.match(/Edg\/(\d+)/))) br = 'Edge ' + m[1];
+  else if ((m = ua.match(/SamsungBrowser\/(\d+)/))) br = '삼성 인터넷 ' + m[1];
+  else if ((m = ua.match(/Whale\/(\d+)/))) br = '웨일 ' + m[1];
+  else if ((m = ua.match(/(?:Chrome|CriOS)\/(\d+)/))) br = 'Chrome ' + m[1];
+  else if ((m = ua.match(/Version\/(\d+).*Safari/))) br = 'Safari ' + m[1];
+  else if ((m = ua.match(/Firefox\/(\d+)/))) br = 'Firefox ' + m[1];
+  return br ? os + ' · ' + br : os;
+}
+function erDojang(key){
+  if (!key) return '(로그인 전)';
+  const l = (typeof LICENSES !== 'undefined' ? LICENSES : []).find(x => x.license_key === key);
+  return l && l.dojang_name ? l.dojang_name : key;
+}
+async function loadErrors(){
+  const body = document.getElementById('erBody');
+  if (!body || !ADMIN_TOKEN) return;
+  body.innerHTML = `<tr><td colspan="${ER_COLS}" class="cg-empty">불러오는 중…</td></tr>`;
+  try {
+    ERROR_LOGS = await edgeCall('GET_ERROR_LOGS', { days: 14 }) || [];
+    if (!Array.isArray(ERROR_LOGS)) ERROR_LOGS = [];
+    renderErrors();
+  } catch(err) {
+    ERROR_LOGS = [];
+    body.innerHTML = `<tr><td colspan="${ER_COLS}" class="cg-empty">불러오기 실패: ${escapeHtml(err.message)}</td></tr>`;
+    const sub = document.getElementById('erSub'); if (sub) sub.textContent = '불러오지 못했습니다';
+  }
+}
+function erGroups(rows){
+  const map = new Map();
+  for (const r of rows) {
+    const sig = [r.product, r.message, r.source||'', r.line||0].join('|');
+    let g = map.get(sig);
+    if (!g) { g = { sig, product:r.product, message:r.message, kind:r.kind, source:r.source, line:r.line, col:r.col, rows:[] }; map.set(sig, g); }
+    g.rows.push(r);   
+  }
+  return [...map.values()].sort((a,b) => String(b.rows[0].created_at).localeCompare(String(a.rows[0].created_at)));
+}
+function renderErrors(){
+  const body = document.getElementById('erBody'); if (!body) return;
+  const now = Date.now(), age = r => now - new Date(r.created_at).getTime();
+  const set = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
+  set('erDay',  ERROR_LOGS.filter(r => age(r) <= 86400000).length);
+  set('erWeek', ERROR_LOGS.filter(r => age(r) <= 7*86400000).length);
+  set('erKinds', erGroups(ERROR_LOGS).length);
+  set('erDojang', new Set(ERROR_LOGS.map(r => r.license_key).filter(Boolean)).size);
+
+  const prod = (document.getElementById('erProduct')||{}).value || '';
+  const q = ((document.getElementById('erSearch')||{}).value || '').trim().toLowerCase();
+  const rows = ERROR_LOGS.filter(r => {
+    if (prod && r.product !== prod) return false;
+    if (!q) return true;
+    return [r.message, r.source, r.license_key, erDojang(r.license_key), r.version].join(' ').toLowerCase().includes(q);
+  });
+  const groups = erGroups(rows);
+  set('erSub', ERROR_LOGS.length ? `최근 14일 ${ERROR_LOGS.length}건 · ${groups.length}종류 표시` : '최근 14일 동안 오류가 없습니다');
+  if (!groups.length) {
+    body.innerHTML = `<tr><td colspan="${ER_COLS}" class="cg-empty">${ERROR_LOGS.length ? '조건에 맞는 오류가 없습니다.' : '기록된 오류가 없습니다. 좋은 소식입니다.'}</td></tr>`;
+    return;
+  }
+  const NAME = { K:'킥', J:'점프', S:'스트' };
+  body.innerHTML = groups.map((g, i) => {
+    const last = g.rows[0];
+    const vers = [...new Set(g.rows.map(r => r.version).filter(Boolean))];
+    const dojs = [...new Set(g.rows.map(r => erDojang(r.license_key)))];
+    const devs = [...new Set(g.rows.map(r => erDevice(r.ua)))];
+    const where = g.source ? `${escapeHtml(g.source)}${g.line ? ' : ' + g.line + '줄' : ''}` : (g.line ? g.line + '줄' : '-');
+    const open = !!ERROR_OPEN[g.sig];
+    let html = `<tr class="er-row" data-i="${i}" onclick="toggleErrorRow(${i})">`
+      + `<td class="er-time">${erTime(last.created_at)}</td>`
+      + `<td class="er-pv"><span class="er-prod ${escapeHtml(g.product)}">${NAME[g.product]||escapeHtml(g.product)}</span><span class="er-ver">${escapeHtml(vers.slice(0,3).join(', ')||'-')}</span></td>`
+      + `<td class="er-msg-cell"><div class="er-msg">${escapeHtml(g.message)}${g.kind === 'promise' ? '<span class="er-kind">비동기</span>' : ''}</div></td>`
+      + `<td class="er-where">${where}</td>`
+      + `<td class="er-doj">${escapeHtml(dojs.slice(0,3).join(', '))}${dojs.length > 3 ? ` 외 ${dojs.length-3}곳` : ''}</td>`
+      + `<td class="er-dev">${escapeHtml(devs[0])}${devs.length > 1 ? ` 외 ${devs.length-1}` : ''}</td>`
+      + `<td class="er-cnt${g.rows.length >= 5 ? ' hot' : ''}">${g.rows.length}<span class="er-cnt-u">회</span></td></tr>`;
+    if (open) {
+      html += `<tr class="er-detail"><td colspan="${ER_COLS}">`
+        + (last.stack ? `<pre class="er-stack">${escapeHtml(last.stack)}</pre>` : '')
+        + `<div class="er-occ">` + g.rows.slice(0,20).map(r =>
+            `<span>${erTime(r.created_at)}</span><b>${escapeHtml(erDojang(r.license_key))}</b><span>${escapeHtml(erDevice(r.ua))} · 화면 ${escapeHtml(r.screen||'-')} · ${escapeHtml(r.page||'')}</span><span>v${escapeHtml(r.version||'-')}</span>`).join('')
+        + `</div>${g.rows.length > 20 ? `<div style="margin-top:6px;color:#667085;font-size:11.5px">최근 20건만 표시 (전체 ${g.rows.length}건)</div>` : ''}</td></tr>`;
+    }
+    return html;
+  }).join('');
+  window.__erGroups = groups;
+}
+function toggleErrorRow(i){
+  const g = (window.__erGroups||[])[i]; if (!g) return;
+  ERROR_OPEN[g.sig] = !ERROR_OPEN[g.sig];
+  renderErrors();
+}
+async function clearErrors(){
+  if (!ERROR_LOGS.length) { showToast('비울 오류가 없습니다'); return; }
+  if (!confirm(`오류 기록 ${ERROR_LOGS.length}건을 모두 지울까요?\n지우면 되돌릴 수 없습니다. (보통은 오류를 고친 뒤에 비웁니다)`)) return;
+  try {
+    await edgeCall('CLEAR_ERROR_LOGS', {});
+    ERROR_LOGS = []; ERROR_OPEN = {};
+    renderErrors();
+    showToast('오류 기록을 비웠습니다');
+  } catch(e) { showToast('비우기 실패: ' + e.message); }
+}
+</script>
 </body>
 </html>

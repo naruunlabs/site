@@ -2,6 +2,48 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
+<script id="nl-error-report">
+
+(function(){
+  var P='K';
+  var URL='https://ebgoolsymyzkftvavpyj.supabase.co/functions/v1/clever-worker';
+  var LS={K:'akm_license_v1',S:'asm_license_v1',J:'jmp_license_v1'}[P];
+  var MAX=5, sent=0, seen={};
+  var live=/(^|\.)naruunlabs\.kr$/.test(location.hostname);
+  function ver(){ try{ return String(window.__NL_VER||(window.PRODUCT&&window.PRODUCT.version)||''); }catch(e){ return ''; } }
+  function key(){ try{ var c=JSON.parse(localStorage.getItem(LS)||'null'); return (c&&c.license_key)?String(c.license_key):''; }catch(e){ return ''; } }
+  function base(s){ s=String(s||''); var i=s.lastIndexOf('/'); if(i>=0) s=s.slice(i+1); return s.split('?')[0].split('#')[0].slice(0,120); }
+  function send(kind,msg,src,line,col,stack){
+    try{
+      msg=String(msg||'').slice(0,300);
+      if(!msg) return;
+      if(/^Script error\.?$/i.test(msg)) return;                       
+      if(/ResizeObserver loop/i.test(msg)) return;                      
+      if(/AbortError|Failed to fetch|NetworkError|Load failed/i.test(msg)) return;   
+      var sig=kind+'|'+msg+'|'+(line||0);
+      if(seen[sig]) return; seen[sig]=1;
+      if(sent>=MAX) return; sent++;
+      var data={product:P,version:ver(),kind:kind,message:msg,source:base(src),line:line|0,col:col|0,
+        stack:String(stack||'').slice(0,1500),page:String(location.pathname||'').slice(0,80),
+        license_key:key().slice(0,80),ua:String(navigator.userAgent||'').slice(0,300),
+        screen:(window.innerWidth|0)+'x'+(window.innerHeight|0)};
+      window.__NL_ERR_LAST=data;
+      if(!live) return;
+      fetch(URL,{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({action:'REPORT_ERROR',payload:data}),keepalive:true}).catch(function(){});
+    }catch(e){}
+  }
+  window.addEventListener('error',function(ev){
+    if(!ev||!ev.message) return;   
+    send('error',ev.message,ev.filename,ev.lineno,ev.colno,ev.error&&ev.error.stack);
+  });
+  window.addEventListener('unhandledrejection',function(ev){
+    var r=ev&&ev.reason, m;
+    try{ m=(r&&(r.message||r.name))?((r.name?r.name+': ':'')+(r.message||'')):String(r); }catch(e){ m='(알 수 없는 오류)'; }
+    send('promise',m,'',0,0,r&&r.stack);
+  });
+})();
+</script>
 
 <script>
 (function () {
@@ -10777,7 +10819,8 @@ const _AKM_CACHE_DAYS  = 7;
 const _AKM_TRIAL_CACHE_DAYS = 1;   
 const _AKM_FETCH_TIMEOUT_MS = 8 * 1000;   
 
-const _AKM_VERSION     = '3.2.6';
+const _AKM_VERSION     = '3.2.7';   
+try{ window.__NL_VER = _AKM_VERSION; }catch(e){}   
 
 let _akmFailCount = 0;
 let _akmFailLockUntil = 0;
