@@ -3,7 +3,7 @@
   "name": "AI JUMP MASTER",
   "short_name": "JUMP MASTER",
   "description": "AI 줄넘기 훈련 시스템 소개",
-  "start_url": "/jumpmaster",
+  "start_url": "/aijumpmaster",
   "scope": "/",
   "display": "standalone",
   "orientation": "any",

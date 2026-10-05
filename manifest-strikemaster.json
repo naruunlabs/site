@@ -3,7 +3,7 @@
   "name": "AI STRIKE MASTER",
   "short_name": "STRIKE MASTER",
   "description": "AI 타격 훈련 시스템 소개",
-  "start_url": "/strikemaster",
+  "start_url": "/aistrikemaster",
   "scope": "/",
   "display": "standalone",
   "orientation": "any",
