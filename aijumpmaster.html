@@ -477,6 +477,21 @@ body.jmp-lite-hud .jt-bars i{box-shadow:none}body.jmp-lite-hud .jt-wing{filter:n
 html body:not(.jmp-beta-on) .tb-lab-btn,
 html body:not(.jmp-beta-on) #jumpLabModal{
   display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important}
+
+html body:not(.jmp-beta-on) #soloKindWrap,
+html body:not(.jmp-beta-on) #optStep,
+html body:not(.jmp-beta-on) #stStep{display:none!important}
+#soloKindWrap{margin-bottom:max(8px,calc(var(--u)*.9))}
+#soloKindSeg small{margin-left:4px;font-size:.72em;font-weight:800;color:var(--lime-lit)}
+#optStep .option-label{margin-top:max(8px,calc(var(--u)*.9))}
+#optStep .option-label:first-child{margin-top:0}
+#optStep .m-act{margin-top:max(10px,calc(var(--u)*1));padding:9px;font-size:max(12px,calc(var(--u)*1.05))}
+.step-tb{display:grid;grid-template-columns:repeat(4,auto);justify-content:center;gap:3px 14px;align-items:baseline;margin:max(6px,calc(var(--u)*.7)) 0;text-align:left;
+  font-size:max(12px,calc(var(--u)*1.05));font-weight:800;color:rgba(255,255,255,.86)}
+.step-tb b{font-family:var(--num);color:var(--lime-lit)}
+.step-tb i{font-style:normal;font-family:var(--num);color:rgba(234,244,241,.7)}
+.step-tb .bad{color:#FDA4AF}
+body.step-round #jmpPilotGraph{display:none!important}
 .tb-btns{display:flex;gap:14px;align-items:flex-start}
 .tb-lab-btn{margin-top:5px;padding:3px 0;border:0;border-radius:0;background:transparent;box-shadow:none;
   color:rgba(216,255,148,.92);font-size:11px;font-weight:900;cursor:pointer}
@@ -630,6 +645,10 @@ body.hf-dim #jmpPilotGraph .jt-wing{display:none!important}
         <div class="gbar prog" id="stCountBarWrap" hidden><i id="stCountBar"></i></div>
         <div class="st-sub" id="stCountSub" hidden></div>
       </div>
+      <div class="st" id="stStep" hidden>
+        <div class="st-lab">스텝 성공</div>
+        <div class="st-val"><span class="v" id="stStepVal">0</span><span class="goal" id="stStepGoal"> / 32</span></div>
+      </div>
       <div class="st time" id="stTime" hidden>
         <div class="st-lab" id="stTimeLab">남은 시간</div>
         <div class="st-val" id="stTimeVal">30</div>
@@ -665,6 +684,15 @@ body.hf-dim #jmpPilotGraph .jt-wing{display:none!important}
     </div>
 
     <div class="opts" id="optSolo">
+      
+      <div id="soloKindWrap" hidden>
+        <span class="option-label">1인 놀이</span>
+        <div class="seg two" id="soloKindSeg">
+          <button type="button" data-kind="measure" class="on">줄넘기 측정</button>
+          <button type="button" data-kind="step">스텝 점프<small>시험</small></button>
+        </div>
+      </div>
+      <div id="soloMeasureOpts">
       <span class="option-label">줄넘기 종목</span>
       <div class="seg" id="soloJumpSeg">
         <button type="button" data-jump="together" class="on">모아뛰기</button>
@@ -691,6 +719,24 @@ body.hf-dim #jmpPilotGraph .jt-wing{display:none!important}
         <select id="soloTarget"><option value="30">30회</option><option value="50">50회</option><option value="100">100회</option></select></label>
       <label class="lfield"><i><span>측정 감도</span><output id="sensOutLobby">60</output></i>
         <input type="range" id="sensLobby" min="0" max="100" value="60" aria-label="측정 감도"></label>
+      </div>
+      <div id="optStep" hidden>
+        <span class="option-label">나오는 스텝</span>
+        <div class="seg" id="stepSetSeg">
+          <button type="button" data-set="all" class="on">전체</button>
+          <button type="button" data-set="place">제자리</button>
+          <button type="button" data-set="lane">좌우 이동</button>
+        </div>
+        <span class="option-label">스텝이 바뀌는 간격</span>
+        <div class="seg two" id="stepHoldSeg">
+          <button type="button" data-hold="2" class="on">2박마다</button>
+          <button type="button" data-hold="1">매 박</button>
+        </div>
+        <label class="lfield"><i>박자 속도</i>
+          <select id="stepBpm"><option value="90">느리게 · 90 BPM</option><option value="100" selected>기본 · 100 BPM</option><option value="110">110 BPM</option><option value="120">빠르게 · 120 BPM</option><option value="130">130 BPM</option></select></label>
+        <div class="m-help">박자음에 뛰고, 가운데 틀에 온 그림대로 착지합니다. 준비 4박 뒤 32박을 판정합니다. 발끝까지 화면에 나와야 합니다.</div>
+        <button class="m-act" id="stepExportBtn" type="button">시험 기록 내려받기</button>
+      </div>
     </div>
 
     <div class="opts" id="optDuo" hidden>
@@ -873,7 +919,7 @@ body.hf-dim #jmpPilotGraph .jt-wing{display:none!important}
 
 <script type="module">
 
-const APP_VERSION = '3.7.5';   
+const APP_VERSION = '3.8.0';   
 
 const MP_VERSION  = '1.0.1';
 const MP_LOCAL    = './vendor/mediapipe/';
@@ -1176,6 +1222,37 @@ let soloJumpType='together';
 let alternateCountMode='both';   
 let duoType='cooperate';         
 let soundOn = store.get('jmp_sound','1')!=='0';
+
+const STEP = {
+  LANE: 1.00,        
+  SPREAD: 0.90,      
+  LIFT: 0.22,        
+  WIN0: 0.00, WIN1: 0.80,   
+  LOW_FRAC: 0.40,    
+  ANKLE_VIS: 0.40,   
+  LEAD: 4,           
+  BEATS: 32,         
+  RAW_KEEP: 6, ROUNDS_MAX: 40,
+};
+const STEP_SETS = {
+  all:   { n:'전체',      seq:['C','L','C','R','W','C','FL','FR','C','R','C','L','W','FL','W','FR'] },
+  place: { n:'제자리',    seq:['C','W','C','W','FL','FR','FL','FR','C','W','FL','W','FR','W','C','W'] },
+  lane:  { n:'좌우 이동', seq:['C','L','C','R','C','L','C','R','C','R','C','L','C','R','C','L'] },
+};
+const STEP_NAME  = { C:'가운데', L:'왼칸', R:'오른칸', W:'벌려', FL:'왼발', FR:'오른발', '?':'못 봄' };
+const STEP_CELLS = { C:[0], L:[1], R:[-1], W:[-1,1], FL:[0], FR:[0] };            
+const STEP_FEET  = {                                                               
+  C:[[.2,'L',0],[-.2,'R',0]], L:[[1.2,'L',0],[.8,'R',0]], R:[[-.8,'L',0],[-1.2,'R',0]],
+  W:[[.72,'L',0],[-.72,'R',0]], FL:[[.2,'L',0],[-.2,'R',1]], FR:[[.2,'L',1],[-.2,'R',0]] };
+const STEP_PREF_KEY='jmp_step_prefs_v1', STEP_ROUNDS_KEY='jmp_step_rounds_v1';
+const stepPrefs = Object.assign({kind:'measure',set:'all',hold:2,bpm:100}, store.json(STEP_PREF_KEY,{})||{});
+if(!STEP_SETS[stepPrefs.set]) stepPrefs.set='all';
+stepPrefs.hold = +stepPrefs.hold===1 ? 1 : 2;
+stepPrefs.bpm  = [90,100,110,120,130].includes(+stepPrefs.bpm) ? +stepPrefs.bpm : 100;
+if(stepPrefs.kind!=='step') stepPrefs.kind='measure';
+let stepRounds = store.json(STEP_ROUNDS_KEY,[]); if(!Array.isArray(stepRounds)) stepRounds=[];
+let stepRound=false;             
+let stp=null;                    
 
 let stream=null, facingMode='user';
 let vision=null, pose=null, poseNum=0, poseBusy=false, poseLoading=null, poseInfo='';
@@ -2030,7 +2107,7 @@ function hfBody(){
 function hfSync(){
   try{
     if(!window.HoloFX) return;
-    const pilot=jmpIsLab(), m=lastRoundMode, playing=!!(running && appState==='running' && (m==='solo'||m==='duo'));
+    const pilot=jmpIsLab(), m=lastRoundMode, playing=!!(running && appState==='running' && (m==='solo'||m==='duo') && !stepRound);   
     if(playing && !hfWasPlaying){ HoloFX.reset(); hfStreakN=0; hfBestH=0; }
     hfWasPlaying=playing;
     HoloFX.setState({enabled:pilot, playing, panels:m==='solo', lite:document.body.classList.contains('jmp-lite-hud')});
@@ -2150,13 +2227,14 @@ function updatePlayer(p,f,t){
     updateRig(p,f.lm);
     try{ cgFrame(p,f.lm,f.torso,t); }catch(e){}   
     p.engine.feed(f.sigY,f.torso,t,ev=>onEngineEvent(p,ev));   
+    if(stepRound) stepFrame(p,f,t);   
     p.fast.aiY=f.sigY; p.fast.aiT=t; p.fast.aiUsed=false; p.fastTorso=f.torso;
     if(running && labRecording && jmpIsLab() && p.rawAI.length<8000)
       p.rawAI.push([+t.toFixed(1),+f.y4.toFixed(5),+f.hipY.toFixed(5),+f.shY.toFixed(5),+f.torso.toFixed(5),+f.vmin.toFixed(2),
 
         ...[15,16].flatMap(i=>{ const q=f.lm[i]; return q?[+q.x.toFixed(4),+q.y.toFixed(4),+(q.visibility??0).toFixed(2)]:[null,null,0]; }),
         ...[27,28].map(i=>f.lm[i]?+f.lm[i].y.toFixed(4):null)]);
-    if(running && mode==='solo' && soloJumpType==='alternate') feedAlternateJump(p,f.lm,f.torso,t);
+    if(running && mode==='solo' && soloJumpType==='alternate' && !stepRound) feedAlternateJump(p,f.lm,f.torso,t);
   }else{
     p.seen=false;
     
@@ -2259,6 +2337,7 @@ function doubleAccept(p,t){
 }
 function onEngineEvent(p,ev){
   if(!running) return;
+  if(stepRound){ stepOnJump(p,ev); return; }   
   labRecordJump(p,ev);   
   jmpPilotPush(p,ev);    
   if(mode==='solo' && soloJumpType==='double' && ev.type==='jump' && !doubleAccept(p,ev.t)) return;   
@@ -2454,13 +2533,15 @@ function applyModeUI(){
   setText($('groupPracticeSum'),practiceSummary());
   setText($('groupRoutineSum'), groupRoutineSummary());
   setText($('bpmLabel'), mode==='group'?(musicLocked?'속도 · 음악에 맞춤':'속도'):'박자 속도');
+  stepApplyUI();   
   updateModeBadge();
   if(appState==='lobby') layoutHud(); else refreshGuide();
 }
 function updateModeBadge(){
   let t='',s='';
   const b=+$('bpm').value;
-  if(mode==='solo'){ t=`${soloJumpLabel()} · ${MODES_SOLO[soloMode].title}`; s=MODES_SOLO[soloMode].sub; if(soloMode==='timed') s=`제한 ${$('soloTime').value}초 안에 최대한 많이`; if(soloMode==='target') s=`걸리지 않고 ${$('soloTarget').value}회 연속 성공`; }
+  if(stepOn()){ const sb=stepBadge(); t=sb.t; s=sb.s; }   
+  else if(mode==='solo'){ t=`${soloJumpLabel()} · ${MODES_SOLO[soloMode].title}`; s=MODES_SOLO[soloMode].sub; if(soloMode==='timed') s=`제한 ${$('soloTime').value}초 안에 최대한 많이`; if(soloMode==='target') s=`걸리지 않고 ${$('soloTarget').value}회 연속 성공`; }
   else if(mode==='duo'){ t=duoType==='battle'?'2인 대결':'2인 협동'; s=duoType==='battle'?`${$('duration').value}초 · 더 많이 뛰면 승리`:`${b} BPM · ${$('duration').value}초`; }
   else if(mode==='relay'){ t='릴레이'; s=`${$('relayPlayers').value}명 · ${$('relayTarget').value}회씩 · ${$('relayRounds').value}바퀴`; }
   else if(groupActivity==='pace'){t='속도게임';s=`${paceTime}초 · 목표 ${paceTarget}개 · 분당 ${Math.round(paceTarget*60/paceTime)}회`;}
@@ -2504,6 +2585,7 @@ function refreshGuide(){
   }else if((appState==='running'||appState==='countdown') && mode==='solo'){
     if(!players[0]?.seen) text='전신이 보이게 뒤로 물러서세요';
   }
+  if(!text) text=stepGuideText();   
   g.hidden=!text; if(text) setText(g,text);
 }
 
@@ -2540,6 +2622,7 @@ function layoutHud(){
   const stageOnly = m==='group' && (inGame||result);
   video.hidden = stageOnly; $('vignette').hidden = stageOnly;
   if(!inGame) $('judge').hidden=true;
+  stepLayout(inGame,lobby,result,m);   
   refreshGuide();
 }
 
@@ -2552,6 +2635,7 @@ async function boot(){
   
   if(soundOn) await initAudio();
   bpm=mode==='group'&&groupActivity==='pace'?paceTarget*60/paceTime:+$('bpm').value; beatMs=60000/bpm;
+  if(stepOn()){ bpm=stepPrefs.bpm; beatMs=60000/bpm; }   
   if(mode==='group'&&groupActivity==='rhythm'&&groupMusicKey!=='none'&&soundOn){try{await loadGroupMusic()}catch(e){console.warn('훈련 음악을 불러오지 못해 박자음만 사용합니다.',e);}}
   if(mode==='group'){ stopCamera(); }
   else{
@@ -2573,14 +2657,14 @@ async function boot(){
       bootBusy=false; $('playBtn').disabled=false; return;
     }
   }
-  lastRoundMode=mode;
+  lastRoundMode=mode; stepRound=stepOn();   
   if(mode==='group'){ groupRunKind=groupActivity==='pace'?'pace':groupKind; practiceOffset=0; setText($('spVal'),String(bpm)); }
   setupRound();
   appState='countdown'; layoutHud();
   const cdTotal=COUNTDOWN_MS.reduce((a,b)=>a+b,0);
-  if(mode!=='solo') prepareClock(cdTotal);
+  if(mode!=='solo'||stepRound) prepareClock(cdTotal);
   const subs={free:'멈추고 싶을 때 종료를 누르세요',timed:'제한 시간 안에 최대한 많이!',target:`걸리지 않고 ${$('soloTarget').value}회까지!`};
-  const sub = mode==='solo'?`${soloJumpLabel()} · ${subs[soloMode]}` : mode==='duo'?(duoType==='battle'?'제한시간 동안 더 많이 뛰면 승리!':'박자음에 맞춰 둘이 함께 뛰어요') : mode==='relay'?'1번 주자부터 시작합니다': groupActivity==='pace'?'가상 선수의 착지에 맞춰 뛰어요':groupKind==='practice'?'코치와 발판을 보고 따라 해요':'노트가 판정선에 닿을 때 뛰어요';
+  const sub = (mode==='solo'&&stepRound)?'박자에 뛰고 · 가운데 틀에 온 그림대로 착지!' : mode==='solo'?`${soloJumpLabel()} · ${subs[soloMode]}` : mode==='duo'?(duoType==='battle'?'제한시간 동안 더 많이 뛰면 승리!':'박자음에 맞춰 둘이 함께 뛰어요') : mode==='relay'?'1번 주자부터 시작합니다': groupActivity==='pace'?'가상 선수의 착지에 맞춰 뛰어요':groupKind==='practice'?'코치와 발판을 보고 따라 해요':'노트가 판정선에 닿을 때 뛰어요';
   const ok=await runCountdown(sub);
   bootBusy=false; $('playBtn').disabled=false;
   if(!ok) return;
@@ -2618,6 +2702,7 @@ function setupRound(){
   if(mode==='group'){ resetGroupTimeline(); practiceSaidFor=''; buildGroupBar(); }
   setText($('stTimeLab'), mode==='relay'?'경과 시간':'남은 시간');
   setText($('stTimeVal'), mode==='relay'?0:durationSec); setText($('teamTime'), durationSec);
+  if(stepRound) stepSetup();   
   updateModeBadge();
 }
 
@@ -2642,9 +2727,10 @@ function startRound(){
   running=true; appState='running';
   hfSync();   
   if(mode==='solo'){
-    gameStartPerf=now;
+    if(!stepRound) gameStartPerf=now;   
     const p=players[0]; p.dbl=null; p.engine.resetCount(); p.engine.markStart(now); p.engine.recoverGaps=soloJumpType==='together'; resetAlternateJump(p); p.engine.counting=soloJumpType!=='alternate';
     gameEndPerf = soloMode==='timed' ? now+durationSec*1000 : Infinity;
+    if(stepRound) stepStart(now);   
   }else if(mode==='duo'){
     gameEndPerf=gameStartPerf+durationSec*1000;
     players.forEach(p=>{ p.engine.resetCount(); p.engine.markStart(now); p.engine.recoverGaps=false; p.engine.counting=true; });
@@ -2695,10 +2781,10 @@ async function resumeRound(){
   });
   running=true;
   const m=lastRoundMode;
-  if(m==='solo')       players[0].engine.counting = soloJumpType!=='alternate';
+  if(m==='solo')       players[0].engine.counting = stepRound || soloJumpType!=='alternate';
   else if(m==='duo')   players.forEach(p=>p.engine.counting=true);
   else if(m==='relay') players[0].engine.counting = !relay.changing && !relay.done;
-  if(m!=='solo') resumeClock();
+  if(m!=='solo'||stepRound) resumeClock();
   keepScreenOn(true);
   }finally{jumpResumeBusy=false;}
 }
@@ -2722,20 +2808,21 @@ function finish(cancelled){
   if(m!=='group'){
     let last='';
     try{
-      if(m==='solo') last='방금 기록 '+players[0].count+'개';
+      if(m==='solo') last= stepRound ? stepLastText() : '방금 기록 '+players[0].count+'개';
       else if(m==='duo') last='방금 기록 · 청 '+players[0].count+' · 홍 '+players[1].count;
     }catch(e){}
     $('resultLast').textContent=last;
-    resultCompactTimer=setTimeout(()=>{ if(appState==='result') $('result').classList.add('compact'); },3000);
+    
+    if(!(m==='solo'&&stepRound)) resultCompactTimer=setTimeout(()=>{ if(appState==='result') $('result').classList.add('compact'); },3000);
   }
-  labRoundFinished(m);   
+  if(!(m==='solo'&&stepRound)) labRoundFinished(m);   
 }
 
 function quit(){
   if(appState==='countdown'){ finish(true); return; }
   if(appState!=='running'){ finish(true); return; }
   const m=lastRoundMode;
-  const has = m==='solo'  ? (players[0]?.count>0)
+  const has = m==='solo'  ? (stepRound ? stepJudged()>0 : players[0]?.count>0)
             : m==='duo'   ? ((players[0]?.count||0)+(players[1]?.count||0)>0)
             : m==='relay' ? (relay.turn>0 || relay.turnCount>0)
             :               (performance.now()-gameStartPerf > 1000);
@@ -2748,6 +2835,7 @@ let soloResultTitle='';
 function finishSolo(title){ soloResultTitle=title; finish(false); }
 
 function resultHtml(m){
+  if(m==='solo'&&stepRound) return stepResultHtml();   
   if(m==='solo'){
     const bestKey=soloRecordKey();
 
@@ -2840,7 +2928,10 @@ function tick(now){
   const m = inGame||appState==='result' ? lastRoundMode : mode;
 
   if(appState==='running'){
-    if(m==='solo'){
+    if(m==='solo' && stepRound){            
+      stepTick(now);
+      if(now>=gameEndPerf){ finishSolo('스텝 점프 끝!'); return; }
+    }else if(m==='solo'){
       const p=players[0];
       if(soloMode==='timed' && now>=gameEndPerf){ finishSolo('시간 종료!'); return; }
 
@@ -2860,7 +2951,7 @@ function tick(now){
   if(inGame){
     if(m==='relay') setText($('stTimeVal'), appState==='running'?Math.floor(Math.max(0,now-gameStartPerf)/1000):0);
     else if(m==='duo') setText($('teamTime'), Math.ceil(Math.max(0,Math.min(durationSec*1000,(gameStartPerf+durationSec*1000)-now))/1000));
-    else if(m==='solo'&&soloMode==='timed') setText($('stTimeVal'), appState==='running'?Math.ceil(Math.max(0,gameEndPerf-now)/1000):durationSec);
+    else if(m==='solo'&&soloMode==='timed'&&!stepRound) setText($('stTimeVal'), appState==='running'?Math.ceil(Math.max(0,gameEndPerf-now)/1000):durationSec);
   }
 
   if(now-lastHudT<50) return;       
@@ -2984,6 +3075,7 @@ function render(now){
     const key = players.length===2 ? (i===0?'blue':'red') : 'solo';
     drawSkeleton(p.lm, COLOR[key]);
   });
+  if(m==='solo') stepRender(now,inGame);   
   
   if(inGame && m==='duo' && duoType==='cooperate'){
     const phase=(now-gameStartPerf)/beatMs;
@@ -3886,6 +3978,298 @@ function loop(){
   };
   requestAnimationFrame(frame);
 }
+
+function stepOn(){ try{ return mode==='solo' && stepPrefs.kind==='step' && jmpIsLab(); }catch(e){ return false; } }
+function stepSavePrefs(){ store.set(STEP_PREF_KEY, JSON.stringify(stepPrefs)); }
+function stepMed(a){ if(!a.length) return null; const s=a.slice().sort((x,y)=>x-y), n=s.length; return n%2 ? s[n>>1] : (s[n/2-1]+s[n/2])/2; }
+function stepBadge(){
+  return { t:'스텝 점프 · 시험판', s:`${stepPrefs.bpm} BPM · ${STEP_SETS[stepPrefs.set].n} · ${stepPrefs.hold===2?'2박마다 바뀜':'매 박 바뀜'}` };
+}
+function stepApplyUI(){
+  let lab=false; try{ lab=jmpIsLab(); }catch(e){}
+  const on=stepOn();
+  $('soloKindWrap').hidden=!lab;
+  document.querySelectorAll('#soloKindSeg button').forEach(b=>b.classList.toggle('on',(b.dataset.kind==='step')===on));
+  $('soloMeasureOpts').hidden=on;
+  $('optStep').hidden=!on;
+  document.querySelectorAll('#stepSetSeg button').forEach(b=>b.classList.toggle('on',b.dataset.set===stepPrefs.set));
+  document.querySelectorAll('#stepHoldSeg button').forEach(b=>b.classList.toggle('on',+b.dataset.hold===stepPrefs.hold));
+  $('stepBpm').value=String(stepPrefs.bpm);
+  setText($('stepExportBtn'), `시험 기록 내려받기 (${stepRounds.length}판)`);
+}
+function stepGuideText(){
+  if(appState!=='lobby' || !stepOn()) return '';
+  const p=players[0]; if(!p || !p.seen || !p.lm) return '';
+  const v=i=>p.lm[i]?.visibility??0;
+  return (v(27)<STEP.ANKLE_VIS || v(28)<STEP.ANKLE_VIS) ? '발끝까지 보이게 조금 더 뒤로 물러서세요' : '';
+}
+function stepLayout(inGame,lobby,result,m){
+  const on = m==='solo' && ((inGame||result) ? stepRound : stepOn());
+  $('stStep').hidden = !(on && inGame);
+  document.body.classList.toggle('step-round', on && inGame);     
+  if(on){ $('stCount').hidden=true; $('stBest').hidden=true; $('stTime').hidden=!inGame; }
+}
+
+function stepSetup(){
+  const seq=STEP_SETS[stepPrefs.set].seq, hold=stepPrefs.hold, notes=[];
+  for(let i=0;i<STEP.LEAD;i++)  notes.push({exp:'C',lead:true});
+  for(let i=0;i<STEP.BEATS;i++) notes.push({exp:seq[Math.floor(i/hold)%seq.length],lead:false});
+  stp={ notes, set:stepPrefs.set, hold, bpm, calib:null, calBuf:[], buf:[], raw:[], jumps:[],
+        next:0, hits:0, judged:0, last:null, frames:0, ankleOk:0, saved:false, ts:new Date().toISOString() };
+  setText($('stStepVal'),0); setText($('stStepGoal'),' / '+STEP.BEATS);
+  setText($('stTimeVal'), Math.ceil(notes.length*beatMs/1000));
+}
+function stepStart(now){
+  if(!stp) return;
+  const e=players[0].engine;
+  e.recoverGaps=false; e.counting=true;                    
+  gameEndPerf=gameStartPerf+(stp.notes.length+0.3)*beatMs;
+  stepCalibrate();
+}
+
+function stepCalibrate(){
+  if(!stp || stp.calib) return;
+  const b=stp.calBuf; if(b.length<4) return;
+  const lastT=b[b.length-1].t, ss=b.filter(s=>s.t>=lastT-1500);
+  if(ss.length<4) return;
+  const shW=stepMed(ss.map(s=>s.shW)), torso=stepMed(ss.map(s=>s.torso));
+  if(!(shW>.02) || !(torso>.02)) return;
+  const ank=ss.filter(s=>s.lv>=STEP.ANKLE_VIS && s.rv>=STEP.ANKLE_VIS);
+  stp.calib={ x0:stepMed(ss.map(s=>s.hx)), shW, torso,
+              gap0:ank.length ? stepMed(ank.map(s=>Math.abs(s.lx-s.rx)))/shW : null, n:ss.length, refined:false };
+}
+
+function stepFrame(p,f,t){
+  if(!stp || p!==players[0]) return;
+  if(!(appState==='countdown' || appState==='running')) return;
+  const lm=f.lm, v=i=>lm[i]?.visibility??0;
+  if(!lm[27] || !lm[28]) return;
+  const s={ t, y:f.sigY, hx:(lm[23].x+lm[24].x)/2, shW:Math.abs(lm[11].x-lm[12].x), torso:f.torso,
+            lx:lm[27].x, ly:lm[27].y, rx:lm[28].x, ry:lm[28].y, lv:v(27), rv:v(28) };
+  if(!stp.calib){
+    stp.calBuf.push(s); if(stp.calBuf.length>60) stp.calBuf.shift();
+    if(appState==='running') stepCalibrate();              
+  }
+  if(appState!=='running' || !running) return;
+  stp.buf.push(s); if(stp.buf.length>90) stp.buf.shift();
+  stp.frames++; if(s.lv>=STEP.ANKLE_VIS && s.rv>=STEP.ANKLE_VIS) stp.ankleOk++;
+  if(stp.raw.length<3000)
+    stp.raw.push([Math.round(t-gameStartPerf), +s.y.toFixed(5), +s.hx.toFixed(5), +s.lx.toFixed(4), +s.ly.toFixed(4),
+                  +s.rx.toFixed(4), +s.ry.toFixed(4), +s.lv.toFixed(2), +s.rv.toFixed(2), +s.shW.toFixed(4), +s.torso.toFixed(4)]);
+}
+function stepOnJump(p,ev){ if(stp && ev.type==='jump' && ev.t!=null && p===players[0]) stp.jumps.push(ev.t); }
+
+function stepClassify(d,gap,lift){
+  if(d>= STEP.LANE/2) return 'L';
+  if(d<=-STEP.LANE/2) return 'R';
+  if(gap==null || lift==null) return '?';
+  if(lift>= STEP.LIFT) return 'FR';
+  if(lift<=-STEP.LIFT) return 'FL';
+  return gap>=STEP.SPREAD ? 'W' : 'C';
+}
+function stepDecide(k,tk,end,quiet){
+  const note=stp.notes[k], c=stp.calib;
+  const ss=stp.buf.filter(s=>s.t>=tk+STEP.WIN0*beatMs && s.t<=end);
+  let got='?';
+  note.n=ss.length; note.d=note.gap=note.lift=note.hx=null;
+  if(c && ss.length>=2){
+    const nLow=Math.max(2,Math.round(ss.length*STEP.LOW_FRAC));
+    const low=ss.slice().sort((a,b)=>b.y-a.y).slice(0,nLow);          
+    note.hx=stepMed(low.map(s=>s.hx));
+    note.d=(note.hx-c.x0)/c.shW;
+    const ank=low.filter(s=>s.lv>=STEP.ANKLE_VIS && s.rv>=STEP.ANKLE_VIS);
+    if(ank.length){
+      note.gap =stepMed(ank.map(s=>Math.abs(s.lx-s.rx)))/c.shW;
+      note.lift=stepMed(ank.map(s=>s.ry-s.ly))/c.torso;
+    }
+    got=stepClassify(note.d,note.gap,note.lift);
+  }
+  
+  let off=null;
+  for(const tj of stp.jumps){ const dt=tj-tk; if(Math.abs(dt)<=beatMs*.5 && (off==null || Math.abs(dt)<Math.abs(off))) off=dt; }
+  note.off=off; note.got=got; note.ok=(got===note.exp); note.done=true;
+  if(note.lead){
+    
+    if(k===STEP.LEAD-1 && c){
+      const xs=stp.notes.slice(0,STEP.LEAD).map(n=>n.hx).filter(v=>v!=null);
+      if(xs.length>=2){ c.x0=stepMed(xs); c.refined=true; }
+    }
+    return;
+  }
+  stp.judged++; if(note.ok) stp.hits++;
+  stp.last={k,exp:note.exp,got,ok:note.ok,at:performance.now()};
+  if(quiet) return;
+
+  if(note.ok) snd.perfect(); else snd.miss();
+}
+function stepTick(now){
+  if(!stp || !running) return;
+  while(stp.next<stp.notes.length){
+    const k=stp.next, tk=gameStartPerf+k*beatMs, end=tk+STEP.WIN1*beatMs;
+    if(now<end+70) break;                 
+    stepDecide(k,tk,end,false); stp.next++;
+  }
+  setText($('stStepVal'), stp.hits);
+  setText($('stTimeVal'), Math.ceil(Math.max(0,gameEndPerf-now)/1000));
+}
+function stepJudged(){ return stp ? stp.judged : 0; }
+function stepLastText(){ return stp ? `방금 기록 · 스텝 ${stp.hits} / ${stp.judged}` : ''; }
+
+function stepRoundsSave(){
+  if(stepRounds.length>STEP.ROUNDS_MAX) stepRounds.splice(0,stepRounds.length-STEP.ROUNDS_MAX);
+  stepRounds.forEach((r,i)=>{ if(i<stepRounds.length-STEP.RAW_KEEP) delete r.raw; });   
+  try{ localStorage.setItem(STEP_ROUNDS_KEY, JSON.stringify(stepRounds)); }
+  catch(e){ stepRounds.forEach(r=>{ delete r.raw; }); try{ localStorage.setItem(STEP_ROUNDS_KEY, JSON.stringify(stepRounds)); }catch(_){} }
+}
+function stepResultHtml(){
+  if(!stp) return '';
+  const endT=roundEndPerf||performance.now();
+  while(stp.next<stp.notes.length){        
+    const k=stp.next, tk=gameStartPerf+k*beatMs, end=tk+STEP.WIN1*beatMs;
+    if(endT<end) break;
+    stepDecide(k,tk,end,true); stp.next++;
+  }
+  const done=stp.notes.filter(n=>n.done && !n.lead), total=done.length, hits=done.filter(n=>n.ok).length;
+  const rows=['C','L','R','W','FL','FR'].filter(t=>done.some(n=>n.exp===t)).map(t=>{
+    const a=done.filter(n=>n.exp===t), ok=a.filter(n=>n.ok).length, wrong={};
+    a.filter(n=>!n.ok).forEach(n=>{ wrong[n.got]=(wrong[n.got]||0)+1; });
+    const w=Object.entries(wrong).sort((x,y)=>y[1]-x[1]).map(([g,cnt])=>`${STEP_NAME[g]} ${cnt}`).join(' · ');
+    return {t,n:a.length,ok,w};
+  });
+  const offs=done.map(n=>n.off).filter(v=>v!=null);
+  const offMean=offs.length ? offs.reduce((a,b)=>a+b,0)/offs.length : null;
+  const ank=stp.frames ? Math.round(stp.ankleOk/stp.frames*100) : null;
+  const full=!stoppedEarly && total>=STEP.BEATS;
+  const pct=total ? Math.round(hits/total*100) : 0;
+  if(!stp.saved && total>0){
+    stp.saved=true;
+    const R=v=>(v==null||!isFinite(v))?null:+v.toFixed(3);
+    stepRounds.push({ ts:stp.ts, app:APP_VERSION, set:stp.set, hold:stp.hold, bpm:stp.bpm, beat_ms:+beatMs.toFixed(1),
+      stopped_early:!!stoppedEarly, infer_hz:R(inferHz), mirror:view.mirror, frames:stp.frames, ankle_ok_pct:ank,
+      calib:stp.calib ? {x0:R(stp.calib.x0),shW:R(stp.calib.shW),torso:R(stp.calib.torso),gap0:R(stp.calib.gap0),n:stp.calib.n,refined:stp.calib.refined} : null,
+      rule:{LANE:STEP.LANE,SPREAD:STEP.SPREAD,LIFT:STEP.LIFT,WIN0:STEP.WIN0,WIN1:STEP.WIN1,LOW_FRAC:STEP.LOW_FRAC,ANKLE_VIS:STEP.ANKLE_VIS},
+      hits, total, by_type:rows.map(r=>({type:r.t,n:r.n,ok:r.ok})),
+      off_mean_ms:offMean==null?null:Math.round(offMean), jumps:offs.length,
+      notes:stp.notes.filter(n=>n.done).map((n,k)=>({k,exp:n.exp,got:n.got,ok:n.ok?1:0,lead:n.lead?1:0,n:n.n,
+             d:R(n.d),gap:R(n.gap),lift:R(n.lift),off:n.off==null?null:Math.round(n.off)})),
+      raw_cols:['t_ms','body_y','hip_x','l_ankle_x','l_ankle_y','r_ankle_x','r_ankle_y','l_vis','r_vis','shoulder_w','torso'],
+      raw:stp.raw });
+    stepRoundsSave();
+  }
+  if(total>0){ snd.finish(); if(full && pct>=90) confetti(true); }
+  const tb=rows.map(r=>`<span>${STEP_NAME[r.t]}</span><b>${r.ok} / ${r.n}</b><i>${Math.round(r.ok/r.n*100)}%</i><span class="${r.w?'bad':''}">${r.w?'→ '+esc(r.w):''}</span>`).join('');
+  const line=[ `AI가 본 횟수 초당 ${inferHz?inferHz.toFixed(1):'-'}번`, ank==null?'':`발목 보임 ${ank}%`, `점프 감지 ${offs.length} / ${total}`,
+               offMean==null?'':`박자보다 평균 ${Math.abs(Math.round(offMean))}ms ${offMean>=0?'늦게':'빨리'} 뜀` ].filter(Boolean).join(' · ');
+  return `<div class="solo-result"><div class="res-label">스텝 점프 시험 · ${STEP_SETS[stp.set].n} · ${stp.bpm} BPM · ${stp.hold===2?'2박마다':'매 박'}</div>
+    <div class="res-title">${full?'스텝 점프 끝!':'중간에 멈춤'}</div>
+    <div class="rbox big ${pct>=80?'win':''}"><span>맞게 밟은 스텝</span><strong>${hits} / ${total}</strong></div>
+    <div class="step-tb">${tb}</div>
+    <div class="rline">${line}</div>
+    <div class="rline" style="opacity:.75">오른쪽 화살표 뒤는 AI가 대신 본 모양입니다. 기록은 로비의 '시험 기록 내려받기'에 쌓입니다.</div></div>`;
+}
+function stepExport(){
+  let lab=false; try{ lab=jmpIsLab(); }catch(e){}
+  if(!lab) return;
+  const d=new Date(), z=n=>String(n).padStart(2,'0');
+  const name=`stepjump_test_${d.getFullYear()}${z(d.getMonth()+1)}${z(d.getDate())}_${z(d.getHours())}${z(d.getMinutes())}.json`;
+  const text=JSON.stringify({ app:'AI JUMP MASTER', kind:'stepjump-test', version:APP_VERSION, exported_at:d.toISOString(),
+                              rule_now:STEP, note_names:STEP_NAME, rounds:stepRounds });
+  labDownload(name, text, 'application/json', `스텝 점프 ${stepRounds.length}판`);
+}
+
+function stepRR(x,y,w,h,r){
+  r=Math.max(0,Math.min(r,w/2,h/2));
+  ctx.beginPath(); ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath();
+}
+
+function stepIcon(cx,cy,cw,ch,note,alpha,tone,hi,feetAlpha){
+  const dir=view.mirror?-1:1;                         
+  const X=l=>cx+l*dir*cw;
+  const cells=STEP_CELLS[note]||[], feet=STEP_FEET[note]||[];
+  ctx.save(); ctx.lineJoin='round';
+  for(const l of [-1,0,1]){
+    const on=hi && cells.includes(l);
+    ctx.globalAlpha=alpha;
+    ctx.fillStyle=on?'rgba(163,230,53,.26)':'rgba(3,15,27,.40)';
+    ctx.strokeStyle= tone==='ok'?'rgba(190,242,100,.95)': tone==='bad'?'rgba(251,113,133,.95)': on?'rgba(190,242,100,.9)':'rgba(255,255,255,.38)';
+    ctx.lineWidth=Math.max(1.2,cw*(on?.06:.035));
+    stepRR(X(l)-cw/2+1.5, cy-ch/2, cw-3, ch, Math.min(cw,ch)*.16); ctx.fill(); ctx.stroke();
+  }
+  const fw=cw*.27, fh=ch*.6;
+  for(const [pos,foot,up] of feet){
+    const x=X(pos), y=cy-(up?ch*.22:0), col=foot==='L'?'#A3E635':'#2DD4BF';
+    ctx.globalAlpha=alpha*(feetAlpha==null?1:feetAlpha)*(up?.75:1);
+    stepRR(x-fw/2, y-fh/2, fw, fh, fw*.42);
+    if(up){ ctx.setLineDash([Math.max(2,fw*.28),Math.max(2,fw*.22)]); ctx.strokeStyle=col; ctx.lineWidth=Math.max(1.4,fw*.14); ctx.stroke(); ctx.setLineDash([]); }
+    else  { ctx.fillStyle=col; ctx.fill(); }
+  }
+  ctx.restore();
+}
+function stepLiveCalib(p){
+  const lm=p&&p.lm; if(!lm || !lm[11] || !lm[12] || !lm[23] || !lm[24]) return null;
+  const shW=Math.abs(lm[11].x-lm[12].x); if(!(shW>.02)) return null;
+  return { x0:(lm[23].x+lm[24].x)/2, shW };
+}
+
+function stepDrawFloor(p,c,note,hi,tone){
+  if(!p || !p.seen || !p.rig || !c) return;
+  const cw=STEP.LANE*c.shW*view.dw, ch=cw*.46;
+  stepIcon(sp({x:c.x0,y:0}).x, p.rig.floor+ch*.05, cw, ch, note, .92, tone||null, hi, .5);
+}
+function stepText(txt,x,y,px,color,align){
+  ctx.save(); ctx.font=`900 ${px}px 'JM Noto KR','Noto Sans KR',sans-serif`; ctx.textAlign=align||'center'; ctx.textBaseline='middle';
+  ctx.shadowColor='rgba(0,0,0,.9)'; ctx.shadowBlur=6*view.dpr; ctx.fillStyle=color; ctx.fillText(txt,x,y); ctx.restore();
+}
+function stepDraw(now){
+  if(!stp) return;
+  const p=players[0], W=view.W, H=view.H, u=Math.min(W,H), N=stp.notes.length;
+  const bf=(now-gameStartPerf)/beatMs;
+  const cw=clamp(u*.062,24,64), ch=cw*.82, iw=cw*3, gapX=iw*1.2;
+  const cx=W>H ? W/2 : W*.4, cy=Math.max(H*.2,112);        
+  
+  for(let k=Math.max(0,Math.floor(bf)-1); k<N && k<bf+3.6; k++){
+    const dist=k-bf, note=stp.notes[k];
+    const a=dist<0 ? clamp(1+dist*1.2,0,1) : clamp(1.15-dist*.3,0,1);
+    if(a<=.02) continue;
+    if(cx+dist*gapX+iw/2 > W*(W>H?.8:.74)) continue;       
+    const tone=note.done && !note.lead ? (note.ok?'ok':'bad') : null;
+    stepIcon(cx+dist*gapX, cy, cw, ch, note.exp, a*(note.lead?.55:1), tone, Math.abs(dist)<.5, 1);
+  }
+  const q=((bf%1)+1)%1, hit=Math.pow(1-q,7);
+  ctx.save(); ctx.strokeStyle=`rgba(190,242,100,${.7+.3*hit})`; ctx.lineWidth=2.2+3*hit;
+  if(quality==='high'){ ctx.shadowColor='#A3E635'; ctx.shadowBlur=(4+12*hit)*view.dpr; }
+  stepRR(cx-iw/2-7, cy-ch/2-7, iw+14, ch+14, cw*.22); ctx.stroke(); ctx.restore();
+  
+  const kNow=clamp(Math.floor(bf+.5),0,N-1), cur=stp.notes[kNow];
+  const label= bf<-.5 ? '준비' : (cur.lead ? '준비 · 제자리에서 뛰기' : STEP_NAME[cur.exp]);
+  stepText(label, cx, cy+ch/2+Math.max(20,u*.04), Math.max(18,u*.042), '#EAF4F1');
+  
+  const c=stp.calib || stepLiveCalib(p), L=stp.last;
+  stepDrawFloor(p, c, cur.exp, true, (L && now-L.at<320) ? (L.ok?'ok':'bad') : null);
+  
+  if(L && now-L.at<1500){
+    const txt=L.ok ? `✔ ${STEP_NAME[L.exp]}` : `✕ ${STEP_NAME[L.exp]} → ${STEP_NAME[L.got]}`;
+    stepText(txt, cx, cy-ch/2-Math.max(20,u*.038), Math.max(15,u*.032), L.ok?'#BEF264':'#FDA4AF');
+  }
+}
+function stepRender(now,inGame){
+  if(inGame && stepRound){ stepDraw(now); return; }
+  if(appState==='lobby' && stepOn()){           
+    const p=players[0];
+    if(p && p.seen) stepDrawFloor(p, stepLiveCalib(p), 'C', false);
+  }
+}
+
+document.querySelectorAll('#soloKindSeg button').forEach(b=>b.addEventListener('click',()=>{
+  if(appState!=='lobby') return;
+  stepPrefs.kind=b.dataset.kind; stepSavePrefs(); applyModeUI();
+}));
+document.querySelectorAll('#stepSetSeg button').forEach(b=>b.addEventListener('click',()=>{ stepPrefs.set=b.dataset.set; stepSavePrefs(); applyModeUI(); }));
+document.querySelectorAll('#stepHoldSeg button').forEach(b=>b.addEventListener('click',()=>{ stepPrefs.hold=+b.dataset.hold===1?1:2; stepSavePrefs(); applyModeUI(); }));
+$('stepBpm').addEventListener('change',()=>{ stepPrefs.bpm=+$('stepBpm').value||100; stepSavePrefs(); applyModeUI(); });
+$('stepExportBtn').addEventListener('click',stepExport);
 
 document.querySelectorAll('#modelist .choice').forEach(b=>b.addEventListener('click',async()=>{
   if(appState!=='lobby') return;
