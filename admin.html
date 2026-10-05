@@ -562,17 +562,31 @@ table.cg tfoot td.num{text-align:right}
 .slot-ip-warn-sub{display:block;margin-top:4px;font-size:11px;font-weight:600;color:#9b7333}
 .slot-ip-moved{color:#8a5a10;font-weight:700}
 
-.use-sum{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
-.use-card{flex:1;min-width:96px;background:#f6f8fc;border:1px solid #e3e8f0;border-radius:10px;padding:9px 10px}
-.use-card b{display:block;font-size:17px;font-weight:800;color:var(--text);line-height:1.25}
-.use-card span{font-size:11px;color:var(--muted2);font-weight:700}
-.use-cal{display:grid;grid-template-columns:repeat(15,1fr);gap:3px}
-.use-cell{aspect-ratio:1;border-radius:3px;background:#eef1f6}
-.use-cell.l1{background:#c9dcff}.use-cell.l2{background:#7ea6f7}
-.use-cell.l3{background:#3f6fe0}.use-cell.l4{background:#1b3fa8}
+.use-sum{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:12px}
+.use-card{min-width:0;background:#F7F9FC;border:1px solid #E6EBF2;border-radius:10px;padding:10px 12px}
+.use-card b{display:block;font-size:18px;font-weight:800;color:#0B1F44;line-height:1.2;letter-spacing:-.3px;white-space:nowrap}
+.use-card span{display:block;margin-top:3px;font-size:11px;color:#667085;font-weight:600;white-space:nowrap}
+
+.use-calwrap{border:1px solid #E6EBF2;border-radius:12px;padding:14px 14px 11px;background:#fff}
+.use-cal{display:grid;grid-auto-flow:column;grid-template-rows:14px repeat(7,auto);gap:3px}
+.use-mon{font-size:10.5px;font-weight:700;color:#667085;line-height:14px;white-space:nowrap;overflow:visible}
+.use-dow{display:flex;align-items:center;font-size:10px;font-weight:600;color:#98A2B3}
+.use-cell{display:block;aspect-ratio:1;border-radius:4px;background:#EEF1F6}
+.use-cell[data-tip]{cursor:pointer}
+.use-cell.l1,.use-sw.l1{background:#CFE0FF}.use-cell.l2,.use-sw.l2{background:#8FB4FA}
+.use-cell.l3,.use-sw.l3{background:#3F7AE8}.use-cell.l4,.use-sw.l4{background:#0B46B5}
+.use-cell.pre,.use-sw.pre{background:repeating-linear-gradient(135deg,#EDF0F5 0 1.5px,#FAFBFD 1.5px 5px)}
+.use-sw.pre{box-shadow:inset 0 0 0 1px #E1E6EE}
 .use-cell.future{background:transparent}
-.use-legend{display:flex;align-items:center;gap:5px;margin-top:9px;font-size:11px;color:var(--muted2);font-weight:700}
-.use-legend i{width:11px;height:11px;border-radius:3px;display:inline-block}
+.use-cell.today{outline:2px solid #0B1F44;outline-offset:1px}
+.use-cell.sel{outline:2px solid #F59E0B;outline-offset:1px}
+.use-foot{display:flex;align-items:center;gap:8px 14px;flex-wrap:wrap;margin-top:11px;padding-top:10px;border-top:1px solid #EEF1F6}
+.use-info{flex:1;min-width:190px;font-size:12px;font-weight:700;color:#0B1F44}
+.use-info.hint{font-weight:600;color:#98A2B3}
+.use-legend{display:flex;align-items:center;gap:4px;font-size:10.5px;color:#667085;font-weight:600}
+.use-sw{display:inline-block;width:11px;height:11px;border-radius:3px;background:#EEF1F6}
+.use-legend .gap{width:8px}
+@media(max-width:560px){ .use-sum{grid-template-columns:repeat(2,minmax(0,1fr))} .use-calwrap{padding:11px 9px 9px} .use-cal{gap:2px} .use-cell{border-radius:3px} .use-mon{font-size:9.5px} }
 .use-note{font-size:12px;color:var(--muted2);font-weight:600;line-height:1.5;margin-top:10px}
 .use-cold{background:#fff6e8;border:1px solid #f0c987;border-radius:10px;padding:9px 11px;
   font-size:12px;font-weight:800;color:#8a5a10;line-height:1.5;margin-bottom:10px}
@@ -1988,7 +2002,10 @@ function openEditModal(encoded) {
 }
 function closeModal() { document.getElementById('modalBg').classList.remove('show'); }
 
-const USE_CAL_DAYS = 90;      
+const USE_WEEKS = 18;                 
+
+const USE_REC_START = '2026-10-05';
+const USE_DOW = ['월','화','수','목','금','토','일'];
 
 function useLevel(hits) {
   const h = Number(hits) || 0;
@@ -2011,22 +2028,41 @@ function daysAgo(ymd) {
   return Math.round((b - a) / 86400000);
 }
 
+function useDuration(hits) {
+  const h = Number(hits) || 0;
+  if (h <= 1) return '30분 안쪽';
+  const min = (h - 1) * 30, hh = Math.floor(min / 60), mm = min % 60;
+  return '약 ' + (hh ? hh + '시간' : '') + (mm ? (hh ? ' ' : '') + mm + '분' : '');
+}
+
+function useDayText(key, row, pre) {
+  const d = new Date(key + 'T00:00:00');
+  const label = `${d.getMonth() + 1}월 ${d.getDate()}일(${USE_DOW[(d.getDay() + 6) % 7]})`;
+  if (pre) return `${label} · 기록을 남기기 전입니다`;
+  const hits = row ? (Number(row.hits) || 0) : 0;
+  if (!hits) return `${label} · 사용 없음`;
+  const dev = row && Array.isArray(row.devices) ? row.devices.length : 0;
+  return `${label} · 인증 ${hits}회`
+       + (dev <= 1 ? ` (${useDuration(hits)} 켜짐)` : '')
+       + (dev ? ` · 기기 ${dev}대` : '');
+}
+
 async function showUsage(licenseKey) {
   const sec = document.getElementById('usageSection');
   const box = document.getElementById('usageBox');
   if (!sec || !box) return;
   sec.style.display = 'block';
+  box.className = 'use-note';
   box.innerHTML = '불러오는 중…';
 
   if (!licenseKey || !ADMIN_TOKEN) { box.innerHTML = '기록을 불러올 수 없습니다.'; return; }
 
   let rows = [];
   try {
-    rows = await edgeCall('GET_USAGE', { license_key: licenseKey, days: 120 }) || [];
+    rows = await edgeCall('GET_USAGE', { license_key: licenseKey, days: USE_WEEKS * 7 + 7 }) || [];
   } catch (err) {
     
-    box.innerHTML = '<span class="use-note">사용 기록을 아직 불러올 수 없습니다.<br>'
-      + '(supabase 15_사용기록_테이블.sql 을 실행했는지 확인해 주세요)</span>';
+    box.innerHTML = '사용 기록을 불러오지 못했습니다. 잠시 뒤 이 창을 다시 열어 주세요.';
     return;
   }
   if (!Array.isArray(rows)) rows = [];
@@ -2034,22 +2070,18 @@ async function showUsage(licenseKey) {
   const byDate = {};
   rows.forEach(r => { byDate[String(r.use_date)] = r; });
 
-  const today = new Date(ymdLocal(new Date()) + 'T00:00:00');
-  let cells = '', used30 = 0, used90 = 0, hits90 = 0;
-  for (let i = USE_CAL_DAYS - 1; i >= 0; i--) {
-    const d = new Date(today.getTime() - i * 86400000);
-    const key = ymdLocal(d);
-    const row = byDate[key];
-    const hits = row ? (Number(row.hits) || 0) : 0;
-    if (hits > 0) {
-      used90++; hits90 += hits;
-      if (i < 30) used30++;
-    }
-    const tip = hits > 0
-      ? `${key} · 인증 ${hits}회${row && Array.isArray(row.devices) && row.devices.length ? ` · 기기 ${row.devices.length}대` : ''}`
-      : `${key} · 사용 없음`;
-    cells += `<div class="use-cell ${useLevel(hits)}" title="${tip}"></div>`;
-  }
+  let used30 = 0, used28 = 0;
+  const dev30 = new Set();
+  rows.forEach(r => {
+    const n = daysAgo(String(r.use_date));
+    if (n === null || n < 0 || !(Number(r.hits) > 0)) return;
+    if (n < 30) { used30++; (Array.isArray(r.devices) ? r.devices : []).forEach(x => dev30.add(x)); }
+    if (n < 28) used28++;
+  });
+
+  const recDays = Math.min(28, Math.max(7, (daysAgo(USE_REC_START) || 0) + 1));
+  const perWeek = used28 / (recDays / 7);
+  const perWeekText = Number.isInteger(perWeek) ? String(perWeek) : perWeek.toFixed(1);
 
   const lastDate = rows.length ? String(rows[0].use_date) : '';   
   const ago = daysAgo(lastDate);
@@ -2058,6 +2090,32 @@ async function showUsage(licenseKey) {
                  : ago === 1 ? '어제'
                  : `${ago}일 전`;
 
+  const today = new Date(ymdLocal(new Date()) + 'T00:00:00');
+  const todayKey = ymdLocal(today);
+  const start = new Date(today);
+  start.setDate(today.getDate() - ((USE_WEEKS - 1) * 7 + (today.getDay() + 6) % 7));
+
+  const monOf = w => { const d = new Date(start); d.setDate(start.getDate() + w * 7); return d.getMonth() + 1; };
+  let grid = '<span class="use-mon"></span>'
+           + USE_DOW.map((t, i) => `<span class="use-dow">${i % 2 === 0 ? t : ''}</span>`).join('');
+  for (let w = 0; w < USE_WEEKS; w++) {
+    
+    const m = monOf(w);
+    const show = w === 0 ? (USE_WEEKS < 2 || monOf(1) === m) : monOf(w - 1) !== m;
+    grid += `<span class="use-mon">${show ? m + '월' : ''}</span>`;
+    for (let r = 0; r < 7; r++) {
+      const d = new Date(start); d.setDate(start.getDate() + w * 7 + r);
+      const key = ymdLocal(d);
+      if (key > todayKey) { grid += '<i class="use-cell future"></i>'; continue; }
+      const pre = key < USE_REC_START;
+      const row = byDate[key];
+      const hits = (!pre && row) ? (Number(row.hits) || 0) : 0;
+      const tip = escapeHtml(useDayText(key, row, pre));
+      const cls = (pre ? 'pre' : useLevel(hits)) + (key === todayKey ? ' today' : '');
+      grid += `<i class="use-cell ${cls}" data-tip="${tip}" title="${tip}"></i>`;
+    }
+  }
+
   let cold = '';
   if (lastDate && ago >= 14) {
     cold = `<div class="use-cold">※ ${ago}일째 사용 기록이 없습니다.`
@@ -2065,30 +2123,50 @@ async function showUsage(licenseKey) {
          + `방학이거나 태블릿을 바꾸셨을 수도 있습니다.</span></div>`;
   }
 
-  const emptyNote = rows.length ? '' :
-    '<div class="use-note">아직 쌓인 기록이 없습니다. 기록은 2026-09-07 부터 남기기 시작했습니다.</div>';
+  const startText = USE_REC_START.replace(/^(\d+)-0?(\d+)-0?(\d+)$/, '$1년 $2월 $3일');
+  const note = rows.length
+    ? `색이 진할수록 그날 오래 켜 두었다는 뜻입니다. 빗금 칸은 기록을 남기기 전(${startText} 이전)입니다.`
+    : `아직 쌓인 기록이 없습니다. 사용 기록은 ${startText}부터 남기기 시작했습니다.`;
 
+  box.className = '';
   box.innerHTML = cold + `
     <div class="use-sum">
       <div class="use-card"><b>${escapeHtml(lastText)}</b><span>마지막 사용</span></div>
-      <div class="use-card"><b>${used30}일</b><span>최근 30일 중</span></div>
-      <div class="use-card"><b>${used90}일</b><span>최근 90일 중</span></div>
-      <div class="use-card"><b>${hits90}회</b><span>90일 인증 횟수</span></div>
+      <div class="use-card"><b>${used30}일</b><span>최근 30일 중 사용</span></div>
+      <div class="use-card"><b>주 ${perWeekText}일</b><span>최근 4주 평균</span></div>
+      <div class="use-card"><b>${dev30.size}대</b><span>최근 30일 쓴 기기</span></div>
     </div>
-    <div class="use-cal">${cells}</div>
-    <div class="use-legend">
-      <span>적게</span>
-      <i class="use-cell" style="background:#eef1f6"></i>
-      <i class="use-cell l1"></i><i class="use-cell l2"></i>
-      <i class="use-cell l3"></i><i class="use-cell l4"></i>
-      <span>많이</span>
-      <span style="margin-left:auto">왼쪽 위가 90일 전, 오른쪽 아래가 오늘</span>
+    <div class="use-calwrap">
+      <div class="use-cal" style="grid-template-columns:16px repeat(${USE_WEEKS},minmax(0,1fr))">${grid}</div>
+      <div class="use-foot">
+        <div class="use-info hint" id="useInfo">칸을 누르면 그날 기록이 나옵니다</div>
+        <div class="use-legend">
+          <span>적게</span>
+          <i class="use-sw"></i><i class="use-sw l1"></i><i class="use-sw l2"></i><i class="use-sw l3"></i><i class="use-sw l4"></i>
+          <span>많이</span><span class="gap"></span>
+          <i class="use-sw pre"></i><span>기록 전</span>
+        </div>
+      </div>
     </div>
-    <div class="use-note">
-      칸에 마우스를 올리면 그날 날짜와 인증 횟수가 나옵니다.
-      태블릿은 앱을 열 때와 그 뒤 30분마다 한 번씩 인증을 보냅니다.
-      색이 진할수록 그날 오래 켜져 있었다는 뜻입니다.
-    </div>` + emptyNote;
+    <div class="use-note">${note}</div>`;
+
+  const info = document.getElementById('useInfo');
+  const cal = box.querySelector('.use-cal');
+  const pick = (el, keep) => {
+    const c = el && el.closest ? el.closest('.use-cell[data-tip]') : null;
+    if (!c || !info) return;
+    info.textContent = c.getAttribute('data-tip');
+    info.classList.remove('hint');
+    if (keep) {
+      cal.querySelectorAll('.use-cell.sel').forEach(x => x.classList.remove('sel'));
+      c.classList.add('sel');
+    }
+  };
+  if (cal) {
+    cal.onmouseover = e => pick(e.target, false);
+    cal.onclick = e => pick(e.target, true);
+    cal.onmouseleave = () => { const k = cal.querySelector('.use-cell.sel'); if (k) pick(k, false); };
+  }
 }
 
 let currentEditDeviceSlots = [];
