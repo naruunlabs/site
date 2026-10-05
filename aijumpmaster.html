@@ -492,6 +492,7 @@ html body:not(.jmp-beta-on) #stStep{display:none!important}
 .step-tb i{font-style:normal;font-family:var(--num);color:rgba(234,244,241,.7)}
 .step-tb .bad{color:#FDA4AF}
 body.step-round #jmpPilotGraph{display:none!important}
+body.step-round #video{filter:saturate(.8) brightness(.7) contrast(1.04);transition:filter .4s ease}
 .tb-btns{display:flex;gap:14px;align-items:flex-start}
 .tb-lab-btn{margin-top:5px;padding:3px 0;border:0;border-radius:0;background:transparent;box-shadow:none;
   color:rgba(216,255,148,.92);font-size:11px;font-weight:900;cursor:pointer}
@@ -734,7 +735,7 @@ body.hf-dim #jmpPilotGraph .jt-wing{display:none!important}
         </div>
         <label class="lfield"><i>박자 속도</i>
           <select id="stepBpm"><option value="90">느리게 · 90 BPM</option><option value="100" selected>기본 · 100 BPM</option><option value="110">110 BPM</option><option value="120">빠르게 · 120 BPM</option><option value="130">130 BPM</option></select></label>
-        <div class="m-help">박자음에 뛰고, 가운데 틀에 온 그림대로 착지합니다. 준비 4박 뒤 32박을 판정합니다. 발끝까지 화면에 나와야 합니다.</div>
+        <div class="m-help">네모가 멀리서 다가와 발밑 발판에 닿을 때 밟습니다. 파랑은 왼발, 빨강은 오른발입니다. 준비 4박 뒤 32박을 판정합니다. 발끝까지 화면에 나와야 합니다.</div>
         <button class="m-act" id="stepExportBtn" type="button">시험 기록 내려받기</button>
       </div>
     </div>
@@ -919,7 +920,7 @@ body.hf-dim #jmpPilotGraph .jt-wing{display:none!important}
 
 <script type="module">
 
-const APP_VERSION = '3.8.0';   
+const APP_VERSION = '3.8.1';   
 
 const MP_VERSION  = '1.0.1';
 const MP_LOCAL    = './vendor/mediapipe/';
@@ -1230,6 +1231,9 @@ const STEP = {
   WIN0: 0.00, WIN1: 0.80,   
   LOW_FRAC: 0.40,    
   ANKLE_VIS: 0.40,   
+  EARLY0: 0.05,      
+  TRAVEL: 3.5,       
+  VIEW: 1.35,        
   LEAD: 4,           
   BEATS: 32,         
   RAW_KEEP: 6, ROUNDS_MAX: 40,
@@ -1240,10 +1244,9 @@ const STEP_SETS = {
   lane:  { n:'좌우 이동', seq:['C','L','C','R','C','L','C','R','C','R','C','L','C','R','C','L'] },
 };
 const STEP_NAME  = { C:'가운데', L:'왼칸', R:'오른칸', W:'벌려', FL:'왼발', FR:'오른발', '?':'못 봄' };
-const STEP_CELLS = { C:[0], L:[1], R:[-1], W:[-1,1], FL:[0], FR:[0] };            
 const STEP_FEET  = {                                                               
-  C:[[.2,'L',0],[-.2,'R',0]], L:[[1.2,'L',0],[.8,'R',0]], R:[[-.8,'L',0],[-1.2,'R',0]],
-  W:[[.72,'L',0],[-.72,'R',0]], FL:[[.2,'L',0],[-.2,'R',1]], FR:[[.2,'L',1],[-.2,'R',0]] };
+  C:[[.25,'L',0],[-.25,'R',0]], L:[[1.25,'L',0],[.75,'R',0]], R:[[-.75,'L',0],[-1.25,'R',0]],
+  W:[[.75,'L',0],[-.75,'R',0]], FL:[[.25,'L',0],[-.25,'R',1]], FR:[[.25,'L',1],[-.25,'R',0]] };
 const STEP_PREF_KEY='jmp_step_prefs_v1', STEP_ROUNDS_KEY='jmp_step_rounds_v1';
 const stepPrefs = Object.assign({kind:'measure',set:'all',hold:2,bpm:100}, store.json(STEP_PREF_KEY,{})||{});
 if(!STEP_SETS[stepPrefs.set]) stepPrefs.set='all';
@@ -2664,7 +2667,7 @@ async function boot(){
   const cdTotal=COUNTDOWN_MS.reduce((a,b)=>a+b,0);
   if(mode!=='solo'||stepRound) prepareClock(cdTotal);
   const subs={free:'멈추고 싶을 때 종료를 누르세요',timed:'제한 시간 안에 최대한 많이!',target:`걸리지 않고 ${$('soloTarget').value}회까지!`};
-  const sub = (mode==='solo'&&stepRound)?'박자에 뛰고 · 가운데 틀에 온 그림대로 착지!' : mode==='solo'?`${soloJumpLabel()} · ${subs[soloMode]}` : mode==='duo'?(duoType==='battle'?'제한시간 동안 더 많이 뛰면 승리!':'박자음에 맞춰 둘이 함께 뛰어요') : mode==='relay'?'1번 주자부터 시작합니다': groupActivity==='pace'?'가상 선수의 착지에 맞춰 뛰어요':groupKind==='practice'?'코치와 발판을 보고 따라 해요':'노트가 판정선에 닿을 때 뛰어요';
+  const sub = (mode==='solo'&&stepRound)?'다가오는 네모를 · 발밑 발판에서 밟아요!' : mode==='solo'?`${soloJumpLabel()} · ${subs[soloMode]}` : mode==='duo'?(duoType==='battle'?'제한시간 동안 더 많이 뛰면 승리!':'박자음에 맞춰 둘이 함께 뛰어요') : mode==='relay'?'1번 주자부터 시작합니다': groupActivity==='pace'?'가상 선수의 착지에 맞춰 뛰어요':groupKind==='practice'?'코치와 발판을 보고 따라 해요':'노트가 판정선에 닿을 때 뛰어요';
   const ok=await runCountdown(sub);
   bootBusy=false; $('playBtn').disabled=false;
   if(!ok) return;
@@ -3070,6 +3073,7 @@ function render(now){
     ctx.save(); ctx.strokeStyle='rgba(255,255,255,.16)'; ctx.setLineDash([8,10]); ctx.lineWidth=2;
     ctx.beginPath(); ctx.moveTo(W/2,H*.12); ctx.lineTo(W/2,H*.8); ctx.stroke(); ctx.restore();
   }
+  if(m==='solo') stepRenderBack(now,inGame);   
   players.forEach((p,i)=>{
     if(!p.seen||!p.lm) return;
     const key = players.length===2 ? (i===0?'blue':'red') : 'solo';
@@ -4015,7 +4019,7 @@ function stepSetup(){
   for(let i=0;i<STEP.LEAD;i++)  notes.push({exp:'C',lead:true});
   for(let i=0;i<STEP.BEATS;i++) notes.push({exp:seq[Math.floor(i/hold)%seq.length],lead:false});
   stp={ notes, set:stepPrefs.set, hold, bpm, calib:null, calBuf:[], buf:[], raw:[], jumps:[],
-        next:0, hits:0, judged:0, last:null, frames:0, ankleOk:0, saved:false, ts:new Date().toISOString() };
+        next:0, hits:0, judged:0, combo:0, bestCombo:0, last:null, fx:[], geo:null, frames:0, ankleOk:0, saved:false, ts:new Date().toISOString() };
   setText($('stStepVal'),0); setText($('stStepGoal'),' / '+STEP.BEATS);
   setText($('stTimeVal'), Math.ceil(notes.length*beatMs/1000));
 }
@@ -4067,27 +4071,30 @@ function stepClassify(d,gap,lift){
   if(lift<=-STEP.LIFT) return 'FL';
   return gap>=STEP.SPREAD ? 'W' : 'C';
 }
-function stepDecide(k,tk,end,quiet){
-  const note=stp.notes[k], c=stp.calib;
-  const ss=stp.buf.filter(s=>s.t>=tk+STEP.WIN0*beatMs && s.t<=end);
-  let got='?';
-  note.n=ss.length; note.d=note.gap=note.lift=note.hx=null;
-  if(c && ss.length>=2){
-    const nLow=Math.max(2,Math.round(ss.length*STEP.LOW_FRAC));
-    const low=ss.slice().sort((a,b)=>b.y-a.y).slice(0,nLow);          
-    note.hx=stepMed(low.map(s=>s.hx));
-    note.d=(note.hx-c.x0)/c.shW;
-    const ank=low.filter(s=>s.lv>=STEP.ANKLE_VIS && s.rv>=STEP.ANKLE_VIS);
-    if(ank.length){
-      note.gap =stepMed(ank.map(s=>Math.abs(s.lx-s.rx)))/c.shW;
-      note.lift=stepMed(ank.map(s=>s.ry-s.ly))/c.torso;
-    }
-    got=stepClassify(note.d,note.gap,note.lift);
+
+function stepEval(tk,t1){
+  const c=stp.calib, ss=stp.buf.filter(s=>s.t>=tk+STEP.WIN0*beatMs && s.t<=t1);
+  const r={n:ss.length, got:'?', d:null, gap:null, lift:null, hx:null, amp:null};
+  if(!c || ss.length<2) return r;
+  const nLow=Math.max(2,Math.round(ss.length*STEP.LOW_FRAC));
+  const low=ss.slice().sort((a,b)=>b.y-a.y).slice(0,nLow);            
+  r.hx=stepMed(low.map(s=>s.hx));
+  r.d=(r.hx-c.x0)/c.shW;
+  const ank=low.filter(s=>s.lv>=STEP.ANKLE_VIS && s.rv>=STEP.ANKLE_VIS);
+  if(ank.length){
+    r.gap =stepMed(ank.map(s=>Math.abs(s.lx-s.rx)))/c.shW;
+    r.lift=stepMed(ank.map(s=>s.ry-s.ly))/c.torso;
   }
-  
-  let off=null;
-  for(const tj of stp.jumps){ const dt=tj-tk; if(Math.abs(dt)<=beatMs*.5 && (off==null || Math.abs(dt)<Math.abs(off))) off=dt; }
-  note.off=off; note.got=got; note.ok=(got===note.exp); note.done=true;
+  let lo=Infinity, hi=-Infinity; for(const s of ss){ if(s.y<lo) lo=s.y; if(s.y>hi) hi=s.y; }
+  r.amp=(hi-lo)/c.torso;                                              
+  r.got=stepClassify(r.d,r.gap,r.lift);
+  return r;
+}
+
+function stepClose(k,tk,r,quiet,early,now){
+  const note=stp.notes[k], c=stp.calib;
+  Object.assign(note,{n:r.n,d:r.d,gap:r.gap,lift:r.lift,hx:r.hx,amp:r.amp,got:r.got,ok:r.got===note.exp,done:true,
+                      early:!!early, tOk:(early&&now!=null)?now-tk:null});
   if(note.lead){
     
     if(k===STEP.LEAD-1 && c){
@@ -4096,18 +4103,28 @@ function stepDecide(k,tk,end,quiet){
     }
     return;
   }
-  stp.judged++; if(note.ok) stp.hits++;
-  stp.last={k,exp:note.exp,got,ok:note.ok,at:performance.now()};
+  stp.judged++;
+  if(note.ok){ stp.hits++; stp.combo++; if(stp.combo>stp.bestCombo) stp.bestCombo=stp.combo; } else stp.combo=0;
   if(quiet) return;
-
+  const at=performance.now();
+  stp.last={k,exp:note.exp,got:r.got,ok:note.ok,at};
+  stp.fx.push({exp:note.exp,ok:note.ok,at}); if(stp.fx.length>6) stp.fx.shift();
   if(note.ok) snd.perfect(); else snd.miss();
 }
 function stepTick(now){
   if(!stp || !running) return;
   while(stp.next<stp.notes.length){
-    const k=stp.next, tk=gameStartPerf+k*beatMs, end=tk+STEP.WIN1*beatMs;
-    if(now<end+70) break;                 
-    stepDecide(k,tk,end,false); stp.next++;
+    const k=stp.next, note=stp.notes[k], tk=gameStartPerf+k*beatMs, end=tk+STEP.WIN1*beatMs;
+    if(now>=end+70){                          
+      stepClose(k,tk,stepEval(tk,end),false,false,now); stp.next++; continue;
+    }
+
+    if(now>=tk+STEP.EARLY0*beatMs && note.seenAt!==stp.frames){
+      note.seenAt=stp.frames;
+      const r=stepEval(tk,now);
+      if(r.got===note.exp && (r.n>=3 || now>=tk+.3*beatMs)){ stepClose(k,tk,r,false,true,now); stp.next++; continue; }
+    }
+    break;
   }
   setText($('stStepVal'), stp.hits);
   setText($('stTimeVal'), Math.ceil(Math.max(0,gameEndPerf-now)/1000));
@@ -4127,7 +4144,7 @@ function stepResultHtml(){
   while(stp.next<stp.notes.length){        
     const k=stp.next, tk=gameStartPerf+k*beatMs, end=tk+STEP.WIN1*beatMs;
     if(endT<end) break;
-    stepDecide(k,tk,end,true); stp.next++;
+    stepClose(k,tk,stepEval(tk,end),true,false,null); stp.next++;
   }
   const done=stp.notes.filter(n=>n.done && !n.lead), total=done.length, hits=done.filter(n=>n.ok).length;
   const rows=['C','L','R','W','FL','FR'].filter(t=>done.some(n=>n.exp===t)).map(t=>{
@@ -4136,6 +4153,9 @@ function stepResultHtml(){
     const w=Object.entries(wrong).sort((x,y)=>y[1]-x[1]).map(([g,cnt])=>`${STEP_NAME[g]} ${cnt}`).join(' · ');
     return {t,n:a.length,ok,w};
   });
+  stp.notes.forEach((n,k)=>{ if(!n.done) return; const tk=gameStartPerf+k*beatMs; let off=null;
+    for(const tj of stp.jumps){ const dt=tj-tk; if(Math.abs(dt)<=beatMs*.5 && (off==null || Math.abs(dt)<Math.abs(off))) off=dt; }
+    n.off=off; });
   const offs=done.map(n=>n.off).filter(v=>v!=null);
   const offMean=offs.length ? offs.reduce((a,b)=>a+b,0)/offs.length : null;
   const ank=stp.frames ? Math.round(stp.ankleOk/stp.frames*100) : null;
@@ -4147,18 +4167,18 @@ function stepResultHtml(){
     stepRounds.push({ ts:stp.ts, app:APP_VERSION, set:stp.set, hold:stp.hold, bpm:stp.bpm, beat_ms:+beatMs.toFixed(1),
       stopped_early:!!stoppedEarly, infer_hz:R(inferHz), mirror:view.mirror, frames:stp.frames, ankle_ok_pct:ank,
       calib:stp.calib ? {x0:R(stp.calib.x0),shW:R(stp.calib.shW),torso:R(stp.calib.torso),gap0:R(stp.calib.gap0),n:stp.calib.n,refined:stp.calib.refined} : null,
-      rule:{LANE:STEP.LANE,SPREAD:STEP.SPREAD,LIFT:STEP.LIFT,WIN0:STEP.WIN0,WIN1:STEP.WIN1,LOW_FRAC:STEP.LOW_FRAC,ANKLE_VIS:STEP.ANKLE_VIS},
-      hits, total, by_type:rows.map(r=>({type:r.t,n:r.n,ok:r.ok})),
+      rule:{LANE:STEP.LANE,SPREAD:STEP.SPREAD,LIFT:STEP.LIFT,WIN0:STEP.WIN0,WIN1:STEP.WIN1,EARLY0:STEP.EARLY0,LOW_FRAC:STEP.LOW_FRAC,ANKLE_VIS:STEP.ANKLE_VIS},
+      hits, total, best_combo:stp.bestCombo, by_type:rows.map(r=>({type:r.t,n:r.n,ok:r.ok})),
       off_mean_ms:offMean==null?null:Math.round(offMean), jumps:offs.length,
       notes:stp.notes.filter(n=>n.done).map((n,k)=>({k,exp:n.exp,got:n.got,ok:n.ok?1:0,lead:n.lead?1:0,n:n.n,
-             d:R(n.d),gap:R(n.gap),lift:R(n.lift),off:n.off==null?null:Math.round(n.off)})),
+             d:R(n.d),gap:R(n.gap),lift:R(n.lift),amp:R(n.amp),early:n.early?1:0,t_ok:n.tOk==null?null:Math.round(n.tOk),off:n.off==null?null:Math.round(n.off)})),
       raw_cols:['t_ms','body_y','hip_x','l_ankle_x','l_ankle_y','r_ankle_x','r_ankle_y','l_vis','r_vis','shoulder_w','torso'],
       raw:stp.raw });
     stepRoundsSave();
   }
   if(total>0){ snd.finish(); if(full && pct>=90) confetti(true); }
   const tb=rows.map(r=>`<span>${STEP_NAME[r.t]}</span><b>${r.ok} / ${r.n}</b><i>${Math.round(r.ok/r.n*100)}%</i><span class="${r.w?'bad':''}">${r.w?'→ '+esc(r.w):''}</span>`).join('');
-  const line=[ `AI가 본 횟수 초당 ${inferHz?inferHz.toFixed(1):'-'}번`, ank==null?'':`발목 보임 ${ank}%`, `점프 감지 ${offs.length} / ${total}`,
+  const line=[ `최고 연속 ${stp.bestCombo}`, `AI가 본 횟수 초당 ${inferHz?inferHz.toFixed(1):'-'}번`, ank==null?'':`발목 보임 ${ank}%`, `점프 감지 ${offs.length} / ${total}`,
                offMean==null?'':`박자보다 평균 ${Math.abs(Math.round(offMean))}ms ${offMean>=0?'늦게':'빨리'} 뜀` ].filter(Boolean).join(' · ');
   return `<div class="solo-result"><div class="res-label">스텝 점프 시험 · ${STEP_SETS[stp.set].n} · ${stp.bpm} BPM · ${stp.hold===2?'2박마다':'매 박'}</div>
     <div class="res-title">${full?'스텝 점프 끝!':'중간에 멈춤'}</div>
@@ -4177,6 +4197,28 @@ function stepExport(){
   labDownload(name, text, 'application/json', `스텝 점프 ${stepRounds.length}판`);
 }
 
+function stepLiveCalib(p){
+  const lm=p&&p.lm; if(!lm || !lm[11] || !lm[12] || !lm[23] || !lm[24]) return null;
+  const shW=Math.abs(lm[11].x-lm[12].x); if(!(shW>.02)) return null;
+  return { x0:(lm[23].x+lm[24].x)/2, shW };
+}
+
+function stepGeo(p){
+  const c=(stp&&stp.calib) || stepLiveCalib(p);
+  if(p && p.seen && p.rig && c){
+    const H=view.H, tw=Math.min(STEP.LANE*STEP.VIEW*c.shW*view.dw, view.W*.29), hitY=p.rig.floor;   
+    const g={ cx:sp({x:c.x0,y:0}).x, tw, th:tw*.46, hitY, horizon:Math.max(H*.1, hitY-Math.max(220,H*.66)), dir:view.mirror?-1:1 };
+    if(stp) stp.geo=g;
+    return g;
+  }
+  return stp ? stp.geo : null;                 
+}
+const stepZs=z=>.28+.72*Math.pow(z,1.2);                               
+function stepZy(G,z){ return G.horizon+Math.pow(z,1.75)*(G.hitY-G.horizon); }
+function stepText(txt,x,y,px,color,align){
+  ctx.save(); ctx.font=`900 ${px}px 'JM Noto KR','Noto Sans KR',sans-serif`; ctx.textAlign=align||'center'; ctx.textBaseline='middle';
+  ctx.shadowColor='rgba(0,0,0,.9)'; ctx.shadowBlur=6*view.dpr; ctx.fillStyle=color; ctx.fillText(txt,x,y); ctx.restore();
+}
 function stepRR(x,y,w,h,r){
   r=Math.max(0,Math.min(r,w/2,h/2));
   ctx.beginPath(); ctx.moveTo(x+r,y);
@@ -4184,81 +4226,108 @@ function stepRR(x,y,w,h,r){
   ctx.closePath();
 }
 
-function stepIcon(cx,cy,cw,ch,note,alpha,tone,hi,feetAlpha){
-  const dir=view.mirror?-1:1;                         
-  const X=l=>cx+l*dir*cw;
-  const cells=STEP_CELLS[note]||[], feet=STEP_FEET[note]||[];
-  ctx.save(); ctx.lineJoin='round';
+function stepDrawPads(G,pulse,tone,alpha){
+  ctx.save(); ctx.globalAlpha=alpha==null?1:alpha; ctx.lineJoin='round';
   for(const l of [-1,0,1]){
-    const on=hi && cells.includes(l);
-    ctx.globalAlpha=alpha;
-    ctx.fillStyle=on?'rgba(163,230,53,.26)':'rgba(3,15,27,.40)';
-    ctx.strokeStyle= tone==='ok'?'rgba(190,242,100,.95)': tone==='bad'?'rgba(251,113,133,.95)': on?'rgba(190,242,100,.9)':'rgba(255,255,255,.38)';
-    ctx.lineWidth=Math.max(1.2,cw*(on?.06:.035));
-    stepRR(X(l)-cw/2+1.5, cy-ch/2, cw-3, ch, Math.min(cw,ch)*.16); ctx.fill(); ctx.stroke();
-  }
-  const fw=cw*.27, fh=ch*.6;
-  for(const [pos,foot,up] of feet){
-    const x=X(pos), y=cy-(up?ch*.22:0), col=foot==='L'?'#A3E635':'#2DD4BF';
-    ctx.globalAlpha=alpha*(feetAlpha==null?1:feetAlpha)*(up?.75:1);
-    stepRR(x-fw/2, y-fh/2, fw, fh, fw*.42);
-    if(up){ ctx.setLineDash([Math.max(2,fw*.28),Math.max(2,fw*.22)]); ctx.strokeStyle=col; ctx.lineWidth=Math.max(1.4,fw*.14); ctx.stroke(); ctx.setLineDash([]); }
-    else  { ctx.fillStyle=col; ctx.fill(); }
+    const x=G.cx+l*G.dir*G.tw;
+    stepRR(x-G.tw/2+2, G.hitY-G.th/2, G.tw-4, G.th, G.th*.2);
+    ctx.fillStyle='rgba(3,15,27,.5)'; ctx.fill();
+    ctx.strokeStyle= tone==='ok' ? 'rgba(190,242,100,.98)' : tone==='bad' ? 'rgba(251,113,133,.95)' : `rgba(94,234,212,${.5+.4*pulse})`;
+    ctx.lineWidth=Math.max(2,G.tw*.035)+2*pulse; ctx.stroke();
   }
   ctx.restore();
 }
-function stepLiveCalib(p){
-  const lm=p&&p.lm; if(!lm || !lm[11] || !lm[12] || !lm[23] || !lm[24]) return null;
-  const shW=Math.abs(lm[11].x-lm[12].x); if(!(shW>.02)) return null;
-  return { x0:(lm[23].x+lm[24].x)/2, shW };
+
+function stepDrawTrack(G,pulse){
+  const s0=stepZs(0), yN=G.hitY+G.th*.62, half=1.5*G.tw;
+  ctx.save();
+  const g=ctx.createLinearGradient(0,G.horizon,0,yN);
+  g.addColorStop(0,'rgba(4,14,30,0)'); g.addColorStop(.35,'rgba(4,14,30,.2)'); g.addColorStop(1,'rgba(4,14,30,.44)');
+  ctx.fillStyle=g;
+  ctx.beginPath(); ctx.moveTo(G.cx-half*s0,G.horizon); ctx.lineTo(G.cx+half*s0,G.horizon); ctx.lineTo(G.cx+half,yN); ctx.lineTo(G.cx-half,yN); ctx.closePath(); ctx.fill();
+  for(const e of [-1.5,-.5,.5,1.5]){
+    const outer=Math.abs(e)>1;
+    ctx.strokeStyle=outer?'rgba(94,234,212,.42)':'rgba(255,255,255,.16)'; ctx.lineWidth=outer?2:1.2;
+    ctx.beginPath(); ctx.moveTo(G.cx+e*G.tw*s0,G.horizon); ctx.lineTo(G.cx+e*G.tw,yN); ctx.stroke();
+  }
+  ctx.restore();
 }
 
-function stepDrawFloor(p,c,note,hi,tone){
-  if(!p || !p.seen || !p.rig || !c) return;
-  const cw=STEP.LANE*c.shW*view.dw, ch=cw*.46;
-  stepIcon(sp({x:c.x0,y:0}).x, p.rig.floor+ch*.05, cw, ch, note, .92, tone||null, hi, .5);
-}
-function stepText(txt,x,y,px,color,align){
-  ctx.save(); ctx.font=`900 ${px}px 'JM Noto KR','Noto Sans KR',sans-serif`; ctx.textAlign=align||'center'; ctx.textBaseline='middle';
-  ctx.shadowColor='rgba(0,0,0,.9)'; ctx.shadowBlur=6*view.dpr; ctx.fillStyle=color; ctx.fillText(txt,x,y); ctx.restore();
-}
-function stepDraw(now){
-  if(!stp) return;
-  const p=players[0], W=view.W, H=view.H, u=Math.min(W,H), N=stp.notes.length;
-  const bf=(now-gameStartPerf)/beatMs;
-  const cw=clamp(u*.062,24,64), ch=cw*.82, iw=cw*3, gapX=iw*1.2;
-  const cx=W>H ? W/2 : W*.4, cy=Math.max(H*.2,112);        
-  
-  for(let k=Math.max(0,Math.floor(bf)-1); k<N && k<bf+3.6; k++){
-    const dist=k-bf, note=stp.notes[k];
-    const a=dist<0 ? clamp(1+dist*1.2,0,1) : clamp(1.15-dist*.3,0,1);
-    if(a<=.02) continue;
-    if(cx+dist*gapX+iw/2 > W*(W>H?.8:.74)) continue;       
-    const tone=note.done && !note.lead ? (note.ok?'ok':'bad') : null;
-    stepIcon(cx+dist*gapX, cy, cw, ch, note.exp, a*(note.lead?.55:1), tone, Math.abs(dist)<.5, 1);
-  }
-  const q=((bf%1)+1)%1, hit=Math.pow(1-q,7);
-  ctx.save(); ctx.strokeStyle=`rgba(190,242,100,${.7+.3*hit})`; ctx.lineWidth=2.2+3*hit;
-  if(quality==='high'){ ctx.shadowColor='#A3E635'; ctx.shadowBlur=(4+12*hit)*view.dpr; }
-  stepRR(cx-iw/2-7, cy-ch/2-7, iw+14, ch+14, cw*.22); ctx.stroke(); ctx.restore();
-  
-  const kNow=clamp(Math.floor(bf+.5),0,N-1), cur=stp.notes[kNow];
-  const label= bf<-.5 ? '준비' : (cur.lead ? '준비 · 제자리에서 뛰기' : STEP_NAME[cur.exp]);
-  stepText(label, cx, cy+ch/2+Math.max(20,u*.04), Math.max(18,u*.042), '#EAF4F1');
-  
-  const c=stp.calib || stepLiveCalib(p), L=stp.last;
-  stepDrawFloor(p, c, cur.exp, true, (L && now-L.at<320) ? (L.ok?'ok':'bad') : null);
-  
-  if(L && now-L.at<1500){
-    const txt=L.ok ? `✔ ${STEP_NAME[L.exp]}` : `✕ ${STEP_NAME[L.exp]} → ${STEP_NAME[L.got]}`;
-    stepText(txt, cx, cy-ch/2-Math.max(20,u*.038), Math.max(15,u*.032), L.ok?'#BEF264':'#FDA4AF');
+function stepDrawNotes(G,bf){
+  const N=stp.notes.length, T=STEP.TRAVEL;
+  for(let k=Math.min(N-1,Math.floor(bf+T)); k>=Math.max(0,Math.floor(bf)-1); k--){
+    const note=stp.notes[k], dist=k-bf;
+    if(dist>T) continue;
+    let z=1, alpha;
+    if(dist>=0){ z=1-dist/T; alpha=.22+.78*z; }
+    else{ if(note.done) continue; alpha=clamp(1+dist/(STEP.WIN1+.15),.2,1); }        
+    const s=stepZs(z), y=stepZy(G,z), fw=G.tw*.47*s, fh=G.th*.84*s;
+    for(const [pos,foot,up] of STEP_FEET[note.exp]){
+      if(up) continue;
+      gPlate(G.cx+pos*G.dir*G.tw*s, y, fw, fh, GCOL[foot], alpha, 0, note.lead?'ghost':null);
+    }
+    
+    if(!note.lead && z>.3 && dist>=0 && (k===0 || stp.notes[k-1].exp!==note.exp || stp.notes[k-1].lead))
+    { const lx=G.cx+1.62*G.tw*s+6, px=Math.max(13,G.th*.5*s), fits=lx+px*3.2<view.W;      
+      stepText(STEP_NAME[note.exp], fits?lx:G.cx-1.62*G.tw*s-6, y, px, `rgba(234,244,241,${alpha})`, fits?'left':'right'); }
   }
 }
+
+function stepDrawFx(G,now){
+  for(const f of stp.fx){
+    const a=(now-f.at)/420; if(a<0 || a>=1) continue;
+    for(const [pos,foot,up] of STEP_FEET[f.exp]){
+      if(up) continue;
+      const x=G.cx+pos*G.dir*G.tw, w=G.tw*.47, h=G.th*.84;
+      ctx.save();
+      if(f.ok){
+        const k=1+a*.9;
+        ctx.globalAlpha=(1-a)*.85; ctx.fillStyle='#F7FEE7';
+        stepRR(x-w*k/2, G.hitY-h*k/2, w*k, h*k, h*.3); ctx.fill();
+        ctx.globalAlpha=(1-a); ctx.strokeStyle=GCOL[foot]; ctx.lineWidth=Math.max(2,w*.09*(1-a));
+        stepRR(x-w*(k+.5*a)/2, G.hitY-h*(k+1.2*a)/2-a*h*.9, w*(k+.5*a), h*(k+1.2*a), h*.4); ctx.stroke();
+      }else{
+        ctx.globalAlpha=(1-a)*.7; ctx.fillStyle='#FB7185';
+        stepRR(x-w/2, G.hitY-h/2+a*h*.5, w, h, h*.3); ctx.fill();
+      }
+      ctx.restore();
+    }
+  }
+}
+
+function stepRenderBack(now,inGame){
+  const p=players[0];
+  if(inGame && stepRound && stp){
+    const G=stepGeo(p); if(!G) return;
+    const bf=(now-gameStartPerf)/beatMs, q=((bf%1)+1)%1, pulse=bf>=-4 ? Math.pow(1-q,5) : 0, L=stp.last;
+    stepDrawTrack(G,pulse);
+    stepDrawPads(G,pulse,(L && now-L.at<260) ? (L.ok?'ok':'bad') : null);
+    stepDrawNotes(G,bf);
+    return;
+  }
+  if(appState==='lobby' && stepOn()){              
+    const G=stepGeo(p); if(G && p && p.seen) stepDrawPads(G,0,null,.9);
+  }
+}
+
 function stepRender(now,inGame){
-  if(inGame && stepRound){ stepDraw(now); return; }
-  if(appState==='lobby' && stepOn()){           
-    const p=players[0];
-    if(p && p.seen) stepDrawFloor(p, stepLiveCalib(p), 'C', false);
+  if(!(inGame && stepRound && stp)) return;
+  const G=stp.geo, W=view.W, H=view.H, u=Math.min(W,H);
+  if(G){
+    stepDrawFx(G,now);
+    if(stp.combo>=3){
+      const x=Math.max(u*.14, G.cx-2.15*G.tw), y=G.hitY-G.th*1.5;
+      stepText(String(stp.combo), x, y, Math.max(26,u*.075), '#BEF264');
+      stepText('연속', x, y+Math.max(22,u*.055), Math.max(12,u*.026), 'rgba(234,244,241,.86)');
+    }
+  }
+  const bf=(now-gameStartPerf)/beatMs, cx=W>H ? W/2 : W*.4, cy=Math.max(H*.15,104);
+  if(bf<STEP.LEAD-.5) stepText(bf<-.2 ? '준비' : '제자리에서 박자 맞추기', cx, cy, Math.max(16,u*.036), '#EAF4F1');
+  
+  const L=stp.last;
+  if(L && now-L.at<1300){
+    const txt=L.ok ? `✔ ${STEP_NAME[L.exp]}` : `✕ ${STEP_NAME[L.exp]} → ${STEP_NAME[L.got]}`;
+    stepText(txt, cx, cy, Math.max(15,u*.032), L.ok?'#BEF264':'#FDA4AF');
   }
 }
 
