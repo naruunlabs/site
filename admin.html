@@ -272,6 +272,8 @@ tr.row-expired td{background:#fdecec}
 .sidebar-company-logo{width:220px;height:52px;display:block;object-fit:contain;object-position:left center;filter:brightness(0) invert(1)}
 @media(max-width:620px){.top-logo-row .admin-company-logo{width:190px;height:46px}}
 
+.customer-branch{display:inline-block;font-size:11px;font-weight:700;color:#42526b;background:#eef2f7;border-radius:5px;padding:2px 6px;white-space:nowrap}
+#mBranch{cursor:pointer}
 </style>
 
 <style id="naruun-admin-v2-final">
@@ -716,6 +718,7 @@ table.cg tfoot td.num{text-align:right}
         </div>
         <button class="cg-btn" id="cgArchiveBtn" type="button" onclick="toggleCustArchive()" aria-pressed="false">이탈 보관</button>
 
+        <label>고객 소속 <select id="cgBranch" class="f-input" style="width:auto;max-width:220px" onchange="renderCustomers()"><option value="*">전체 소속</option></select></label>
         <input class="cg-search" id="cgSearch" placeholder="도장·관장님·전화 검색" oninput="renderCustomers()">
         <label class="cg-mobile-sort">정렬 <select id="cgSortMobile" onchange="setCustSortFromSelect(this)">
           <option value="created_at:desc">장부 등록일 · 최신순</option><option value="created_at:asc">장부 등록일 · 오래된순</option>
@@ -953,6 +956,13 @@ table.cg tfoot td.num{text-align:right}
           <input id="mSigungu" class="f-input" type="text" placeholder="예) 구미시 산동읍" />
         </div>
       </div>
+      <div class="m-row">
+        <div>
+          <label for="mBranch">고객 소속</label>
+          <select id="mBranch" class="f-input"></select>
+        </div>
+      </div>
+      <div class="field-hint">추가 상품에도 같은 소속을 사용합니다. 기존 고객의 미지정 소속은 확인 후 선택해주세요.</div>
       <div class="field-hint" id="ledgerHint">저장하면 회원 장부에도 한 줄이 만들어집니다.</div>
     </div>
 
@@ -1446,6 +1456,24 @@ async function copyKeyOnly(key) {
   catch(e) { prompt('아래 키를 복사하세요', key); }
 }
 
+const CUSTOMER_BRANCHES = [['hq','본부'],['busan_ulsan_gyeongnam','부산·울산·경남 지부']];
+const CUST_BRANCH_OPTIONS = [['','미지정'], ...CUSTOMER_BRANCHES];
+function branchLabel(code){
+  return CUST_BRANCH_OPTIONS.find(([v])=>v===String(code||''))?.[1] || String(code);
+}
+function fillBranchSelect(el,code,all=false){
+  if(!el)return;
+  const opts=all?[['*','전체 소속'],...CUST_BRANCH_OPTIONS]:[...CUST_BRANCH_OPTIONS];
+  if(code && !opts.some(([v])=>v===code))opts.push([code,branchLabel(code)]);
+  el.innerHTML=opts.map(([v,t])=>`<option value="${escapeHtml(v)}">${escapeHtml(t)}</option>`).join('');
+  el.value=code ?? (all?'*':'');
+}
+function branchCustomerForLicense(d){
+  const direct=customerForLicense(d.license_key);if(direct)return direct;
+  const phone=String(d.phone||'').replace(/[^0-9]/g,'');
+  const matches=CUSTOMERS.filter(c=>c.dojang_name===d.dojang_name && phone && String(c.phone||'').replace(/[^0-9]/g,'')===phone);
+  return matches.length && new Set(matches.map(c=>c.branch_code||'')).size===1 ? matches[0] : null;
+}
 function customerForLicense(key) {
   if (!key) return null;
   return CUSTOMERS.find(c => c.license_key === key) || null;
@@ -1462,6 +1490,7 @@ async function sendToLedger(id) {
     phone       : d.phone || null,
     license_key : d.license_key,
     memo        : d.memo || null,
+    branch_code : branchCustomerForLicense(d)?.branch_code || null,
     
     status      : isTrial ? 'trial' : 'customer',
     paid_amount : d.pay_amount || null,
@@ -1541,7 +1570,7 @@ function renderTable() {
     const slotOver = slotUsed > slotMax;
     const ipRisk = licenseIpRisk(d);
 
-    const led = customerForLicense(d.license_key);
+    const led = branchCustomerForLicense(d);
     const whoName = (led && led.owner_name)
       ? `<span class="who-name">${escapeHtml(String(led.owner_name).slice(0, 20))}</span>` : '';
 
@@ -1552,6 +1581,7 @@ function renderTable() {
       ? whoName + whoSido : '<span class="who-none">-</span>';
 
     const line2 = [
+      `<span class="customer-branch">${escapeHtml(branchLabel(led?.branch_code))}</span>`,
       d.phone ? escapeHtml(d.phone) : '',
       `기기 ${slotUsed}/${slotMax}${slotOver ? '<span class="dev-over">한도 초과</span>' : ''}`
     ].filter(Boolean).join(' · ');
@@ -1703,7 +1733,7 @@ function memberDirectory(){
 
     const cur = map.get(k) || { dojang_name:k, phone:'', owner_name:'', sido:'', sigungu:'', source:'', by:{}, kick:null, jump:null };
     if (!cur.by) cur.by = {};
-    for (const f of ['phone','owner_name','sido','sigungu','source'])
+    for (const f of ['phone','owner_name','sido','sigungu','source','branch_code'])
       if (!cur[f] && norm(patch[f])) cur[f] = norm(patch[f]);
     if (patch.lic) {
       const pid = productOfKey(patch.lic.license_key).key;
@@ -1715,7 +1745,7 @@ function memberDirectory(){
   };
   for (const d of (LICENSES||[])) put(d.dojang_name, { phone:d.phone, lic:d });
   for (const c of (CUSTOMERS||[]))
-    put(c.dojang_name, { phone:c.phone, owner_name:c.owner_name, sido:c.sido, sigungu:c.sigungu, source:c.source });
+    put(c.dojang_name, { phone:c.phone, owner_name:c.owner_name, sido:c.sido, sigungu:c.sigungu, source:c.source, branch_code:c.branch_code });
   return [...map.values()].sort((a,b)=>a.dojang_name.localeCompare(b.dojang_name,'ko'));
 }
 
@@ -1757,7 +1787,7 @@ function fillFromMember(m){
   set('mPhone',  m.phone);
   
   const real = (CUSTOMERS||[]).find(c => String(c.dojang_name||'').trim() === m.dojang_name) || null;
-  fillLedgerFields(real || { owner_name:m.owner_name, sido:m.sido, sigungu:m.sigungu, source:m.source });
+  fillLedgerFields(real || { owner_name:m.owner_name, sido:m.sido, sigungu:m.sigungu, source:m.source, branch_code:m.branch_code });
 
   const wantId  = curProduct().key;
   const by      = m.by || {};
@@ -1819,6 +1849,7 @@ function openAddModal() {
 function fillLedgerFields(c) {
   const sido = document.getElementById('mSido');
   const src  = document.getElementById('mSource');
+  fillBranchSelect(document.getElementById('mBranch'), c ? (c.branch_code || '') : 'hq');
   if (!sido.options.length) {
     sido.innerHTML = CUST_SIDO.map(v => `<option value="${v}">${v || '— 고르기 —'}</option>`).join('');
     src.innerHTML  = CUST_SOURCE.map(v => `<option value="${v}">${v || '— 고르기 —'}</option>`).join('');
@@ -1923,7 +1954,7 @@ function openEditModal(encoded) {
   showUsage(d.license_key);
   document.getElementById('saveBtn').textContent = '저장';
   document.getElementById('saveCopyBtn').textContent = '저장하고 카톡 복사';
-  fillLedgerFields(customerForLicense(d.license_key));
+  fillLedgerFields(branchCustomerForLicense(d));
   renderOwnedProducts(d.dojang_name, d.license_key);   
   document.getElementById('modalErr').textContent = '';
   onTypeChange();
@@ -2301,12 +2332,13 @@ async function syncLedgerFromLicense(p) {
   const sido    = val('mSido');
   const sigungu = val('mSigungu');
   const source  = val('mSource');
+  const branch_code = val('mBranch') || null;
 
   const found = customerForLicense(p.license_key)
              || CUSTOMERS.find(c => !c.license_key && c.dojang_name === p.dojang_name)
              || null;
 
-  const row = { dojang_name: p.dojang_name, license_key: p.license_key };
+  const row = { dojang_name: p.dojang_name, license_key: p.license_key, branch_code };
   if (p.phone) row.phone       = p.phone;
   if (owner)   row.owner_name  = owner;
   if (sido)    row.sido        = sido;
@@ -2340,6 +2372,7 @@ async function syncLedgerFromLicense(p) {
   }
 
   const saved = await edgeCall('SAVE_CUSTOMER', row);
+  if(!saved || !Object.hasOwn(saved,'branch_code') || (saved.branch_code||null)!==branch_code) throw new Error('고객 소속 저장을 확인하지 못했습니다. 서버 적용 상태를 확인하고 회원정보에서 다시 저장해주세요.');
   if (saved && saved.id) {
     const i = CUSTOMERS.findIndex(c => c.id === saved.id);
     if (i >= 0) CUSTOMERS[i] = saved; else CUSTOMERS.unshift(saved);
@@ -2539,6 +2572,7 @@ const CUST_SIDO   = ['', '서울','부산','대구','인천','광주','대전','
 
 const CUST_COLS = [
   { f:'dojang_name',     t:'도장명',     v:['sales','money','all'], name:true },
+  { f:'branch_code',     t:'고객 소속',  v:['sales','money','all'], sel:CUST_BRANCH_OPTIONS, wide:true },
   { f:'created_at',      t:'장부 등록일', v:['sales','money','all'], ro:true, h:'고객 장부에 처음 기록된 날짜 (가입일·판매일과 다름)' },
   { f:'owner_name',      t:'관장님',     v:['sales','all'] },
   { f:'phone',           t:'전화',       v:['sales','all'] },
@@ -2630,6 +2664,10 @@ function computeCustWidths(rows, cols) {
     else if (col.sel || col.lic) { extra = 24; min = 72; max = 190; }
     else if (col.wide) { min = 130; max = 250; }              
 
+    if (col.f === 'branch_code') {
+      w = Math.max(w, ...CUST_BRANCH_OPTIONS.map(([,label]) => textWidth(label,700,fs)));
+      extra = 42; min = 220; max = 320;
+    }
     out[col.f] = Math.round(Math.min(max, Math.max(min, w + extra)));
   });
   return out;
@@ -2641,6 +2679,7 @@ async function loadCustomers() {
   try {
     CUSTOMERS = await edgeCall('GET_CUSTOMERS', {}) || [];
     CUSTOMERS.forEach(c => { if (c.phone) c.phone = formatPhone(c.phone); });
+    fillBranchSelect(document.getElementById('cgBranch'), document.getElementById('cgBranch').value, true);
     restoreCustomerDrafts();
     renderCustomers();
     
@@ -2738,6 +2777,7 @@ function setCustSortFromSelect(el) {
 }
 function customerRowsNow() {
   const q = document.getElementById('cgSearch').value.trim().toLowerCase();
+  const branch = document.getElementById('cgBranch').value;
   
   const qd = /^[0-9]{3,}$/.test(q) ? q : '';
   const rows = CUSTOMERS.filter(c => {
@@ -2749,7 +2789,7 @@ function customerRowsNow() {
     if (custFilter === 'due') m = isDueOpen(c);
     else if (custFilter === 'all') m = c.status !== 'churned';
     else m = (c.status || 'lead') === custFilter;
-    return qHit && m;
+    return qHit && m && (branch==='*' || String(c.branch_code||'')===branch);
   });
   return sortCustomerRows(rows);
 }
@@ -2767,11 +2807,13 @@ function customerMobileSummary(c) {
   const activity = !linked.length ? '라이선스 없음' : ago === null ? '인증 전' : `인증 ${agoText(Math.max(0,ago))}`;
   const risk = linked.some(licenseIpRisk);
   return `<div class="cg-mobile-summary"><span class="cg-mobile-owner">${escapeHtml(c.owner_name || '관장명 미입력')}</span>` +
-    `<span class="cg-mobile-status">${escapeHtml(status)}</span><span class="cg-mobile-activity">${escapeHtml(activity)}</span>` +
+    `<span class="customer-branch">${escapeHtml(branchLabel(c.branch_code))}</span><span class="cg-mobile-status">${escapeHtml(status)}</span><span class="cg-mobile-activity">${escapeHtml(activity)}</span>` +
     (risk ? '<strong class="license-ip-flag">접속망 확인</strong>' : '') + '</div>';
 }
 function renderCustomers() {
 
+  const branchFilter=document.getElementById('cgBranch');
+  if(branchFilter.options.length===1)fillBranchSelect(branchFilter,'*',true);
   const act = document.activeElement;
   const keep = (act && act.classList && act.classList.contains('cg-in'))
     ? { id: act.dataset.id, f: act.dataset.f, pos: act.selectionStart } : null;
@@ -2856,6 +2898,7 @@ function custCell(c, col) {
   }
   if (col.sel) {
     const opts = col.sel.map(o => Array.isArray(o) ? o : [o, o || '—']);
+    if(raw && !opts.some(([v])=>v===String(raw)))opts.push([String(raw),String(raw)]);
     return `<select class="cg-in" ${at}>` + opts.map(([v,t]) =>
       `<option value="${escapeHtml(v)}"${String(raw||'')===v?' selected':''}>${escapeHtml(t)}</option>`).join('') + '</select>';
   }
@@ -2976,13 +3019,20 @@ async function drainCustomerSave(id){
           const fields={license_type:toTrial?'trial':'lifetime',expire_date:null,trial_days:toTrial?(Number(linked.trial_days)||3):null};
           await edgeCall('UPDATE_LICENSE',{id:linked.id,...fields});Object.assign(linked,fields);
         }
-        await edgeCall('SAVE_CUSTOMER',{id,...patch});
+        const saved=await edgeCall('SAVE_CUSTOMER',{id,...patch});
+        if(Object.hasOwn(patch,'branch_code')){
+          if(!saved || !Object.hasOwn(saved,'branch_code') || (saved.branch_code||null)!==(patch.branch_code||null))throw new Error('고객 소속 저장을 확인하지 못했습니다. 서버 적용 상태를 확인해주세요.');
+          const phone=String(c.phone||'').replace(/[^0-9]/g,'');
+          if(phone)for(const peer of CUSTOMERS){
+            if(peer.id!==id && peer.dojang_name===c.dojang_name && String(peer.phone||'').replace(/[^0-9]/g,'')===phone && !Object.hasOwn(customerSaveState(peer.id).draft,'branch_code'))peer.branch_code=saved.branch_code;
+          }
+        }
         
         for(const f of Object.keys(patch))if(st.revisions[f]===rev[f])delete st.draft[f];
         persistCustomerDrafts();
       }
     }catch(err){st.failed=true;showToast('저장하지 못한 입력을 보관했습니다. 다시 저장을 눌러주세요: '+err.message);}
-    finally{st.busy=false;persistCustomerDrafts();if(!st.failed){renderTable();}paintCustomerSave(id);updateCustStats();}
+    finally{st.busy=false;persistCustomerDrafts();if(!st.failed){renderTable();if(st.branchRefresh){renderCustomers();st.branchRefresh=false;}}paintCustomerSave(id);updateCustStats();}
   })();return st.task;
 }
 async function retryCustomerSave(id){await drainCustomerSave(id);if(!customerSaveState(id).failed)showToast('보관한 입력을 저장했습니다.');}
@@ -3001,6 +3051,7 @@ async function onCustCell(el){
       }
     }
   }
+  if(f==='branch_code')customerSaveState(id).branchRefresh=true;
   const before={...c};c[f]=v;const moneyChanged=recalcMoney(c,f),st=customerSaveState(id);
   for(const key of new Set([f,...Object.keys(c).filter(k=>c[k]!==before[k])])){
     st.draft[key]=c[key];st.revisions[key]=++st.seq;
@@ -3256,6 +3307,7 @@ function exportCustomersCsv() {
     if (col.ro) return esc(derivedCust(c, col.f));   
     if (col.f === 'status') return esc(statusName(c.status));
     if (col.chk) return esc(c[col.f] ? 'O' : '');
+    if (col.f === 'branch_code') return esc(branchLabel(c.branch_code));
     return esc(c[col.f]);
   }).join(',')).join('\n');
 
@@ -3565,9 +3617,9 @@ function exportLicensesCsv(){
   const q = v => `"${String(v ?? '').replace(/"/g,'""')}"`;
   const typeName = t => t==='trial'?'체험':t==='package'?'패키지':'정식';
   const stName = { live:'정식 사용중', trial:'체험 진행중', soon:'만료 임박', expired:'만료됨', off:'중지' };
-  const head = ['제품','도장명','연락처','라이선스 키','종류','상태','체험일수','체험 시작','만료일','발급일','최근 인증','기기(사용/최대)','결제금액','결제일','결제메모','메모'];
+  const head = ['제품','도장명','고객 소속','연락처','라이선스 키','종류','상태','체험일수','체험 시작','만료일','발급일','최근 인증','기기(사용/최대)','결제금액','결제일','결제메모','메모'];
   const body = PRODUCT_ORDER.flatMap(id => list.filter(d => productOfKey(d.license_key).key === id)).map(d => [
-    productOfKey(d.license_key).short, d.dojang_name, d.phone, d.license_key, typeName(d.license_type),
+    productOfKey(d.license_key).short, d.dojang_name, branchLabel(branchCustomerForLicense(d)?.branch_code), d.phone, d.license_key, typeName(d.license_type),
     stName[licenseState(d)] || '', d.license_type==='trial' ? (Number(d.trial_days)||3) : '',
     isoToYmd(d.trial_started_at), d.expire_date, isoToYmd(d.created_at), isoToYmd(d.last_verified_at),
     `${(d.device_slots||[]).length}/${d.max_devices||2}`, d.pay_amount, d.pay_date, d.pay_memo, d.memo
@@ -3961,7 +4013,7 @@ tr.cg-row.s-trial select.cg-in[data-f="status"],tr.cg-row.s-customer select.cg-i
 <script id="naruun-admin-clean-redesign-js">
 
 (function(){
-  const ids=['mDojang','mLicenseType','mMaxDevices','mPayAmount','mPayDate'];
+  const ids=['mDojang','mBranch','mLicenseType','mMaxDevices','mPayAmount','mPayDate'];
   function text(id){const el=document.getElementById(id);return el?String(el.value||'').trim():''}
   function updateIssueSummary(){
     const out=document.getElementById('issueSummaryText');if(!out)return;
@@ -3970,7 +4022,7 @@ tr.cg-row.s-trial select.cg-in[data-f="status"],tr.cg-row.s-customer select.cg-i
     const product=(typeof curProduct==='function'&&curProduct().short)||'제품';
     const devices=text('mLicenseType')==='trial'?'기기 1대':'기기 '+(text('mMaxDevices')||'2')+'대';
     const pay=text('mPayAmount');
-    out.textContent=[dojang,product,type,devices,pay?Number(pay).toLocaleString('ko-KR')+'원':null].filter(Boolean).join(' · ');
+    out.textContent=[dojang,branchLabel(text('mBranch')),product,type,devices,pay?Number(pay).toLocaleString('ko-KR')+'원':null].filter(Boolean).join(' · ');
   }
   ids.forEach(id=>{const el=document.getElementById(id);if(el){el.addEventListener('input',updateIssueSummary);el.addEventListener('change',updateIssueSummary)}});
   const bg=document.getElementById('modalBg');if(bg)new MutationObserver(updateIssueSummary).observe(bg,{attributes:true,attributeFilter:['class']});
