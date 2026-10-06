@@ -1045,6 +1045,10 @@ table.cg tfoot td.num{text-align:right}
       <div id="usageBox" class="use-note">불러오는 중…</div>
     </div>
 
+<div class="modal-section" id="deviceHistorySection" hidden>
+      <div class="modal-section-title">기기 및 접속 이력</div>
+      <div id="deviceHistoryBox" aria-live="polite"></div>
+    </div>
 <div id="expireSection">
       <div class="modal-section">
         <div class="modal-section-title">만료일 설정</div>
@@ -1872,6 +1876,7 @@ function openAddModal() {
   const cn0 = document.getElementById('convertNote'); if (cn0) cn0.textContent = '';
   document.getElementById('deviceSlotSection').style.display = 'none';
   document.getElementById('usageSection').style.display = 'none';
+  showDeviceHistory('');
   document.getElementById('ownedSection').style.display = 'none';   
   document.getElementById('saveBtn').textContent = '발급';
   document.getElementById('saveCopyBtn').textContent = '발급하고 카톡 복사';
@@ -1992,6 +1997,7 @@ function openEditModal(encoded) {
   document.getElementById('deviceSlotSection').style.display = 'block';
   renderDeviceSlotsUI();
   showUsage(d.license_key);
+  showDeviceHistory(d.license_key);
   document.getElementById('saveBtn').textContent = '저장';
   document.getElementById('saveCopyBtn').textContent = '저장하고 카톡 복사';
   fillLedgerFields(branchCustomerForLicense(d));
@@ -2000,7 +2006,7 @@ function openEditModal(encoded) {
   onTypeChange();
   document.getElementById('modalBg').classList.add('show');
 }
-function closeModal() { document.getElementById('modalBg').classList.remove('show'); }
+function closeModal() { document.getElementById('modalBg').classList.remove('show'); ++DEVICE_HISTORY_SEQ; }
 
 const USE_WEEKS = 18;                 
 
@@ -2299,7 +2305,7 @@ function renderDeviceSlotsUI() {
       const dateStr = slot.registered_at ? slot.registered_at.slice(0,10) : '-';
       html += `<div class="admin-slot-card is-used${over?' is-over':''}">
         <div class="admin-slot-status">${over ? '한도 초과' : '사용 중'}</div>
-        <div class="admin-slot-sub">등록일 ${dateStr}${slotIpLine(slot)}${over?'<br>한도가 줄기 전에 등록된 기기입니다':''}</div>
+        <div class="admin-slot-sub">등록일 ${dateStr}<br>기기 번호 <span style="overflow-wrap:anywhere">${esc(slot.device_id || '기록 없음')}</span>${slotIpLine(slot)}${over?'<br>한도가 줄기 전에 등록된 기기입니다':''}</div>
         <button type="button" class="btn-sm btn-del" onclick="removeDeviceSlot(${i})">기기 해제</button>
       </div>`;
     } else {
@@ -4489,5 +4495,133 @@ async function clearErrors(){
   } catch(e) { showToast('비우기 실패: ' + e.message); }
 }
 </script>
+
+<style id="device-history-style">
+#deviceHistorySection[hidden]{display:none}
+#deviceHistoryBox .dh-stats{display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:10px;margin-bottom:16px}
+#deviceHistoryBox .dh-stat{background:var(--panel-soft,#f7fafe);border:1px solid var(--line,#e3eaf3);padding:14px;border-radius:14px;min-width:0}
+#deviceHistoryBox .dh-stat b{display:block;font-size:21px;color:var(--ink,#071c49);overflow-wrap:anywhere}
+#deviceHistoryBox .dh-stat:last-child b{font-size:15px}
+#deviceHistoryBox .dh-stat span,.dh-label{display:block;color:var(--muted,#667085);font-size:12px;margin-top:4px}
+#deviceHistoryBox .dh-alert{padding:14px;background:#fff5e5;color:#80520b;border-radius:12px;margin-bottom:16px;line-height:1.65}
+#deviceHistoryBox .dh-alert small{display:block;font-size:12px;margin-top:5px}
+#deviceHistoryBox .dh-device{border:1px solid var(--line,#e3eaf3);border-radius:14px;margin:12px 0;overflow:hidden}
+#deviceHistoryBox summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px;background:var(--panel-soft,#f7fafe);cursor:pointer;min-height:44px}
+#deviceHistoryBox summary::-webkit-details-marker{display:none}
+#deviceHistoryBox summary>div{min-width:0;overflow-wrap:anywhere}
+#deviceHistoryBox summary b{font-size:14px;color:var(--ink,#071c49)}
+#deviceHistoryBox summary:focus-visible{outline:2px solid #0757d8;outline-offset:-3px}
+#deviceHistoryBox .dh-expand{color:#0757d8;font-size:12px;white-space:nowrap}
+#deviceHistoryBox details[open] .dh-expand:after{content:'접기 −'}
+#deviceHistoryBox details:not([open]) .dh-expand:after{content:'이력 보기 +'}
+#deviceHistoryBox .dh-body{padding:16px}
+#deviceHistoryBox .dh-facts{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
+#deviceHistoryBox .dh-value{display:block;font-size:13px;color:var(--ink,#071c49);overflow-wrap:anywhere}
+#deviceHistoryBox code{white-space:normal;overflow-wrap:anywhere}
+#deviceHistoryBox .dh-event{display:grid;grid-template-columns:150px 1fr;gap:12px;padding:12px 0;border-top:1px solid var(--line,#e3eaf3);font-size:13px}
+#deviceHistoryBox .dh-event time{color:var(--muted,#667085)}
+#deviceHistoryBox .dh-event code{display:block;margin-top:4px}
+#deviceHistoryBox .dh-change{color:#0757d8}
+#deviceHistoryBox .dh-note{font-size:12px;color:var(--muted,#667085);line-height:1.75;margin:12px 0}
+#deviceHistoryBox .dh-history-title{font-size:13px;display:block;margin-bottom:8px}
+#deviceHistoryBox .dh-more{margin-top:10px;min-height:44px}
+@media(max-width:600px){#deviceHistoryBox .dh-stats{grid-template-columns:1fr}#deviceHistoryBox .dh-stat{display:flex;align-items:center;justify-content:space-between;gap:12px}#deviceHistoryBox .dh-stat b{font-size:18px}#deviceHistoryBox .dh-stat span{margin:0;text-align:right}#deviceHistoryBox .dh-facts{grid-template-columns:1fr}#deviceHistoryBox .dh-event{grid-template-columns:1fr;gap:4px}#deviceHistoryBox summary{padding:12px}#deviceHistoryBox .dh-body{padding:12px}}
+
+</style>
+<script id="device-history-script">
+
+let DEVICE_HISTORY_SEQ = 0;
+let DEVICE_HISTORY_KEY = '';
+function dhTime(value) {
+  if (!value || !Number.isFinite(new Date(value).getTime())) return '기록 없음';
+  return new Intl.DateTimeFormat('ko-KR', {timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date(value));
+}
+function dhKnownIp(value) { return value && value !== 'unknown' ? value : ''; }
+function dhFact(label, value, code) {
+  return `<div><span class="dh-label">${escapeHtml(label)}</span><${code?'code':'span'} class="dh-value">${escapeHtml(value || '기록 없음')}</${code?'code':'span'}></div>`;
+}
+function dhDeviceName(device, number) {
+  return `기기 ${number}` + (device.os || device.browser ? ` · ${[device.os,device.browser].filter(Boolean).join(' / ')}` : ' · 환경 정보 없음');
+}
+async function showDeviceHistory(key) {
+  const seq = ++DEVICE_HISTORY_SEQ;
+  DEVICE_HISTORY_KEY = key || '';
+  const section = document.getElementById('deviceHistorySection');
+  const box = document.getElementById('deviceHistoryBox');
+  if (!section || !box) return;
+  section.hidden = !key;
+  if (!key) { box.innerHTML = ''; return; }
+  box.innerHTML = '<div class="dh-note">기기 이력을 불러오는 중…</div>';
+  const slots = currentEditDeviceSlots.map(s => ({...s}));
+  try {
+    const data = await edgeCall('GET_DEVICE_HISTORY', {license_key:key});
+    if (seq !== DEVICE_HISTORY_SEQ) return;
+    renderDeviceHistory(data || {}, slots, box, seq);
+  } catch (_) {
+    if (seq !== DEVICE_HISTORY_SEQ) return;
+    box.innerHTML = '<div class="dh-note">접속 이력을 불러오지 못했습니다. 등록된 기기 정보는 아래에서 확인할 수 있습니다.</div>';
+    renderDeviceHistory({devices:[],unavailable:true}, slots, box, seq, true);
+    const retry = document.createElement('button'); retry.type='button'; retry.className='btn-sm btn-ghost'; retry.textContent='다시 불러오기';
+    retry.addEventListener('click',()=>showDeviceHistory(key)); box.appendChild(retry);
+  }
+}
+function renderDeviceHistory(data, slots, box, seq, append) {
+  const fromServer = Array.isArray(data.devices) ? data.devices : [];
+  const devices = slots.map((slot,i)=>({...slot,...fromServer.find(d=>d.device_id===slot.device_id),number:i+1,registered:true}));
+  fromServer.filter(d=>!slots.some(s=>s.device_id===d.device_id)).forEach(d=>devices.push({...d,number:devices.length+1,registered:false}));
+  const names = new Map(devices.map(d=>[d.device_id,`기기 ${d.number}`]));
+  const stat = (value,label)=>`<div class="dh-stat"><b>${escapeHtml(value)}</b><span>${escapeHtml(label)}</span></div>`;
+  let html = data.unavailable ? '' : `<div class="dh-stats">${stat((Number(data.device_count)||0)+'대','최근 90일 인증 기기')}${stat((Number(data.ip_count)||0)+'개','최근 90일 서로 다른 IP')}${stat(data.last_at?dhTime(data.last_at):'기록 없음','마지막 성공 인증 · 한국 시간')}</div>`;
+  const pair = data.recent_pair;
+  if (pair) html += `<div class="dh-alert"><b>접속 내역 확인</b><br>${escapeHtml(dhTime(pair.at_a))} 무렵 ${escapeHtml(names.get(pair.device_a)||'다른 기기')}와 ${escapeHtml(names.get(pair.device_b)||'다른 기기')}가 서로 다른 IP에서 2분 이내에 인증했습니다.<small>동시 사용이나 공유 여부를 확정하는 기록은 아닙니다.</small></div>`;
+  if (!devices.length) html += '<div class="dh-note">등록된 기기와 접속 이력이 아직 없습니다.</div>';
+  html += devices.map(d=>{
+    const last = d.last_at || d.last_seen_at;
+    const lastIp = dhKnownIp(d.last_ip) || dhKnownIp(d.first_ip);
+    const facts = dhFact('기기 식별번호',d.device_id,true) + dhFact('최초 등록',dhTime(d.registered_at)) + dhFact('최근 인증',dhTime(last)) + dhFact('최초 등록 IP',dhKnownIp(d.first_ip),true) + dhFact('최근 접속 IP',lastIp,true);
+    return `<details class="dh-device" data-device="${escapeHtml(d.device_id)}"><summary><div><b>${escapeHtml(dhDeviceName(d,d.number))}</b><span class="dh-label">${d.registered?'등록된 기기':'현재 등록 해제됨'} · ${d.hits?`최근 90일 인증 ${Number(d.days)||0}일 · IP ${Number(d.ip_count)||0}개`:'새 이력 없음'}</span></div><span class="dh-expand"></span></summary><div class="dh-body"><div class="dh-facts">${facts}</div><b class="dh-history-title">최근 90일 인증 이력</b><div class="dh-events"></div></div></details>`;
+  }).join('');
+  html += `<div class="dh-note">상세 이력은 ${escapeHtml(data.record_start||'2026-10-06')} 적용 시점부터 쌓입니다. 브라우저·운영체제는 10월 13일 이후 인증부터 기록됩니다.<br>인증 기록 기준 · IP 개수는 장소 수가 아닙니다. 브라우저 변경·사이트 데이터 삭제 시 새 기기로 잡힐 수 있습니다.</div>`;
+  if (append) box.insertAdjacentHTML('beforeend',html); else box.innerHTML=html;
+  box.querySelectorAll('.dh-device').forEach(detail=>{
+    detail.addEventListener('toggle',()=>{
+      if (detail.open && !detail.dataset.loaded) loadDeviceEvents(detail,seq);
+    });
+  });
+}
+async function loadDeviceEvents(detail,seq,cursor) {
+  if (detail.dataset.busy) return;
+  const target=detail.querySelector('.dh-events');
+  const key=DEVICE_HISTORY_KEY;
+  detail.dataset.busy='1';
+  let more=target.querySelector('.dh-more');
+  if (more) more.disabled=true;
+  if (!cursor) target.innerHTML='<div class="dh-note">불러오는 중…</div>';
+  try {
+    const result=await edgeCall('GET_DEVICE_HISTORY',{license_key:key,device_id:detail.dataset.device,...(cursor?{before:cursor}:{})});
+    if (seq!==DEVICE_HISTORY_SEQ || !detail.isConnected) return;
+    const rows=Array.isArray(result.events)?result.events:[];
+    if (!cursor) target.innerHTML='';
+    if (more) more.remove();
+    if (!rows.length && !cursor) target.innerHTML='<div class="dh-note">이 기기의 상세 인증 이력이 아직 없습니다. 기존 등록 정보만 표시합니다.</div>';
+    const previous=result.previous_ip;
+    const markup=rows.map((r,i)=>{
+      const earlier=rows[i+1];
+      const oldIp=earlier?earlier.ip:previous;
+      const changed=dhKnownIp(r.ip)&&dhKnownIp(oldIp)&&r.ip!==oldIp;
+      return `<div class="dh-event"><time>${escapeHtml(dhTime(r.created_at))}</time><div>${changed?'<b class="dh-change">접속 IP 변경</b>':'<span>성공 인증</span>'}<code>${escapeHtml(dhKnownIp(r.ip)||'IP 기록 없음')}</code>${changed?`<span class="dh-label">이전 IP ${escapeHtml(oldIp)} · 기기 번호 유지</span>`:''}<span class="dh-label">${escapeHtml([r.os,r.browser].filter(Boolean).join(' · ')||'환경 정보 수집 전 또는 확인 불가')}</span></div></div>`;
+    }).join('');
+    target.insertAdjacentHTML('beforeend',markup);
+    detail.dataset.loaded='1';
+    if (result.next){ const button=document.createElement('button');button.type='button';button.className='btn-sm btn-ghost dh-more';button.textContent='이전 기록 더 보기';button.addEventListener('click',()=>loadDeviceEvents(detail,seq,result.next));target.appendChild(button); }
+  } catch (_) {
+    if (seq!==DEVICE_HISTORY_SEQ || !detail.isConnected) return;
+    if (more) {more.disabled=false;more.textContent='다시 불러오기';}
+    else {target.innerHTML='<div class="dh-note">이력을 불러오지 못했습니다.</div>';const button=document.createElement('button');button.type='button';button.className='btn-sm btn-ghost';button.textContent='다시 불러오기';button.addEventListener('click',()=>loadDeviceEvents(detail,seq));target.appendChild(button);}
+  } finally {delete detail.dataset.busy;}
+}
+
+</script>
+
 </body>
 </html>
