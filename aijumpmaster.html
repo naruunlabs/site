@@ -964,7 +964,7 @@ body.hf-dim #jmpPilotGraph .jt-wing{display:none!important}
 
 <script type="module">
 
-const APP_VERSION = '3.8.2';   
+const APP_VERSION = '3.8.3';   
 try{ window.__NL_VER = APP_VERSION; }catch(e){}   
 
 const MP_VERSION  = '1.0.1';
@@ -1270,7 +1270,7 @@ let duoType='cooperate';
 let soundOn = store.get('jmp_sound','1')!=='0';
 
 const STEP = {
-  LANE: 1.00,        
+  LANE: 0.90,        
   SPREAD: 0.90,      
   LIFT: 0.22,        
   WIN0: 0.00, WIN1: 0.80,   
@@ -1278,7 +1278,7 @@ const STEP = {
   ANKLE_VIS: 0.40,   
   EARLY0: 0.05,      
   TRAVEL: 3.5,       
-  VIEW: 1.35,        
+  VIEW: 1.25,        
   LEAD: 4,           
   BEATS: 32,         
   RAW_KEEP: 6, ROUNDS_MAX: 40,
@@ -4252,7 +4252,7 @@ function stepGeo(p){
   const c=(stp&&stp.calib) || stepLiveCalib(p);
   if(p && p.seen && p.rig && c){
     const H=view.H, tw=Math.min(STEP.LANE*STEP.VIEW*c.shW*view.dw, view.W*.29), hitY=p.rig.floor;   
-    const g={ cx:sp({x:c.x0,y:0}).x, tw, th:tw*.46, hitY, horizon:Math.max(H*.1, hitY-Math.max(220,H*.66)), dir:view.mirror?-1:1 };
+    const g={ cx:sp({x:c.x0,y:0}).x, tw, th:tw*.34, hitY, horizon:Math.max(H*.1, hitY-Math.max(220,H*.66)), dir:view.mirror?-1:1 };
     if(stp) stp.geo=g;
     return g;
   }
@@ -4275,10 +4275,10 @@ function stepDrawPads(G,pulse,tone,alpha){
   ctx.save(); ctx.globalAlpha=alpha==null?1:alpha; ctx.lineJoin='round';
   for(const l of [-1,0,1]){
     const x=G.cx+l*G.dir*G.tw;
-    stepRR(x-G.tw/2+2, G.hitY-G.th/2, G.tw-4, G.th, G.th*.2);
-    ctx.fillStyle='rgba(3,15,27,.5)'; ctx.fill();
-    ctx.strokeStyle= tone==='ok' ? 'rgba(190,242,100,.98)' : tone==='bad' ? 'rgba(251,113,133,.95)' : `rgba(94,234,212,${.5+.4*pulse})`;
-    ctx.lineWidth=Math.max(2,G.tw*.035)+2*pulse; ctx.stroke();
+    const gap=Math.max(4,G.tw*.035);
+    stepRR(x-G.tw/2+gap, G.hitY-G.th/2, G.tw-gap*2, G.th, Math.min(6*view.dpr,G.th*.1));
+    ctx.fillStyle= tone==='ok' ? 'rgba(190,242,100,.25)' : tone==='bad' ? 'rgba(251,113,133,.25)' : `rgba(223,239,248,${.13+.025*pulse})`;
+    ctx.fill();
   }
   ctx.restore();
 }
@@ -4290,10 +4290,9 @@ function stepDrawTrack(G,pulse){
   g.addColorStop(0,'rgba(4,14,30,0)'); g.addColorStop(.35,'rgba(4,14,30,.2)'); g.addColorStop(1,'rgba(4,14,30,.44)');
   ctx.fillStyle=g;
   ctx.beginPath(); ctx.moveTo(G.cx-half*s0,G.horizon); ctx.lineTo(G.cx+half*s0,G.horizon); ctx.lineTo(G.cx+half,yN); ctx.lineTo(G.cx-half,yN); ctx.closePath(); ctx.fill();
-  for(const e of [-1.5,-.5,.5,1.5]){
-    const outer=Math.abs(e)>1;
-    ctx.strokeStyle=outer?'rgba(94,234,212,.42)':'rgba(255,255,255,.16)'; ctx.lineWidth=outer?2:1.2;
-    ctx.beginPath(); ctx.moveTo(G.cx+e*G.tw*s0,G.horizon); ctx.lineTo(G.cx+e*G.tw,yN); ctx.stroke();
+  for(const e of [-.5,.5]){
+    ctx.strokeStyle='rgba(255,255,255,.07)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(G.cx+e*G.tw*s0,G.horizon); ctx.lineTo(G.cx+e*G.tw,G.hitY-G.th/2); ctx.stroke();
   }
   ctx.restore();
 }
@@ -4306,10 +4305,12 @@ function stepDrawNotes(G,bf){
     let z=1, alpha;
     if(dist>=0){ z=1-dist/T; alpha=.22+.78*z; }
     else{ if(note.done) continue; alpha=clamp(1+dist/(STEP.WIN1+.15),.2,1); }        
-    const s=stepZs(z), y=stepZy(G,z), fw=G.tw*.47*s, fh=G.th*.84*s;
+    const s=stepZs(z), y=stepZy(G,z), fw=G.tw*.44*s, fh=G.th*.48*s;
     for(const [pos,foot,up] of STEP_FEET[note.exp]){
       if(up) continue;
-      gPlate(G.cx+pos*G.dir*G.tw*s, y, fw, fh, GCOL[foot], alpha, 0, note.lead?'ghost':null);
+      ctx.save(); ctx.globalAlpha=alpha*(note.lead?.5:1); ctx.fillStyle=GCOL[foot];
+      stepRR(G.cx+pos*G.dir*G.tw*s-fw/2, y-fh/2, fw, fh, Math.min(4*view.dpr*s,fh*.15)); ctx.fill();
+      ctx.restore();
     }
     
     if(!note.lead && z>.3 && dist>=0 && (k===0 || stp.notes[k-1].exp!==note.exp || stp.notes[k-1].lead))
@@ -4323,14 +4324,14 @@ function stepDrawFx(G,now){
     const a=(now-f.at)/420; if(a<0 || a>=1) continue;
     for(const [pos,foot,up] of STEP_FEET[f.exp]){
       if(up) continue;
-      const x=G.cx+pos*G.dir*G.tw, w=G.tw*.47, h=G.th*.84;
+      const x=G.cx+pos*G.dir*G.tw, w=G.tw*.44, h=G.th*.48;
       ctx.save();
       if(f.ok){
         const k=1+a*.9;
         ctx.globalAlpha=(1-a)*.85; ctx.fillStyle='#F7FEE7';
         stepRR(x-w*k/2, G.hitY-h*k/2, w*k, h*k, h*.3); ctx.fill();
-        ctx.globalAlpha=(1-a); ctx.strokeStyle=GCOL[foot]; ctx.lineWidth=Math.max(2,w*.09*(1-a));
-        stepRR(x-w*(k+.5*a)/2, G.hitY-h*(k+1.2*a)/2-a*h*.9, w*(k+.5*a), h*(k+1.2*a), h*.4); ctx.stroke();
+        ctx.globalAlpha=(1-a)*.3; ctx.fillStyle=GCOL[foot];
+        stepRR(x-w*(k+.5*a)/2, G.hitY-h*(k+1.2*a)/2-a*h*.9, w*(k+.5*a), h*(k+1.2*a), h*.15); ctx.fill();
       }else{
         ctx.globalAlpha=(1-a)*.7; ctx.fillStyle='#FB7185';
         stepRR(x-w/2, G.hitY-h/2+a*h*.5, w, h, h*.3); ctx.fill();
