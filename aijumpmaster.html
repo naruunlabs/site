@@ -809,7 +809,7 @@ body.hf-dim #jmpPilotGraph .jt-wing{display:none!important}
         <button type="button" data-gv="grid" class="on">발판형</button>
         <button type="button" data-gv="foot">레인형</button>
       </div>
-      <label class="lfield"><i>훈련 음악</i><select id="groupMusic"><option value="iron" selected>The Iron Pace · 120 BPM</option><option value="final">The Final Rep · 120 BPM</option><option value="none">음악 없음 · 박자음만</option></select></label>
+      <label class="lfield"><i>훈련 음악</i><select id="groupMusic"><option value="kitchen">100 BPM · Kitchen Counter Bounce</option><option value="landing">100 BPM · Two Feet Landing</option><option value="boundless">120 BPM · Boundless Steps</option><option value="iron" selected>120 BPM · The Iron Pace</option><option value="final">120 BPM · The Final Rep</option><option value="rising">140 BPM · Rising Motion</option><option value="unbroken">140 BPM · Unbroken Pace</option><option value="none">음악 없음 · 박자음만</option></select></label>
       <div class="lfield" id="groupSkillWrap"><i>연습할 종목</i><div class="rsum"><span id="groupPracticeSum">1개 종목</span><button type="button" id="groupPracticeEditBtn">선택 ›</button></div><select id="groupSkill" hidden></select></div>
       <div class="lfield" id="groupRoutineWrap" hidden><i>루틴</i><div class="rsum"><span id="groupRoutineSum"></span><button type="button" id="groupEditBtn">편집 ›</button></div></div>
     </div>
@@ -964,7 +964,7 @@ body.hf-dim #jmpPilotGraph .jt-wing{display:none!important}
 
 <script type="module">
 
-const APP_VERSION = '3.8.3';   
+const APP_VERSION = '3.8.4';   
 try{ window.__NL_VER = APP_VERSION; }catch(e){}   
 
 const MP_VERSION  = '1.0.1';
@@ -1470,8 +1470,13 @@ let groupView='grid';
 let groupSkillId='together';       
 let practiceOffset=0;              
 const GROUP_MUSIC={
-  iron:{name:'The Iron Pace',src:'bgm/jump-iron-pace.mp3',bpm:120},
-  final:{name:'The Final Rep',src:'bgm/jump-final-rep.mp3',bpm:120}
+  kitchen:{name:'Kitchen Counter Bounce',src:'bgm/100bpm_Kitchen_Counter_Bounce.mp3',bpm:100},
+  landing:{name:'Two Feet Landing',src:'bgm/100bpm_Two_Feet_Landing.mp3',bpm:100},
+  boundless:{name:'Boundless Steps',src:'bgm/120bpm_Boundless_Steps.mp3',bpm:120},
+  iron:{name:'The Iron Pace',src:'bgm/120bpm_jump-iron-pace.mp3',bpm:120},
+  final:{name:'The Final Rep',src:'bgm/120bpm_jump-final-rep.mp3',bpm:120},
+  rising:{name:'Rising Motion',src:'bgm/140bpm_Rising_Motion.mp3',bpm:140},
+  unbroken:{name:'Unbroken Pace',src:'bgm/140bpm_Unbroken_Pace.mp3',bpm:140}
 };
 let groupMusicKey='iron',groupMusicSource=null,groupMusicGain=null,groupMusicBuffer=null,groupMusicBufferKey='';
 const gmod=(a,n)=>((a%n)+n)%n;
