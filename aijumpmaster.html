@@ -107,6 +107,18 @@
 #paceTarget{width:100%;box-sizing:border-box;background:#12231f;color:#f1faf6;border:1px solid #456052;border-radius:10px;padding:14px 16px;font-size:24px;font-weight:800;font-family:inherit;color-scheme:dark;}
 #paceTime,#paceTime option{background:#12231f;color:#f1faf6;color-scheme:dark;}
 #paceTarget:focus{outline:2px solid #a3e635;outline-offset:2px;}
+
+#routineModal .rm-foot{max-height:34vh;overflow:auto}
+#routineModal .rm-col:first-child{display:flex;flex-direction:column;min-height:0}
+#rmCategorySeg{flex-shrink:0;margin-bottom:12px}
+#rmSkills{flex:1;min-height:0}
+#routineModal .rm-row{grid-template-columns:2em minmax(0,1fr) auto auto auto}
+.rm-order-hint{display:block;margin-top:6px;font-size:11px;color:#9fb3c9;font-weight:500}
+.rm-remove{background:transparent;border:0;color:#bacadd;font-size:24px;min-width:36px;min-height:40px;cursor:pointer}
+.rm-storage{width:100%;grid-column:1/-1;border-top:1px solid #304359;padding-top:10px}
+.rm-storage summary{cursor:pointer;font-size:14px;color:#bacadd;padding:6px 0}
+#routineModal .rm-beats button{min-height:36px}
+@media(max-width:760px){#routineModal .rm-row{grid-template-columns:2em minmax(0,1fr) auto auto}#routineModal .rm-beats{grid-column:2/5}#routineModal .rm-drag{grid-column:4;grid-row:1}#routineModal .rm-remove{grid-column:3;grid-row:1}#routineModal .rm-body{grid-template-rows:minmax(160px,1fr) minmax(140px,1fr)}}
 </style>
 <script>
 
@@ -862,14 +874,14 @@ body.hf-dim #jmpPilotGraph .jt-wing{display:none!important}
 
   <div class="rmodal" id="routineModal" role="dialog" aria-modal="true" aria-labelledby="rmTitle" hidden>
     <div class="rm-box">
-      <div class="rm-head"><h3 id="rmTitle">루틴 편집</h3><p>왼쪽 기술을 눌러 담고(●), 오른쪽 손잡이를 잡아 순서를 옮깁니다.</p></div>
+      <div class="rm-head"><h3 id="rmTitle">줄넘기 종목 선택</h3><p>종목을 선택하고, 선택한 순서대로 연습하세요.</p></div>
       <div class="rm-body">
-        <div class="rm-col"><h4>기술 목록 <span id="rmCount"></span></h4><div class="rm-scroll" id="rmSkills"></div></div>
-        <div class="rm-col"><h4>담긴 순서</h4><div class="rm-scroll"><div class="rm-order" id="rmOrder"></div></div></div>
+        <div class="rm-col"><h4>종목 고르기 <span id="rmCount"></span></h4><div class="seg" id="rmCategorySeg"><button type="button" data-rm-cat="발 모양" aria-pressed="true" class="on">발 모양</button><button type="button" data-rm-cat="발 리듬" aria-pressed="false">발 리듬</button><button type="button" data-rm-cat="손 기술" aria-pressed="false">손 기술</button></div><div class="rm-scroll" id="rmSkills"></div></div>
+        <div class="rm-col"><h4>선택한 종목 <span class="rm-order-hint">위에서부터 연습 · ⠿ 순서 이동</span></h4><div class="rm-scroll"><div class="rm-order" id="rmOrder"></div></div></div>
       </div>
       <div class="rm-foot">
-        <div class="rm-slot-head"><strong>내 루틴</strong><span>현재 기기에 3개까지 저장</span><em class="rm-slot-msg" id="rmSlotMsg"></em></div>
-        <div class="rm-slots" id="rmSlots"></div>
+        <details class="rm-storage" id="rmStorage"><summary>내 루틴 저장 · 불러오기</summary><div class="rm-slot-head"><strong>내 루틴</strong><span>현재 기기에 3개까지 저장</span><em class="rm-slot-msg" id="rmSlotMsg"></em></div>
+        <div class="rm-slots" id="rmSlots"></div></details>
         <span class="rm-sum" id="rmSum"></span>
         <button class="rm-ghost" id="rmBasic" type="button">기본 루틴</button>
         <button class="rm-ghost" id="rmGrade" type="button">급수 형식 (5개 × 32박)</button>
@@ -935,12 +947,11 @@ body.hf-dim #jmpPilotGraph .jt-wing{display:none!important}
     <div class="lab-sec" id="labCmpSec">
       <h4>비교 실험 · 정답 맞추기</h4>
       <div class="lab-grid" id="labCmp"></div>
-      <div class="lab-rec"><button class="m-act full" id="labFastBtn" type="button">고속 보조 신호 켜기</button></div>
       <div id="labTruthBox"></div>
       <div id="labRounds"></div>
       <div class="lab-note">
         1인 모드로 한 판 뛰고, 옆에서 <b>실제 개수</b>를 세어 아래 칸에 넣고 저장하세요.
-        지금 방식과 고속 방식 중 어느 쪽이 정답에 가까운지 판마다 쌓입니다.<br>
+        측정 개수와 실제 개수의 차이를 판마다 확인합니다.<br>
         '측정 기록'을 켜 두면 그 판의 원신호(숫자만)도 함께 저장돼 나중에 다시 돌려 볼 수 있습니다.
       </div>
     </div>
@@ -968,7 +979,7 @@ body.hf-dim #jmpPilotGraph .jt-wing{display:none!important}
 
 <script type="module">
 
-const APP_VERSION = '3.8.5';   
+const APP_VERSION = '3.8.6';   
 try{ window.__NL_VER = APP_VERSION; }catch(e){}   
 
 const MP_VERSION  = '1.0.1';
@@ -1567,7 +1578,7 @@ function makePlayer(id){
   const p = { id, engine:createJumpEngine(), count:0, lastCountAt:0, seen:false, lostSince:null, lastSeen:0, lm:null, rig:null,
            lastJumpT:null, paired:true, flashUntil:0, trackX:null, poseHist:[],
            altBaseL:null,altBaseR:null,altUpL:false,altUpR:false,altPendingFoot:'',altPendingAt:0,altLastAt:0,altLift:0 };
-  attachFastEngine(p);   
+  attachRawRecording(p);
   attachCatchGuard(p);   
   attachCountFix(p);     
   return p;
@@ -1909,7 +1920,6 @@ function startFrameClock(){
       else if(Number.isFinite(pt) && pt<=now+5 && now-pt<400){ t=pt; }
       camMeta={t,at:now}; camTimeSrc=src;
       camCnt++; if(now-camWin>=1000){ camHz=camCnt*1000/(now-camWin); camCnt=0; camWin=now; }
-      fastOnFrame(t);
     }catch(e){}
     video.requestVideoFrameCallback(cb);
   };
@@ -1923,36 +1933,10 @@ function sampleTime(t0){
   lastSampleT=t; return t;
 }
 
-const FAST_ON_KEY='jmp_lab_fast_v1', FAST_ROWS=96, FAST_COLS=16, FAST_S=14;
-let fastOn=false; try{ fastOn=localStorage.getItem(FAST_ON_KEY)==='1'; }catch(e){}
-let fastCv=null, fastCtx=null;
-function fastEnabled(){ return fastOn && typeof jmpIsLab==='function' && jmpIsLab(); }
-
-let fastBadSince=0, fastAutoOffNote='';
-function fastWatchdog(now){
-  if(!fastEnabled() || !running || mode==='group') { fastBadSince=0; return; }
-  const p=players[0]; if(!p || !p.fast) return;
-  const slow = !(p.fast.hz>=5);
-  if(slow){ if(!fastBadSince) fastBadSince=now; } else fastBadSince=0;
-  const el=now-gameStartPerf;
-  const behind = el>12000 && p.count>=15 && (p.fastCount||0) < p.count*0.5;
-  if((fastBadSince && now-fastBadSince>3000) || behind){
-    fastOn=false; fastBadSince=0;
-    try{ localStorage.setItem(FAST_ON_KEY,'0'); }catch(e){}
-    fastAutoOffNote='고속 보조가 이 기기에서 제대로 안 돌아 자동으로 껐습니다 ('+(behind?'개수가 절반도 안 됨':'신호가 초당 5장 미만')+'). AI 가 그만큼 더 자주 봅니다.';
-    try{ const fb=$('labFastBtn'); if(fb) fb.textContent='고속 보조 신호 켜기'; }catch(e){}
-    try{ if(typeof labRenderTruth==='function') labRenderTruth(); }catch(e){}
-  }
-}
-
-function attachFastEngine(p){
-  p.fastEngine=createJumpEngine(); p.fastCount=0; p.fastTorso=null; p.rawAI=[]; p.rawFast=[];
-  p.fast={roi:null,ref:null,base:0,offset:null,aiY:null,aiT:0,aiUsed:true,q:0,hz:0,cnt:0,win:performance.now(),resets:0,lastM:null};
-  const e=p.engine, fe=p.fastEngine, oReset=e.resetCount, oMark=e.markStart, oRecal=e.recalibrate;
-  
-  e.resetCount=function(){ oReset(); fe.resetCount(); p.fastCount=0; p.rawAI=[]; p.rawFast=[]; };
-  e.markStart=function(t){ oMark(t); fe.markStart(t); };
-  e.recalibrate=function(){ oRecal(); fe.recalibrate(); p.fast.roi=null; p.fast.ref=null; p.fast.offset=null; };
+function attachRawRecording(p){
+  p.rawAI=[];
+  const reset=p.engine.resetCount;
+  p.engine.resetCount=function(){reset();p.rawAI=[];};
 }
 
 const CG={
@@ -2056,86 +2040,6 @@ function jcrAdjust(p,ev,n){
   return pend+add+extra;
 }
 
-function onFastEvent(p,ev){
-  if(!running || !p.fastEngine.counting) return;
-  p.fastCount += ev.type==='backfill' ? ev.n : 1;
-}
-function fastOnFrame(t){
-  if(!fastEnabled() || !stream || video.readyState<2) return;
-  for(const p of players) if(p.seen && p.lm) fastTrack(p,t);
-}
-function fastRoiFrom(lm,vw,vh){
-  const shY=(lm[11].y+lm[12].y)/2, hipY=(lm[23].y+lm[24].y)/2, torso=hipY-shY;
-  if(!(torso>0.03)) return null;
-  const cx=(lm[11].x+lm[12].x+lm[23].x+lm[24].x)/4, shW=Math.abs(lm[11].x-lm[12].x);
-  const top=Math.min(shY, (lm[0]?.visibility??0)>0.3 ? lm[0].y : shY);
-  let y0=(top-0.45*torso)*vh, y1=(hipY+0.25*torso)*vh;
-  const w=Math.max(0.5*shW,0.35*torso)*vw;
-  let x0=cx*vw-w/2;
-  y0=Math.max(0,y0); y1=Math.min(vh,y1); x0=Math.max(0,Math.min(vw-w,x0));
-  if(y1-y0<FAST_ROWS/2 || w<4) return null;
-  return {x:x0,y:y0,w,h:y1-y0,torso};
-}
-function fastProfile(r){
-  if(!fastCv){
-    fastCv=document.createElement('canvas'); fastCv.width=FAST_COLS; fastCv.height=FAST_ROWS;
-    fastCtx=fastCv.getContext('2d',{willReadFrequently:true});
-  }
-  try{ fastCtx.drawImage(video,r.x,r.y,r.w,r.h,0,0,FAST_COLS,FAST_ROWS); }catch(e){ return null; }
-  const d=fastCtx.getImageData(0,0,FAST_COLS,FAST_ROWS).data;
-  const g=new Float32Array(FAST_ROWS-1);
-  let prev=0;
-  for(let y=0;y<FAST_ROWS;y++){
-    let sum=0; for(let x=0;x<FAST_COLS;x++){ const i=(y*FAST_COLS+x)*4; sum+=d[i]*0.3+d[i+1]*0.59+d[i+2]*0.11; }
-    const row=sum/FAST_COLS; if(y>0) g[y-1]=row-prev; prev=row;
-  }
-  let m=0; for(const v of g) m+=v; m/=g.length;
-  let vv=0; for(let i=0;i<g.length;i++){ g[i]-=m; vv+=g[i]*g[i]; }
-  const sd=Math.sqrt(vv/g.length); if(sd<0.4) return null;   
-  for(let i=0;i<g.length;i++) g[i]/=sd;
-  return g;
-}
-
-function fastShift(ref,cur){
-  const sc=new Float32Array(2*FAST_S+1); let best=-2, bs=0;
-  for(let s=-FAST_S;s<=FAST_S;s++){
-    let acc=0,n=0; const lo=Math.max(0,s), hi=Math.min(cur.length,ref.length+s);
-    for(let i=lo;i<hi;i++){ acc+=cur[i]*ref[i-s]; n++; }
-    const c=n>30?acc/n:-1; sc[s+FAST_S]=c; if(c>best){ best=c; bs=s; }
-  }
-  let sub=0; const k=bs+FAST_S;
-  if(k>0 && k<2*FAST_S){ const a=sc[k-1], b=sc[k], c=sc[k+1], den=a-2*b+c; if(den<0) sub=Math.max(-.5,Math.min(.5,0.5*(a-c)/den)); }
-  return {s:bs+sub,q:best};
-}
-function fastTrack(p,t){
-  const F=p.fast, vw=video.videoWidth|0, vh=video.videoHeight|0; if(!vw||!vh) return;
-  const r=fastRoiFrom(p.lm,vw,vh); if(!r) return;
-  
-  const need=!F.roi || Math.abs((r.x+r.w/2)-(F.roi.x+F.roi.w/2))>0.3*F.roi.w
-                    || Math.abs((r.y+r.h/2)-(F.roi.y+F.roi.h/2))>0.22*F.roi.h
-                    || Math.abs(r.h/F.roi.h-1)>0.2;
-  if(need){ F.roi=r; F.ref=null; F.base=0; F.offset=null; F.resets++; }
-  const g=fastProfile(F.roi); if(!g) return;
-  if(!F.ref){ F.ref=g; F.base=0; return; }
-  const {s,q}=fastShift(F.ref,g);
-  F.q=F.q*0.9+Math.max(0,q)*0.1;
-  if(q<0.35) return;                                   
-  const rowN=F.roi.h/FAST_ROWS/vh;                     
-  const m=F.base+s*rowN;
-  if(Math.abs(s)>FAST_S-4){ F.ref=g; F.base=m; }       
-  F.lastM=m;
-  
-  if(!F.aiUsed && Math.abs(t-F.aiT)<60){
-    const want=F.aiY-m; F.offset = F.offset==null ? want : F.offset*0.9+want*0.1; F.aiUsed=true;
-  }
-  if(F.offset==null) return;
-  const y=m+F.offset;
-  F.cnt++; if(t-F.win>=1000){ F.hz=F.cnt*1000/(t-F.win); F.cnt=0; F.win=t; }
-  const fe=p.fastEngine; fe.counting=p.engine.counting; fe.recoverGaps=p.engine.recoverGaps;
-  if(running && labRecording && p.rawFast.length<20000) p.rawFast.push([+t.toFixed(1),+m.toFixed(5),+y.toFixed(5),+q.toFixed(2)]);
-  fe.feed(y, p.fastTorso||r.torso, t, ev=>onFastEvent(p,ev));
-}
-
 function maybeInfer(now){
   if(jumpFault||!pose||poseBusy||!stream||video.readyState<2) return;
   if(video.currentTime===lastVideoTime) return;
@@ -2151,7 +2055,6 @@ function maybeInfer(now){
   inferCount++;
   if(t0-inferWin>=1000){ inferHz=inferCount*1000/(t0-inferWin); inferCount=0; inferWin=t0; }
   handlePose(res?.landmarks||[], sampleTime(t0));   
-  fastWatchdog(t0);   
 }
 
 const HAND_START={ HOLD_MS:2000, COOLDOWN_MS:3000, CLEAR_MS:400, GAP_MS:350 };
@@ -2364,7 +2267,6 @@ function updatePlayer(p,f,t){
     try{ cgFrame(p,f.lm,f.torso,t); }catch(e){}   
     p.engine.feed(f.sigY,f.torso,t,ev=>onEngineEvent(p,ev));   
     if(stepRound) stepFrame(p,f,t);   
-    p.fast.aiY=f.sigY; p.fast.aiT=t; p.fast.aiUsed=false; p.fastTorso=f.torso;
     if(running && labRecording && jmpIsLab() && p.rawAI.length<8000)
       p.rawAI.push([+t.toFixed(1),+f.y4.toFixed(5),+f.hipY.toFixed(5),+f.shY.toFixed(5),+f.torso.toFixed(5),+f.vmin.toFixed(2),
 
@@ -4042,7 +3944,7 @@ function stepPracticeSkill(d){
   prepareClock(beatMs);
 }
 
-let routineDraft=null,routineEditKind='play';
+let routineDraft=null,routineEditKind='play',routineCategory='발 모양';
 const ROUTINE_SLOT_COUNT=3;
 function validRoutine(d){ return Array.isArray(d)&&d.length&&d.every(m=>m&&SKILL_BY_ID[m.id]&&[8,16,32].includes(m.b)); }
 function routineSlotsKey(){
@@ -4065,19 +3967,21 @@ function renderRoutineSlots(){
 function routineSlotMessage(t){ const el=$('rmSlotMsg'); el.textContent=t; clearTimeout(routineSlotMessage.timer); routineSlotMessage.timer=setTimeout(()=>{el.textContent='';},1800); }
 function openRoutineEditor(kind='play'){
   routineEditKind=kind;
+  routineCategory='발 모양'; $('rmStorage').open=false;
   routineDraft=(kind==='practice'?groupPracticeRoutine:groupRoutine).map(m=>({...m}));
-  setText($('rmTitle'),kind==='practice'?'연습 종목 구성':'실전 루틴 편집');
+  setText($('rmTitle'),kind==='practice'?'연습할 줄넘기 선택':'줄넘기 루틴 구성');
   setText($('rmSave'),kind==='practice'?'이 연습 구성 사용':'현재 루틴 사용');
   $('rmSlotMsg').textContent=''; renderRoutineModal(); $('routineModal').hidden=false;
 }
 function closeRoutineEditor(){ $('routineModal').hidden=true; routineDraft=null; }
 function renderRoutineModal(){
   const d=routineDraft, at=id=>d.findIndex(m=>m.id===id);
-  $('rmSkills').innerHTML=['발 모양','발 리듬','손 기술'].map(c=>`<div class="rm-cat">${c}</div>`+SKILLS.filter(s=>s.cat===c).map(s=>{
+  document.querySelectorAll('[data-rm-cat]').forEach(b=>{const active=b.dataset.rmCat===routineCategory;b.classList.toggle('on',active);b.setAttribute('aria-pressed',String(active));});
+  $('rmSkills').innerHTML=SKILLS.filter(s=>s.cat===routineCategory).map(s=>{
     const i=at(s.id);
-    return `<button type="button" class="rm-skill" role="checkbox" aria-checked="${i>=0}" data-id="${s.id}"><span class="rm-dot"></span><span class="rm-nm">${esc(s.n)}</span><small>${i>=0?`${i+1}번째`:`${s.cyc.length}박 주기`}</small></button>`;
-  }).join('')).join('');
-  $('rmOrder').innerHTML=d.length ? d.map((m,i)=>{const sk=skillById(m.id);return `<div class="rm-row" data-rm-index="${i}"><em>${i+1}</em><span class="rm-row-main"><i class="rm-cat-tag">${esc(sk.cat)}</i><strong>${esc(sk.n)}</strong><small>${esc(sk.d)}</small></span><span class="rm-beats">${[8,16,32].map(b=>`<button type="button" data-i="${i}" data-b="${b}" aria-pressed="${m.b===b}">${b}박</button>`).join('')}</span><span class="rm-drag" role="button" tabindex="0" aria-label="${i+1}번째 동작 순서 옮기기">⠿</span></div>`}).join('')
+    return `<button type="button" class="rm-skill" role="checkbox" aria-checked="${i>=0}" data-id="${s.id}"><span class="rm-dot"></span><span class="rm-nm">${esc(s.n)}</span><small>${i>=0?`${i+1}번째`:'선택'}</small></button>`;
+  }).join('');
+  $('rmOrder').innerHTML=d.length ? d.map((m,i)=>{const sk=skillById(m.id);return `<div class="rm-row" data-rm-index="${i}"><em>${i+1}</em><span class="rm-row-main"><strong>${esc(sk.n)}</strong></span><span class="rm-beats">${[8,16,32].map(b=>`<button type="button" data-i="${i}" data-b="${b}" aria-pressed="${m.b===b}">${b}박</button>`).join('')}</span><button class="rm-remove" type="button" data-rm-remove="${i}" aria-label="${esc(sk.n)} 선택 취소">×</button><span class="rm-drag" role="button" tabindex="0" aria-label="${i+1}번째 동작 순서 옮기기">⠿</span></div>`}).join('')
     : `<p class="rm-empty">왼쪽 기술을 눌러 담아 주세요.</p>`;
   const T=d.reduce((s,m)=>s+m.b,0), b=+$('bpm').value||120, sec=Math.round(T*60/b);
   $('rmSum').innerHTML=`<b>${d.length}</b>개 종목 · 한 순환 <b>${T}</b>박 · ${b}BPM 약 <b>${Math.floor(sec/60)}분 ${sec%60}초</b>`;
@@ -4521,6 +4425,7 @@ $('skPrev').addEventListener('click',()=>stepPracticeSkill(-1));
 $('skNext').addEventListener('click',()=>stepPracticeSkill(1));
 $('spDown').addEventListener('click',()=>changePracticeSpeed(-10));
 $('spUp').addEventListener('click',()=>changePracticeSpeed(10));
+$('rmCategorySeg').addEventListener('click',e=>{const b=e.target.closest('[data-rm-cat]');if(!b||!routineDraft)return;routineCategory=b.dataset.rmCat;renderRoutineModal();});
 $('rmSkills').addEventListener('click',e=>{
   const r=e.target.closest('.rm-skill'); if(!r||!routineDraft) return;
   const i=routineDraft.findIndex(m=>m.id===r.dataset.id);
@@ -4531,6 +4436,7 @@ $('rmOrder').addEventListener('click',e=>{
   const b=e.target.closest('button'); if(!b||!routineDraft) return;
   const d=routineDraft;
   if(b.dataset.b){ d[+b.dataset.i].b=+b.dataset.b; }
+  if(b.dataset.rmRemove!=null){d.splice(+b.dataset.rmRemove,1);}
   renderRoutineModal();
 });
 let rmDragFrom=-1,rmDragTo=-1;
@@ -5208,17 +5114,10 @@ function labTick(now){
   ps.forEach((p,i)=>{
     const tag=ps.length>1?`P${i} `:'', per=p.engine.periodMs>0?p.engine.periodMs/1000:0;
     cmp += labCell(tag+'지금 방식', String(p.count));
-    cmp += labCell(tag+'고속 방식', fastEnabled()?String(p.fastCount):'꺼짐');
     if(p.cg){ cmp += labCell(tag+'걸림 보정', p.cg.ready?String(p.cg.count):String(p.cg.count)+' (배우는 중)', p.cg.caught?'warn':''); cmp += labCell(tag+'걸림 감지', p.cg.catches+'회 · 뺀 것 '+p.cg.filtered); }
     cmp += labCell(tag+'한 박 표본 AI', per?labNum(inferHz*per,1):'—', per&&inferHz*per<4?'warn':'');
-    if(fastEnabled()){
-      cmp += labCell(tag+'한 박 표본 고속', per?labNum(p.fast.hz*per,1):'—', per&&p.fast.hz*per>=8?'good':'');
-      cmp += labCell(tag+'고속 일치도', labNum(p.fast.q,2), p.fast.q>=0.6?'good':(p.fast.q<0.4?'warn':''));
-      cmp += labCell(tag+'자리 다시 잡음', String(p.fast.resets));
-    }
   });
   $('labCmp').innerHTML=cmp;
-  const fb=$('labFastBtn'); if(fb) fb.textContent=fastOn?'고속 보조 신호 끄기':'고속 보조 신호 켜기';
 
   $('labSig').innerHTML=sig;
   $('labRhythm').innerHTML=rh;
@@ -5343,14 +5242,13 @@ function labRoundFinished(m){
     solo_jump_type:m==='solo'?soloJumpType:null,
     dur_s:labRound((roundEndPerf-gameStartPerf)/1000,1), app:APP_VERSION,
     signal:SIGNAL_JOINTS===4?'4pt':'hip2', time_src:camTimeSrc,
-    cam_hz:labRound(camHz,1), infer_hz:labRound(inferHz,1), infer_px:inferPx||null, fast_on:fastEnabled(),
+    cam_hz:labRound(camHz,1), infer_hz:labRound(inferHz,1), infer_px:inferPx||null,
     players:players.map(p=>({
-      pid:p.id??0, main:p.count, fast:fastEnabled()?p.fastCount:null, truth:null,
+      pid:p.id??0, main:p.count, truth:null,
       guard:p.cg?p.cg.count:null, catches:p.cg?p.cg.catches:null, guard_cut:p.cg?p.cg.filtered:null,   // 2026-09-24 걸림 보정
       pre:p.jcr?p.jcr.raw:null, jcr_skip:p.jcr?p.jcr.skip:null, jcr_fill:p.jcr?p.jcr.fill:null, jcr_cut:p.jcr?p.jcr.cut:null,   // 2026-09-28 JCR 전 개수·걸림·채움
-      period_ms:labRound(p.engine.periodMs,1), fast_hz:fastEnabled()?labRound(p.fast.hz,1):null,
-      fast_q:fastEnabled()?labRound(p.fast.q,2):null,
-      raw_ai:labRecording?p.rawAI.slice():null, raw_fast:(labRecording&&fastEnabled())?p.rawFast.slice():null
+      period_ms:labRound(p.engine.periodMs,1),
+      raw_ai:labRecording?p.rawAI.slice():null
     }))
   };
   labRenderTruth();
@@ -5364,10 +5262,10 @@ function labKeepPendingNoTruth(){
 }
 function labRenderTruth(){
   const box=$('labTruthBox'); if(!box) return;
-  const note=fastAutoOffNote?`<div class="lab-note">${esc(fastAutoOffNote)}</div>`:'';   // 09-21 고속 자동 끔 안내
+  const note='';
   if(!labPending){ box.innerHTML=note; }
   else{
-    const ins=labPending.players.map(q=>`<span>${labPending.players.length>1?(q.pid===0?'청':'홍')+' ':''}지금 ${q.main}${q.fast!=null?' · 고속 '+q.fast:''}${q.guard!=null?' · 걸림보정 '+q.guard:''} → 실제</span>
+    const ins=labPending.players.map(q=>`<span>${labPending.players.length>1?(q.pid===0?'청':'홍')+' ':''}지금 ${q.main}${q.guard!=null?' · 걸림보정 '+q.guard:''} → 실제</span>
       <input type="number" min="0" inputmode="numeric" data-pid="${q.pid}" placeholder="개수">`).join('');
     box.innerHTML=`<div class="lab-truth"><span>방금 판</span>${ins}<button class="m-act" id="labTruthSave" type="button">정답 저장</button><button class="m-act home" id="labTruthSkip" type="button">버리기</button></div>`+note;
   }
@@ -5379,14 +5277,14 @@ function labRenderRounds(){
   if(!done.length){ box.innerHTML=''; return; }
   const err=(v,t)=>v==null||t==null?null:v-t;
   const cell=e=>e==null?'—':`<span class="${Math.abs(e)<=2?'lab-err-good':(Math.abs(e)>=5?'lab-err-bad':'')}">${e>0?'+':''}${e}</span>`;
-  let sM=0,nM=0,sF=0,nF=0,sG=0,nG=0;
+  let sM=0,nM=0,sG=0,nG=0;
   const rows=done.slice(-12).reverse().map(r=>r.players.filter(q=>q.truth!=null).map(q=>{
-    const eM=err(q.main,q.truth), eF=err(q.fast,q.truth), eG=err(q.guard,q.truth);
-    return `<tr><td>${esc(r.ts.slice(5,16).replace('T',' '))}</td><td>${r.mode==='duo'?(q.pid?'홍':'청'):'1인'}</td><td>${q.truth}</td><td>${q.main} (${cell(eM)})</td><td>${q.fast==null?'—':q.fast+' ('+cell(eF)+')'}</td><td>${q.guard==null?'—':q.guard+' ('+cell(eG)+')'+(q.catches?' · 걸림'+q.catches:'')}</td><td>${q.period_ms?Math.round(60000/q.period_ms):'—'}</td></tr>`;
+    const eM=err(q.main,q.truth), eG=err(q.guard,q.truth);
+    return `<tr><td>${esc(r.ts.slice(5,16).replace('T',' '))}</td><td>${r.mode==='duo'?(q.pid?'홍':'청'):'1인'}</td><td>${q.truth}</td><td>${q.main} (${cell(eM)})</td><td>${q.guard==null?'—':q.guard+' ('+cell(eG)+')'+(q.catches?' · 걸림'+q.catches:'')}</td><td>${q.period_ms?Math.round(60000/q.period_ms):'—'}</td></tr>`;
   }).join('')).join('');
-  done.forEach(r=>r.players.forEach(q=>{ if(q.truth==null) return; sM+=Math.abs(q.main-q.truth); nM++; if(q.fast!=null){ sF+=Math.abs(q.fast-q.truth); nF++; } if(q.guard!=null){ sG+=Math.abs(q.guard-q.truth); nG++; } }));
-  box.innerHTML=`<table class="lab-tbl"><thead><tr><th>시각</th><th>누구</th><th>정답</th><th>지금 방식(오차)</th><th>고속(오차)</th><th>걸림보정(오차)</th><th>분당</th></tr></thead><tbody>${rows}</tbody></table>
-    <div class="lab-note">평균 오차 — 지금 방식 <b>${nM?(sM/nM).toFixed(1):'—'}개</b> (${nM}판) · 고속 방식 <b>${nF?(sF/nF).toFixed(1):'—'}개</b> (${nF}판) · 걸림 보정 <b>${nG?(sG/nG).toFixed(1):'—'}개</b> (${nG}판)</div>`;
+  done.forEach(r=>r.players.forEach(q=>{ if(q.truth==null) return; sM+=Math.abs(q.main-q.truth); nM++; if(q.guard!=null){ sG+=Math.abs(q.guard-q.truth); nG++; } }));
+  box.innerHTML=`<table class="lab-tbl"><thead><tr><th>시각</th><th>누구</th><th>정답</th><th>지금 방식(오차)</th><th>걸림보정(오차)</th><th>분당</th></tr></thead><tbody>${rows}</tbody></table>
+    <div class="lab-note">평균 오차 — 지금 방식 <b>${nM?(sM/nM).toFixed(1):'—'}개</b> (${nM}판) · 걸림 보정 <b>${nG?(sG/nG).toFixed(1):'—'}개</b> (${nG}판)</div>`;
 }
 $('labTruthBox')?.addEventListener('click',e=>{
   if(!jmpIsLab()||!labPending) return;
@@ -5401,13 +5299,6 @@ $('labTruthBox')?.addEventListener('click',e=>{
   labRounds.push(labPending); if(labRounds.length>LAB_ROUNDS_MAX) labRounds.splice(0,labRounds.length-LAB_ROUNDS_MAX);
   labPending=null; labRoundsSave(); labRenderTruth();
 });
-$('labFastBtn')?.addEventListener('click',()=>{
-  if(!jmpIsLab()) return;
-  fastOn=!fastOn; try{ localStorage.setItem(FAST_ON_KEY, fastOn?'1':'0'); }catch(e){}
-  players.forEach(p=>{ p.fastEngine.recalibrate(); p.fast.roi=null; p.fast.ref=null; p.fast.offset=null; });
-  lastLabT=0; labTick(performance.now());
-});
-
 /* ── 버튼 연결 ────────────────────────────────────────────── */
 labLoad();
 $('labBtn')?.addEventListener('click',openJumpLab);

@@ -17,7 +17,7 @@
 //    그러면 예전 캐시가 통째로 비워집니다.
 // =========================================================
 
-const CACHE_NAME = 'naruunlabs-2026-10-07-solo-music';
+const CACHE_NAME = 'naruunlabs-2026-10-07-jump-cleanup';
 
 const APP_SHELL = [
   './',
