@@ -778,7 +778,10 @@ body.hf-dim #jmpPilotGraph .jt-wing{display:none!important}
           <button type="button" data-hold="1">매 박</button>
         </div>
         <label class="lfield"><i>박자 속도</i>
-          <select id="stepBpm"><option value="90">느리게 · 90 BPM</option><option value="100" selected>기본 · 100 BPM</option><option value="110">110 BPM</option><option value="120">빠르게 · 120 BPM</option><option value="130">130 BPM</option></select></label>
+          <select id="stepBpm"><option value="90">느리게 · 90 BPM</option><option value="100" selected>기본 · 100 BPM</option><option value="110">110 BPM</option><option value="120">빠르게 · 120 BPM</option><option value="130">130 BPM</option><option value="140">140 BPM</option></select></label>
+        <label class="lfield"><i>훈련 음악</i><select id="stepMusic"><option value="auto">속도에 맞춰 자동 선택</option></select></label>
+        <div class="m-help" id="stepMusicInfo" aria-live="polite"></div>
+        <button class="m-act" id="stepMusicToggle" type="button" aria-pressed="true">음악 켜짐</button>
         <div class="m-help">네모가 멀리서 다가와 발밑 발판에 닿을 때 밟습니다. 파랑은 왼발, 빨강은 오른발입니다. 준비 4박 뒤 32박을 판정합니다. 발끝까지 화면에 나와야 합니다.</div>
         <button class="m-act" id="stepExportBtn" type="button">시험 기록 내려받기</button>
       </div>
@@ -836,6 +839,7 @@ body.hf-dim #jmpPilotGraph .jt-wing{display:none!important}
     <div class="speed-row" id="speedRow" hidden><span>속도</span><button type="button" id="spDown" aria-label="느리게">−</button><b id="spVal">100</b><button type="button" id="spUp" aria-label="빠르게">+</button></div>
     <div class="rep-row" id="repRow" hidden><button type="button" id="repBtn">↻ 구간 반복</button><span id="repState">어려운 동작만 다시</span></div>
     <button class="ctrl-link" id="recalBtn" type="button" hidden>기준 재설정</button>
+    <button class="pill on" id="stepMusicBtn" type="button" hidden aria-pressed="true"><span class="dot"></span><span class="lab">음악</span><span class="state" id="stepMusicState">켜짐</span></button>
     <button class="pill on" id="soundBtn" type="button" aria-pressed="true"><span class="dot"></span><span class="lab">소리</span><span class="state" id="soundState">켜짐</span></button>
     <button class="bigbtn playbtn" id="playBtn" type="button">시작!</button>
     <button class="bigbtn stopbtn" id="quitBtn" type="button" hidden>중지</button>
@@ -964,7 +968,7 @@ body.hf-dim #jmpPilotGraph .jt-wing{display:none!important}
 
 <script type="module">
 
-const APP_VERSION = '3.8.4';   
+const APP_VERSION = '3.8.5';   
 try{ window.__NL_VER = APP_VERSION; }catch(e){}   
 
 const MP_VERSION  = '1.0.1';
@@ -1296,8 +1300,10 @@ const STEP_PREF_KEY='jmp_step_prefs_v1', STEP_ROUNDS_KEY='jmp_step_rounds_v1';
 const stepPrefs = Object.assign({kind:'measure',set:'all',hold:2,bpm:100}, store.json(STEP_PREF_KEY,{})||{});
 if(!STEP_SETS[stepPrefs.set]) stepPrefs.set='all';
 stepPrefs.hold = +stepPrefs.hold===1 ? 1 : 2;
-stepPrefs.bpm  = [90,100,110,120,130].includes(+stepPrefs.bpm) ? +stepPrefs.bpm : 100;
+stepPrefs.bpm  = [90,100,110,120,130,140].includes(+stepPrefs.bpm) ? +stepPrefs.bpm : 100;
 if(stepPrefs.kind!=='step') stepPrefs.kind='measure';
+if(typeof stepPrefs.musicOn!=='boolean') stepPrefs.musicOn=true;
+if(typeof stepPrefs.music!=='string') stepPrefs.music='auto';
 let stepRounds = store.json(STEP_ROUNDS_KEY,[]); if(!Array.isArray(stepRounds)) stepRounds=[];
 let stepRound=false;             
 let stp=null;                    
@@ -1479,6 +1485,81 @@ const GROUP_MUSIC={
   unbroken:{name:'Unbroken Pace',src:'bgm/140bpm_Unbroken_Pace.mp3',bpm:140}
 };
 let groupMusicKey='iron',groupMusicSource=null,groupMusicGain=null,groupMusicBuffer=null,groupMusicBufferKey='';
+
+let stepMusicAudio=null, stepMusicLoadedKey='', stepMusicTimer=0, stepMusicGeneration=0;
+let stepMusicActive=false, stepMusicFailed=false, stepMusicSyncAt=0;
+function stepMusicKey(){
+  if(GROUP_MUSIC[stepPrefs.music]) return stepPrefs.music;
+  return Object.keys(GROUP_MUSIC).reduce((a,b)=>Math.abs(GROUP_MUSIC[b].bpm-stepPrefs.bpm)<Math.abs(GROUP_MUSIC[a].bpm-stepPrefs.bpm)?b:a);
+}
+function syncStepMusicUI(){
+  const key=stepMusicKey(), track=GROUP_MUSIC[key], rate=stepPrefs.bpm/track.bpm;
+  $('stepMusic').value=GROUP_MUSIC[stepPrefs.music]?stepPrefs.music:'auto';
+  setText($('stepMusicInfo'), track.name+' · 원곡 '+track.bpm+' BPM → '+stepPrefs.bpm+' BPM · '+Number(rate.toFixed(3))+'배속');
+  for(const id of ['stepMusicToggle','stepMusicBtn']){
+    $(id).classList.toggle('on',stepPrefs.musicOn); $(id).setAttribute('aria-pressed',String(stepPrefs.musicOn));
+  }
+  setText($('stepMusicToggle'),stepPrefs.musicOn?'음악 켜짐':'음악 꺼짐');
+  setText($('stepMusicState'),stepMusicFailed&&stepPrefs.musicOn?'재생 불가':stepPrefs.musicOn?'켜짐':'꺼짐');
+  if(stepMusicAudio) stepMusicAudio.muted=!stepPrefs.musicOn;
+  const musicMode=appState==='lobby'?stepOn():lastRoundMode==='solo'&&stepRound;
+  setText($('soundBtn').querySelector('.lab'),musicMode?'효과음':'소리');
+}
+function stopStepMusic(){
+  stepMusicActive=false; stepMusicGeneration++; clearTimeout(stepMusicTimer); stepMusicTimer=0;
+  if(stepMusicAudio) stepMusicAudio.pause();
+}
+function releaseStepMusic(){
+  stopStepMusic();
+  if(stepMusicAudio){stepMusicAudio.removeAttribute('src');stepMusicAudio.load();}
+  stepMusicLoadedKey=''; stepMusicAudio=null;
+}
+function prepareStepMusic(){
+  if(!stepOn()||!stepPrefs.musicOn) return;
+  const key=stepMusicKey();
+  if(stepMusicAudio&&stepMusicLoadedKey===key) return;
+  releaseStepMusic(); stepMusicFailed=false;
+  const el=new Audio(); stepMusicAudio=el; stepMusicLoadedKey=key;
+  el.preload='auto'; el.loop=true; el.volume=.46; el.playbackRate=stepPrefs.bpm/GROUP_MUSIC[key].bpm;
+  el.preservesPitch=true; el.src=GROUP_MUSIC[key].src;
+  el.addEventListener('error',()=>{if(stepMusicAudio===el){stepMusicFailed=true;syncStepMusicUI();}});
+  el.addEventListener('playing',()=>{if(stepMusicAudio===el&&stepMusicActive) alignStepMusic();});
+  el.load();
+}
+function alignStepMusic(force=false){
+  const el=stepMusicAudio;
+  if(!el||!stepMusicActive||!Number.isFinite(el.duration)||el.duration<=0) return;
+  const now=performance.now();
+  if(!force&&now-stepMusicSyncAt<250) return;
+  stepMusicSyncAt=now;
+  const rate=bpm/GROUP_MUSIC[stepMusicLoadedKey].bpm;
+  const elapsed=Math.max(0,(performance.now()-gameStartPerf)/1000);
+  const expected=gmod(elapsed*rate,el.duration), delta=Math.abs(el.currentTime-expected);
+  if(Math.min(delta,el.duration-delta)>.12*rate) el.currentTime=expected;
+}
+function startStepMusic(at){
+  stopStepMusic();
+  if(lastRoundMode!=='solo'||!stepRound) return;
+  prepareStepMusic();
+  const el=stepMusicAudio; if(!el||stepMusicFailed) return;
+  stepMusicActive=true; el.muted=!stepPrefs.musicOn;
+  el.playbackRate=bpm/GROUP_MUSIC[stepMusicLoadedKey].bpm;
+  const generation=stepMusicGeneration;
+  const play=()=>{
+    if(generation!==stepMusicGeneration||!stepMusicActive) return;
+    alignStepMusic(true);
+    Promise.resolve(el.play()).catch(()=>{
+      if(generation===stepMusicGeneration){stepMusicFailed=true;syncStepMusicUI();}
+    });
+  };
+  stepMusicTimer=setTimeout(play,Math.max(0,(at-(audio?audio.currentTime:0))*1000));
+}
+async function toggleStepMusic(){
+  stepPrefs.musicOn=!stepPrefs.musicOn; stepSavePrefs(); syncStepMusicUI();
+  if(stepPrefs.musicOn&&lastRoundMode==='solo'&&stepRound&&appState==='running'&&running&&!pausedAt){
+    if(!stepMusicAudio||stepMusicFailed){releaseStepMusic();prepareStepMusic();startStepMusic(audio?audio.currentTime:0);}
+  }
+}
 const gmod=(a,n)=>((a%n)+n)%n;
 const glerp=(a,b,t)=>a+(b-a)*t;
 
@@ -1581,10 +1662,11 @@ function prepareClock(delayMs){
   clearInterval(scheduler);
   const lat = audio ? ((audio.outputLatency||audio.baseLatency||0)*1000) : 0;
   gameStartPerf = performance.now() + delayMs + lat;
-  if(!audio){ return; }
+  if(!audio){ if(stepRound) startStepMusic(delayMs/1000); return; }
   clockAudioStart = audio.currentTime + delayMs/1000;
   nextBeatIdx = 0;
   if(lastRoundMode==='group') startGroupMusic(clockAudioStart,0);
+  if(lastRoundMode==='solo'&&stepRound) startStepMusic(clockAudioStart);
   startBeatScheduler();
 }
 
@@ -1596,9 +1678,10 @@ function resumeClock(){
   clockAudioStart = audio.currentTime - elapsedBeats*(beatMs/1000);
   nextBeatIdx = Math.max(0, Math.ceil(elapsedBeats));
   if(lastRoundMode==='group') startGroupMusic(audio.currentTime+.035,Math.max(0,(performance.now()-gameStartPerf)/1000));
+  if(lastRoundMode==='solo'&&stepRound) startStepMusic(audio.currentTime);
   startBeatScheduler();
 }
-function stopClock(){ clearInterval(scheduler); scheduler=0; stopGroupMusic(); }
+function stopClock(){ clearInterval(scheduler); scheduler=0; stopGroupMusic(); stopStepMusic(); }
 
 let wakeLock=null;
 async function keepScreenOn(on){
@@ -2686,7 +2769,8 @@ async function boot(){
   setLobbyError('');
   saveLobbyPrefs();
   
-  if(soundOn) await initAudio();
+  if(soundOn||stepOn()) await initAudio();
+  if(stepOn()) prepareStepMusic(); else releaseStepMusic();
   bpm=mode==='group'&&groupActivity==='pace'?paceTarget*60/paceTime:+$('bpm').value; beatMs=60000/bpm;
   if(stepOn()){ bpm=stepPrefs.bpm; beatMs=60000/bpm; }   
   if(mode==='group'&&groupActivity==='rhythm'&&groupMusicKey!=='none'&&soundOn){try{await loadGroupMusic()}catch(e){console.warn('훈련 음악을 불러오지 못해 박자음만 사용합니다.',e);}}
@@ -4049,6 +4133,7 @@ function stepApplyUI(){
   document.querySelectorAll('#stepSetSeg button').forEach(b=>b.classList.toggle('on',b.dataset.set===stepPrefs.set));
   document.querySelectorAll('#stepHoldSeg button').forEach(b=>b.classList.toggle('on',+b.dataset.hold===stepPrefs.hold));
   $('stepBpm').value=String(stepPrefs.bpm);
+  syncStepMusicUI();
   setText($('stepExportBtn'), `시험 기록 내려받기 (${stepRounds.length}판)`);
 }
 function stepGuideText(){
@@ -4059,6 +4144,8 @@ function stepGuideText(){
 }
 function stepLayout(inGame,lobby,result,m){
   const on = m==='solo' && ((inGame||result) ? stepRound : stepOn());
+  $('stepMusicBtn').hidden=!(on&&inGame);
+  syncStepMusicUI();
   $('stStep').hidden = !(on && inGame);
   document.body.classList.toggle('step-round', on && inGame);     
   if(on){ $('stCount').hidden=true; $('stBest').hidden=true; $('stTime').hidden=!inGame; }
@@ -4163,6 +4250,7 @@ function stepClose(k,tk,r,quiet,early,now){
 }
 function stepTick(now){
   if(!stp || !running) return;
+  alignStepMusic();
   while(stp.next<stp.notes.length){
     const k=stp.next, note=stp.notes[k], tk=gameStartPerf+k*beatMs, end=tk+STEP.WIN1*beatMs;
     if(now>=end+70){                          
@@ -4388,7 +4476,14 @@ document.querySelectorAll('#soloKindSeg button').forEach(b=>b.addEventListener('
 }));
 document.querySelectorAll('#stepSetSeg button').forEach(b=>b.addEventListener('click',()=>{ stepPrefs.set=b.dataset.set; stepSavePrefs(); applyModeUI(); }));
 document.querySelectorAll('#stepHoldSeg button').forEach(b=>b.addEventListener('click',()=>{ stepPrefs.hold=+b.dataset.hold===1?1:2; stepSavePrefs(); applyModeUI(); }));
-$('stepBpm').addEventListener('change',()=>{ stepPrefs.bpm=+$('stepBpm').value||100; stepSavePrefs(); applyModeUI(); });
+$('stepBpm').addEventListener('change',()=>{ stepPrefs.bpm=+$('stepBpm').value||100; releaseStepMusic(); stepSavePrefs(); applyModeUI(); });
+for(const [key,track] of Object.entries(GROUP_MUSIC)){
+  const option=document.createElement('option'); option.value=key; option.textContent=track.bpm+' BPM · '+track.name; $('stepMusic').appendChild(option);
+}
+$('stepMusic').addEventListener('change',()=>{stepPrefs.music=$('stepMusic').value; releaseStepMusic(); stepSavePrefs(); syncStepMusicUI();});
+$('stepMusicToggle').addEventListener('click',toggleStepMusic);
+$('stepMusicBtn').addEventListener('click',toggleStepMusic);
+syncStepMusicUI();
 $('stepExportBtn').addEventListener('click',stepExport);
 
 document.querySelectorAll('#modelist .choice').forEach(b=>b.addEventListener('click',async()=>{
