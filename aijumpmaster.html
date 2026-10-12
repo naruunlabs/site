@@ -979,7 +979,7 @@ body.hf-dim #jmpPilotGraph .jt-wing{display:none!important}
 
 <script type="module">
 
-const APP_VERSION = '3.8.7';   
+const APP_VERSION = '3.8.8';   
 try{ window.__NL_VER = APP_VERSION; }catch(e){}   
 
 const MP_VERSION  = '1.0.1';
@@ -2007,7 +2007,8 @@ function wcOnCount(p,ev,n){
   const p2p=Math.max(...seg)-Math.min(...seg);
   if(W.hist.length>=WCK.MIN_HIST){
     const s=[...W.hist].sort((x,y)=>x-y), md=s[s.length>>1];
-    if(p2p<WCK.QUIET_R*md){ W.count+=n-1; W.cut++; return; }   
+    if(p2p<WCK.QUIET_R*md){ W.count+=n-1; W.cut++; W.hist.push(p2p); if(W.hist.length>WCK.HIST) W.hist.shift(); return; }   
+
   }
   W.count+=n; W.hist.push(p2p); if(W.hist.length>WCK.HIST) W.hist.shift();
 }
@@ -2041,7 +2042,7 @@ function attachCountFix(p){
   e.resetCount=function(){ oReset(); jcrReset(p); };
   jcrReset(p);
 }
-function jcrReset(p){ p.jcr={lastT:null,iv:[],pendB:0,raw:0,skip:0,fill:0,cut:0}; }
+function jcrReset(p){ p.jcr={lastT:null,iv:[],pendB:0,raw:0,skip:0,fill:0,cut:0,src:{t0:null,buf:[],ev:[],done:false,add:0}}; }
 function jcrAdjust(p,ev,n){
   const J=p.jcr; if(!J) return n;
   J.raw+=n;
@@ -2068,6 +2069,60 @@ function jcrAdjust(p,ev,n){
   J.lastT=now;
   return pend+add+extra;
 }
+
+const SRC={ ON:true, W_MS:6000, DECIDE_MS:7000, HALF_MS:300, PROM:.02, MERGE_R:.65, FAST_MS:300, MIN_PEAKS:5 };
+function srcPeaks(buf,W){   
+  const n=buf.length; if(n<5) return [];
+  const d=new Array(n); let a=0,b=0,sum=0;
+  for(let i=0;i<n;i++){
+    const ti=buf[i][0];
+    while(b<n && buf[b][0]<=ti+SRC.HALF_MS){ sum+=buf[b][1]; b++; }
+    while(a<n && buf[a][0]<ti-SRC.HALF_MS){ sum-=buf[a][1]; a++; }
+    d[i]=buf[i][1]-sum/(b-a);
+  }
+  let pk=[];
+  for(let i=1;i<n-1;i++){
+    if(!(d[i]>d[i-1] && d[i]>=d[i+1])) continue;
+    if(d[i]===d[i+1]){ let j=i+1; while(j<n-1 && d[j+1]===d[i]) j++; if(j>=n-1 || d[j+1]>d[i]) continue; }
+    let lm=d[i],k=i-1; while(k>=0 && d[k]<=d[i]){ if(d[k]<lm) lm=d[k]; k--; }
+    let rm=d[i];  k=i+1; while(k<n  && d[k]<=d[i]){ if(d[k]<rm) rm=d[k]; k++; }
+    const pr=d[i]-Math.max(lm,rm);
+    if(pr>=SRC.PROM) pk.push([buf[i][0],pr]);
+  }
+  for(let it=0;it<10 && pk.length>=4;it++){
+    const iv=[]; for(let i=1;i<pk.length;i++) iv.push(pk[i][0]-pk[i-1][0]);
+    const md=srcMedian(iv); let ch=false, i=0;
+    while(i<pk.length-1){
+      if(pk[i+1][0]-pk[i][0]<SRC.MERGE_R*md){ pk.splice(pk[i][1]<pk[i+1][1]?i:i+1,1); ch=true; }
+      else i++;
+    }
+    if(!ch) break;
+  }
+  return pk.map(q=>q[0]).filter(t=>t<W);
+}
+function srcMedian(a){ if(!a.length) return 0; const s=[...a].sort((x,y)=>x-y), m=s.length>>1; return s.length%2?s[m]:(s[m-1]+s[m])/2; }
+function srcDecide(S){   
+  const pk=srcPeaks(S.buf,SRC.W_MS);
+  if(pk.length<SRC.MIN_PEAKS) return 0;
+  const iv=[]; for(let i=1;i<pk.length;i++) iv.push(pk[i]-pk[i-1]);
+  if(srcMedian(iv)>SRC.FAST_MS) return 0;
+  const eng=S.ev.reduce((s,e)=>s+(e[0]<SRC.W_MS?e[1]:0),0);
+  return Math.max(0,pk.length-eng);
+}
+function srcOn(p){ return SRC.ON && JCR.ON && mode==='solo' && p.engine.recoverGaps && p.jcr && p.jcr.src && !p.jcr.src.done; }
+function srcFrame(p,y,t){   
+  if(!srcOn(p)) return;
+  const S=p.jcr.src; if(S.t0==null) S.t0=t;
+  S.cur=t-S.t0;
+  if(S.cur<=SRC.DECIDE_MS) S.buf.push([S.cur,-y]);
+}
+function srcAfter(p){        
+  if(!srcOn(p)) return 0;
+  const S=p.jcr.src; if(S.t0==null || S.cur<SRC.DECIDE_MS) return 0;
+  S.done=true; let k=0; try{ k=srcDecide(S); }catch(e){ k=0; }
+  S.add=k; S.buf=[]; return k;
+}
+function srcNoteCount(p,n){ const S=p.jcr&&p.jcr.src; if(S && !S.done && S.t0!=null) S.ev.push([S.cur,n]); }
 
 function maybeInfer(now){
   if(jumpFault||!pose||poseBusy||!stream||video.readyState<2) return;
@@ -2295,7 +2350,9 @@ function updatePlayer(p,f,t){
     updateRig(p,f.lm);
     try{ cgFrame(p,f.lm,f.torso,t); }catch(e){}   
     try{ wcFrame(p,f.lm,f.torso,t); }catch(e){}   
+    if(running && !stepRound) try{ srcFrame(p,f.y4/f.torso,t); }catch(e){}   
     p.engine.feed(f.sigY,f.torso,t,ev=>onEngineEvent(p,ev));   
+    if(running && !stepRound) try{ const k=srcAfter(p); if(k>0) onSrcAdd(p,k); }catch(e){}
     if(stepRound) stepFrame(p,f,t);   
     if(running && labRecording && jmpIsLab() && p.rawAI.length<8000)
       p.rawAI.push([+t.toFixed(1),+f.y4.toFixed(5),+f.hipY.toFixed(5),+f.shY.toFixed(5),+f.torso.toFixed(5),+f.vmin.toFixed(2),
@@ -2415,9 +2472,17 @@ function onEngineEvent(p,ev){
   try{ n=jcrAdjust(p,ev,n); }catch(e){}                 
   if(jmpIsLab()) try{ wcOnCount(p,ev,n); }catch(e){}    
   if(!(n>0)) return;
+  if(mode==='solo') try{ srcNoteCount(p,n); }catch(e){}   
   if(mode==='solo') soloCounted(p,n);
   else if(mode==='duo') duoCounted(p,n,t);
   else if(mode==='relay') relayCounted(p,n);
+}
+
+function onSrcAdd(p,k){
+  if(!running || mode!=='solo' || !(k>0)) return;
+  const ev={type:'backfill',n:k,src:true};
+  if(jmpIsLab()){ try{ cgOnCount(p,ev,k); }catch(e){} try{ wcOnCount(p,ev,k); }catch(e){} }
+  soloCounted(p,k);
 }
 function pulse(el){ el.classList.remove('pulse'); void el.offsetWidth; el.classList.add('pulse'); }
 
@@ -2842,6 +2907,7 @@ async function resumeRound(){
   gameStartPerf+=gap;
   if(isFinite(gameEndPerf)) gameEndPerf+=gap;
   if(relay.changing) relay.resumeAt+=gap;
+  players.forEach(p=>{ if(p.jcr && p.jcr.src) p.jcr.src.done=true; });   
   players.forEach(p=>{
     if(p.lastCountAt) p.lastCountAt+=gap;
     if(p.lastJumpT!=null) p.lastJumpT+=gap;
@@ -5283,6 +5349,7 @@ function labRoundFinished(m){
       guard:p.cg?p.cg.count:null, catches:p.cg?p.cg.catches:null, guard_cut:p.cg?p.cg.filtered:null,   // 2026-09-24 걸림 보정
       wrist:p.wc?p.wc.count:null, wrist_cut:p.wc?p.wc.cut:null,   // 2026-10-12 손목 확인
       pre:p.jcr?p.jcr.raw:null, jcr_skip:p.jcr?p.jcr.skip:null, jcr_fill:p.jcr?p.jcr.fill:null, jcr_cut:p.jcr?p.jcr.cut:null,   // 2026-09-28 JCR 전 개수·걸림·채움
+      src_add:p.jcr&&p.jcr.src?p.jcr.src.add:null,   // 2026-10-12 시작 6초 다시 세기로 더한 개수
       period_ms:labRound(p.engine.periodMs,1),
       raw_ai:labRecording?p.rawAI.slice():null
     }))
