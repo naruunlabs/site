@@ -26,6 +26,8 @@ button,select{font:inherit}button{border:0;cursor:pointer;color:inherit;backgrou
 .tabs button{padding:9px 2px 10px;border-bottom:3px solid transparent;color:rgba(255,255,255,.48);font-size:13px;font-weight:900;transition:color .2s,border-color .2s}
 .tabs button.on{color:#fff;border-bottom-color:var(--acc)}
 .stage-hint{margin-top:-2px;color:#6b7588;font-size:10.5px;font-weight:700;line-height:1.45}
+.class-cue{padding:8px 10px;border-left:3px solid var(--acc);background:rgba(255,255,255,.035);color:#dce5f2;font-size:11px;font-weight:850;line-height:1.45}.class-cue b{color:#fff}.class-cue em{color:#ffd166;font-style:normal}
+.stage-class-cue{position:absolute;z-index:5;top:82px;left:50%;transform:translateX(-50%);padding:7px 18px;border:1px solid rgba(var(--acc-rgb),.42);border-radius:999px;background:rgba(5,6,9,.72);backdrop-filter:blur(10px);color:#fff;font-size:clamp(12px,1.2vw,17px);font-weight:900;white-space:nowrap}.stage-class-cue em{color:#ffd166;font-style:normal}
 .field{display:block}.field span{display:block;margin-bottom:3px;color:#697386;font-size:10px;font-weight:800;letter-spacing:.04em}
 .field select{width:100%;height:36px;padding:0 4px;border:0;border-bottom:1px solid rgba(255,255,255,.18);border-radius:0;background:transparent;color:#fff;font-size:14px;font-weight:700;outline:none}
 .field select:focus-visible{border-bottom-color:var(--acc)}
@@ -131,6 +133,28 @@ button,select{font:inherit}button{border:0;cursor:pointer;color:inherit;backgrou
 @media(max-width:1100px){.rail{width:176px;right:18px}.st-name{font-size:20px}.st-val{font-size:34px}.cue{width:min(560px,calc(100vw - 480px))}.strip{max-width:calc(100vw - 480px)}.chip{font-size:12px;padding:6px 10px}.side-note{display:none}}
 @media(max-width:860px){.brand{left:16px;top:15px}.version{left:16px;top:38px}.control-stack{left:16px;width:190px}.rail{top:96px;width:150px;right:12px}.cue{top:12%;min-width:0;width:calc(100vw - 390px)}.cue h2{font-size:clamp(30px,5vw,54px)}.top{width:44vw}.fs{right:12px;top:14px}.strip{bottom:12px;max-width:calc(100vw - 390px);overflow:hidden}}
 @media(max-height:650px){.control-stack{top:74px;bottom:8px;gap:5px}.tabs button{padding:6px 2px 7px}.field select{height:31px}.actions{padding-top:4px}.actions button{min-height:28px}.actions .start{min-height:38px}.actions .exit{min-height:32px}.brand{top:14px}.version{top:36px}.rail{top:88px}.st{padding:6px 0 9px}.stage-hint,.remote-tip{display:none}}
+
+html.embed .brand,html.embed .version,html.embed .fs,html.embed #exitGroup,html.embed #reset,html.embed .remote-tip,html.embed .stage-hint,html.embed .class-cue{display:none}
+html.embed,html.embed body,html.embed button,html.embed select{font-family:'Gothic A1','Noto Sans KR',system-ui,sans-serif}
+html.embed .control-stack{left:var(--host-left,22px);top:calc(var(--host-top,280px) + 24px);bottom:22px;width:220px;padding:0;gap:5px;scrollbar-width:none}
+html.embed .control-stack::-webkit-scrollbar{display:none}
+html.embed .tabs{gap:0;border-bottom:1px solid rgba(255,255,255,.14)}
+html.embed .tabs button{padding:6px 0 7px;font-size:13px;font-weight:1000;color:rgba(255,255,255,.58);text-shadow:0 2px 10px rgba(0,0,0,.9)}
+html.embed .tabs button.on{color:#fff}
+html.embed .field span{margin-bottom:2px;color:rgba(255,255,255,.58);font-size:12px;font-weight:1000;letter-spacing:0;text-shadow:0 2px 8px rgba(0,0,0,.95)}
+html.embed .field select{height:30px;padding:2px 4px;background:rgba(0,0,0,.22);border-bottom:2px solid rgba(255,255,255,.28);font-size:14px;font-weight:1000;text-shadow:0 2px 10px rgba(0,0,0,.72)}
+html.embed .grid{gap:8px}
+html.embed .speed-note{margin-top:-3px;font-size:11px}
+html.embed .actions{grid-template-columns:auto auto auto;justify-content:start;gap:0 16px;border-top:0;padding-top:0}
+html.embed .actions button{min-height:30px;font-size:12px;font-weight:1000;text-align:left;padding:0;color:rgba(255,255,255,.72);white-space:nowrap}
+html.embed .actions .start{order:9;grid-column:1/-1;min-height:46px;padding:10px 0 0;border:0;background:none;color:#51ff9d;font-size:34px;font-weight:1000;letter-spacing:-1.2px;line-height:1.05;text-shadow:0 3px 12px rgba(0,0,0,.86)}
+html.embed .actions .start:disabled{opacity:.35}
+html.embed .app.running .actions .start{color:#ff6578;text-shadow:none}
+
+html.embed .app.running .control-stack>:not(.actions){display:none}
+html.embed .side-note{bottom:62px}
+.meta .stage-class-cue{position:static;transform:none;padding:3px 12px;font-size:12.5px;background:rgba(5,6,9,.55);backdrop-filter:none;border-color:rgba(var(--acc-rgb),.35)}
+.meta{align-items:center;gap:8px}
 </style>
 </head>
 <body>
@@ -141,6 +165,8 @@ button,select{font:inherit}button{border:0;cursor:pointer;color:inherit;backgrou
       <div class="tabs" role="tablist"><button class="on" data-stage="follow">따라하기</button><button data-stage="memory">기억해서</button><button data-stage="call">구령만</button></div>
       <div class="stage-hint" id="stageHint"></div>
       <label class="field"><span>루틴</span><select id="routine"></select></label>
+      <div class="grid"><label class="field"><span>수업 진행</span><select id="lessonFlow" title="3단계 자동 = 세트마다 따라하기 → 기억해서 → 구령만"><option value="single">한 단계 반복</option><option value="ladder">3단계 자동</option></select></label><label class="field"><span>팀 운영</span><select id="teamMode"><option value="all">전원 함께</option><option value="rotate">A/B팀 교대</option></select></label></div>
+      <div class="class-cue" id="classCue"></div>
       
       <div class="grid"><label class="field"><span>속도</span><select id="bpm"><option value="60">느리게 · 60</option><option value="80" selected>기본 · 80</option><option value="100">빠르게 · 100</option><option value="120">매우 빠르게 · 120</option></select></label><label class="field"><span>세트</span><select id="sets"><option>1</option><option selected>2</option><option>3</option><option>4</option></select></label></div>
       <div class="speed-note" id="speedNote"></div>
@@ -155,7 +181,7 @@ button,select{font:inherit}button{border:0;cursor:pointer;color:inherit;backgrou
     </div>
   </aside>
   <section class="stage" id="stage">
-    <div class="top"><div class="routine-name" id="routineName"></div><div class="progress"><i id="progress"></i></div><div class="meta"><span id="countText"></span><span id="setText"></span></div></div>
+    <div class="top"><div class="routine-name" id="routineName"></div><div class="progress"><i id="progress"></i></div><div class="meta"><span id="countText"></span><span class="stage-class-cue" id="stageClassCue"></span><span id="setText"></span></div></div>
     <button class="fs" id="fsBtn" type="button">전체화면</button>
     <div class="cue"><div class="beat" id="beat">READY</div><h2 id="cue">준비 자세</h2><p id="detail"></p><div class="dots" id="dots"></div></div>
     <div class="floor"></div>
@@ -215,9 +241,12 @@ const PRODUCT={
       R('준비 자세',2,'다음 반복을 준비합니다',{end:true})]}
   ],
   okNote:'확인 기준 · 축발 회전 · 복귀 균형 · 가드',
+  focus:['축발 회전','복귀 균형','가드 유지'],
+  baseRole:'가드 스텝',
   plain:s=>s.n,
   label:s=>String(s.n).replace(/^(오른발|왼발)/,m=>`<span class="sw-${m==='오른발'?'right':'left'}">${m}</span>`),
-  hit:()=>{whistle();const a=document.getElementById('app');a.classList.remove('hit');void a.offsetWidth;a.classList.add('hit');},
+  hit:()=>whistle(),                                                     
+  impact:st=>{impactSound(/^round/.test(st.t));const a=document.getElementById('app');a.classList.remove('hit');void a.offsetWidth;a.classList.add('hit');},   
   soft:()=>tone(900,.04,'sine',.05),
   draw(ctx,W,H,now,V){
     const st=V.stage, up=V.upcoming, cur=V.cur;
@@ -225,7 +254,6 @@ const PRODUCT={
     if(V.announced&&up&&up.act) type=up.t; else if(cur&&cur.act) type=cur.t;
     drawKickRings(ctx,W,H,now);
     if(type&&st==='follow') drawKickGuide(ctx,W,H,now,type,1);
-    else if(type&&st==='memory') drawKickGuide(ctx,W,H,now,type,.22,true);
     drawImpact(ctx,W,H,now,V);
   }
 };
@@ -237,17 +265,6 @@ function drawKickRings(gx,W,H,now){
   gx.strokeStyle='rgba(49,183,255,.7)';gx.shadowColor='rgba(49,183,255,.6)';
   const bw=H*.075,bh=H*.085;gx.beginPath();gx.ellipse(W/2,H*.35,bw,bh,0,0,Math.PI*2);gx.stroke();
   gx.restore();
-}
-
-function whistle(){
-  try{
-    const a=ensureAudio();if(!a)return;
-    const now=a.currentTime,master=a.createGain(),comp=a.createDynamicsCompressor(),o1=a.createOscillator(),o2=a.createOscillator(),o3=a.createOscillator();
-    comp.threshold.value=-16;comp.knee.value=4;comp.ratio.value=14;comp.attack.value=.002;comp.release.value=.08;
-    master.gain.setValueAtTime(.0001,now);master.gain.exponentialRampToValueAtTime(.24,now+.008);master.gain.setValueAtTime(.21,now+.105);master.gain.exponentialRampToValueAtTime(.0001,now+.135);master.gain.setValueAtTime(.0001,now+.165);master.gain.exponentialRampToValueAtTime(.27,now+.178);master.gain.setValueAtTime(.23,now+.31);master.gain.exponentialRampToValueAtTime(.0001,now+.36);
-    o1.type='square';o2.type='sawtooth';o3.type='sine';o1.frequency.setValueAtTime(2300,now);o1.frequency.linearRampToValueAtTime(2860,now+.36);o2.frequency.setValueAtTime(2750,now);o2.frequency.linearRampToValueAtTime(3350,now+.36);o3.frequency.setValueAtTime(4600,now);o3.frequency.linearRampToValueAtTime(5200,now+.36);
-    const g2=a.createGain(),g3=a.createGain();g2.gain.value=.38;g3.gain.value=.18;o1.connect(master);o2.connect(g2);o3.connect(g3);g2.connect(master);g3.connect(master);master.connect(comp);comp.connect(a.destination);[o1,o2,o3].forEach(o=>{o.start(now);o.stop(now+.38)});
-  }catch(e){beep(1500)}
 }
 function kickGeom(W,H,type){
   const left=type.endsWith('left'),round=type.startsWith('round'),side=left?-1:1;
@@ -308,14 +325,18 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const $=id=>document.getElementById(id);
 
 const HOST=(()=>{try{return window.parent!==window&&window.parent.closeGroupOverlay?window.parent:null;}catch(e){return null;}})();
+if(HOST) document.documentElement.classList.add('embed');      
 const P=PRODUCT;
 const STAGE_NAME={follow:'따라하기',memory:'기억해서',call:'구령만'};
+const STAGE_ORDER=['follow','memory','call'];
 const COUNT_WORD=['하나','둘','셋','넷','다섯','여섯','일곱','여덟','아홉','열'];
 const VOICE_RATE=1.25, SAY_DELAY=.35, SAY_MARGIN=.1;
 
+const HIT_MS=400, SAY_GAP=.12;
+
 let stage='follow', ri=0;
 let running=false, paused=false, phase='idle';        
-let runToken=0, segToken=0, resumeToken=0, tickTimer=0, sayTimer=0, resumeIdx=null;
+let runToken=0, segToken=0, resumeToken=0, tickTimer=0, sayTimer=0, hitTimer=0, resumeIdx=null;
 let setNo=1, count=0, bundles=0, confirmed=0, totalDone=0, totalOk=0;
 let TL=null, seg=null, audio=null, wakeLock=null, koVoice=null;
 const V={cur:null,upcoming:null,announced:false,impactAt:-1,impactStep:null,stepAt:0,beatAt:0,beat:0,stage:'follow',idle:true};
@@ -325,11 +346,21 @@ const store={
   save(){try{localStorage.setItem(P.storeKey,JSON.stringify(settingsNow()))}catch(e){}}
 };
 function settingsNow(){
-  const o={...store.load(),stage,routine:P.routines[ri].id,bpm:+$('bpm').value,sets:+$('sets').value,rest:+$('rest').value};
+  const o={...store.load(),stage,routine:P.routines[ri].id,bpm:+$('bpm').value,sets:+$('sets').value,rest:+$('rest').value,lessonFlow:$('lessonFlow').value,teamMode:$('teamMode').value};
   o['goal_'+routine().type]=+$('kickGoal').value;
   if($('stance')) o.stance=$('stance').value;
   return o;
 }
+const ladderOn=()=>$('lessonFlow').value==='ladder';
+function stageForSet(n){return STAGE_ORDER[Math.min(STAGE_ORDER.length-1,Math.max(0,n-1))];}
+function paintClassCue(){
+  const focus=P.focus[(setNo-1)%P.focus.length],rotate=$('teamMode').value==='rotate';
+  let stageText;
+  if(rotate){const active=setNo%2?'A':'B',base=active==='A'?'B':'A';$('classCue').innerHTML=`<b>${active}팀 루틴</b> · ${base}팀 ${P.baseRole}<br><em>${base}팀 관찰 · ${focus}</em>`;stageText=`${active}팀 루틴 · ${base}팀 ${P.baseRole} · <em>${focus}</em>`;}
+  else{$('classCue').innerHTML=`<b>전원 함께</b><br><em>이번 세트 집중 · ${focus}</em>`;stageText=`전원 함께 · <em>${focus}</em>`;}
+  $('stageClassCue').innerHTML=stageText;
+}
+function syncLessonFlow(){if(ladderOn()){$('sets').value='3';stage=stageForSet(setNo);}paintClassCue();}
 const routine=()=>P.routines[ri];
 const isCombo=()=>routine().type==='combo';
 const unit=()=>isCombo()?'묶음':'회';
@@ -338,44 +369,61 @@ const done=()=>isCombo()?bundles:count;
 
 function speechSec(t){const syl=(t.match(/[가-힣]/g)||[]).length,other=(t.match(/[A-Za-z0-9]/g)||[]).length,pause=(t.match(/[,·]/g)||[]).length;return syl*.16/VOICE_RATE+other*.08+pause*.18+.15;}
 function compile(){
-  const r=routine(), n=r.cycle.length, names=stage!=='memory';
+  const r=routine(), n=r.cycle.length;
   const steps=r.cycle.map((s,i)=>({...s,i,act:s.t!=='ready',counted:s.t!=='ready'&&!s.quiet,announce:null}));
   steps.forEach(s=>{s.phraseStart=s.act&&!s.chain;});
   steps.forEach((s,i)=>{
-    if(!s.phraseStart) return;
-    const calls=[s.call||s.n];
-    for(let k=1;k<n;k++){const q=steps[(i+k)%n];if(q.act&&q.chain)calls.push(q.call||q.n);else break;}
-    s.phrase=calls.join(', ');
+    if(s.phraseStart){
+      const calls=[s.call||s.n];
+      for(let k=1;k<n;k++){const q=steps[(i+k)%n];if(q.act&&q.chain)calls.push(q.call||q.n);else break;}
+      s.phrase=calls.join(', ');
+    }
+    if(!s.act) return;
     let W=0;                                  
-    for(let k=1;k<=n;k++){const j=(i-k+n)%n;W+=steps[j].b;if(steps[j].act){steps[j].announce=i;s.window=W;break;}}
+    for(let k=1;k<=n;k++){const j=(i-k+n)%n;W+=steps[j].b;if(steps[j].act){s.window=W;break;}}
   });
   
   if(r.type==='combo') steps.forEach((s,i)=>{if(!s.end)return;for(let k=1;k<n;k++){const q=steps[(i-k+n)%n];if(q.end)break;if(q.counted){q.kiai=true;break;}}});
-  const pick=+$('bpm').value||80;
-  let cap=Infinity;
-  if(names) steps.forEach(s=>{if(s.phraseStart)cap=Math.min(cap,60*s.window/(speechSec(s.phrase)+SAY_DELAY+SAY_MARGIN));});
-  const bpm=Math.max(40,Math.min(pick,Math.floor(cap)));
-  const cycleBeats=steps.reduce((a,s)=>a+s.b,0), perCycle=r.type==='combo'?steps.filter(s=>s.end).length:steps.filter(s=>s.counted).length;
-  TL={steps,n,bpm,pick,capped:bpm<pick,beatMs:60000/bpm,unitSec:cycleBeats/Math.max(1,perCycle)*60/bpm};
   
   let groups=[],cur=[];steps.forEach(s=>{cur.push(s);if(r.type==='combo'&&s.end){groups.push(cur);cur=[];}});if(cur.length)groups.push(cur);
   groups.forEach(g=>{let k=0;const tot=g.filter(s=>s.counted).length;g.forEach(s=>{if(s.counted){s.ord=++k;s.of=tot;}});});
+  const pick=+$('bpm').value||80;
+  
+  let cap=Infinity;_compiling=steps;
+  steps.forEach(s=>{const t=callTextFor(s,true);if(t&&s.window)cap=Math.min(cap,60*s.window/(HIT_MS/1000+SAY_GAP+speechSec(t)+SAY_MARGIN));});
+  _compiling=null;
+  const bpm=Math.max(40,Math.min(pick,Math.floor(cap)));
+  const cycleBeats=steps.reduce((a,s)=>a+s.b,0), perCycle=r.type==='combo'?steps.filter(s=>s.end).length:steps.filter(s=>s.counted).length;
+  TL={steps,n,bpm,pick,capped:bpm<pick,beatMs:60000/bpm,unitSec:cycleBeats/Math.max(1,perCycle)*60/bpm};
   return TL;
 }
 function countWord(st){return COUNT_WORD[((isCombo()?st.ord:count)-1+10)%10];}
+
+let _compiling=null;
+const stepAt=i=>{const a=_compiling||TL.steps;return a[((i%a.length)+a.length)%a.length];};
+const TL_n=()=>(_compiling||TL.steps).length;
+function callTextFor(st,forCap){
+  if(!st||!st.act) return null;
+  if(!st.phraseStart) return null;
+  if(stage!=='memory') return st.phrase;
+  
+  if(!isCombo()) return st.counted?(forCap?'여덟':COUNT_WORD[count%10]):null;
+  const nums=[];for(let k=0;k<TL_n();k++){const q=stepAt(st.i+k);if(k>0&&!(q.act&&q.chain))break;if(q.counted)nums.push(COUNT_WORD[(q.ord-1)%10]);}
+  return nums.length?nums.join(', '):null;
+}
 const firstPhrase=()=>{const i=TL.steps.findIndex(s=>s.phraseStart);return i<0?0:i;};
 function phraseStartOf(i){const n=TL.n;let j=i;for(let k=0;k<n&&TL.steps[j].chain;k++)j=(j-1+n)%n;return j;}
 function nextActionAfter(i){const n=TL.n;for(let k=1;k<=n;k++){const j=(i+k)%n;if(TL.steps[j].act)return j;}return i;}
-function introBeats(text){if(stage==='memory')return 2;return Math.max(2,Math.ceil((speechSec(text)+SAY_DELAY+SAY_MARGIN)/(TL.beatMs/1000)));}
+function introBeats(text){return Math.max(2,Math.ceil((speechSec(text||'')+SAY_DELAY+SAY_MARGIN)/(TL.beatMs/1000)));}
 
 function curStep(){return seg.mode==='intro'?seg.intro:TL.steps[seg.si];}
 function runFrom(idx,why){
-  segToken++;const tok=segToken;clearTimeout(tickTimer);clearTimeout(sayTimer);
+  segToken++;const tok=segToken;clearTimeout(tickTimer);clearTimeout(sayTimer);clearTimeout(hitTimer);
   phase='run';resumeIdx=null;
   const target=TL.steps[idx], r=routine();
   const introName=why==='again'?'다시 한 번':why==='resume'?'이어서':r.intro.n;
   seg={tok,mode:'intro',si:idx,target:idx,beat:0,g:0,anchor:performance.now(),
-       intro:{n:introName,t:'ready',b:introBeats(target.phrase),d:why==='set'?`${setNo}세트 시작`:r.intro.d,intro:true}};
+       intro:{n:introName,t:'ready',b:introBeats(callTextFor(target,true)),d:why==='set'?`${setNo}세트 시작`:r.intro.d,intro:true}};
   V.idle=false;
   tick(tok);
 }
@@ -401,22 +449,27 @@ function finishStep(st){
 }
 function stepStart(st){
   const now=performance.now(); V.cur=st; V.stepAt=now;
-  if(st.intro){V.upcoming=TL.steps[seg.target];V.announced=false;planSay(seg.target);paintStep(st);return;}
+  if(st.intro){V.upcoming=TL.steps[seg.target];V.announced=false;planSay(seg.target,SAY_DELAY*1000);paintStep(st);return;}
   if(st.act){
-    V.impactAt=now;V.impactStep=st;
+    
+    const hitMs=Math.min(HIT_MS,st.b*TL.beatMs*.5);
+    V.impactStep=st;V.impactAt=now+hitMs;V.cueAt=now;
     if(st.counted){count++;if(!isCombo())totalDone++;}
-    if(st.quiet) P.soft(); else P.hit(st);
-    if(stage==='memory'&&st.counted) speak(countWord(st));
-    if(st.kiai&&stage!=='call') showKiai();
+    if(st.quiet) P.soft(st); else P.hit(st);
     const nx=nextActionAfter(st.i);V.upcoming=TL.steps[nx];V.announced=false;
-    if(st.announce!=null) planSay(st.announce);
-    else planSay(nx,true);                          
+    const tok=segToken;clearTimeout(hitTimer);
+    hitTimer=setTimeout(()=>{if(tok!==segToken||paused||!running)return;impactNow(st,nx);},st.quiet?Math.min(120,hitMs):hitMs);
   }
   paintStep(st);paintCounts();
 }
-function planSay(i,silent){
+
+function impactNow(st,nx){
+  if(!st.quiet){P.impact(st);if(st.kiai&&stage!=='call')showKiai();}
+  planSay(nx,st.quiet?0:SAY_GAP*1000);
+}
+function planSay(i,delayMs){
   const tok=segToken;clearTimeout(sayTimer);
-  sayTimer=setTimeout(()=>{if(tok!==segToken||paused||!running)return;V.announced=true;if(!silent&&stage!=='memory')speak(TL.steps[i].phrase);paintPreview();paintNext();paintStrip();},SAY_DELAY*1000);
+  sayTimer=setTimeout(()=>{if(tok!==segToken||paused||!running)return;V.announced=true;const t=callTextFor(TL.steps[i]);if(t)speak(t);paintPreview();paintNext();paintStrip();},delayMs||0);
 }
 function beatsUntilUpcoming(){
   if(!seg||!V.upcoming) return 0;
@@ -428,7 +481,7 @@ function beatsUntilUpcoming(){
 
 async function start(){
   if(running||document.hidden) return;
-  trainingClock.resume();compile();
+  trainingClock.resume();setNo=1;if(ladderOn())stage=stageForSet(setNo);compile();
   $('finishScreen').hidden=true;
   const token=++runToken;setNo=1;count=bundles=confirmed=0;totalDone=totalOk=0;running=true;paused=false;phase='countdown';
   setControls();keepAwake(true);ensureAudio();
@@ -446,7 +499,7 @@ async function start(){
   runFrom(firstPhrase(),'start');
 }
 async function endSet(token){
-  segToken++;clearTimeout(tickTimer);clearTimeout(sayTimer);
+  segToken++;clearTimeout(tickTimer);clearTimeout(sayTimer);clearTimeout(hitTimer);
   if(token!==runToken) return;
   if(setNo<+$('sets').value){
     phase='rest';const sec=+$('rest').value;
@@ -455,12 +508,12 @@ async function endSet(token){
     $('restScreen').hidden=false;speak('잘했어요. 쉬어요');
     for(let n=sec;n>0;n--){if(token!==runToken)return;$('restNum').textContent=n;if(n<=3)beep(520);await sleep(1000);}
     if(token!==runToken) return;
-    setNo++;count=bundles=confirmed=0;$('restScreen').hidden=true;paintCounts();
+    setNo++;count=bundles=confirmed=0;if(ladderOn()){stage=stageForSet(setNo);compile();}$('restScreen').hidden=true;paintAll();
     runFrom(firstPhrase(),'set');
   }else finishAll();
 }
 function finishAll(){
-  running=false;paused=false;phase='done';segToken++;clearTimeout(tickTimer);clearTimeout(sayTimer);
+  running=false;paused=false;phase='done';segToken++;clearTimeout(tickTimer);clearTimeout(sayTimer);clearTimeout(hitTimer);
   keepAwake(false);speak('운동 끝');chime();
   const sets=+$('sets').value;
   $('finishSum').innerHTML=`<div><span>세트</span><b>${sets}</b></div><div><span>완주</span><b>${totalDone}<small style="font-size:.5em;color:#aab3c2"> ${unit()}</small></b></div><div class="g"><span>지도자 확인</span><b>${totalOk}</b></div>`;
@@ -468,7 +521,7 @@ function finishAll(){
   setControls();
 }
 function stopAll(){
-  runToken++;segToken++;resumeToken++;clearTimeout(tickTimer);clearTimeout(sayTimer);
+  runToken++;segToken++;resumeToken++;clearTimeout(tickTimer);clearTimeout(sayTimer);clearTimeout(hitTimer);
   running=paused=false;phase='idle';trainingClock.resume();cancelSpeech();keepAwake(false);
   ['countdown','restScreen','finishScreen'].forEach(id=>$(id).hidden=true);
 }
@@ -482,7 +535,7 @@ function pauseNow(){
   if(!running||paused) return;
   paused=true;trainingClock.pause();cancelSpeech();
   if(phase==='run'){
-    segToken++;clearTimeout(tickTimer);clearTimeout(sayTimer);
+    segToken++;clearTimeout(tickTimer);clearTimeout(sayTimer);clearTimeout(hitTimer);
     const st=curStep();
     resumeIdx=st.intro?seg.target:phraseStartOf(nextActionAfter(seg.si));
     $('countdown').hidden=false;$('countNum').textContent='잠시 멈춤';$('countNum').classList.add('pz');
@@ -523,6 +576,29 @@ function confirmOne(){
 function ensureAudio(){try{audio=audio||new (window.AudioContext||window.webkitAudioContext)();if(audio.state==='suspended')audio.resume();}catch(e){audio=null}return audio;}
 function tone(freq,dur=.1,type='sine',vol=.07){try{const a=ensureAudio();if(!a)return;const t=a.currentTime,o=a.createOscillator(),g=a.createGain();o.type=type;o.frequency.setValueAtTime(freq,t);g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.0001,t+dur);o.connect(g);g.connect(a.destination);o.start(t);o.stop(t+dur+.02);}catch(e){}}
 function beep(freq=620){tone(freq,.1,'sine',.07);}
+
+function whistle(){
+  try{
+    const a=ensureAudio();if(!a)return;
+    const now=a.currentTime,master=a.createGain(),comp=a.createDynamicsCompressor(),o1=a.createOscillator(),o2=a.createOscillator(),o3=a.createOscillator();
+    comp.threshold.value=-16;comp.knee.value=4;comp.ratio.value=14;comp.attack.value=.002;comp.release.value=.08;
+    master.gain.setValueAtTime(.0001,now);master.gain.exponentialRampToValueAtTime(.26,now+.01);master.gain.setValueAtTime(.23,now+.17);master.gain.exponentialRampToValueAtTime(.0001,now+.22);
+    o1.type='square';o2.type='sawtooth';o3.type='sine';o1.frequency.setValueAtTime(2500,now);o1.frequency.linearRampToValueAtTime(2700,now+.22);o2.frequency.setValueAtTime(2980,now);o2.frequency.linearRampToValueAtTime(3200,now+.22);o3.frequency.setValueAtTime(5000,now);
+    const g2=a.createGain(),g3=a.createGain();g2.gain.value=.38;g3.gain.value=.16;o1.connect(master);o2.connect(g2);o3.connect(g3);g2.connect(master);g3.connect(master);master.connect(comp);comp.connect(a.destination);[o1,o2,o3].forEach(o=>{o.start(now);o.stop(now+.24)});
+  }catch(e){beep(1500)}
+}
+
+function impactSound(heavy){
+  try{
+    const a=ensureAudio();if(!a)return;const t=a.currentTime;
+    const len=Math.floor(a.sampleRate*.09),buf=a.createBuffer(1,len,a.sampleRate),d=buf.getChannelData(0);
+    for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,3);
+    const src=a.createBufferSource(),bp=a.createBiquadFilter(),g=a.createGain();src.buffer=buf;bp.type='bandpass';bp.frequency.value=heavy?900:1750;bp.Q.value=.9;g.gain.value=heavy?.6:.45;
+    src.connect(bp);bp.connect(g);g.connect(a.destination);src.start(t);
+    const o=a.createOscillator(),og=a.createGain();o.type='sine';o.frequency.setValueAtTime(heavy?125:190,t);o.frequency.exponentialRampToValueAtTime(heavy?50:85,t+.14);
+    og.gain.setValueAtTime(heavy?.6:.34,t);og.gain.exponentialRampToValueAtTime(.0001,t+.18);o.connect(og);og.connect(a.destination);o.start(t);o.stop(t+.2);
+  }catch(e){beep(heavy?300:700)}
+}
 function chime(){[523,659,784,1047].forEach((f,i)=>setTimeout(()=>tone(f,.22,'sine',.1),i*110));}
 function pickVoice(){try{const vs=speechSynthesis.getVoices()||[];koVoice=vs.find(v=>/ko[-_]KR/i.test(v.lang)&&/Google|Neural|Natural/i.test(v.name))||vs.find(v=>/^ko/i.test(v.lang))||null;}catch(e){}}
 try{pickVoice();speechSynthesis.onvoiceschanged=pickVoice;}catch(e){}
@@ -544,12 +620,12 @@ function paintFs(){let fs=false;try{fs=!!(HOST?HOST.document.fullscreenElement:d
 document.addEventListener('fullscreenchange',paintFs);
 try{HOST&&HOST.document.addEventListener('fullscreenchange',paintFs);}catch(e){}
 
-function paintAll(){paintHead();paintStep(V.cur);paintCounts();paintNext();paintStrip();}
+function paintAll(){paintHead();paintStep(V.cur);paintCounts();paintNext();paintStrip();paintClassCue();}
 function paintHead(){
   const r=routine();$('routineName').textContent=r.name;
   $('stageHint').textContent=P.hints[stage];
   document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.stage===stage));
-  $('app').className=`app stage-${stage}`;
+  const app=$('app');[...app.classList].filter(c=>c.startsWith('stage-')).forEach(c=>app.classList.remove(c));app.classList.add('stage-'+stage);
   const note=TL.capped?` · <i>구령 이름을 말할 시간이 필요해 ${TL.bpm}으로 진행</i>`:'';
   $('speedNote').innerHTML=`${isCombo()?'한 묶음':'동작 간격'} 약 <b>${TL.unitSec.toFixed(1)}초</b>${note}`;
   $('goalLab').textContent=isCombo()?'세트 목표 · 묶음':'세트 목표 · 횟수';
@@ -628,9 +704,12 @@ function setControls(){
   const live=running&&!paused;
   $('start').textContent=running?(paused?'멈춤':'진행 중'):phase==='done'?'다시 시작':'시작';
   $('start').disabled=running;
+  $('app').classList.toggle('running',running);
+  if(HOST){$('start').textContent=running?'■ 중지':'▶ 시작!';$('start').disabled=false;try{HOST.setGroupRunning&&HOST.setGroupRunning(running);}catch(e){}}
   $('pause').disabled=!running;$('pause').textContent=paused?'계속':'일시정지';
   $('again').disabled=!(running&&!paused);$('confirm').disabled=!running;
   document.querySelectorAll('.control-stack select,.tabs button').forEach(el=>{if(el.id==='sets'||el.id==='rest')return;el.disabled=running;});
+  $('sets').disabled=running||ladderOn();
 }
 function idleView(){
   compile();V.cur=null;V.idle=true;V.upcoming=TL.steps[firstPhrase()];V.announced=true;V.impactAt=-1;
@@ -660,8 +739,8 @@ function onSetting(){if(running)return;store.save();idleView();}
 function bind(){
   document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{if(running)return;stage=b.dataset.stage;onSetting();});
   $('routine').onchange=e=>{ri=+e.target.value;fillGoals();onSetting();};
-  ['bpm','kickGoal','sets','rest','stance'].forEach(id=>{if($(id))$(id).addEventListener('change',()=>{if(id==='sets'||id==='rest'){store.save();paintCounts();return;}onSetting();});});
-  $('start').onclick=start;$('pause').onclick=togglePause;$('reset').onclick=reset;
+  ['bpm','kickGoal','sets','rest','stance','lessonFlow','teamMode'].forEach(id=>{if($(id))$(id).addEventListener('change',()=>{if(id==='lessonFlow')syncLessonFlow();if(id==='sets'||id==='rest'){store.save();paintCounts();paintClassCue();return;}onSetting();setControls();});});
+  $('start').onclick=()=>{if(HOST&&running){reset();return;}start();};$('pause').onclick=togglePause;$('reset').onclick=reset;
   $('again').onclick=againBundle;$('confirm').onclick=confirmOne;$('fsBtn').onclick=toggleFs;
   $('finAgain').onclick=()=>{$('finishScreen').hidden=true;phase='idle';start();};
   $('finClose').onclick=()=>{$('finishScreen').hidden=true;reset();};
@@ -688,7 +767,8 @@ function init(){
   fillRoutines();
   const idx=P.routines.findIndex(r=>r.id===s.routine);ri=idx>=0?idx:0;$('routine').value=String(ri);
   if(STAGE_NAME[s.stage]) stage=s.stage;
-  for(const id of ['bpm','sets','rest','stance']) if($(id)&&s[id]!=null&&[...$(id).options].some(o=>o.value===String(s[id]))) $(id).value=String(s[id]);
+  for(const id of ['bpm','sets','rest','stance','lessonFlow','teamMode']) if($(id)&&s[id]!=null&&[...$(id).options].some(o=>o.value===String(s[id]))) $(id).value=String(s[id]);
+  if(ladderOn())$('sets').value='3';
   fillGoals();bind();idleView();setControls();paintFs();
   if($('stOkNote')) $('stOkNote').textContent=P.okNote.replace('확인 기준 · ','');
   if($('finishNote')) $('finishNote').textContent=`완주는 화면 진행 기준입니다. 지도자 확인은 관장님이 보고 눌러 준 수입니다 (${P.okNote.replace('확인 기준 · ','기준: ')}).`;

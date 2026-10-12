@@ -3690,6 +3690,22 @@ body.akm-lite-fx .kt-wing{filter:none}body.akm-lite-fx .kt-bars i,body.akm-lite-
 body.hf-dim #video{filter:brightness(.72) saturate(.85);transition:filter .4s ease}
 body.hf-dim #kickPilotGraph{display:none!important}
 </style>
+<style id="akm-group-embed-v1">
+
+body.akm-group-open .stage>.panel>*:not(.title):not(.hud-drill-row):not(.hud-balloon-row):not(.hud-sparring-row):not(.hud-group-row):not(.hud-punch-row):not(.fullscreen-only),
+body.akm-group-open .stage>.panel>*:not(.title):not(.hud-drill-row):not(.hud-balloon-row):not(.hud-sparring-row):not(.hud-group-row):not(.hud-punch-row):not(.fullscreen-only) *{
+  visibility:hidden !important;pointer-events:none !important;
+}
+body.akm-group-open #p2PlayerToggle,body.akm-group-open #p2PlayerToggle *{visibility:hidden !important;pointer-events:none !important;}
+
+body.akm-group-open #camWrap,body.akm-group-open #camWrap *{visibility:hidden !important;pointer-events:none !important;}
+
+body.akm-group-open .stage>.panel>.title{pointer-events:none !important;}
+body.akm-group-open .stage>.panel>.title button{pointer-events:auto !important;}
+
+body.akm-group-open.akm-group-running .stage>.panel>.mode-row,
+body.akm-group-open.akm-group-running .stage>.panel>.mode-row *{visibility:hidden !important;pointer-events:none !important;}
+</style>
 </head>
 <body class="hud-v21 akm-ui">
 
@@ -7713,18 +7729,52 @@ window.openGroupMode=function(){
 };
 
 function openGroupOverlay(src){
+  if(window.__groupOverlayOpen && document.getElementById('groupOverlay')) return;   
   let wrap=document.getElementById('groupOverlay');
   if(wrap) wrap.remove();
   wrap=document.createElement('div');wrap.id='groupOverlay';
-  wrap.style.cssText='position:fixed;inset:0;z-index:2147483000;background:#050609';
+
+  const stage=document.querySelector('.stage'), panel=stage&&stage.querySelector(':scope>.panel');
   const f=document.createElement('iframe');f.id='groupFrame';f.title='단체 모드';
   f.allow='autoplay; screen-wake-lock; fullscreen';f.setAttribute('allowfullscreen','');
   f.style.cssText='width:100%;height:100%;border:0;display:block;background:#050609';
-  f.addEventListener('load',()=>{try{f.contentWindow.focus();}catch(e){}});
-  f.src=src;wrap.appendChild(f);document.body.appendChild(wrap);
+  f.addEventListener('load',()=>{syncGroupFrameLayout();try{f.contentWindow.focus();}catch(e){}});
+  f.src=src;wrap.appendChild(f);
+  if(stage&&panel){wrap.style.cssText='position:absolute;inset:0;z-index:5;background:#050609';stage.insertBefore(wrap,panel);}
+  else{wrap.style.cssText='position:fixed;inset:0;z-index:2147483000;background:#050609';document.body.appendChild(wrap);}
   window.__groupOverlayOpen=true;
   releaseCameraForGroup();
+  document.body.classList.add('akm-group-open');document.body.classList.remove('akm-group-running');
+  markGroupModeActive(true);
 }
+
+function syncGroupFrameLayout(){
+  const f=document.getElementById('groupFrame');if(!f)return;
+  let doc=null;try{doc=f.contentDocument;}catch(e){}
+  if(!doc||!doc.documentElement)return;
+  const css=doc.documentElement.style;
+  const g=document.getElementById('m_group'),row=g&&(g.closest('.mode-row')||g),t=document.getElementById('panelDojangName');
+  const r=row&&row.getBoundingClientRect(),tl=t&&t.getBoundingClientRect();
+  if(r&&r.height)css.setProperty('--host-top',Math.round(r.bottom)+'px');
+  if(tl&&tl.height)css.setProperty('--host-left',Math.round(tl.left)+'px');
+}
+window.addEventListener('resize',()=>{if(window.__groupOverlayOpen)setTimeout(syncGroupFrameLayout,80);});
+
+let groupPrevActive=[];
+function markGroupModeActive(on){
+  const btns=[...document.querySelectorAll('.panel .mode-row .game-btn')];
+  if(on){if(!groupPrevActive.length)groupPrevActive=btns.filter(b=>b.classList.contains('active')&&b.id!=='m_group');btns.forEach(b=>b.classList.toggle('active',b.id==='m_group'));}
+  else{btns.forEach(b=>{if(b.id==='m_group')b.classList.remove('active');});groupPrevActive.forEach(b=>b.classList.add('active'));groupPrevActive=[];}
+}
+
+window.setGroupRunning=function(on){document.body.classList.toggle('akm-group-running',!!on);};
+
+document.addEventListener('click',e=>{
+  if(!window.__groupOverlayOpen)return;
+  const b=e.target&&e.target.closest&&e.target.closest('.panel button');if(!b)return;
+  if(b.id==='m_group'||b.id==='hudSettingsBtn'||b.closest('.fullscreen-only'))return;
+  window.closeGroupOverlay();
+},true);
 
 let groupCamWasOn=false, groupCamEpoch=0;
 function releaseCameraForGroup(){
@@ -7748,6 +7798,8 @@ window.closeGroupOverlay=function(){
   const wrap=document.getElementById('groupOverlay');
   if(wrap) wrap.remove();              
   window.__groupOverlayOpen=false;
+  document.body.classList.remove('akm-group-open','akm-group-running');
+  markGroupModeActive(false);
   try{ runtimeVideoAt=trainingClock.realNow(); runtimeVideoTime=video.currentTime; lastVideoTime=-1; }catch(e){}
   try{ window.focus(); }catch(e){}
   restoreCameraAfterGroup();
