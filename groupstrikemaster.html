@@ -22,7 +22,7 @@ button,select{font:inherit}button{border:0;cursor:pointer;color:inherit;backgrou
 .brand{position:absolute;top:24px;left:28px;font-size:15px;font-weight:900;letter-spacing:.15em}.brand em{color:var(--acc);font-style:normal}
 .version{position:absolute;top:48px;left:28px;color:#667085;font-size:10px;font-weight:800;letter-spacing:.08em}
 .control-stack{position:absolute;left:28px;top:clamp(92px,13vh,128px);bottom:18px;width:232px;display:flex;flex-direction:column;gap:clamp(7px,1.15vh,12px);overflow-y:auto;overscroll-behavior:contain;padding:0 4px 2px 0;scrollbar-width:thin}
-.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;border-bottom:1px solid var(--line)}
+.tabs{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;border-bottom:1px solid var(--line)}
 .tabs button{padding:9px 2px 10px;border-bottom:3px solid transparent;color:rgba(255,255,255,.48);font-size:13px;font-weight:900;transition:color .2s,border-color .2s}
 .tabs button.on{color:#fff;border-bottom-color:var(--acc)}
 .stage-hint{margin-top:-2px;color:#6b7588;font-size:10.5px;font-weight:700;line-height:1.45}
@@ -157,10 +157,10 @@ html.embed .side-note{bottom:62px}
   <aside class="side">
     <div class="brand">AI <em>STRIKE</em> MASTER</div><div class="version">GROUP COMBINATION · v1.0</div>
     <div class="control-stack">
-      <div class="tabs" role="tablist"><button class="on" data-stage="follow">따라하기</button><button data-stage="memory">기억해서</button><button data-stage="call">구령만</button></div>
+      <div class="tabs" role="tablist"><button class="on" data-stage="follow">따라하기</button><button data-stage="call">구령만</button></div>
       <div class="stage-hint" id="stageHint"></div>
       <label class="field"><span>루틴</span><select id="routine"></select></label>
-      <div class="grid"><label class="field"><span>수업 진행</span><select id="lessonFlow" title="3단계 자동 = 세트마다 따라하기 → 기억해서 → 구령만"><option value="single">한 단계 반복</option><option value="ladder">3단계 자동</option></select></label><label class="field"><span>팀 운영</span><select id="teamMode"><option value="all">전원 함께</option><option value="rotate">A/B팀 교대</option></select></label></div>
+      <div class="grid"><label class="field"><span>수업 진행</span><select id="lessonFlow" title="단계 자동 = 따라하기 세트 뒤 구령만 세트 (팀 교대면 A·B 가 단계마다 한 번씩)"><option value="single">한 단계 반복</option><option value="ladder">단계 자동</option></select></label><label class="field"><span>팀 운영</span><select id="teamMode"><option value="all">전원 함께</option><option value="rotate">A/B팀 교대</option></select></label></div>
       <div class="class-cue" id="classCue"></div>
       <label class="field"><span>자세</span><select id="stance"><option value="orth">왼발 앞 · 앞손 = 왼손</option><option value="south">오른발 앞 · 앞손 = 오른손</option></select></label>
       <div class="grid"><label class="field"><span>속도</span><select id="bpm"><option value="60">느리게 · 60</option><option value="80" selected>기본 · 80</option><option value="100">빠르게 · 100</option><option value="120">매우 빠르게 · 120</option></select></label><label class="field"><span>세트</span><select id="sets"><option>1</option><option selected>2</option><option>3</option><option>4</option></select></label></div>
@@ -205,7 +205,6 @@ const PRODUCT={
   goals:{single:[6,10,20,30],combo:[4,6,10,15]}, defGoal:{single:10,combo:6},
   hints:{
     follow:'궤적 · 이름 구령을 모두 보여줘요. 휘슬에 뻗습니다.',
-    memory:'궤적은 숨기고 숫자로 구령해요. 다음 동작은 화면으로만 예고합니다.',
     call:'궤적 없이 순서만 보여요. 콤보 구령을 듣고 휘슬에 뻗습니다.'
   },
   okNote:'확인 기준 · 순서 · 반대손 가드 · 마지막 복귀',
@@ -385,16 +384,19 @@ const $=id=>document.getElementById(id);
 const HOST=(()=>{try{return window.parent!==window&&window.parent.closeGroupOverlay?window.parent:null;}catch(e){return null;}})();
 if(HOST) document.documentElement.classList.add('embed');      
 const P=PRODUCT;
-const STAGE_NAME={follow:'따라하기',memory:'기억해서',call:'구령만'};
-const STAGE_ORDER=['follow','memory','call'];
+
+const STAGE_NAME={follow:'따라하기',call:'구령만'};
+const STAGE_ORDER=['follow','call'];
 const COUNT_WORD=['하나','둘','셋','넷','다섯','여섯','일곱','여덟','아홉','열'];
 const VOICE_RATE=1.25, SAY_DELAY=.35, SAY_MARGIN=.1;
 
 const HIT_MS=400, SAY_GAP=.12;
 
+const CALL_LEAD=.15, WARM_LEAD=.45;
+
 let stage='follow', ri=0;
 let running=false, paused=false, phase='idle';        
-let runToken=0, segToken=0, resumeToken=0, tickTimer=0, sayTimer=0, hitTimer=0, resumeIdx=null;
+let runToken=0, segToken=0, resumeToken=0, tickTimer=0, sayTimer=0, hitTimer=0, callTimer=0, resumeIdx=null, warmCall=false;
 let setNo=1, count=0, bundles=0, confirmed=0, totalDone=0, totalOk=0;
 let TL=null, seg=null, audio=null, wakeLock=null, koVoice=null;
 const V={cur:null,upcoming:null,announced:false,impactAt:-1,impactStep:null,stepAt:0,beatAt:0,beat:0,stage:'follow',idle:true};
@@ -410,7 +412,10 @@ function settingsNow(){
   return o;
 }
 const ladderOn=()=>$('lessonFlow').value==='ladder';
-function stageForSet(n){return STAGE_ORDER[Math.min(STAGE_ORDER.length-1,Math.max(0,n-1))];}
+const rotateOn=()=>$('teamMode').value==='rotate';
+
+const ladderSets=()=>STAGE_ORDER.length*(rotateOn()?2:1);
+function stageForSet(n){const k=rotateOn()?Math.floor((n-1)/2):n-1;return STAGE_ORDER[Math.min(STAGE_ORDER.length-1,Math.max(0,k))];}
 function paintClassCue(){
   const focus=P.focus[(setNo-1)%P.focus.length],rotate=$('teamMode').value==='rotate';
   let stageText;
@@ -418,7 +423,7 @@ function paintClassCue(){
   else{$('classCue').innerHTML=`<b>전원 함께</b><br><em>이번 세트 집중 · ${focus}</em>`;stageText=`전원 함께 · <em>${focus}</em>`;}
   $('stageClassCue').innerHTML=stageText;
 }
-function syncLessonFlow(){if(ladderOn()){$('sets').value='3';stage=stageForSet(setNo);}paintClassCue();}
+function syncLessonFlow(){if(ladderOn()){$('sets').value=String(ladderSets());stage=stageForSet(setNo);}paintClassCue();}
 const routine=()=>P.routines[ri];
 const isCombo=()=>routine().type==='combo';
 const unit=()=>isCombo()?'묶음':'회';
@@ -447,9 +452,8 @@ function compile(){
   groups.forEach(g=>{let k=0;const tot=g.filter(s=>s.counted).length;g.forEach(s=>{if(s.counted){s.ord=++k;s.of=tot;}});});
   const pick=+$('bpm').value||80;
   
-  let cap=Infinity;_compiling=steps;
-  steps.forEach(s=>{const t=callTextFor(s,true);if(t&&s.window)cap=Math.min(cap,60*s.window/(HIT_MS/1000+SAY_GAP+speechSec(t)+SAY_MARGIN));});
-  _compiling=null;
+  let cap=Infinity;
+  steps.forEach(s=>{const t=callTextFor(s);if(t&&s.window)cap=Math.min(cap,60*s.window/(HIT_MS/1000+SAY_GAP+speechSec(t)+CALL_LEAD));});
   const bpm=Math.max(40,Math.min(pick,Math.floor(cap)));
   const cycleBeats=steps.reduce((a,s)=>a+s.b,0), perCycle=r.type==='combo'?steps.filter(s=>s.end).length:steps.filter(s=>s.counted).length;
   TL={steps,n,bpm,pick,capped:bpm<pick,beatMs:60000/bpm,unitSec:cycleBeats/Math.max(1,perCycle)*60/bpm};
@@ -458,30 +462,24 @@ function compile(){
 function countWord(st){return COUNT_WORD[((isCombo()?st.ord:count)-1+10)%10];}
 
 let _compiling=null;
-const stepAt=i=>{const a=_compiling||TL.steps;return a[((i%a.length)+a.length)%a.length];};
-const TL_n=()=>(_compiling||TL.steps).length;
-function callTextFor(st,forCap){
-  if(!st||!st.act) return null;
-  if(!st.phraseStart) return null;
-  if(stage!=='memory') return st.phrase;
-  
-  if(!isCombo()) return st.counted?(forCap?'여덟':COUNT_WORD[count%10]):null;
-  const nums=[];for(let k=0;k<TL_n();k++){const q=stepAt(st.i+k);if(k>0&&!(q.act&&q.chain))break;if(q.counted)nums.push(COUNT_WORD[(q.ord-1)%10]);}
-  return nums.length?nums.join(', '):null;
+
+function callTextFor(st){
+  if(!st||!st.act||!st.phraseStart) return null;
+  return st.phrase;
 }
 const firstPhrase=()=>{const i=TL.steps.findIndex(s=>s.phraseStart);return i<0?0:i;};
 function phraseStartOf(i){const n=TL.n;let j=i;for(let k=0;k<n&&TL.steps[j].chain;k++)j=(j-1+n)%n;return j;}
 function nextActionAfter(i){const n=TL.n;for(let k=1;k<=n;k++){const j=(i+k)%n;if(TL.steps[j].act)return j;}return i;}
-function introBeats(text){return Math.max(2,Math.ceil((speechSec(text||'')+SAY_DELAY+SAY_MARGIN)/(TL.beatMs/1000)));}
+function introBeats(text,warm){return Math.max(2,Math.ceil((SAY_DELAY+(warm?WARM_LEAD+.25:0)+speechSec(text||'')+CALL_LEAD)/(TL.beatMs/1000)));}
 
 function curStep(){return seg.mode==='intro'?seg.intro:TL.steps[seg.si];}
 function runFrom(idx,why){
-  segToken++;const tok=segToken;clearTimeout(tickTimer);clearTimeout(sayTimer);clearTimeout(hitTimer);
-  phase='run';resumeIdx=null;
+  segToken++;const tok=segToken;clearTimeout(tickTimer);clearTimeout(sayTimer);clearTimeout(hitTimer);clearTimeout(callTimer);
+  phase='run';resumeIdx=null;warmCall=(why==='start'||why==='resume');
   const target=TL.steps[idx], r=routine();
   const introName=why==='again'?'다시 한 번':why==='resume'?'이어서':r.intro.n;
   seg={tok,mode:'intro',si:idx,target:idx,beat:0,g:0,anchor:performance.now(),
-       intro:{n:introName,t:'ready',b:introBeats(callTextFor(target,true)),d:why==='set'?`${setNo}세트 시작`:r.intro.d,intro:true}};
+       intro:{n:introName,t:'ready',b:introBeats(callTextFor(target),why==='start'||why==='resume'),d:why==='set'?`${setNo}세트 시작`:r.intro.d,intro:true}};
   V.idle=false;
   tick(tok);
 }
@@ -507,7 +505,7 @@ function finishStep(st){
 }
 function stepStart(st){
   const now=performance.now(); V.cur=st; V.stepAt=now;
-  if(st.intro){V.upcoming=TL.steps[seg.target];V.announced=false;planSay(seg.target,SAY_DELAY*1000);paintStep(st);return;}
+  if(st.intro){V.upcoming=TL.steps[seg.target];V.announced=false;planSay(seg.target,SAY_DELAY*1000);planCall(seg.target,now+st.b*TL.beatMs);paintStep(st);return;}
   if(st.act){
     
     const hitMs=Math.min(HIT_MS,st.b*TL.beatMs*.5);
@@ -524,10 +522,20 @@ function stepStart(st){
 function impactNow(st,nx){
   if(!st.quiet){P.impact(st);if(st.kiai&&stage!=='call')showKiai();}
   planSay(nx,st.quiet?0:SAY_GAP*1000);
+  planCall(nx,V.cueAt+TL.steps[nx].window*TL.beatMs);
 }
+
 function planSay(i,delayMs){
   const tok=segToken;clearTimeout(sayTimer);
-  sayTimer=setTimeout(()=>{if(tok!==segToken||paused||!running)return;V.announced=true;const t=callTextFor(TL.steps[i]);if(t)speak(t);paintPreview();paintNext();paintStrip();},delayMs||0);
+  sayTimer=setTimeout(()=>{if(tok!==segToken||paused||!running)return;V.announced=true;paintPreview();paintNext();paintStrip();},delayMs||0);
+}
+
+function planCall(i,whistleAt){
+  const tok=segToken;clearTimeout(callTimer);
+  const t=callTextFor(TL.steps[i]);if(!t)return;
+  const now=performance.now(),lead=(speechSec(t)+CALL_LEAD+(warmCall?WARM_LEAD:0))*1000;
+  const at=Math.max(now+SAY_GAP*1000,whistleAt-lead);
+  callTimer=setTimeout(()=>{if(tok!==segToken||paused||!running)return;warmCall=false;const tt=callTextFor(TL.steps[i]);if(tt)speak(tt);},at-now);
 }
 function beatsUntilUpcoming(){
   if(!seg||!V.upcoming) return 0;
@@ -547,6 +555,7 @@ async function start(){
   V.upcoming=first;V.announced=true;V.cur=null;V.idle=false;
   paintAll();
   $('countdown').hidden=false;$('countSub').textContent=`${STAGE_NAME[stage]} · 첫 동작 ${P.plain(first)}`;paintSeq($('cdSeq'));
+  warmVoice(callTextFor(first)||P.plain(first));   
   for(const n of ['3','2','1','시작']){
     if(token!==runToken) return;
     $('countNum').classList.remove('pz');$('countNum').textContent=n;beep(n==='시작'?900:560);
@@ -557,7 +566,7 @@ async function start(){
   runFrom(firstPhrase(),'start');
 }
 async function endSet(token){
-  segToken++;clearTimeout(tickTimer);clearTimeout(sayTimer);clearTimeout(hitTimer);
+  segToken++;clearTimeout(tickTimer);clearTimeout(sayTimer);clearTimeout(hitTimer);clearTimeout(callTimer);
   if(token!==runToken) return;
   if(setNo<+$('sets').value){
     phase='rest';const sec=+$('rest').value;
@@ -571,7 +580,7 @@ async function endSet(token){
   }else finishAll();
 }
 function finishAll(){
-  running=false;paused=false;phase='done';segToken++;clearTimeout(tickTimer);clearTimeout(sayTimer);clearTimeout(hitTimer);
+  running=false;paused=false;phase='done';segToken++;clearTimeout(tickTimer);clearTimeout(sayTimer);clearTimeout(hitTimer);clearTimeout(callTimer);
   keepAwake(false);speak('운동 끝');chime();
   const sets=+$('sets').value;
   $('finishSum').innerHTML=`<div><span>세트</span><b>${sets}</b></div><div><span>완주</span><b>${totalDone}<small style="font-size:.5em;color:#aab3c2"> ${unit()}</small></b></div><div class="g"><span>지도자 확인</span><b>${totalOk}</b></div>`;
@@ -579,7 +588,7 @@ function finishAll(){
   setControls();
 }
 function stopAll(){
-  runToken++;segToken++;resumeToken++;clearTimeout(tickTimer);clearTimeout(sayTimer);clearTimeout(hitTimer);
+  runToken++;segToken++;resumeToken++;clearTimeout(tickTimer);clearTimeout(sayTimer);clearTimeout(hitTimer);clearTimeout(callTimer);
   running=paused=false;phase='idle';trainingClock.resume();cancelSpeech();keepAwake(false);
   ['countdown','restScreen','finishScreen'].forEach(id=>$(id).hidden=true);
 }
@@ -593,7 +602,7 @@ function pauseNow(){
   if(!running||paused) return;
   paused=true;trainingClock.pause();cancelSpeech();
   if(phase==='run'){
-    segToken++;clearTimeout(tickTimer);clearTimeout(sayTimer);clearTimeout(hitTimer);
+    segToken++;clearTimeout(tickTimer);clearTimeout(sayTimer);clearTimeout(hitTimer);clearTimeout(callTimer);
     const st=curStep();
     resumeIdx=st.intro?seg.target:phraseStartOf(nextActionAfter(seg.si));
     $('countdown').hidden=false;$('countNum').textContent='잠시 멈춤';$('countNum').classList.add('pz');
@@ -661,6 +670,8 @@ function chime(){[523,659,784,1047].forEach((f,i)=>setTimeout(()=>tone(f,.22,'si
 function pickVoice(){try{const vs=speechSynthesis.getVoices()||[];koVoice=vs.find(v=>/ko[-_]KR/i.test(v.lang)&&/Google|Neural|Natural/i.test(v.name))||vs.find(v=>/^ko/i.test(v.lang))||null;}catch(e){}}
 try{pickVoice();speechSynthesis.onvoiceschanged=pickVoice;}catch(e){}
 function speak(t){if(!t)return;try{const s=window.speechSynthesis;if(!s)return;s.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='ko-KR';u.rate=VOICE_RATE;if(koVoice)u.voice=koVoice;s.speak(u);}catch(e){}}
+
+function warmVoice(t){try{const s=window.speechSynthesis;if(!s)return;if(!koVoice)pickVoice();s.cancel();const u=new SpeechSynthesisUtterance(t||'준비');u.lang='ko-KR';u.rate=VOICE_RATE;u.volume=0;if(koVoice)u.voice=koVoice;s.speak(u);}catch(e){}}
 function cancelSpeech(){try{window.speechSynthesis&&speechSynthesis.cancel();}catch(e){}}
 
 async function keepAwake(on){
@@ -709,7 +720,7 @@ function paintStep(st){
     h.className='';
     h.innerHTML=call?(st.counted?`${st.ord}<span style="color:#5b6577"> / ${st.of}</span>`:'·'):P.label(st);
     p.textContent=stage==='follow'?(st.d||''):'';
-    b.textContent=stage==='memory'&&st.counted?countWord(st):(st.quiet?'준비 동작':'지금');
+    b.textContent=st.quiet?'준비 동작':'지금';
   }else{h.className='soft';h.innerHTML=call?'·':st.n;p.textContent=stage==='follow'?(st.d||''):'';b.textContent=st.end?'한 묶음 완료':'복귀';}
   paintNext();paintStrip();fitCue();
 }
@@ -797,7 +808,7 @@ function onSetting(){if(running)return;store.save();idleView();}
 function bind(){
   document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{if(running)return;stage=b.dataset.stage;onSetting();});
   $('routine').onchange=e=>{ri=+e.target.value;fillGoals();onSetting();};
-  ['bpm','kickGoal','sets','rest','stance','lessonFlow','teamMode'].forEach(id=>{if($(id))$(id).addEventListener('change',()=>{if(id==='lessonFlow')syncLessonFlow();if(id==='sets'||id==='rest'){store.save();paintCounts();paintClassCue();return;}onSetting();setControls();});});
+  ['bpm','kickGoal','sets','rest','stance','lessonFlow','teamMode'].forEach(id=>{if($(id))$(id).addEventListener('change',()=>{if(id==='lessonFlow'||id==='teamMode')syncLessonFlow();if(id==='sets'||id==='rest'){store.save();paintCounts();paintClassCue();return;}onSetting();setControls();});});
   $('start').onclick=()=>{if(HOST&&running){reset();return;}start();};$('pause').onclick=togglePause;$('reset').onclick=reset;
   $('again').onclick=againBundle;$('confirm').onclick=confirmOne;$('fsBtn').onclick=toggleFs;
   $('finAgain').onclick=()=>{$('finishScreen').hidden=true;phase='idle';start();};
@@ -826,7 +837,7 @@ function init(){
   const idx=P.routines.findIndex(r=>r.id===s.routine);ri=idx>=0?idx:0;$('routine').value=String(ri);
   if(STAGE_NAME[s.stage]) stage=s.stage;
   for(const id of ['bpm','sets','rest','stance','lessonFlow','teamMode']) if($(id)&&s[id]!=null&&[...$(id).options].some(o=>o.value===String(s[id]))) $(id).value=String(s[id]);
-  if(ladderOn())$('sets').value='3';
+  if(ladderOn())$('sets').value=String(ladderSets());
   fillGoals();bind();idleView();setControls();paintFs();
   if($('stOkNote')) $('stOkNote').textContent=P.okNote.replace('확인 기준 · ','');
   if($('finishNote')) $('finishNote').textContent=`완주는 화면 진행 기준입니다. 지도자 확인은 관장님이 보고 눌러 준 수입니다 (${P.okNote.replace('확인 기준 · ','기준: ')}).`;
