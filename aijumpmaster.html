@@ -979,7 +979,7 @@ body.hf-dim #jmpPilotGraph .jt-wing{display:none!important}
 
 <script type="module">
 
-const APP_VERSION = '3.8.6';   
+const APP_VERSION = '3.8.7';   
 try{ window.__NL_VER = APP_VERSION; }catch(e){}   
 
 const MP_VERSION  = '1.0.1';
@@ -1580,6 +1580,7 @@ function makePlayer(id){
            altBaseL:null,altBaseR:null,altUpL:false,altUpR:false,altPendingFoot:'',altPendingAt:0,altLastAt:0,altLift:0 };
   attachRawRecording(p);
   attachCatchGuard(p);   
+  attachWristCheck(p);   
   attachCountFix(p);     
   return p;
 }
@@ -1982,6 +1983,34 @@ function cgFrame(p,lm,torso,t){
   }
   C.turning = inZone && C.spd>=C.ref*CG.GO_R;
 }
+
+const WCK={ WIN_MS:650, QUIET_R:.5, MIN_HIST:8, HIST:16, VIS:.3 };
+function attachWristCheck(p){
+  const e=p.engine, oReset=e.resetCount;
+  e.resetCount=function(){ oReset(); wcReset(p); };
+  wcReset(p);
+}
+function wcReset(p){ p.wc={count:0,cut:0,hist:[],buf:[]}; }
+function wcFrame(p,lm,torso,t){
+  if(!jmpIsLab() || !p.wc || !(torso>0.02)) return;
+  const a=lm[15],b=lm[16]; if(!a||!b||!lm[23]||!lm[24]) return;
+  if((a.visibility??1)<WCK.VIS || (b.visibility??1)<WCK.VIS) return;   
+  const hipY=(lm[23].y+lm[24].y)/2;
+  p.wc.buf.push([t,((a.y+b.y)/2-hipY)/torso]);
+  while(p.wc.buf.length && t-p.wc.buf[0][0]>2000) p.wc.buf.shift();
+}
+function wcOnCount(p,ev,n){
+  const W=p.wc; if(!W||!(n>0)) return;
+  if(ev.type!=='jump'){ W.count+=n; return; }
+  const seg=W.buf.filter(q=>q[0]>=ev.t-WCK.WIN_MS).map(q=>q[1]);
+  if(seg.length<3){ W.count+=n; return; }                       
+  const p2p=Math.max(...seg)-Math.min(...seg);
+  if(W.hist.length>=WCK.MIN_HIST){
+    const s=[...W.hist].sort((x,y)=>x-y), md=s[s.length>>1];
+    if(p2p<WCK.QUIET_R*md){ W.count+=n-1; W.cut++; return; }   
+  }
+  W.count+=n; W.hist.push(p2p); if(W.hist.length>WCK.HIST) W.hist.shift();
+}
 function cgOnCount(p,ev,n){
   const C=p.cg; if(!C) return;
   if(!C.ready){
@@ -2265,6 +2294,7 @@ function updatePlayer(p,f,t){
     p.trackX=p.trackX==null?f.sx:p.trackX*.72+f.sx*.28;
     updateRig(p,f.lm);
     try{ cgFrame(p,f.lm,f.torso,t); }catch(e){}   
+    try{ wcFrame(p,f.lm,f.torso,t); }catch(e){}   
     p.engine.feed(f.sigY,f.torso,t,ev=>onEngineEvent(p,ev));   
     if(stepRound) stepFrame(p,f,t);   
     if(running && labRecording && jmpIsLab() && p.rawAI.length<8000)
@@ -2383,6 +2413,7 @@ function onEngineEvent(p,ev){
   const t = ev.type==='jump' ? ev.t : null;
   if(jmpIsLab()) try{ cgOnCount(p,ev,n); }catch(e){}   
   try{ n=jcrAdjust(p,ev,n); }catch(e){}                 
+  if(jmpIsLab()) try{ wcOnCount(p,ev,n); }catch(e){}    
   if(!(n>0)) return;
   if(mode==='solo') soloCounted(p,n);
   else if(mode==='duo') duoCounted(p,n,t);
@@ -5111,9 +5142,12 @@ function labTick(now){
   cmp += labCell('신호 관절', SIGNAL_JOINTS===4?'4점 평균':'엉덩이 2점');
   cmp += labCell('점 시각 기준', camTimeSrc, camTimeSrc==='촬영 시각'?'good':'');
   cmp += labCell('카메라', labNum(camHz,0,' 장/초'));
+  { const dg=(poseInfo.match(/GPU|CPU/)||['—'])[0];   
+    cmp += labCell('AI 처리', dg+' · '+labNum(inferCost,0,' ms'), dg==='CPU'||inferCost>40?'warn':'good'); }
   ps.forEach((p,i)=>{
     const tag=ps.length>1?`P${i} `:'', per=p.engine.periodMs>0?p.engine.periodMs/1000:0;
     cmp += labCell(tag+'지금 방식', String(p.count));
+    if(p.wc) cmp += labCell(tag+'손목 확인', String(p.wc.count)+(p.wc.cut?' (뺀 것 '+p.wc.cut+')':''));
     if(p.cg){ cmp += labCell(tag+'걸림 보정', p.cg.ready?String(p.cg.count):String(p.cg.count)+' (배우는 중)', p.cg.caught?'warn':''); cmp += labCell(tag+'걸림 감지', p.cg.catches+'회 · 뺀 것 '+p.cg.filtered); }
     cmp += labCell(tag+'한 박 표본 AI', per?labNum(inferHz*per,1):'—', per&&inferHz*per<4?'warn':'');
   });
@@ -5243,9 +5277,11 @@ function labRoundFinished(m){
     dur_s:labRound((roundEndPerf-gameStartPerf)/1000,1), app:APP_VERSION,
     signal:SIGNAL_JOINTS===4?'4pt':'hip2', time_src:camTimeSrc,
     cam_hz:labRound(camHz,1), infer_hz:labRound(inferHz,1), infer_px:inferPx||null,
+    infer_ms:labRound(inferCost,1), delegate:(poseInfo.match(/GPU|CPU/)||[null])[0], pose_info:poseInfo||null,   // 2026-10-12
     players:players.map(p=>({
       pid:p.id??0, main:p.count, truth:null,
       guard:p.cg?p.cg.count:null, catches:p.cg?p.cg.catches:null, guard_cut:p.cg?p.cg.filtered:null,   // 2026-09-24 걸림 보정
+      wrist:p.wc?p.wc.count:null, wrist_cut:p.wc?p.wc.cut:null,   // 2026-10-12 손목 확인
       pre:p.jcr?p.jcr.raw:null, jcr_skip:p.jcr?p.jcr.skip:null, jcr_fill:p.jcr?p.jcr.fill:null, jcr_cut:p.jcr?p.jcr.cut:null,   // 2026-09-28 JCR 전 개수·걸림·채움
       period_ms:labRound(p.engine.periodMs,1),
       raw_ai:labRecording?p.rawAI.slice():null
@@ -5265,7 +5301,7 @@ function labRenderTruth(){
   const note='';
   if(!labPending){ box.innerHTML=note; }
   else{
-    const ins=labPending.players.map(q=>`<span>${labPending.players.length>1?(q.pid===0?'청':'홍')+' ':''}지금 ${q.main}${q.guard!=null?' · 걸림보정 '+q.guard:''} → 실제</span>
+    const ins=labPending.players.map(q=>`<span>${labPending.players.length>1?(q.pid===0?'청':'홍')+' ':''}지금 ${q.main}${q.wrist!=null?' · 손목확인 '+q.wrist:''} → 실제</span>
       <input type="number" min="0" inputmode="numeric" data-pid="${q.pid}" placeholder="개수">`).join('');
     box.innerHTML=`<div class="lab-truth"><span>방금 판</span>${ins}<button class="m-act" id="labTruthSave" type="button">정답 저장</button><button class="m-act home" id="labTruthSkip" type="button">버리기</button></div>`+note;
   }
@@ -5279,12 +5315,12 @@ function labRenderRounds(){
   const cell=e=>e==null?'—':`<span class="${Math.abs(e)<=2?'lab-err-good':(Math.abs(e)>=5?'lab-err-bad':'')}">${e>0?'+':''}${e}</span>`;
   let sM=0,nM=0,sG=0,nG=0;
   const rows=done.slice(-12).reverse().map(r=>r.players.filter(q=>q.truth!=null).map(q=>{
-    const eM=err(q.main,q.truth), eG=err(q.guard,q.truth);
-    return `<tr><td>${esc(r.ts.slice(5,16).replace('T',' '))}</td><td>${r.mode==='duo'?(q.pid?'홍':'청'):'1인'}</td><td>${q.truth}</td><td>${q.main} (${cell(eM)})</td><td>${q.guard==null?'—':q.guard+' ('+cell(eG)+')'+(q.catches?' · 걸림'+q.catches:'')}</td><td>${q.period_ms?Math.round(60000/q.period_ms):'—'}</td></tr>`;
+    const eM=err(q.main,q.truth), eG=err(q.wrist,q.truth);
+    return `<tr><td>${esc(r.ts.slice(5,16).replace('T',' '))}</td><td>${r.mode==='duo'?(q.pid?'홍':'청'):'1인'}</td><td>${q.truth}</td><td>${q.main} (${cell(eM)})</td><td>${q.wrist==null?'—':q.wrist+' ('+cell(eG)+')'+(q.wrist_cut?' · 뺀 것 '+q.wrist_cut:'')}</td><td>${q.period_ms?Math.round(60000/q.period_ms):'—'}</td></tr>`;
   }).join('')).join('');
-  done.forEach(r=>r.players.forEach(q=>{ if(q.truth==null) return; sM+=Math.abs(q.main-q.truth); nM++; if(q.guard!=null){ sG+=Math.abs(q.guard-q.truth); nG++; } }));
-  box.innerHTML=`<table class="lab-tbl"><thead><tr><th>시각</th><th>누구</th><th>정답</th><th>지금 방식(오차)</th><th>걸림보정(오차)</th><th>분당</th></tr></thead><tbody>${rows}</tbody></table>
-    <div class="lab-note">평균 오차 — 지금 방식 <b>${nM?(sM/nM).toFixed(1):'—'}개</b> (${nM}판) · 걸림 보정 <b>${nG?(sG/nG).toFixed(1):'—'}개</b> (${nG}판)</div>`;
+  done.forEach(r=>r.players.forEach(q=>{ if(q.truth==null) return; sM+=Math.abs(q.main-q.truth); nM++; if(q.wrist!=null){ sG+=Math.abs(q.wrist-q.truth); nG++; } }));
+  box.innerHTML=`<table class="lab-tbl"><thead><tr><th>시각</th><th>누구</th><th>정답</th><th>지금 방식(오차)</th><th>손목확인(오차)</th><th>분당</th></tr></thead><tbody>${rows}</tbody></table>
+    <div class="lab-note">평균 오차 — 지금 방식 <b>${nM?(sM/nM).toFixed(1):'—'}개</b> (${nM}판) · 손목 확인 <b>${nG?(sG/nG).toFixed(1):'—'}개</b> (${nG}판)</div>`;
 }
 $('labTruthBox')?.addEventListener('click',e=>{
   if(!jmpIsLab()||!labPending) return;
