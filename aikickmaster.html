@@ -453,7 +453,7 @@ body.hud-v21 .bar-track{height:18px;}
   padding:2dvh 0;   
 }
 #kickLabModal.show{ display:flex; }
-html body:not(.beta-on) .hud-lab-row,
+html body:not(.beta-on) .hud-lab-row:not(.hud-group-row),
 html body:not(.beta-on) .hud-lab-top,
 html body:not(.beta-on) #kickLabModal{
   display:none !important; visibility:hidden !important; pointer-events:none !important;
@@ -7722,8 +7722,7 @@ window.toggleLabRecording=function(){
 
 let labModalOpen=false;
 window.openGroupMode=function(){
-  
-  if(!(window.akmIsBeta && window.akmIsBeta())) return;
+  if(!window.akmCanOpenGroup()) return;
   if(running && typeof stopGame==='function') stopGame();
   openGroupOverlay('groupkickmaster.html?embed=1');
 };
@@ -10888,7 +10887,12 @@ function _akmGetOrCreateDeviceId(){
 
 function _akmGetCache(){ try{ return JSON.parse(localStorage.getItem(_AKM_LS_KEY)||'null'); }catch(e){ return null; } }
 function _akmSetCache(data){ try{ localStorage.setItem(_AKM_LS_KEY, JSON.stringify(data)); }catch(e){} }
-function _akmClearCache(){ try{ localStorage.removeItem(_AKM_LS_KEY); }catch(e){} }
+let _akmGroupAuthenticated=false;
+window.akmCanOpenGroup=function(){
+  const c=_akmGetCache(),login=document.getElementById("loginScreen");
+  return !!(_akmGroupAuthenticated && c && !_akmIsCacheExpired(c) && login && login.classList.contains("hidden"));
+};
+function _akmClearCache(){ _akmGroupAuthenticated=false; try{ localStorage.removeItem(_AKM_LS_KEY); }catch(e){} }
 
 const _AKM_SIGN_PUBKEY = {"kty":"EC","crv":"P-256",
   "x":"TRVuOcoZYEagtQgi5GRgUOSIkAjiW_aUS4O9U6cfK0I",
@@ -11087,6 +11091,7 @@ function _akmShowAuthedUI(dojang_name, version){
     _akmRefetchTune(dojang_name, version);
     return;
   }
+  _akmGroupAuthenticated=true;
   document.getElementById('loginScreen').classList.add('hidden');
 
   if(window._akmStartHeartbeat) window._akmStartHeartbeat();

@@ -17,7 +17,7 @@
 //    그러면 예전 캐시가 통째로 비워집니다.
 // =========================================================
 
-const CACHE_NAME = 'naruunlabs-2026-10-12-group-calllead';
+const CACHE_NAME = 'naruunlabs-2026-10-12-group-license';
 
 const APP_SHELL = [
   './',

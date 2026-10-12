@@ -2,6 +2,20 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
+<style id="group-auth-hide">html{visibility:hidden}</style>
+<script id="group-access-gate">
+window.groupAccessAllowed=function(){
+  try{
+    const p=window.parent;
+    return p!==window && p.location.origin===location.origin && /^\/aistrikemaster(?:\.html)?\/?$/.test(p.location.pathname) &&
+      typeof p.akmCanOpenGroup==='function' && p.akmCanOpenGroup() &&
+      p.document.getElementById('groupFrame')?.contentWindow===window;
+  }catch(e){return false;}
+};
+if(window.groupAccessAllowed()) document.getElementById('group-auth-hide').remove();
+else location.replace('aistrikemaster.html');
+</script>
+
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
 <meta name="theme-color" content="#050609">
@@ -546,6 +560,7 @@ function beatsUntilUpcoming(){
 }
 
 async function start(){
+  if(!window.groupAccessAllowed()) return;
   if(running||document.hidden) return;
   trainingClock.resume();setNo=1;if(ladderOn())stage=stageForSet(setNo);compile();
   $('finishScreen').hidden=true;
@@ -844,7 +859,10 @@ function init(){
   if(P.init) P.init();
   requestAnimationFrame(frame);
 }
-init();
+if(window.groupAccessAllowed()){
+  init();
+  setInterval(()=>{if(!window.groupAccessAllowed()){stopAll();document.documentElement.style.visibility="hidden";location.replace("aistrikemaster.html");}},1000);
+}
 
 </script>
 </body>
