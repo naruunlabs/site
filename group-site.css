@@ -1,0 +1,11 @@
+/* Latest group-class content, loaded only by the three AI product pages. */
+.trial-scope{max-width:520px;margin:14px 0 0;color:#aab7ca;font-size:12.5px;line-height:1.7}
+.public-group-intro .group-shot{margin:0;min-width:0}
+.public-group-intro .group-shot img{display:block;width:100%;height:auto;aspect-ratio:1366/768;border-radius:16px;border:1px solid rgba(255,255,255,.16);background:#091116}
+.public-group-intro .group-shot figcaption{margin-top:12px;font-size:12px;line-height:1.6;color:#aab7ca}
+.public-group-intro .sig-grid{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:32px}
+.public-group-intro .sig-item{padding:16px 18px}
+.public-group-intro .group-measure-note{max-width:800px;margin:28px 0 0;padding-left:14px;border-left:3px solid var(--c);color:#b8c4d4;font-size:13px;line-height:1.75}
+.group-mode-screen{aspect-ratio:1366/768}
+.group-mode-screen img{object-fit:contain}
+@media(max-width:900px){.public-group-intro .sig-grid{grid-template-columns:1fr;gap:24px}.public-group-intro .sig-list{grid-template-columns:1fr}.trial-scope{font-size:12px}}

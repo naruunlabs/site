@@ -133,7 +133,7 @@ button,select{font:inherit}button{border:0;cursor:pointer;color:inherit;backgrou
 .cd-seq .chip{font-size:15px;padding:9px 15px}
 .finish .card{min-width:min(460px,86vw);padding:30px 30px 24px;border-radius:18px;background:linear-gradient(180deg,rgba(24,28,38,.94),rgba(10,12,18,.94));box-shadow:inset 0 0 0 1px rgba(255,255,255,.1),0 30px 80px rgba(0,0,0,.6);text-align:center}
 .finish h3{font-size:34px;font-weight:900;letter-spacing:-.04em}.finish h3 em{font-style:normal;color:var(--acc)}
-.finish .sum{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:22px}
+.finish .sum{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:22px}
 .finish .sum div{padding:14px 6px;border-radius:12px;background:rgba(255,255,255,.05)}
 .finish .sum span{display:block;color:#8f99aa;font-size:12px;font-weight:800}.finish .sum b{display:block;margin-top:6px;font-size:28px;font-weight:900}
 .finish .sum .g b{color:var(--ok)}
@@ -207,11 +207,27 @@ body.jmp-group-lobby #groupWelcome{left:calc(max(220px, var(--u)*19) + max(16px,
 @media(max-width:1000px){.group-welcome{right:16px;padding-right:4px}.gw-card{padding:18px 16px}.gw-card strong{font-size:20px}.gw-footer{gap:10px}.gw-start{padding:12px 18px}}
 @media(max-width:700px){.gw-cards{grid-template-columns:1fr}.gw-card{min-height:100px}.group-welcome{left:245px;top:126px;bottom:66px}.gw-footer{align-items:stretch}.gw-start{width:100%}html.embed .group-welcome{left:calc(var(--host-left,16px) + 238px)}}
 </style>
+<style id="group-running-controls">
+
+.app.running .control-stack,html.embed .app.running .control-stack{top:auto;bottom:max(24px,env(safe-area-inset-bottom));height:auto;max-height:none;width:220px;overflow:visible;padding:0;gap:0;scrollbar-width:none}
+.app.running .control-stack::-webkit-scrollbar{display:none}
+.app.running .control-stack>:not(.actions){display:none}
+.app.running .actions,html.embed .app.running .actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;width:100%;margin:0;padding:12px;border:1px solid rgba(255,255,255,.14);border-radius:16px;background:rgba(10,15,20,.9);box-sizing:border-box;box-shadow:0 8px 28px rgba(0,0,0,.22);backdrop-filter:blur(12px)}
+.app.running .actions #pause,.app.running .actions #again,html.embed .app.running .actions #pause,html.embed .app.running .actions #again{display:flex;align-items:center;justify-content:center;gap:5px;min-width:0;min-height:48px;padding:8px 4px;border:1px solid rgba(255,255,255,.15);border-radius:10px;background:#202831;color:#f2f5f6;font-family:inherit;font-size:12px;font-weight:800;letter-spacing:-.035em;text-align:center;white-space:nowrap;text-shadow:none}
+.app.running .actions #pause{order:1}.app.running .actions #again{order:2}
+.app.running .actions #start,html.embed .app.running .actions #start{order:3;grid-column:1/-1;display:block;min-height:48px;margin:0;padding:10px 12px;border:1px solid rgba(255,115,135,.48);border-radius:10px;background:#372027;color:#ff9aaa;font-family:inherit;font-size:18px;font-weight:900;letter-spacing:0;line-height:1.3;text-align:center;text-shadow:none}
+.app.running .actions #reset,.app.running .actions #exitGroup{display:none}
+.app.running .actions button:disabled{opacity:.4}
+.app.running .actions button:focus-visible{outline:3px solid #d9ee9b;outline-offset:3px}
+.app.running .actions #pause:hover,.app.running .actions #again:hover{background:#303c48}
+html.embed .app.running .side-note{bottom:24px}
+@media(max-height:600px){.app.running .control-stack,html.embed .app.running .control-stack{bottom:16px}.app.running .actions,html.embed .app.running .actions{padding:9px;gap:8px}}
+</style>
 </head>
 <body>
 <main class="app stage-follow" id="app">
   <aside class="side">
-    <div class="brand">AI <em>KICK</em> MASTER</div><div class="version">GROUP COMBINATION · v1.1</div>
+    <div class="brand">AI <em>KICK</em> MASTER</div><div class="version">GROUP COMBINATION · v1.2</div>
     <div class="control-stack">
       <div class="tabs" role="tablist"><button class="on" data-stage="follow">따라하기</button><button data-stage="call">구령만</button></div>
       <div class="stage-hint" id="stageHint"></div>
@@ -224,11 +240,11 @@ body.jmp-group-lobby #groupWelcome{left:calc(max(220px, var(--u)*19) + max(16px,
       <div class="grid"><label class="field"><span id="goalLab">세트 목표</span><select id="kickGoal"></select></label><label class="field"><span>세트 휴식</span><select id="rest"><option value="10">10초</option><option value="15" selected>15초</option><option value="20">20초</option><option value="30">30초</option></select></label></div>
       <div class="actions">
         <button class="start" id="start">시작</button>
-        <button id="pause" disabled>일시정지</button><button id="reset">처음으로</button>
-        <button id="again" disabled>이 묶음 다시</button><button class="ok" id="confirm" disabled>지도자 확인 ✓</button>
+        <button id="pause" disabled>Ⅱ 일시정지</button><button id="reset">처음으로</button>
+        <button id="again" disabled>↻ 구간 다시</button>
         <button class="exit" id="exitGroup">단체모드 종료 · 모드 선택으로</button>
       </div>
-      <div class="remote-tip">리모컨 <b>▶</b> 확인 · <b>◀</b> 다시 · <b>Space</b> 정지</div>
+      <div class="remote-tip">리모컨 <b>▶</b> 시작·정지 · <b>◀</b> 다시 · <b>Space</b> 정지</div>
     </div>
   </aside>
   <section class="stage" id="stage">
@@ -236,7 +252,7 @@ body.jmp-group-lobby #groupWelcome{left:calc(max(220px, var(--u)*19) + max(16px,
       <header><div class="gw-eyebrow">단체 수업 · 카메라 없이 함께</div><h2>오늘은 어떤 운동을 할까요?</h2><p class="gw-intro">루틴을 고르고, 왼쪽에서 속도와 팀 운영을 맞춰 주세요.</p></header>
       <div class="gw-cards" id="groupWelcomeCards"></div>
       <footer class="gw-footer"><div class="gw-summary" id="groupWelcomeSummary" aria-live="polite"></div><button class="gw-start" id="groupWelcomeStart" type="button">이 수업 시작 ▶</button></footer>
-      <div class="gw-note">구령을 듣고 휘슬에 맞춰 운동하세요. 진행 횟수는 화면 기준이며, 실제 수행은 지도자가 확인합니다.</div>
+      <div class="gw-note">구령을 듣고 휘슬에 맞춰 운동하세요. 진행 횟수는 화면 기준이며, 학생의 실제 성공 횟수는 측정하지 않습니다.</div>
     </section>
 
     <div class="top"><div class="routine-name" id="routineName"></div><div class="progress"><i id="progress"></i></div><div class="meta"><span id="countText"></span><span class="stage-class-cue" id="stageClassCue"></span><span id="setText"></span></div></div>
@@ -248,15 +264,13 @@ body.jmp-group-lobby #groupWelcome{left:calc(max(220px, var(--u)*19) + max(16px,
     <div class="rail">
       <div class="st next" id="stNextBox"><div class="st-lab">다음 동작</div><div class="st-name" id="stNext">—</div><span class="when" id="stWhen">대기</span></div>
       <div class="st done"><div class="st-lab" id="stDoneLab">완주</div><div class="st-val" id="stDone">0<small>/ 10</small></div></div>
-      <div class="st okst"><div class="st-lab">지도자 확인</div><div class="st-val" id="stOk">0<small>묶음</small></div><span class="when" id="stOkNote"></span></div>
     </div>
     <div class="strip" id="strip"></div>
     <div class="side-note">좌우는 학생 기준 · 화면 오른쪽 = 내 오른쪽</div>
     <div class="kiai" id="kiai">기합!</div>
-    <div class="okflash" id="okFlash">✓ 지도자 확인</div>
     <div class="overlay countdown" id="countdown" hidden><div class="box"><b class="big" id="countNum">3</b><span class="sub" id="countSub"></span><div class="cd-seq" id="cdSeq"></div></div></div>
     <div class="overlay rest" id="restScreen" hidden><div class="box"><span class="lab">다음 세트 준비</span><b class="big" id="restNum">15</b><em id="restNext"></em></div></div>
-    <div class="overlay finish" id="finishScreen" hidden><div class="card"><h3>운동 <em>끝</em></h3><div class="sum" id="finishSum"></div><p id="finishNote">완주는 화면 진행 기준이고, 지도자 확인은 관장님이 눌러 준 묶음입니다.</p><div class="row"><button class="again" id="finAgain">다시 시작</button><button id="finClose">닫기</button></div></div></div>
+    <div class="overlay finish" id="finishScreen" hidden><div class="card"><h3>운동 <em>끝</em></h3><div class="sum" id="finishSum"></div><p id="finishNote">화면의 수업 진행 기록입니다. 학생의 실제 성공 횟수는 측정하지 않습니다.</p><div class="row"><button class="again" id="finAgain">다시 시작</button><button id="finClose">닫기</button></div></div></div>
   </section>
 </main>
 <script>
@@ -397,7 +411,7 @@ const CALL_LEAD=.15, WARM_LEAD=.45;
 let stage='follow', ri=0;
 let running=false, paused=false, phase='idle';        
 let runToken=0, segToken=0, resumeToken=0, tickTimer=0, sayTimer=0, hitTimer=0, callTimer=0, resumeIdx=null, warmCall=false;
-let setNo=1, count=0, bundles=0, confirmed=0, totalDone=0, totalOk=0;
+let setNo=1, count=0, bundles=0, totalDone=0;
 let TL=null, seg=null, audio=null, wakeLock=null, koVoice=null;
 const V={cur:null,upcoming:null,announced:false,impactAt:-1,impactStep:null,stepAt:0,beatAt:0,beat:0,stage:'follow',idle:true};
 
@@ -475,7 +489,7 @@ function introBeats(text,warm){return Math.max(2,Math.ceil((SAY_DELAY+(warm?WARM
 function curStep(){return seg.mode==='intro'?seg.intro:TL.steps[seg.si];}
 function runFrom(idx,why){
   segToken++;const tok=segToken;clearTimeout(tickTimer);clearTimeout(sayTimer);clearTimeout(hitTimer);clearTimeout(callTimer);
-  phase='run';resumeIdx=null;warmCall=(why==='start'||why==='resume');
+  phase='run';resumeIdx=null;warmCall=(why==='start'||why==='resume');setControls();
   const target=TL.steps[idx], r=routine();
   const introName=why==='again'?'다시 한 번':why==='resume'?'이어서':r.intro.n;
   seg={tok,mode:'intro',si:idx,target:idx,beat:0,g:0,anchor:performance.now(),
@@ -550,7 +564,7 @@ async function start(){
   if(running||document.hidden) return;
   trainingClock.resume();setNo=1;if(ladderOn())stage=stageForSet(setNo);compile();
   $('finishScreen').hidden=true;
-  const token=++runToken;setNo=1;count=bundles=confirmed=0;totalDone=totalOk=0;running=true;paused=false;phase='countdown';
+  const token=++runToken;setNo=1;count=bundles=0;totalDone=0;running=true;paused=false;phase='countdown';
   setControls();keepAwake(true);ensureAudio();
   const first=TL.steps[firstPhrase()];
   V.upcoming=first;V.announced=true;V.cur=null;V.idle=false;
@@ -570,13 +584,13 @@ async function endSet(token){
   segToken++;clearTimeout(tickTimer);clearTimeout(sayTimer);clearTimeout(hitTimer);clearTimeout(callTimer);
   if(token!==runToken) return;
   if(setNo<+$('sets').value){
-    phase='rest';const sec=+$('rest').value;
+    phase='rest';setControls();const sec=+$('rest').value;
     const first=TL.steps[firstPhrase()];
     $('restNext').innerHTML=`${setNo+1}세트 첫 동작 · <i>${P.plain(first)}</i>`;
     $('restScreen').hidden=false;speak('잘했어요. 쉬어요');
     for(let n=sec;n>0;n--){if(token!==runToken)return;$('restNum').textContent=n;if(n<=3)beep(520);await sleep(1000);}
     if(token!==runToken) return;
-    setNo++;count=bundles=confirmed=0;if(ladderOn()){stage=stageForSet(setNo);compile();}$('restScreen').hidden=true;paintAll();
+    setNo++;count=bundles=0;if(ladderOn()){stage=stageForSet(setNo);compile();}$('restScreen').hidden=true;paintAll();
     runFrom(firstPhrase(),'set');
   }else finishAll();
 }
@@ -584,7 +598,7 @@ function finishAll(){
   running=false;paused=false;phase='done';segToken++;clearTimeout(tickTimer);clearTimeout(sayTimer);clearTimeout(hitTimer);clearTimeout(callTimer);
   keepAwake(false);speak('운동 끝');chime();
   const sets=+$('sets').value;
-  $('finishSum').innerHTML=`<div><span>세트</span><b>${sets}</b></div><div><span>완주</span><b>${totalDone}<small style="font-size:.5em;color:#aab3c2"> ${unit()}</small></b></div><div class="g"><span>지도자 확인</span><b>${totalOk}</b></div>`;
+  $('finishSum').innerHTML=`<div><span>세트</span><b>${sets}</b></div><div><span>완주</span><b>${totalDone}<small style="font-size:.5em;color:#aab3c2"> ${unit()}</small></b></div>`;
   $('finishScreen').hidden=false;$('beat').textContent='FINISH';
   setControls();
 }
@@ -593,7 +607,7 @@ function stopAll(){
   running=paused=false;phase='idle';trainingClock.resume();cancelSpeech();keepAwake(false);
   ['countdown','restScreen','finishScreen'].forEach(id=>$(id).hidden=true);
 }
-function reset(){stopAll();setNo=1;count=bundles=confirmed=0;idleView();setControls();}
+function reset(){stopAll();setNo=1;count=bundles=0;idleView();setControls();}
 
 function togglePause(){
   if(!running||document.hidden) return;
@@ -620,7 +634,7 @@ function resumeNow(){
   setControls();
 }
 async function resumeRun(idx){
-  const tok=++resumeToken, token=runToken;phase='resume';
+  const tok=++resumeToken, token=runToken;phase='resume';setControls();
   $('countdown').hidden=false;$('countSub').textContent=`이어서 · ${P.plain(TL.steps[idx])}`;
   for(const n of ['3','2','1']){if(tok!==resumeToken||token!==runToken)return;$('countNum').classList.remove('pz');$('countNum').textContent=n;beep(560);await sleep(1000);}
   if(tok!==resumeToken||token!==runToken) return;
@@ -633,12 +647,6 @@ function againBundle(){
   else if(isCombo()){let j=seg.si;for(let k=1;k<=TL.n;k++){const q=(seg.si-k+TL.n)%TL.n;if(TL.steps[q].end)break;j=q;}idx=phraseStartOf(TL.steps[j].act?j:nextActionAfter(j));}
   else{let j=st.act?seg.si:(seg.si-1+TL.n)%TL.n;for(let k=0;k<TL.n&&!TL.steps[j].act;k++)j=(j-1+TL.n)%TL.n;idx=phraseStartOf(j);if(count>0){count--;totalDone=Math.max(0,totalDone-1);}}
   cancelSpeech();runFrom(idx,'again');paintCounts();
-}
-function confirmOne(){
-  if(!running) return;
-  if(confirmed>=done()){flashOk('확인할 완주가 아직 없어요',true);return;}
-  confirmed++;totalOk++;paintCounts();flashOk(`✓ 지도자 확인 ${confirmed} / ${done()}`);
-  tone(1320,.08,'sine',.12);setTimeout(()=>tone(1760,.12,'sine',.1),90);
 }
 
 function ensureAudio(){try{audio=audio||new (window.AudioContext||window.webkitAudioContext)();if(audio.state==='suspended')audio.resume();}catch(e){audio=null}return audio;}
@@ -746,7 +754,6 @@ function paintCounts(){
   $('progress').style.width=Math.min(100,d/g*100)+'%';
   $('stDoneLab').textContent=isCombo()?'완주 묶음':'횟수';
   $('stDone').innerHTML=`${d}<small>/ ${g}</small>`;
-  $('stOk').innerHTML=`${confirmed}<small>${unit()}</small>`;
 }
 function drawBeat(st){
   const box=$('dots'),n=Math.min(8,st.b);
@@ -775,16 +782,15 @@ function paintSeq(el){
 }
 function fitCue(){const h=$('cue');h.style.fontSize='';const w=h.parentElement.clientWidth;if(!w)return;let fs=parseFloat(getComputedStyle(h).fontSize)||60;let guard=0;while(h.scrollWidth>w&&fs>24&&guard++<30){fs-=3;h.style.fontSize=fs+'px';}}
 function showKiai(){const k=$('kiai');k.classList.remove('show');void k.offsetWidth;k.classList.add('show');}
-function flashOk(t,warn){const f=$('okFlash');f.textContent=t;f.style.color=warn?'#ffd166':'';f.classList.remove('show');void f.offsetWidth;f.classList.add('show');}
 function setControls(){
   paintGroupWelcome();
   const live=running&&!paused;
   $('start').textContent=running?(paused?'멈춤':'진행 중'):phase==='done'?'다시 시작':'시작';
   $('start').disabled=running;
   $('app').classList.toggle('running',running);
-  if(HOST){$('start').textContent=running?'■ 중지':'▶ 시작!';$('start').disabled=false;try{HOST.setGroupRunning&&HOST.setGroupRunning(running);}catch(e){}}
-  $('pause').disabled=!running;$('pause').textContent=paused?'계속':'일시정지';
-  $('again').disabled=!(running&&!paused);$('confirm').disabled=!running;
+  if(HOST){$('start').textContent=running?'■ 수업 종료':'▶ 시작!';$('start').disabled=false;try{HOST.setGroupRunning&&HOST.setGroupRunning(running);}catch(e){}}
+  $('pause').disabled=!running;$('pause').textContent=paused?'▶ 계속하기':'Ⅱ 일시정지';
+  $('again').disabled=!(running&&!paused&&phase==='run');
   document.querySelectorAll('.control-stack select,.tabs button').forEach(el=>{if(el.id==='sets'||el.id==='rest')return;el.disabled=running;});
   $('sets').disabled=running||ladderOn();
 }
@@ -818,7 +824,7 @@ function bind(){
   $('routine').onchange=e=>{ri=+e.target.value;fillGoals();onSetting();};
   ['bpm','kickGoal','sets','rest','stance','lessonFlow','teamMode'].forEach(id=>{if($(id))$(id).addEventListener('change',()=>{if(id==='lessonFlow'||id==='teamMode')syncLessonFlow();if(id==='sets'||id==='rest'){store.save();paintCounts();paintClassCue();paintGroupWelcome();return;}onSetting();setControls();});});
   $('start').onclick=()=>{if(HOST&&running){reset();return;}start();};$('pause').onclick=togglePause;$('reset').onclick=reset;
-  $('again').onclick=againBundle;$('confirm').onclick=confirmOne;$('fsBtn').onclick=toggleFs;
+  $('again').onclick=againBundle;$('fsBtn').onclick=toggleFs;
   $('finAgain').onclick=()=>{$('finishScreen').hidden=true;phase='idle';start();};
   $('finClose').onclick=()=>{$('finishScreen').hidden=true;reset();};
   $('exitGroup').onclick=()=>{stopAll();if(HOST){try{HOST.closeGroupOverlay();return;}catch(e){}}location.replace(P.exitUrl);};
@@ -830,7 +836,7 @@ function bind(){
     if(['INPUT','TEXTAREA','SELECT'].includes(a(document.activeElement)) || (a(document.activeElement)==='BUTTON'&&[' ','Enter'].includes(k))) return; 
     e.preventDefault();try{document.activeElement&&document.activeElement.blur&&document.activeElement.blur();}catch(_){}
     if(act==='toggle') running?togglePause():(phase!=='countdown'&&start());
-    else if(act==='ok') running?confirmOne():start();
+    else if(act==='ok') running?togglePause():start();
     else if(act==='again') againBundle();
     else toggleFs();
   });
@@ -869,8 +875,7 @@ function init(){
   for(const id of ['bpm','sets','rest','stance','lessonFlow','teamMode']) if($(id)&&s[id]!=null&&[...$(id).options].some(o=>o.value===String(s[id]))) $(id).value=String(s[id]);
   if(ladderOn())$('sets').value=String(ladderSets());
   fillGoals();bind();initGroupWelcome();idleView();setControls();paintFs();
-  if($('stOkNote')) $('stOkNote').textContent=P.okNote.replace('확인 기준 · ','');
-  if($('finishNote')) $('finishNote').textContent=`완주는 화면 진행 기준입니다. 지도자 확인은 관장님이 보고 눌러 준 수입니다 (${P.okNote.replace('확인 기준 · ','기준: ')}).`;
+  if($('finishNote')) $('finishNote').textContent='화면의 수업 진행 기록입니다. 학생의 실제 성공 횟수는 측정하지 않습니다.';
   if(P.init) P.init();
   requestAnimationFrame(frame);
 }

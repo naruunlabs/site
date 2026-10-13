@@ -88,7 +88,7 @@ src="https://www.facebook.com/tr?id=1364933702413818&ev=PageView&noscript=1"
     <div>
       <span class="eyebrow" id="heroEyebrow">NARUUN LABS · AI SPORTS</span>
       <h1 id="heroTitle">수련에<br>기술을 더하다.</h1>
-      <p class="lead" id="heroLead">카메라 한 대가 아이들의 발차기·줄넘기·타격을 읽고, 반복 수업을 게임과 대결로 바꿉니다. 실제 도장 수업에서 사용하고 확인한 뒤 공개합니다.</p>
+      <p class="lead" id="heroLead">카메라로 개인·2인 동작을 읽고, 카메라 없이 반 전체가 함께 운동합니다. 발차기·줄넘기·타격 수업에 게임과 리듬을 더합니다.</p>
     </div>
     <div class="b-fig" aria-hidden="true">
       <canvas data-pose="morph" data-cx=".5"></canvas>
@@ -99,19 +99,19 @@ src="https://www.facebook.com/tr?id=1364933702413818&ev=PageView&noscript=1"
     <a class="door rv" href="/kickmaster" data-door="kick" style="--dc:#E3172E">
       <span class="dk"><i>K</i>AI SPORTS</span>
       <img src="kick1w.svg" alt="AI KICK MASTER" width="180" height="22" loading="lazy">
-      <p>반복 발차기 수업을 게임과 2인 대결로 바꾸는 태권도장용 AI 훈련 프로그램</p>
+      <p>개인·2인 발차기 게임과 카메라 없는 단체 루틴 수업을 함께 쓰는 태권도 AI 프로그램</p>
       <span class="ft2"><b>369,000원 · 1회 구매</b><span>자세히 보기 →</span></span>
     </a>
     <a class="door rv" href="/jumpmaster" data-door="jump" style="--dc:#14B8A6">
       <span class="dk"><i>J</i>AI SPORTS</span>
       <img src="jump1w.svg" alt="AI JUMP MASTER" width="180" height="22" loading="lazy">
-      <p>줄넘기 횟수·2인 착지 싱크·단체 리듬을 카메라 하나로 보여 주는 AI 줄넘기 수업 프로그램</p>
+      <p>개인·2인 줄넘기 AI 측정부터 카메라 없는 단체 리듬게임·속도게임까지</p>
       <span class="ft2"><b>369,000원 · 1회 구매</b><span>자세히 보기 →</span></span>
     </a>
     <a class="door rv" href="/strikemaster" data-door="strike" style="--dc:#A855F7">
       <span class="dk"><i>S</i>AI SPORTS</span>
       <img src="strike1w.svg" alt="AI STRIKE MASTER" width="180" height="22" loading="lazy">
-      <p>펀치·로킥·니킥을 카메라 하나로 세고 채점하는 어린이 AI 타격 훈련 프로그램</p>
+      <p>펀치·킥 AI 훈련과 카메라 없는 단체 타격 콤비네이션을 함께 쓰는 수업 프로그램</p>
       <span class="ft2"><b>369,000원 · 1회 구매</b><span>자세히 보기 →</span></span>
     </a>
   </div>
@@ -183,7 +183,7 @@ document.addEventListener('DOMContentLoaded',function(){
     if(d.admin_url) adminUrl=d.admin_url;
     function setText(id,v){ var el=document.getElementById(id); if(el&&v) el.textContent=v; }
     function setHtml(id,v){ var el=document.getElementById(id); if(el&&v) el.innerHTML=v; }
-    setText('heroEyebrow',d.hero_eyebrow); setHtml('heroTitle',d.hero_title); setText('heroLead',d.hero_desc ? d.hero_desc.replace('태권도장 현장에서 만들고 매일 수업에서 씁니다.','실제 도장 수업에서 사용하고 확인한 뒤 공개합니다.') : d.hero_desc);
+    setText('heroEyebrow',d.hero_eyebrow); setHtml('heroTitle',d.hero_title); setText('heroLead',d.hero_desc ? d.hero_desc.replace('태권도장 현장에서 만들고 매일 수업에서 씁니다.','실제 도장 수업에서 사용하고 확인한 뒤 공개합니다.').replace('카메라 한 대가 아이들의 발차기·줄넘기·타격을 읽고, 반복 수업을 게임과 대결로 바꿉니다.','카메라로 개인·2인 동작을 읽고, 카메라 없이 반 전체가 함께 운동합니다. 발차기·줄넘기·타격 수업에 게임과 리듬을 더합니다.') : d.hero_desc);
     setText('contactDesc',d.contact_desc); setText('copyrightText',d.copyright);
   });
 });
