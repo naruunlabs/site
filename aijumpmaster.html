@@ -119,6 +119,20 @@
 .rm-storage summary{cursor:pointer;font-size:14px;color:#bacadd;padding:6px 0}
 #routineModal .rm-beats button{min-height:36px}
 @media(max-width:760px){#routineModal .rm-row{grid-template-columns:2em minmax(0,1fr) auto auto}#routineModal .rm-beats{grid-column:2/5}#routineModal .rm-drag{grid-column:4;grid-row:1}#routineModal .rm-remove{grid-column:3;grid-row:1}#routineModal .rm-body{grid-template-rows:minmax(160px,1fr) minmax(140px,1fr)}}
+
+#routineModal .rm-order .rm-row{grid-template-columns:2.1em minmax(0,1fr) auto auto;grid-template-areas:"num name rm drag" ". opts opts opts";column-gap:10px;row-gap:8px;align-items:center;padding:10px 10px 10px 14px}
+#routineModal .rm-order .rm-row>em{grid-area:num}
+#routineModal .rm-order .rm-row-main{grid-area:name}
+#routineModal .rm-order .rm-beats{grid-area:opts;display:flex;flex-wrap:nowrap;align-items:center;gap:4px;min-width:0}
+#routineModal .rm-order .rm-beats button{min-height:32px;padding:5px 10px}
+#routineModal .rm-order .rm-beats .rm-fast{margin-left:auto}
+#routineModal .rm-order .rm-remove{grid-area:rm;min-width:32px;min-height:32px;font-size:22px;line-height:1}
+#routineModal .rm-order .rm-drag{grid-area:drag;width:32px;height:32px}
+
+#routineModal .rm-foot{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+#routineModal .rm-foot .rm-sum{flex:1 1 100%}
+#routineModal .rm-foot .rm-ghost{white-space:nowrap}
+#routineModal .rm-foot .rm-save{margin-left:auto;white-space:nowrap}
 </style>
 <script>
 
@@ -982,7 +996,7 @@ body.hf-dim #jmpPilotGraph .jt-wing{display:none!important}
 
 <script type="module">
 
-const APP_VERSION = '3.9.1';   
+const APP_VERSION = '3.9.2';   
 try{ window.__NL_VER = APP_VERSION; }catch(e){}   
 
 const MP_VERSION  = '1.0.1';
