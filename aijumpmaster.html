@@ -979,7 +979,7 @@ body.hf-dim #jmpPilotGraph .jt-wing{display:none!important}
 
 <script type="module">
 
-const APP_VERSION = '3.8.8';   
+const APP_VERSION = '3.8.9';   
 try{ window.__NL_VER = APP_VERSION; }catch(e){}   
 
 const MP_VERSION  = '1.0.1';
@@ -1454,8 +1454,13 @@ function toggleGroupRepeat(){
 let jumpKoVoice=null;
 function pickJumpVoice(){try{const vs=speechSynthesis.getVoices()||[];jumpKoVoice=vs.find(v=>/ko[-_]KR/i.test(v.lang)&&/Google|Neural|Natural/i.test(v.name))||vs.find(v=>/^ko/i.test(v.lang))||null;}catch(e){}}
 try{pickJumpVoice();speechSynthesis.onvoiceschanged=pickJumpVoice;}catch(e){}
-function groupSay(t){ if(!soundOn) return; try{ const s=window.speechSynthesis; if(!s) return; s.cancel(); const u=new SpeechSynthesisUtterance(t); u.lang='ko-KR'; u.rate=1.2; u.volume=1; if(jumpKoVoice) u.voice=jumpKoVoice; s.speak(u); }catch(e){} }
-function groupHush(){ try{ window.speechSynthesis&&speechSynthesis.cancel(); }catch(e){} }
+function groupSay(t){ if(!soundOn) return; try{ const s=window.speechSynthesis; if(!s) return; s.cancel(); const u=new SpeechSynthesisUtterance(t); u.lang='ko-KR'; u.rate=1.2; u.volume=1; if(jumpKoVoice) u.voice=jumpKoVoice;
+  const id=++groupDuckId; groupMusicDuck(true);                 
+  const done=()=>{ if(id===groupDuckId) groupMusicDuck(false); };
+  u.onend=done; u.onerror=done;
+  clearTimeout(groupDuckTimer); groupDuckTimer=setTimeout(done,Math.max(2500,t.length*260)+800);   
+  s.speak(u); }catch(e){ groupMusicDuck(false); } }
+function groupHush(){ groupDuckId++; clearTimeout(groupDuckTimer); groupMusicDuck(false); try{ window.speechSynthesis&&speechSynthesis.cancel(); }catch(e){} }
 function announceGroupAt(k){
   if(!groupTL) return;
   const j=groupSegAt(k), g=groupTL[j], nx=groupTL[j+1];
@@ -1496,6 +1501,10 @@ const GROUP_MUSIC={
   unbroken:{name:'Unbroken Pace',src:'bgm/140bpm_Unbroken_Pace.mp3',bpm:140}
 };
 let groupMusicKey='iron',groupMusicSource=null,groupMusicGain=null,groupMusicBuffer=null,groupMusicBufferKey='';
+
+const GROUP_MUSIC_VOL=1.0;     
+const GROUP_MUSIC_DUCK=0.5;    
+let groupDucked=false,groupDuckId=0,groupDuckTimer=0;
 
 let stepMusicAudio=null, stepMusicLoadedKey='', stepMusicTimer=0, stepMusicGeneration=0;
 let stepMusicActive=false, stepMusicFailed=false, stepMusicSyncAt=0;
@@ -1618,11 +1627,19 @@ function startGroupMusic(at,elapsedSec=0){
   if(groupRunKind==='pace'||!track||!audio||!groupMusicBuffer||lastRoundMode!=='group') return;
   const src=audio.createBufferSource(),gain=audio.createGain();
   src.buffer=groupMusicBuffer;src.loop=true;src.playbackRate.value=bpm/track.bpm;
-  gain.gain.value=soundOn?.46:0;src.connect(gain).connect(audio.destination);
+  gain.gain.value=groupMusicTarget();src.connect(gain).connect(audio.destination);
   const offset=gmod(elapsedSec*(bpm/track.bpm),groupMusicBuffer.duration);
   src.start(Math.max(audio.currentTime,at),offset);groupMusicSource=src;groupMusicGain=gain;
 }
-function syncGroupMusicVolume(){if(groupMusicGain&&audio)groupMusicGain.gain.setTargetAtTime(soundOn?.46:0,audio.currentTime,.025)}
+function groupMusicTarget(){return soundOn?(groupDucked?GROUP_MUSIC_DUCK:GROUP_MUSIC_VOL):0}
+function syncGroupMusicVolume(){if(groupMusicGain&&audio)groupMusicGain.gain.setTargetAtTime(groupMusicTarget(),audio.currentTime,.025)}
+function groupMusicDuck(on){
+  groupDucked=on;
+  if(!groupMusicGain||!audio) return;
+  const g=groupMusicGain.gain,t=audio.currentTime;
+  g.cancelScheduledValues(t); g.setValueAtTime(g.value,t);
+  g.setTargetAtTime(groupMusicTarget(),t,on?.06:.25);   
+}
 function tone(freq,dur,type='sine',vol=.16,at=null){
   if(!soundOn||!audio) return;
   try{
