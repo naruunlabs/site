@@ -645,7 +645,50 @@ body.hf-dim #jmpPilotGraph .jt-wing{display:none!important}
 #paceBeatCue{display:flex;gap:8px;margin:20px 0 12px;height:42px;}#paceBeatCue[hidden]{display:none;}
 #paceBeatCue i{flex:1;border-radius:7px;background:#173f37;border:1px solid #3c7d69;}
 #paceBeatCue.on i{background:#bcf783;border-color:#dcffb9;}
-</style></head>
+</style><style id="jm-public-pace-ui">
+
+#paceSettings .lfield{margin-top:10px}
+#paceSettings select{min-height:48px;padding:10px 12px;font-size:20px;background:#12231f!important;color:#f1faf6!important;border-color:#456052}
+#paceSettings .m-help{font-size:13px;line-height:1.55;margin-top:10px}
+</style>
+<style id="public-group-lobby">
+.group-welcome{position:absolute;z-index:6;left:290px;right:36px;top:108px;bottom:82px;display:flex;flex-direction:column;gap:18px;overflow:auto;overscroll-behavior:contain;padding:8px 12px 12px;color:#f1f6f4;text-shadow:none;scrollbar-width:thin}
+.group-welcome[hidden]{display:none!important}
+.gw-eyebrow{font-size:12px;font-weight:800;letter-spacing:.08em;color:var(--gw-accent,#b9ed80)}
+.group-welcome h2{margin:6px 0 10px;font-size:clamp(26px,3vw,42px);font-weight:900;line-height:1.2;letter-spacing:-.045em}
+.gw-intro{margin:0;color:#b8c5c1;font-size:14px;line-height:1.6}
+.gw-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.gw-card{position:relative;display:flex;flex-direction:column;gap:10px;min-height:140px;padding:22px 24px;text-align:left;border:1px solid #34433e;border-radius:16px;background:linear-gradient(135deg,#17221f,#11191b);color:#f1f6f4;font:inherit;cursor:pointer;transition:border-color .16s,background .16s,transform .16s;box-sizing:border-box;text-shadow:none}
+.gw-card:hover{border-color:#82978d;transform:translateY(-2px)}
+.gw-card:focus-visible{outline:3px solid var(--gw-accent,#b9ed80);outline-offset:3px}
+.gw-card[aria-pressed="true"]{border-color:var(--gw-accent,#b9ed80);background:linear-gradient(135deg,#20332b,#15211d);box-shadow:inset 0 0 0 1px var(--gw-accent,#b9ed80)}
+.gw-card[aria-pressed="true"]:after{content:'선택됨';position:absolute;right:16px;top:16px;font-size:11px;font-weight:800;color:var(--gw-accent,#b9ed80)}
+.gw-card .gw-kind{font-size:12px;font-weight:800;color:#c2cfc9;padding-right:50px}
+.gw-card strong{font-size:clamp(18px,1.8vw,26px);font-weight:900;line-height:1.35;letter-spacing:-.04em;overflow-wrap:anywhere}
+.gw-card .gw-description{font-size:13px;line-height:1.6;color:#b8c5c1}
+.gw-footer{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;margin-top:auto;border-top:1px solid #34433e;padding-top:18px}
+.gw-summary{flex:1;min-width:150px;font-size:14px;line-height:1.7;color:#cbd8d2}
+.gw-summary b{display:block;color:#fff;font-size:18px;font-weight:900}
+.gw-start{min-height:52px;padding:14px 26px;border:0;border-radius:12px;background:var(--gw-accent,#b9ed80);color:#101912;font:900 18px inherit;font-family:inherit;font-size:18px;font-weight:900;cursor:pointer;white-space:nowrap;text-shadow:none}
+.gw-start:focus-visible{outline:3px solid #fff;outline-offset:3px}
+.gw-note{font-size:12px;color:#9aafa4;line-height:1.5}
+.group-welcome .gw-start:disabled{opacity:.45;cursor:default}
+html.embed .group-welcome{left:calc(var(--host-left,22px) + 250px);top:clamp(100px,14vh,150px)}
+.app:not(.running) .stage>.top,.app:not(.running) .stage>.cue,.app:not(.running) .stage>.rail,.app:not(.running) .stage>.strip,.app:not(.running) .stage>.arena,.app:not(.running) .stage>.side-note,.app:not(.running) .stage>.floor{visibility:hidden}
+.app:not(.running) .actions{display:none}
+html.embed .control-stack{scrollbar-width:thin}
+html.embed .field select{min-height:38px;border:1px solid #43504d;border-radius:8px;background:#15201d;padding:5px 8px;text-shadow:none}
+html.embed .tabs button{min-height:40px}
+html.embed .actions button:not(.start){min-height:40px}
+body.jmp-group-lobby{--gw-accent:#b9ed80}
+body.jmp-group-lobby #stage{background:radial-gradient(ellipse at 65% 35%,#18332b 0,#0d1918 45%,#070e13 85%)}
+body.jmp-group-lobby #modeBadge,body.jmp-group-lobby #guide,body.jmp-group-lobby #playBtn{display:none}
+body.jmp-group-lobby #groupWelcome{left:calc(max(220px, var(--u)*19) + max(16px,var(--u)*1.6) + 32px)}
+@media(max-height:700px){.group-welcome{top:82px;bottom:62px;gap:12px}.group-welcome h2{font-size:28px}.gw-card{min-height:110px;padding:16px 20px;gap:6px}.gw-footer{padding-top:12px}html.embed .group-welcome{top:82px}}
+@media(max-width:1000px){.group-welcome{right:16px;padding-right:4px}.gw-card{padding:18px 16px}.gw-card strong{font-size:20px}.gw-footer{gap:10px}.gw-start{padding:12px 18px}}
+@media(max-width:700px){.gw-cards{grid-template-columns:1fr}.gw-card{min-height:100px}.group-welcome{left:245px;top:126px;bottom:66px}.gw-footer{align-items:stretch}.gw-start{width:100%}html.embed .group-welcome{left:calc(var(--host-left,16px) + 238px)}}
+</style>
+</head>
 <body>
 
 <div id="loginScreen" hidden>
@@ -667,6 +710,16 @@ body.hf-dim #jmpPilotGraph .jt-wing{display:none!important}
     <canvas id="fx"></canvas>
     <div id="vignette"></div>
   </div>
+
+  <section class="group-welcome" id="groupWelcome" aria-label="단체 수업 선택" hidden>
+    <header><div class="gw-eyebrow">단체 수업 · 카메라 없이 함께</div><h2>오늘은 어떻게 뛰어볼까요?</h2><p class="gw-intro">운동을 고르고, 왼쪽에서 음악과 목표를 맞춰 주세요.</p></header>
+    <div class="gw-cards">
+      <button class="gw-card" type="button" data-group-pick="rhythm" aria-pressed="true"><span class="gw-kind">동작과 리듬 익히기</span><strong>리듬게임</strong><span class="gw-description">발판과 다가오는 노트를 보며<br>여러 줄넘기 동작을 함께 익혀요.</span></button>
+      <button class="gw-card" type="button" data-group-pick="pace" aria-pressed="false"><span class="gw-kind">일정한 속도로 뛰기</span><strong>속도게임</strong><span class="gw-description">줄넘기 선수의 착지에 맞춰<br>정해진 시간과 목표로 뛰어요.</span></button>
+    </div>
+    <footer class="gw-footer"><div class="gw-summary" id="groupWelcomeSummary" aria-live="polite"></div><button class="gw-start" id="groupWelcomeStart" type="button">이 수업 시작 ▶</button></footer>
+    <div class="gw-note">화면과 소리에 맞춰 따라 하는 수업입니다. 학생의 실제 성공 개수는 측정하지 않습니다.</div>
+  </section>
 
   <div class="hud" id="hud">
     
@@ -849,8 +902,9 @@ body.hf-dim #jmpPilotGraph .jt-wing{display:none!important}
       </div>
       <div id="paceSettings" hidden>
         <label class="lfield"><i>훈련 시간</i><select id="paceTime"><option value="30">30초</option><option value="60">60초</option><option value="120">120초</option></select></label>
-        <label class="lfield"><i>목표 개수</i><select id="paceTarget"><option value="10">10개</option><option value="20">20개</option><option value="30">30개</option><option value="40">40개</option><option value="50">50개</option><option value="60">60개</option><option value="70">70개</option><option value="80">80개</option><option value="90" selected>90개</option><option value="100">100개</option><option value="110">110개</option><option value="120">120개</option><option value="130">130개</option><option value="140">140개</option><option value="150">150개</option><option value="160">160개</option><option value="170">170개</option><option value="180">180개</option><option value="190">190개</option><option value="200">200개</option><option value="210">210개</option><option value="220">220개</option><option value="230">230개</option><option value="240">240개</option><option value="250">250개</option><option value="260">260개</option><option value="270">270개</option><option value="280">280개</option><option value="290">290개</option><option value="300">300개</option><option value="310">310개</option><option value="320">320개</option><option value="330">330개</option><option value="340">340개</option><option value="350">350개</option><option value="360">360개</option><option value="370">370개</option><option value="380">380개</option><option value="390">390개</option><option value="400">400개</option><option value="410">410개</option><option value="420">420개</option><option value="430">430개</option><option value="440">440개</option><option value="450">450개</option><option value="460">460개</option><option value="470">470개</option><option value="480">480개</option><option value="490">490개</option><option value="500">500개</option><option value="510">510개</option><option value="520">520개</option><option value="530">530개</option><option value="540">540개</option><option value="550">550개</option><option value="560">560개</option><option value="570">570개</option><option value="580">580개</option><option value="590">590개</option><option value="600">600개</option></select></label>
-        <div class="m-help" id="paceSummary">초당 3회 · 분당 180회</div>
+        <label class="lfield"><i>목표 개수</i><select id="paceTarget"><option value="10">10개</option><option value="50">50개</option><option value="60">60개</option><option value="70">70개</option><option value="80">80개</option><option value="90" selected>90개</option><option value="100">100개</option><option value="110">110개</option><option value="120">120개</option><option value="130">130개</option><option value="140">140개</option><option value="150">150개</option><option value="160">160개</option><option value="200">200개</option><option value="300">300개</option><option value="600">600개</option></select></label>
+        <div class="m-help" id="paceSummary" aria-live="polite">30초 동안 90개 · 분당 180회</div>
+        <div class="m-help">카메라 없이 선수의 착지 박자에 맞춰 뛰어요. 실제 개수는 측정하지 않습니다.</div>
       </div>
       <div id="rhythmSettings">
 
@@ -1015,7 +1069,7 @@ body.hf-dim #jmpPilotGraph .jt-wing{display:none!important}
 
 <script type="module">
 
-const APP_VERSION = '3.9.5';   
+const APP_VERSION = '3.9.6';   
 try{ window.__NL_VER = APP_VERSION; }catch(e){}   
 
 const MP_VERSION  = '1.0.1';
@@ -1519,6 +1573,9 @@ let groupPracticeRoutine=[{id:'together',b:16}];
   if(Array.isArray(saved)&&saved.length&&saved.every(m=>m&&SKILL_BY_ID[m.id]&&[8,16,32].includes(m.b))) groupPracticeRoutine=saved; }
 const practiceTotal=()=>groupPracticeRoutine.reduce((s,m)=>s+m.b,0);
 function practiceSummary(){ const names=groupPracticeRoutine.slice(0,3).map(m=>shortName(skillById(m.id))).join(' · '); return `${groupPracticeRoutine.length}개 · ${names}${groupPracticeRoutine.length>3?' 외':''}`; }
+
+const PACE_TARGETS=[10,50,60,70,80,90,100,110,120,130,140,150,160,200,300,600];
+const normalizePaceTarget=value=>PACE_TARGETS.reduce((best,n)=>Math.abs(n-(Number(value)||90))<Math.abs(best-(Number(value)||90))?n:best,90);
 let groupActivity='rhythm', paceTarget=90, paceTime=30;
 const paceAthlete=new Image(); paceAthlete.src='assets/jump-athlete-v1.webp';
 const PACE_FRAMES=[{x:72,y:72,w:454,h:874,l:95,r:506,hy:440},{x:542,y:35,w:452,h:908,l:568,r:971,hy:430},{x:998,y:37,w:463,h:894,l:1028,r:1433,hy:430}];
@@ -1809,6 +1866,7 @@ function watchJumpCamera(now){
 
 let cameraStarting=null;
 async function ensureCamera(){
+  if(mode==='group') return; 
   if(cameraStarting) return cameraStarting;           
   cameraStarting=openCamera();
   try{ return await cameraStarting; } finally { cameraStarting=null; }
@@ -1827,8 +1885,10 @@ async function openCamera(){
     return;
   }
   if(!navigator.mediaDevices?.getUserMedia) throw new Error('이 브라우저는 카메라 기능을 지원하지 않습니다.');
-  stream=await requestJumpCamera({
+  const incoming=await requestJumpCamera({
     video:{facingMode,width:{ideal:1280},height:{ideal:720},frameRate:{ideal:60}},audio:false});
+  if(mode==='group'){incoming.getTracks().forEach(t=>t.stop());return;} 
+  stream=incoming;
   video.srcObject=stream;
   jumpVideoAt=performance.now();jumpVideoTime=-1;
   for(const track of stream.getVideoTracks())track.addEventListener?.('ended',()=>{if(mode!=='group')holdJump('camera');},{once:true});
@@ -1838,6 +1898,7 @@ async function openCamera(){
 }
 function stopCamera(){
   if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; }
+  try{video.pause();}catch(e){}
   video.srcObject=null; lastVideoTime=-1; personCount=0;
   players.forEach(p=>{ p.seen=false; p.lm=null; p.rig=null; p.trackX=null; });
 }
@@ -2678,19 +2739,27 @@ function restoreLobbyPrefs(){
   setSel('soloTime',p.soloTime); setSel('soloTarget',p.soloTarget); setSel('bpm',p.bpm); setSel('duration',p.duration);
   setSel('relayPlayers',p.relayPlayers); setSel('relayTarget',p.relayTarget); setSel('relayRounds',p.relayRounds); setSel('relayChange',p.relayChange);
   if(['rhythm','pace'].includes(p.groupActivity)) groupActivity=p.groupActivity;
-  paceTarget=clamp(Math.round(+p.paceTarget||90),1,600); paceTime=[30,60,120].includes(+p.paceTime)?+p.paceTime:30;
-  if(![...$('paceTarget').options].some(o=>+o.value===paceTarget))$('paceTarget').add(new Option(paceTarget+'개',String(paceTarget)));
+  paceTarget=normalizePaceTarget(p.paceTarget); paceTime=[30,60,120].includes(+p.paceTime)?+p.paceTime:30;
   $('paceTarget').value=paceTarget; $('paceTime').value=paceTime;
   groupKind='play'; 
   if(['grid','foot'].includes(p.groupView)) groupView=p.groupView;
   if(SKILL_BY_ID[p.groupSkill]) groupSkillId=p.groupSkill;
   if(p.groupMusic==='none'||GROUP_MUSIC[p.groupMusic]) groupMusicKey=p.groupMusic;
 }
+function syncJumpGroupWelcome(){
+  const show=mode==='group'&&appState==='lobby',box=$('groupWelcome');
+  box.hidden=!show;document.body.classList.toggle('jmp-group-lobby',show);
+  if(!show)return;
+  box.querySelectorAll('[data-group-pick]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.groupPick===groupActivity)));
+  const title=document.createElement('b');title.textContent=groupActivity==='pace'?'속도게임':'리듬게임';
+  const info=document.createElement('span');info.textContent=groupActivity==='pace'?`${paceTime}초 · 목표 ${paceTarget}개 · 분당 ${Math.round(paceTarget*60/paceTime)}회`:`${groupView==='grid'?'발판형':'레인형'} · ${groupRoutineSummary()}`;
+  $('groupWelcomeSummary').replaceChildren(title,info);
+}
 function applyModeUI(){
   const musicLocked=mode==='group'&&groupActivity==='rhythm'&&groupMusicKey!=='none';
   $('paceSettings').hidden=groupActivity!=='pace'; $('rhythmSettings').hidden=groupActivity!=='rhythm';
   document.querySelectorAll('[data-ga]').forEach(b=>b.classList.toggle('on',b.dataset.ga===groupActivity));
-  setText($('paceSummary'),`초당 ${(paceTarget/paceTime).toFixed(1)}회 · 분당 ${Math.round(paceTarget*60/paceTime)}회`);
+  setText($('paceSummary'),`${paceTime}초 동안 ${paceTarget}개 · 분당 ${Math.round(paceTarget*60/paceTime)}회`);
   if(musicLocked) $('bpm').value=String(GROUP_MUSIC[groupMusicKey].bpm);
   $('bpm').disabled=musicLocked;
   document.body.classList.toggle('jmp-pilot-solo',mode==='solo');
@@ -2745,6 +2814,7 @@ async function openLobby(){
   applyModeUI();
   ensurePlayers(neededPoses());
   setLobbyError('');
+  if(mode==='group'){stopCamera();guideOverride='';refreshGuide();return;}
   try{
     guideOverride='카메라를 준비하는 중입니다…'; refreshGuide();
     await ensureCamera();
@@ -2752,6 +2822,7 @@ async function openLobby(){
   }catch(e){
     guideOverride=''; setLobbyError(cameraErrorText(e)); return;
   }
+  if(mode==='group'){stopCamera();guideOverride='';refreshGuide();return;}
   try{ await ensurePose(neededPoses()); }
   catch(e){ console.error(e); setLobbyError('AI 모델을 불러오지 못했습니다. 인터넷 연결 또는 vendor 폴더를 확인한 뒤 새로고침해 주세요.'); }
   refreshGuide();
@@ -2763,7 +2834,7 @@ function refreshGuide(){
   let text='';
   if(guideOverride) text=guideOverride;
   else if(appState==='lobby'){
-    if(mode==='group') text='단체 리듬은 카메라를 쓰지 않습니다 · 시작하면 카메라가 꺼져요';
+    if(mode==='group') text='카메라 없이 함께 운동합니다 · 수업을 고르고 시작하세요';
     else if(!stream||!pose) text='';
     else if(mode==='duo') text= personCount>=2 ? '두 사람 모두 인식됨 · 시작을 누르세요' : personCount===1 ? '1명 인식됨 · 먼저 시작하거나 상대를 기다릴 수 있어요' : '사람을 찾는 중 · 한 명부터 시작할 수 있어요';
     else if(!players[0]?.seen) text='전신이 보이게 뒤로 물러서세요';
@@ -2806,7 +2877,8 @@ function layoutHud(){
   $('runners').hidden = $('relayCue').hidden = !relayIn;
   $('grpTop').hidden = $('beats').hidden = !gPlay;
   $('repRow').hidden = !gPlay; if(gPlay) paintRepeatUi();
-  const stageOnly = m==='group' && (inGame||result);
+  const stageOnly = m==='group';
+  syncJumpGroupWelcome();
   video.hidden = stageOnly; $('vignette').hidden = stageOnly;
   if(!inGame) $('judge').hidden=true;
   stepLayout(inGame,lobby,result,m);   
@@ -3090,7 +3162,7 @@ function resultHtml(m){
       <div class="rbox ${gDone?'win':''}"><span>동작</span><strong>${gDone?groupRoutine.length:gMove+' / '+groupRoutine.length}</strong></div>
       <div class="rbox"><span>시간</span><strong>${gDone?durationSec:Math.round((roundEndPerf-gameStartPerf)/1000)}초</strong></div>
     </div>
-    <div class="rline">${gDone?'모두 함께 끝까지 뛰었습니다!':`${fmt(gBeats)}박까지 진행했습니다.`}</div>`;
+    <div class="rline">${gDone?'화면의 루틴을 끝까지 진행했습니다. 실제 성공 개수는 측정하지 않습니다.':`${fmt(gBeats)}박까지 진행했습니다.`}</div>`;
 }
 
 function todayKey(){ const d=new Date(); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
@@ -4044,14 +4116,19 @@ function drawPaceScene(now){
   const W=view.W,H=view.H,b=clamp((now-gameStartPerf)/beatMs,0,paceTarget), phase=gmod(b,1);
   gGridBg(W,H,0);
   const cx=W*.47, ground=H*.77, u=Math.min(H*.59,W*.53);
-  const active=b>0&&b<paceTarget, lift=active?Math.sin(Math.PI*phase)*u*.065:0;
+  
+  const active=b>0&&b<paceTarget;
+  const jumpPhase=clamp((phase-.62)/.38,0,1);
+  const lift=active?Math.sin(Math.PI*jumpPhase)*u*.065:0;
   const p=skillById('together').cyc[0];
   const frame=1,F=PACE_FRAMES[frame]; 
   const scale=u/908, dx=cx-F.w*scale/2, dy=ground-F.h*scale-lift;
   const J={hL:{x:dx+(F.l-F.x)*scale,y:dy+(F.hy-F.y)*scale},hR:{x:dx+(F.r-F.x)*scale,y:dy+(F.hy-F.y)*scale}};
-  const angle=phase*Math.PI*2, handY=(J.hL.y+J.hR.y)/2, extent=(ground-handY)+u*.02;
+  
+  const angle=(phase+.2)*Math.PI*2, handY=(J.hL.y+J.hR.y)/2;
+  const extent=(ground-handY-lift)+u*.025; 
   const rope=(front)=>{
-    if((Math.sin(angle)>=0)!==front)return;
+    if((Math.sin(angle)<0)!==front)return;
     ctx.save();ctx.lineCap='round';
     const g=ctx.createLinearGradient(J.hL.x,0,J.hR.x,0);g.addColorStop(0,'#2dd4bf');g.addColorStop(.5,'#d9ff8b');g.addColorStop(1,'#2dd4bf');
     ctx.strokeStyle=g;ctx.lineWidth=Math.max(2,u*.008);ctx.globalAlpha=front?.95:.38;
@@ -4624,7 +4701,9 @@ document.querySelectorAll('#modelist .choice').forEach(b=>b.addEventListener('cl
   mode=b.dataset.mode; applyModeUI(); saveLobbyPrefs();
   const n=neededPoses();
   ensurePlayers(n);
-  if(mode!=='group' && stream){ try{ await ensurePose(n); }catch(e){ setLobbyError('AI 모델을 불러오지 못했습니다.'); } }
+  if(mode==='group'){stopCamera();setLobbyError('');}
+  else{try{await ensureCamera();if(mode!=='group')await ensurePose(neededPoses());}catch(e){if(mode!=='group')setLobbyError(cameraErrorText(e));}}
+  refreshGuide();
 }));
 document.querySelectorAll('#soloSeg button').forEach(b=>b.addEventListener('click',()=>{
   soloMode=b.dataset.solo; applyModeUI(); updateBest(); saveLobbyPrefs();
@@ -4642,7 +4721,9 @@ document.querySelectorAll('#duoSeg button').forEach(b=>b.addEventListener('click
 ['soloTime','soloTarget','bpm','duration','relayPlayers','relayTarget','relayRounds','relayChange'].forEach(id=>$(id).addEventListener('change',()=>{ applyModeUI(); saveLobbyPrefs(); }));
 
 document.querySelectorAll('[data-ga]').forEach(b=>b.addEventListener('click',()=>{groupActivity=b.dataset.ga;applyModeUI();saveLobbyPrefs();}));
-['paceTime','paceTarget'].forEach(id=>$(id).addEventListener('change',()=>{paceTime=+$('paceTime').value;paceTarget=clamp(Math.round(+$('paceTarget').value||90),1,600);$('paceTarget').value=paceTarget;applyModeUI();saveLobbyPrefs();}));
+document.querySelectorAll('[data-group-pick]').forEach(b=>b.addEventListener('click',()=>{if(appState!=='lobby')return;groupActivity=b.dataset.groupPick;applyModeUI();saveLobbyPrefs();}));
+$('groupWelcomeStart').addEventListener('click',()=>$('playBtn').click());
+['paceTime','paceTarget'].forEach(id=>$(id).addEventListener('change',()=>{paceTime=+$('paceTime').value;paceTarget=normalizePaceTarget($('paceTarget').value);$('paceTarget').value=paceTarget;applyModeUI();saveLobbyPrefs();}));
 $('groupSkill').innerHTML=['발 모양','발 리듬','손 기술'].map(c=>`<optgroup label="${c}">${SKILLS.filter(s=>s.cat===c).map(s=>`<option value="${s.id}">${esc(s.n)}</option>`).join('')}</optgroup>`).join('');
 document.querySelectorAll('#groupSeg button').forEach(b=>b.addEventListener('click',()=>{ groupKind=b.dataset.gk; applyModeUI(); saveLobbyPrefs(); }));
 document.querySelectorAll('#groupViewSeg button').forEach(b=>b.addEventListener('click',()=>{ groupView=b.dataset.gv; applyModeUI(); saveLobbyPrefs(); }));

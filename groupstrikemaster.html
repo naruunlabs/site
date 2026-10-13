@@ -165,6 +165,43 @@ html.embed .side-note{bottom:62px}
 .meta .stage-class-cue{position:static;transform:none;padding:3px 12px;font-size:12.5px;background:rgba(5,6,9,.55);backdrop-filter:none;border-color:rgba(var(--acc-rgb),.35)}
 .meta{align-items:center;gap:8px}
 </style>
+<style id="public-group-lobby">
+.group-welcome{position:absolute;z-index:6;left:290px;right:36px;top:108px;bottom:82px;display:flex;flex-direction:column;gap:18px;overflow:auto;overscroll-behavior:contain;padding:8px 12px 12px;color:#f1f6f4;text-shadow:none;scrollbar-width:thin}
+.group-welcome[hidden]{display:none!important}
+.gw-eyebrow{font-size:12px;font-weight:800;letter-spacing:.08em;color:var(--gw-accent,#b9ed80)}
+.group-welcome h2{margin:6px 0 10px;font-size:clamp(26px,3vw,42px);font-weight:900;line-height:1.2;letter-spacing:-.045em}
+.gw-intro{margin:0;color:#b8c5c1;font-size:14px;line-height:1.6}
+.gw-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.gw-card{position:relative;display:flex;flex-direction:column;gap:10px;min-height:140px;padding:22px 24px;text-align:left;border:1px solid #34433e;border-radius:16px;background:linear-gradient(135deg,#17221f,#11191b);color:#f1f6f4;font:inherit;cursor:pointer;transition:border-color .16s,background .16s,transform .16s;box-sizing:border-box;text-shadow:none}
+.gw-card:hover{border-color:#82978d;transform:translateY(-2px)}
+.gw-card:focus-visible{outline:3px solid var(--gw-accent,#b9ed80);outline-offset:3px}
+.gw-card[aria-pressed="true"]{border-color:var(--gw-accent,#b9ed80);background:linear-gradient(135deg,#20332b,#15211d);box-shadow:inset 0 0 0 1px var(--gw-accent,#b9ed80)}
+.gw-card[aria-pressed="true"]:after{content:'선택됨';position:absolute;right:16px;top:16px;font-size:11px;font-weight:800;color:var(--gw-accent,#b9ed80)}
+.gw-card .gw-kind{font-size:12px;font-weight:800;color:#c2cfc9;padding-right:50px}
+.gw-card strong{font-size:clamp(18px,1.8vw,26px);font-weight:900;line-height:1.35;letter-spacing:-.04em;overflow-wrap:anywhere}
+.gw-card .gw-description{font-size:13px;line-height:1.6;color:#b8c5c1}
+.gw-footer{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;margin-top:auto;border-top:1px solid #34433e;padding-top:18px}
+.gw-summary{flex:1;min-width:150px;font-size:14px;line-height:1.7;color:#cbd8d2}
+.gw-summary b{display:block;color:#fff;font-size:18px;font-weight:900}
+.gw-start{min-height:52px;padding:14px 26px;border:0;border-radius:12px;background:var(--gw-accent,#b9ed80);color:#101912;font:900 18px inherit;font-family:inherit;font-size:18px;font-weight:900;cursor:pointer;white-space:nowrap;text-shadow:none}
+.gw-start:focus-visible{outline:3px solid #fff;outline-offset:3px}
+.gw-note{font-size:12px;color:#9aafa4;line-height:1.5}
+.group-welcome .gw-start:disabled{opacity:.45;cursor:default}
+html.embed .group-welcome{left:calc(var(--host-left,22px) + 250px);top:clamp(100px,14vh,150px)}
+.app:not(.running) .stage>.top,.app:not(.running) .stage>.cue,.app:not(.running) .stage>.rail,.app:not(.running) .stage>.strip,.app:not(.running) .stage>.arena,.app:not(.running) .stage>.side-note,.app:not(.running) .stage>.floor{visibility:hidden}
+.app:not(.running) .actions{display:none}
+html.embed .control-stack{scrollbar-width:thin}
+html.embed .field select{min-height:38px;border:1px solid #43504d;border-radius:8px;background:#15201d;padding:5px 8px;text-shadow:none}
+html.embed .tabs button{min-height:40px}
+html.embed .actions button:not(.start){min-height:40px}
+body.jmp-group-lobby{--gw-accent:#b9ed80}
+body.jmp-group-lobby #stage{background:radial-gradient(ellipse at 65% 35%,#18332b 0,#0d1918 45%,#070e13 85%)}
+body.jmp-group-lobby #modeBadge,body.jmp-group-lobby #guide,body.jmp-group-lobby #playBtn{display:none}
+body.jmp-group-lobby #groupWelcome{left:calc(max(220px, var(--u)*19) + max(16px,var(--u)*1.6) + 32px)}
+@media(max-height:700px){.group-welcome{top:82px;bottom:62px;gap:12px}.group-welcome h2{font-size:28px}.gw-card{min-height:110px;padding:16px 20px;gap:6px}.gw-footer{padding-top:12px}html.embed .group-welcome{top:82px}}
+@media(max-width:1000px){.group-welcome{right:16px;padding-right:4px}.gw-card{padding:18px 16px}.gw-card strong{font-size:20px}.gw-footer{gap:10px}.gw-start{padding:12px 18px}}
+@media(max-width:700px){.gw-cards{grid-template-columns:1fr}.gw-card{min-height:100px}.group-welcome{left:245px;top:126px;bottom:66px}.gw-footer{align-items:stretch}.gw-start{width:100%}html.embed .group-welcome{left:calc(var(--host-left,16px) + 238px)}}
+</style>
 </head>
 <body>
 <main class="app stage-follow" id="app">
@@ -190,6 +227,13 @@ html.embed .side-note{bottom:62px}
     </div>
   </aside>
   <section class="stage" id="stage">
+    <section class="group-welcome" id="groupWelcome" aria-label="단체 수업 선택">
+      <header><div class="gw-eyebrow">단체 수업 · 카메라 없이 함께</div><h2>오늘은 어떤 운동을 할까요?</h2><p class="gw-intro">루틴을 고르고, 왼쪽에서 속도와 팀 운영을 맞춰 주세요.</p></header>
+      <div class="gw-cards" id="groupWelcomeCards"></div>
+      <footer class="gw-footer"><div class="gw-summary" id="groupWelcomeSummary" aria-live="polite"></div><button class="gw-start" id="groupWelcomeStart" type="button">이 수업 시작 ▶</button></footer>
+      <div class="gw-note">구령을 듣고 휘슬에 맞춰 운동하세요. 진행 횟수는 화면 기준이며, 실제 수행은 지도자가 확인합니다.</div>
+    </section>
+
     <div class="top"><div class="routine-name" id="routineName"></div><div class="progress"><i id="progress"></i></div><div class="meta"><span id="countText"></span><span class="stage-class-cue" id="stageClassCue"></span><span id="setText"></span></div></div>
     <button class="fs" id="fsBtn" type="button">전체화면</button>
     <div class="cue"><div class="beat" id="beat">READY</div><h2 id="cue">준비 자세</h2><p id="detail"></p><div class="dots" id="dots"></div></div>
@@ -791,6 +835,7 @@ function fitCue(){const h=$('cue');h.style.fontSize='';const w=h.parentElement.c
 function showKiai(){const k=$('kiai');k.classList.remove('show');void k.offsetWidth;k.classList.add('show');}
 function flashOk(t,warn){const f=$('okFlash');f.textContent=t;f.style.color=warn?'#ffd166':'';f.classList.remove('show');void f.offsetWidth;f.classList.add('show');}
 function setControls(){
+  paintGroupWelcome();
   const live=running&&!paused;
   $('start').textContent=running?(paused?'멈춤':'진행 중'):phase==='done'?'다시 시작':'시작';
   $('start').disabled=running;
@@ -803,7 +848,7 @@ function setControls(){
 }
 function idleView(){
   compile();V.cur=null;V.idle=true;V.upcoming=TL.steps[firstPhrase()];V.announced=true;V.impactAt=-1;
-  $('dots').innerHTML='';$('beat').textContent='READY';paintAll();
+  $('dots').innerHTML='';$('beat').textContent='준비';paintAll();paintGroupWelcome();
 }
 
 const gc=$('guideCanvas'),gx=gc.getContext('2d');
@@ -829,7 +874,7 @@ function onSetting(){if(running)return;store.save();idleView();}
 function bind(){
   document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{if(running)return;stage=b.dataset.stage;onSetting();});
   $('routine').onchange=e=>{ri=+e.target.value;fillGoals();onSetting();};
-  ['bpm','kickGoal','sets','rest','stance','lessonFlow','teamMode'].forEach(id=>{if($(id))$(id).addEventListener('change',()=>{if(id==='lessonFlow'||id==='teamMode')syncLessonFlow();if(id==='sets'||id==='rest'){store.save();paintCounts();paintClassCue();return;}onSetting();setControls();});});
+  ['bpm','kickGoal','sets','rest','stance','lessonFlow','teamMode'].forEach(id=>{if($(id))$(id).addEventListener('change',()=>{if(id==='lessonFlow'||id==='teamMode')syncLessonFlow();if(id==='sets'||id==='rest'){store.save();paintCounts();paintClassCue();paintGroupWelcome();return;}onSetting();setControls();});});
   $('start').onclick=()=>{if(HOST&&running){reset();return;}start();};$('pause').onclick=togglePause;$('reset').onclick=reset;
   $('again').onclick=againBundle;$('confirm').onclick=confirmOne;$('fsBtn').onclick=toggleFs;
   $('finAgain').onclick=()=>{$('finishScreen').hidden=true;phase='idle';start();};
@@ -840,7 +885,7 @@ function bind(){
     const k=e.key,a=el=>el&&el.tagName;
     const act=[' ','b','B','.','F5','Pause','MediaPlayPause'].includes(k)?'toggle':['ArrowRight','PageDown','Enter'].includes(k)?'ok':['ArrowLeft','PageUp'].includes(k)?'again':(k==='f'||k==='F')?'fs':'';
     if(!act) return;
-    if(!running&&a(document.activeElement)==='SELECT') return;
+    if(['INPUT','TEXTAREA','SELECT'].includes(a(document.activeElement)) || (a(document.activeElement)==='BUTTON'&&[' ','Enter'].includes(k))) return; 
     e.preventDefault();try{document.activeElement&&document.activeElement.blur&&document.activeElement.blur();}catch(_){}
     if(act==='toggle') running?togglePause():(phase!=='countdown'&&start());
     else if(act==='ok') running?confirmOne():start();
@@ -852,6 +897,28 @@ function bind(){
     else if(!document.hidden&&running) keepAwake(true);
   });
 }
+
+function initGroupWelcome(){
+  const cards=$('groupWelcomeCards');
+  cards.replaceChildren(...P.routines.map((r,i)=>{
+    const b=document.createElement('button');b.type='button';b.className='gw-card';b.dataset.groupRoutine=String(i);
+    const kind=document.createElement('span');kind.className='gw-kind';kind.textContent=r.type==='combo'?'연속 동작':'기초 동작';
+    const name=document.createElement('strong');name.textContent=r.name;
+    const desc=document.createElement('span');desc.className='gw-description';desc.textContent=r.intro.d;
+    b.append(kind,name,desc);b.onclick=()=>{if(running)return;ri=i;$('routine').value=String(i);fillGoals();onSetting();};return b;
+  }));
+  $('groupWelcomeStart').onclick=()=>{if(!running)start();};
+}
+function paintGroupWelcome(){
+  const box=$('groupWelcome');if(!box)return;
+  box.hidden=running;
+  box.style.setProperty('--gw-accent',P.exitUrl.includes('strike')?'#d8b4fe':'#ff8994');
+  box.querySelectorAll('[data-group-routine]').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.groupRoutine===ri)));
+  const label=document.createElement('b');label.textContent=routine().name;
+  const details=document.createElement('span');details.textContent=`${STAGE_NAME[stage]} · ${$('teamMode').value==='rotate'?'A/B팀 교대':'전원 함께'} · ${$('sets').value}세트 · ${TL.bpm} BPM`;
+  $('groupWelcomeSummary').replaceChildren(label,details);
+}
+
 function init(){
   const s=store.load();
   fillRoutines();
@@ -859,7 +926,7 @@ function init(){
   if(STAGE_NAME[s.stage]) stage=s.stage;
   for(const id of ['bpm','sets','rest','stance','lessonFlow','teamMode']) if($(id)&&s[id]!=null&&[...$(id).options].some(o=>o.value===String(s[id]))) $(id).value=String(s[id]);
   if(ladderOn())$('sets').value=String(ladderSets());
-  fillGoals();bind();idleView();setControls();paintFs();
+  fillGoals();bind();initGroupWelcome();idleView();setControls();paintFs();
   if($('stOkNote')) $('stOkNote').textContent=P.okNote.replace('확인 기준 · ','');
   if($('finishNote')) $('finishNote').textContent=`완주는 화면 진행 기준입니다. 지도자 확인은 관장님이 보고 눌러 준 수입니다 (${P.okNote.replace('확인 기준 · ','기준: ')}).`;
   if(P.init) P.init();
