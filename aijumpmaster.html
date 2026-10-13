@@ -120,19 +120,24 @@
 #routineModal .rm-beats button{min-height:36px}
 @media(max-width:760px){#routineModal .rm-row{grid-template-columns:2em minmax(0,1fr) auto auto}#routineModal .rm-beats{grid-column:2/5}#routineModal .rm-drag{grid-column:4;grid-row:1}#routineModal .rm-remove{grid-column:3;grid-row:1}#routineModal .rm-body{grid-template-rows:minmax(160px,1fr) minmax(140px,1fr)}}
 
-#routineModal .rm-order .rm-row{grid-template-columns:2.1em minmax(0,1fr) auto auto;grid-template-areas:"num name rm drag" ". opts opts opts";column-gap:10px;row-gap:8px;align-items:center;padding:10px 10px 10px 14px}
-#routineModal .rm-order .rm-row>em{grid-area:num}
+#routineModal .rm-order{container-type:inline-size;gap:5px}
+#routineModal .rm-order .rm-row{grid-template-columns:1.9em minmax(0,1fr) auto auto auto;grid-template-areas:"num name opts rm drag";column-gap:8px;row-gap:6px;align-items:center;padding:6px 6px 6px 12px;font-size:clamp(13px,1vw,15px)}
+#routineModal .rm-order .rm-row>em{grid-area:num;width:1.9em;height:1.9em;font-size:.9em}
 #routineModal .rm-order .rm-row-main{grid-area:name}
-#routineModal .rm-order .rm-beats{grid-area:opts;display:flex;flex-wrap:nowrap;align-items:center;gap:4px;min-width:0}
-#routineModal .rm-order .rm-beats button{min-height:32px;padding:5px 10px}
-#routineModal .rm-order .rm-beats .rm-fast{margin-left:auto}
-#routineModal .rm-order .rm-remove{grid-area:rm;min-width:32px;min-height:32px;font-size:22px;line-height:1}
-#routineModal .rm-order .rm-drag{grid-area:drag;width:32px;height:32px}
+#routineModal .rm-order .rm-beats{grid-area:opts;display:flex;flex-wrap:nowrap;align-items:center;gap:3px;min-width:0}
+#routineModal .rm-order .rm-beats button{min-height:30px;padding:4px 7px;font-size:.8em}
+#routineModal .rm-order .rm-beats .rm-fast{margin-left:5px}
+#routineModal .rm-order .rm-remove{grid-area:rm;min-width:28px;min-height:30px;font-size:20px;line-height:1}
+#routineModal .rm-order .rm-drag{grid-area:drag;width:30px;height:30px}
+@container (max-width:360px){#routineModal .rm-order .rm-row{grid-template-columns:1.9em minmax(0,1fr) auto auto;grid-template-areas:"num name rm drag" ". opts opts opts"}}
 
-#routineModal .rm-foot{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
-#routineModal .rm-foot .rm-sum{flex:1 1 100%}
-#routineModal .rm-foot .rm-ghost{white-space:nowrap}
-#routineModal .rm-foot .rm-save{margin-left:auto;white-space:nowrap}
+#routineModal .rm-foot{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;max-height:none;overflow:visible}
+#routineModal .rm-storage{padding-top:8px}
+#routineModal .rm-storage>summary{display:none}
+#routineModal .rm-storage .rm-slot-head{border-top:0;padding-top:0;margin-bottom:6px}
+#routineModal .rm-foot .rm-sum{flex:1 1 auto;margin-right:auto}
+#routineModal .rm-foot .rm-ghost{white-space:nowrap;padding:8px 12px}
+#routineModal .rm-foot .rm-save{white-space:nowrap}
 </style>
 <script>
 
@@ -996,7 +1001,7 @@ body.hf-dim #jmpPilotGraph .jt-wing{display:none!important}
 
 <script type="module">
 
-const APP_VERSION = '3.9.2';   
+const APP_VERSION = '3.9.3';   
 try{ window.__NL_VER = APP_VERSION; }catch(e){}   
 
 const MP_VERSION  = '1.0.1';
@@ -4176,7 +4181,7 @@ function renderRoutineSlots(){
 function routineSlotMessage(t){ const el=$('rmSlotMsg'); el.textContent=t; clearTimeout(routineSlotMessage.timer); routineSlotMessage.timer=setTimeout(()=>{el.textContent='';},1800); }
 function openRoutineEditor(kind='play'){
   routineEditKind=kind;
-  routineCategory='발 모양'; $('rmStorage').open=false;
+  routineCategory='발 모양'; $('rmStorage').open=true;   
   routineDraft=(kind==='practice'?groupPracticeRoutine:groupRoutine).map(m=>({...m}));
   setText($('rmTitle'),kind==='practice'?'연습할 줄넘기 선택':'줄넘기 루틴 구성');
   setText($('rmSave'),kind==='practice'?'이 연습 구성 사용':'현재 루틴 사용');
@@ -4190,7 +4195,7 @@ function renderRoutineModal(){
     const n=cnt(s.id);   
     return `<button type="button" class="rm-skill" aria-label="${esc(s.n)} 추가" data-id="${s.id}" data-on="${n>0}"><span class="rm-dot"></span><span class="rm-nm">${esc(s.n)}</span><small>${n>0?`${n}번 담김 · + 추가`:'+ 추가'}</small></button>`;
   }).join('');
-  $('rmOrder').innerHTML=d.length ? d.map((m,i)=>{const sk=skillById(m.id);return `<div class="rm-row" data-rm-index="${i}"><em>${i+1}</em><span class="rm-row-main"><strong>${esc(sk.n)}</strong></span><span class="rm-beats">${[8,16,32].map(b=>`<button type="button" data-i="${i}" data-b="${b}" aria-pressed="${m.b===b}">${b}박</button>`).join('')}${routineEditKind==='practice'?'':`<button type="button" class="rm-fast" data-fast="${i}" aria-pressed="${!!m.fast}" title="한 박에 두 번 뛰기">×2 빠르게</button>`}</span><button class="rm-remove" type="button" data-rm-remove="${i}" aria-label="${esc(sk.n)} 선택 취소">×</button><span class="rm-drag" role="button" tabindex="0" aria-label="${i+1}번째 동작 순서 옮기기">⠿</span></div>`}).join('')
+  $('rmOrder').innerHTML=d.length ? d.map((m,i)=>{const sk=skillById(m.id);return `<div class="rm-row" data-rm-index="${i}"><em>${i+1}</em><span class="rm-row-main" title="${esc(sk.n)}"><strong>${esc(shortName(sk))}</strong></span><span class="rm-beats">${[8,16,32].map(b=>`<button type="button" data-i="${i}" data-b="${b}" aria-pressed="${m.b===b}">${b}박</button>`).join('')}${routineEditKind==='practice'?'':`<button type="button" class="rm-fast" data-fast="${i}" aria-pressed="${!!m.fast}" title="한 박에 두 번 뛰기 (두 배 빠르게)" aria-label="두 배 빠르게">×2</button>`}</span><button class="rm-remove" type="button" data-rm-remove="${i}" aria-label="${esc(sk.n)} 선택 취소">×</button><span class="rm-drag" role="button" tabindex="0" aria-label="${i+1}번째 동작 순서 옮기기">⠿</span></div>`}).join('')
     : `<p class="rm-empty">왼쪽 기술을 눌러 담아 주세요.</p>`;
   const T=d.reduce((s,m)=>s+m.b,0), b=+$('bpm').value||120, sec=Math.round(T*60/b);
   $('rmSum').innerHTML=`<b>${d.length}</b>개 종목 · 한 순환 <b>${T}</b>박 · ${b}BPM 약 <b>${Math.floor(sec/60)}분 ${sec%60}초</b>`;
