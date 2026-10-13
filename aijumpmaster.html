@@ -979,7 +979,7 @@ body.hf-dim #jmpPilotGraph .jt-wing{display:none!important}
 
 <script type="module">
 
-const APP_VERSION = '3.8.9';   
+const APP_VERSION = '3.9.0';   
 try{ window.__NL_VER = APP_VERSION; }catch(e){}   
 
 const MP_VERSION  = '1.0.1';
@@ -3376,6 +3376,54 @@ function ropeOnce(rig,phase,rgb,am){
 const GCOL={L:'#38BDF8',R:'#FB7185'};
 function gShade(hex,k){const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);return `rgb(${Math.min(255,r*k|0)},${Math.min(255,g*k|0)},${Math.min(255,b*k|0)})`;}
 
+const G_FX_ALL=false;
+const G_FX={APPROACH:.8, LIFE:.5, SPARKS:9, SPARKS_BIG:14};   
+function gFxOn(){ if(G_FX_ALL) return true; try{ return jmpIsLab(); }catch(e){ return false; } }
+function gHexA(hex,a){const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);return `rgba(${r},${g},${b},${Math.max(0,Math.min(1,a)).toFixed(3)})`;}
+
+function gApproachRing(x,y,w,h,col,dist,ang){
+  if(!(dist>0&&dist<G_FX.APPROACH)) return;
+  const k=dist/G_FX.APPROACH, sc=1+k*1.25, a=Math.pow(1-k,1.3);
+  ctx.save(); ctx.translate(x,y); ctx.rotate(ang||0); ctx.globalAlpha=a*.95;
+  ctx.strokeStyle=col; ctx.lineWidth=Math.max(2.5,Math.min(w,h)*.11*(1.4-k*.6));
+  ctx.shadowColor=col; ctx.shadowBlur=Math.max(4,h*.35)*(1-k);
+  ctx.beginPath(); ctx.roundRect(-w*sc/2,-h*sc/2,w*sc,h*sc,Math.max(3,h*sc*.28)); ctx.stroke();
+  ctx.restore();
+}
+
+function gArriveFx(x,y,w,h,col,age,big,ang){
+  if(!(age>=0&&age<1)) return;
+  const e=1-age, ea=1-Math.pow(1-age,3), R=Math.max(w,h)*(big?1.25:1), seed=(x*7+y*13)%1;
+  ctx.save(); ctx.translate(x,y);
+  
+  ctx.globalCompositeOperation='lighter';
+  const br=R*(.75+.75*ea), g=ctx.createRadialGradient(0,0,0,0,0,br);
+  g.addColorStop(0,`rgba(255,255,255,${(big?.95:.8)*e*e})`); g.addColorStop(.32,gHexA(col,.75*e)); g.addColorStop(1,gHexA(col,0));
+  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(0,0,br,0,Math.PI*2); ctx.fill();
+  
+  for(const [d,wk] of [[0,1],[.16,.6]]){
+    const t=(age-d)/(1-d); if(t<0||t>=1) continue;
+    const r=R*(.5+(big?1.35:1.05)*(1-Math.pow(1-t,2.4)));
+    ctx.strokeStyle=d?`rgba(255,255,255,${.7*(1-t)})`:gHexA(col,.95*(1-t));
+    ctx.lineWidth=Math.max(1.5,R*.1*wk*(1-t)); ctx.beginPath(); ctx.arc(0,0,r,0,Math.PI*2); ctx.stroke();
+  }
+  
+  const n=big?G_FX.SPARKS_BIG:G_FX.SPARKS; ctx.lineCap='round';
+  for(let i=0;i<n;i++){
+    const an=(i/n+seed*.13)*Math.PI*2, r0=R*(.42+.75*ea), r1=r0+R*(.28+.22*(i%3===0))*e;
+    ctx.strokeStyle=i%2?`rgba(255,255,255,${.85*e})`:gHexA(col,e); ctx.lineWidth=Math.max(1.5,R*.055*e);
+    ctx.beginPath(); ctx.moveTo(Math.cos(an)*r0,Math.sin(an)*r0); ctx.lineTo(Math.cos(an)*r1,Math.sin(an)*r1); ctx.stroke();
+  }
+  ctx.globalCompositeOperation='source-over';
+  
+  const pop=1+(big?.32:.22)*Math.sin(Math.min(1,age*2.5)*Math.PI)*e;
+  ctx.rotate(ang||0); ctx.globalAlpha=Math.min(1,e*1.6);
+  ctx.fillStyle=col; ctx.shadowColor=col; ctx.shadowBlur=R*.45*e;
+  ctx.beginPath(); ctx.roundRect(-w*pop/2,-h*pop/2,w*pop,h*pop,Math.max(3,h*pop*.28)); ctx.fill();
+  ctx.shadowBlur=0; ctx.strokeStyle=`rgba(255,255,255,${.9*e})`; ctx.lineWidth=Math.max(1.5,h*.07); ctx.stroke();
+  ctx.restore();
+}
+
 function gPlateShape(g,ht,hb,hh,c){g.beginPath();g.moveTo(-ht+c,-hh);g.lineTo(ht-c,-hh);g.lineTo(ht,-hh+c);g.lineTo(hb,hh-c);g.lineTo(hb-c,hh);g.lineTo(-hb+c,hh);g.lineTo(-hb,hh-c);g.lineTo(-ht,-hh+c);g.closePath();}
 function gPlate(x,y,pw,ph,color,alpha,ang,mode){
   const hb=pw*.5,ht=pw*.4,hh=ph*.5,c=Math.min(ht,hh)*.42;
@@ -3667,6 +3715,7 @@ function gNightBg(W,H,horizon,pulse,t){
 }
 
 function gLane(W,H,bf,pulse){
+  const FX=gFxOn();
   const S=W/1000, horizon=H*.5, hitY=H*.88, bottom=H*1.06, beatPhase=gmod(bf,1), T=groupTotal();
   const zy=z=>horizon+Math.pow(Math.max(0,z),2.15)*(bottom-horizon);
   const zh=z=>W*.3*(.06+.94*Math.pow(Math.max(0,z),2.15));
@@ -3683,13 +3732,26 @@ function gLane(W,H,bf,pulse){
   ctx.globalAlpha=.6;ctx.strokeStyle='#b8c9d1';ctx.lineWidth=2;
   ctx.beginPath();ctx.moveTo(W/2-W*.22,hitY);ctx.lineTo(W/2+W*.22,hitY);ctx.stroke();ctx.restore();
 
-  const LOOK=3.5, TRAVEL=3.5, base=Math.ceil(bf*2)/2;
-  for(let s=LOOK*2;s>=0;s--){
-    const nb=base+s*.5, dist=nb-bf; if(dist<-.1||dist>LOOK+.05) continue;
+  const LOOK=3.5, TRAVEL=3.5, base=Math.ceil(bf*2)/2-(FX?.5:0);
+  
+  const tgt=(f)=>{const sc=1.15,pw=130*sc*S,ph=46*sc*S,y=hitY-ph*.825,cu=Math.max(.145*zh(1),pw*.35),wu=Math.max(.23*zh(1),pw*.55),ax=Math.abs(f.x||0);
+    const len=ph*1.65; return {x:W/2+Math.sign(f.x||0)*(Math.min(ax,.45)*cu+Math.max(0,ax-.45)*wu),y:y+(f.y||0)*ph*1.5,w:Math.min(pw*.34,len*.43),h:len};};
+  for(let s=LOOK*2+(FX?1:0);s>=0;s--){
+    const nb=base+s*.5, dist=nb-bf; if(dist<(FX?-G_FX.LIFE:-.1)||dist>LOOK+.05) continue;
     const isHalf=Math.abs(gmod(nb,1))>.01, beatK=Math.round(isHalf?nb-.5:nb);
     if(beatK<0||beatK>=T) continue;
     const M=groupMoveAt(beatK), p=M.pose;
     if(isHalf && !M.sk.ghost) continue;
+    if(FX && dist<0){   
+      if(!p.jump) continue;
+      for(const side of ['L','R']){ const f=p[side]; if(!['land','tap'].includes(f.st)) continue; const T0=tgt(f);
+        gArriveFx(T0.x,T0.y,T0.w*(isHalf?.6:1),T0.h*(isHalf?.6:1),GCOL[side],-dist/G_FX.LIFE,!isHalf&&beatK%4===0,f.a); }
+      continue;
+    }
+    if(FX && p.jump && dist<G_FX.APPROACH){
+      for(const side of ['L','R']){ const f=p[side]; if(!['land','tap'].includes(f.st)) continue; const T0=tgt(f);
+        gApproachRing(T0.x,T0.y,T0.w*(isHalf?.6:1),T0.h*(isHalf?.6:1),GCOL[side],dist,f.a); }
+    }
     const z=Math.max(0,1-dist/TRAVEL), laneY=horizon+Math.pow(z,1.75)*(hitY-horizon), sc=.2+.95*Math.pow(z,1.25);
     const pw=130*sc*S, ph=46*sc*S, alpha=(.14+.86*z)*(dist<0?Math.max(0,1+dist/.1):1);
 
@@ -3726,6 +3788,12 @@ function gLane(W,H,bf,pulse){
   }
   if(beatPhase<.22 && bf>=0 && bf<T){
     ctx.save();ctx.globalAlpha=(1-beatPhase/.22)*.5;ctx.fillStyle='#d7eaf3';ctx.fillRect(W/2-W*.22,hitY-2,W*.44,4);ctx.restore();
+  }
+  if(FX && bf>=0 && bf<T+.5 && beatPhase<.35){   
+    const big=Math.floor(bf)%4===0, k=1-beatPhase/.35, hw=W*(big?.3:.24), th=H*(big?.03:.018);
+    ctx.save();ctx.globalCompositeOperation='lighter';
+    const lg=ctx.createLinearGradient(W/2-hw,0,W/2+hw,0);lg.addColorStop(0,gHexA(GCOL.L,0));lg.addColorStop(.3,gHexA(GCOL.L,.55*k));lg.addColorStop(.5,`rgba(255,255,255,${.7*k})`);lg.addColorStop(.7,gHexA(GCOL.R,.55*k));lg.addColorStop(1,gHexA(GCOL.R,0));
+    ctx.fillStyle=lg;ctx.fillRect(W/2-hw,hitY-th*k,hw*2,th*2*k);ctx.restore();
   }
 }
 
@@ -3888,6 +3956,7 @@ function drawGroupSceneGrid(now){
 }
 
 function drawMergedGrid(W,H,bf,pulse){
+  const FX=gFxOn();
   const cx=W*.48, cy=H*.59, S=Math.min(W*.56,H*.39), gap=S*.045, cell=(S-2*gap)/3;
   const current=groupMoveAt(Math.max(0,Math.floor(bf))).pose;
   const empty={...current,L:{...current.L,st:'hidden'},R:{...current.R,st:'hidden'},arms:'open',armBadge:null,jump:true};
@@ -3897,7 +3966,7 @@ function drawMergedGrid(W,H,bf,pulse){
   const originY=H*.19, LOOK=4;
   for(let k=Math.floor(bf)+4;k>=Math.max(0,Math.floor(bf)-1);k-=.5){
     if(k>=groupTotal())continue;
-    const dist=k-bf; if(dist>LOOK||dist<-.3)continue;
+    const dist=k-bf; if(dist>LOOK||dist<(FX?-G_FX.LIFE:-.3))continue;
     const half=gmod(k,1)>.01, M=groupMoveAt(Math.floor(k)), p=M.pose;
     if(half&&!M.sk.ghost)continue;
     for(const f of gGridFeet(p)){
@@ -3907,6 +3976,9 @@ function drawMergedGrid(W,H,bf,pulse){
       const progress=clamp(1-dist/LOOK,0,1), scale=.18+.82*progress;
       const x=cx+(tx-cx)*progress, y=originY+(ty-originY)*progress;
       const w=cell*(f.half?.38:.72)*scale,h=cell*.65*scale,col=GCOL[f.side];
+      const hitOk=FX&&(f.st==='land'||f.st==='tap'), w1=cell*(f.half?.38:.72)*(half?.7:1), h1=cell*.65*(half?.7:1);
+      if(hitOk&&dist<0){ gArriveFx(tx,ty,w1,h1,col,-dist/G_FX.LIFE,!half&&Math.round(k)%4===0,p[f.side].a); continue; }
+      if(hitOk&&dist>0) gApproachRing(tx,ty,w1,h1,col,dist,p[f.side].a);
       ctx.save(); ctx.globalAlpha=(dist<0?1+dist/.3:.25+.75*progress)*(half?.45:1);ctx.fillStyle=col;ctx.strokeStyle=col;ctx.lineWidth=2;
       if(dist>=0){
         ctx.translate(x,y);ctx.rotate(p[f.side].a||0);
