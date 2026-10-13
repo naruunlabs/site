@@ -346,7 +346,7 @@ const STAGE_ORDER=['follow','call'];
 const COUNT_WORD=['하나','둘','셋','넷','다섯','여섯','일곱','여덟','아홉','열'];
 const VOICE_RATE=1.25, SAY_DELAY=.35, SAY_MARGIN=.1;
 
-const HIT_MS=400, SAY_GAP=.12;
+const HIT_MS=800, HIT_CAP=.6, SAY_GAP=.12;
 
 const CALL_LEAD=.15, WARM_LEAD=.45;
 
@@ -464,7 +464,7 @@ function stepStart(st){
   if(st.intro){V.upcoming=TL.steps[seg.target];V.announced=false;planSay(seg.target,SAY_DELAY*1000);planCall(seg.target,now+st.b*TL.beatMs);paintStep(st);return;}
   if(st.act){
     
-    const hitMs=Math.min(HIT_MS,st.b*TL.beatMs*.5);
+    const hitMs=Math.min(HIT_MS,st.b*TL.beatMs*HIT_CAP);
     V.impactStep=st;V.impactAt=now+hitMs;V.cueAt=now;
     if(st.counted){count++;if(!isCombo())totalDone++;}
     if(st.quiet) P.soft(st); else P.hit(st);
@@ -604,11 +604,17 @@ function beep(freq=620){tone(freq,.1,'sine',.07);}
 function whistle(){
   try{
     const a=ensureAudio();if(!a)return;
-    const now=a.currentTime,master=a.createGain(),comp=a.createDynamicsCompressor(),o1=a.createOscillator(),o2=a.createOscillator(),o3=a.createOscillator();
-    comp.threshold.value=-16;comp.knee.value=4;comp.ratio.value=14;comp.attack.value=.002;comp.release.value=.08;
-    master.gain.setValueAtTime(.0001,now);master.gain.exponentialRampToValueAtTime(.26,now+.01);master.gain.setValueAtTime(.23,now+.17);master.gain.exponentialRampToValueAtTime(.0001,now+.22);
-    o1.type='square';o2.type='sawtooth';o3.type='sine';o1.frequency.setValueAtTime(2500,now);o1.frequency.linearRampToValueAtTime(2700,now+.22);o2.frequency.setValueAtTime(2980,now);o2.frequency.linearRampToValueAtTime(3200,now+.22);o3.frequency.setValueAtTime(5000,now);
-    const g2=a.createGain(),g3=a.createGain();g2.gain.value=.38;g3.gain.value=.16;o1.connect(master);o2.connect(g2);o3.connect(g3);g2.connect(master);g3.connect(master);master.connect(comp);comp.connect(a.destination);[o1,o2,o3].forEach(o=>{o.start(now);o.stop(now+.24)});
+    const t=a.currentTime,f=1900,rise=60,dur=.26,vol=.32;
+    const out=a.createGain(),lp=a.createBiquadFilter();lp.type='lowpass';lp.frequency.value=f*2.6;lp.Q.value=.5;
+    out.gain.setValueAtTime(.0001,t);out.gain.exponentialRampToValueAtTime(vol,t+.018);out.gain.setValueAtTime(vol*.9,t+dur-.06);out.gain.exponentialRampToValueAtTime(.0001,t+dur);
+    const o=a.createOscillator(),o2=a.createOscillator(),g2=a.createGain();o.type='sine';o2.type='sine';
+    o.frequency.setValueAtTime(f,t);o.frequency.linearRampToValueAtTime(f+rise,t+dur);
+    o2.frequency.setValueAtTime(f*2,t);o2.frequency.linearRampToValueAtTime((f+rise)*2,t+dur);g2.gain.value=.15;
+    o.connect(lp);o2.connect(g2);g2.connect(lp);
+    const n=Math.floor(a.sampleRate*(dur+.02)),nb=a.createBuffer(1,n,a.sampleRate),d=nb.getChannelData(0);for(let i=0;i<n;i++)d[i]=Math.random()*2-1;
+    const ns=a.createBufferSource(),bp=a.createBiquadFilter(),ng=a.createGain();ns.buffer=nb;bp.type='bandpass';bp.frequency.value=f;bp.Q.value=6;ng.gain.value=.22;
+    ns.connect(bp);bp.connect(ng);ng.connect(lp);lp.connect(out);out.connect(a.destination);
+    o.start(t);o2.start(t);ns.start(t);o.stop(t+dur+.02);o2.stop(t+dur+.02);ns.stop(t+dur+.02);
   }catch(e){beep(1500)}
 }
 
