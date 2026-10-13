@@ -430,11 +430,11 @@ body.jmp-lite-hud .jt-bars i{box-shadow:none}body.jmp-lite-hud .jt-wing{filter:n
   text-align:left;font-size:clamp(13px,1.1vw,17px);font-weight:700;color:rgba(234,244,241,.8)}
 .rm-skill:hover{background:rgba(255,255,255,.04);border-color:rgba(94,234,212,.16)}
 .rm-skill small{font-family:var(--num);font-size:.8em;color:#5E748C}
-.rm-skill[aria-checked="true"]{color:#fff;background:rgba(163,230,53,.1);border-color:rgba(163,230,53,.28)}
-.rm-skill[aria-checked="true"] small{color:var(--lime-lit)}
+.rm-skill[aria-checked="true"],.rm-skill[data-on="true"]{color:#fff;background:rgba(163,230,53,.1);border-color:rgba(163,230,53,.28)}
+.rm-skill[aria-checked="true"] small,.rm-skill[data-on="true"] small{color:var(--lime-lit)}
 .rm-dot{width:clamp(16px,1.4vw,22px);height:clamp(16px,1.4vw,22px);border-radius:50%;border:2px solid rgba(234,244,241,.35);display:grid;place-items:center}
-.rm-skill[aria-checked="true"] .rm-dot{border-color:var(--lime)}
-.rm-skill[aria-checked="true"] .rm-dot::after{content:"";width:58%;height:58%;border-radius:50%;background:var(--lime);box-shadow:0 0 8px var(--lime)}
+.rm-skill[aria-checked="true"] .rm-dot,.rm-skill[data-on="true"] .rm-dot{border-color:var(--lime)}
+.rm-skill[aria-checked="true"] .rm-dot::after,.rm-skill[data-on="true"] .rm-dot::after{content:"";width:58%;height:58%;border-radius:50%;background:var(--lime);box-shadow:0 0 8px var(--lime)}
 .rm-order{display:grid;gap:6px;align-content:start}
 .rm-row{position:relative;display:grid;grid-template-columns:2.4em minmax(150px,1fr) auto auto;align-items:center;gap:12px;padding:clamp(9px,.8vw,13px) 12px;border-radius:12px;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.07);overflow:hidden;
   font-size:clamp(13px,1.05vw,16px);font-weight:800}
@@ -446,6 +446,9 @@ body.jmp-lite-hud .jt-bars i{box-shadow:none}body.jmp-lite-hud .jt-wing{filter:n
 .rm-beats,.rm-move{display:flex;gap:3px}
 .rm-beats button{padding:6px 9px;border-radius:7px;background:rgba(255,255,255,.06);font-family:var(--num);font-size:.82em;font-weight:800;color:var(--muted)}
 .rm-beats button[aria-pressed="true"]{background:var(--teal);color:#04211E}
+.rm-beats{flex-wrap:wrap}
+.rm-beats .rm-fast{margin-left:6px;font-family:inherit;white-space:nowrap}
+.rm-beats .rm-fast[aria-pressed="true"]{background:var(--lime);color:#14290A}
 .rm-drag{display:grid;place-items:center;width:clamp(30px,2.5vw,38px);height:clamp(30px,2.5vw,38px);border-radius:7px;background:rgba(255,255,255,.08);color:#cbd5e1;font-size:1.15em;cursor:grab;touch-action:none;user-select:none}.rm-drag:active{cursor:grabbing}
 .rm-empty{margin:0;color:var(--muted);font-size:14px}
 .rm-foot{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px}
@@ -979,7 +982,7 @@ body.hf-dim #jmpPilotGraph .jt-wing{display:none!important}
 
 <script type="module">
 
-const APP_VERSION = '3.9.0';   
+const APP_VERSION = '3.9.1';   
 try{ window.__NL_VER = APP_VERSION; }catch(e){}   
 
 const MP_VERSION  = '1.0.1';
@@ -1467,7 +1470,7 @@ function announceGroupAt(k){
   if(!nx||nx.mi===g.mi) return;                       
   const left=g.start+g.len-Math.floor(k);
   if(left>4||left<1||groupSaidFor===j+1) return;
-  groupSaidFor=j+1; groupSay('다음, '+shortName(skillById(groupRoutine[nx.mi].id)));
+  groupSaidFor=j+1; groupSay('다음, '+shortName(skillById(groupRoutine[nx.mi].id))+(groupRoutine[nx.mi].fast?', 빠르게':''));
 }
 let practiceSaidFor='';
 function announcePracticeAt(k){
@@ -3377,7 +3380,7 @@ const GCOL={L:'#38BDF8',R:'#FB7185'};
 function gShade(hex,k){const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);return `rgb(${Math.min(255,r*k|0)},${Math.min(255,g*k|0)},${Math.min(255,b*k|0)})`;}
 
 const G_FX_ALL=false;
-const G_FX={APPROACH:.8, LIFE:.5, SPARKS:9, SPARKS_BIG:14};   
+const G_FX={APPROACH:.8, LIFE:.5, SPARKS:9, SPARKS_BIG:14, LINE:.7};   
 function gFxOn(){ if(G_FX_ALL) return true; try{ return jmpIsLab(); }catch(e){ return false; } }
 function gHexA(hex,a){const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);return `rgba(${r},${g},${b},${Math.max(0,Math.min(1,a)).toFixed(3)})`;}
 
@@ -3385,7 +3388,7 @@ function gApproachRing(x,y,w,h,col,dist,ang){
   if(!(dist>0&&dist<G_FX.APPROACH)) return;
   const k=dist/G_FX.APPROACH, sc=1+k*1.25, a=Math.pow(1-k,1.3);
   ctx.save(); ctx.translate(x,y); ctx.rotate(ang||0); ctx.globalAlpha=a*.95;
-  ctx.strokeStyle=col; ctx.lineWidth=Math.max(2.5,Math.min(w,h)*.11*(1.4-k*.6));
+  ctx.strokeStyle=col; ctx.lineWidth=G_FX.LINE*Math.max(2.5,Math.min(w,h)*.11*(1.4-k*.6));
   ctx.shadowColor=col; ctx.shadowBlur=Math.max(4,h*.35)*(1-k);
   ctx.beginPath(); ctx.roundRect(-w*sc/2,-h*sc/2,w*sc,h*sc,Math.max(3,h*sc*.28)); ctx.stroke();
   ctx.restore();
@@ -3405,13 +3408,13 @@ function gArriveFx(x,y,w,h,col,age,big,ang){
     const t=(age-d)/(1-d); if(t<0||t>=1) continue;
     const r=R*(.5+(big?1.35:1.05)*(1-Math.pow(1-t,2.4)));
     ctx.strokeStyle=d?`rgba(255,255,255,${.7*(1-t)})`:gHexA(col,.95*(1-t));
-    ctx.lineWidth=Math.max(1.5,R*.1*wk*(1-t)); ctx.beginPath(); ctx.arc(0,0,r,0,Math.PI*2); ctx.stroke();
+    ctx.lineWidth=G_FX.LINE*Math.max(1.5,R*.1*wk*(1-t)); ctx.beginPath(); ctx.arc(0,0,r,0,Math.PI*2); ctx.stroke();
   }
   
   const n=big?G_FX.SPARKS_BIG:G_FX.SPARKS; ctx.lineCap='round';
   for(let i=0;i<n;i++){
     const an=(i/n+seed*.13)*Math.PI*2, r0=R*(.42+.75*ea), r1=r0+R*(.28+.22*(i%3===0))*e;
-    ctx.strokeStyle=i%2?`rgba(255,255,255,${.85*e})`:gHexA(col,e); ctx.lineWidth=Math.max(1.5,R*.055*e);
+    ctx.strokeStyle=i%2?`rgba(255,255,255,${.85*e})`:gHexA(col,e); ctx.lineWidth=G_FX.LINE*Math.max(1.5,R*.055*e);
     ctx.beginPath(); ctx.moveTo(Math.cos(an)*r0,Math.sin(an)*r0); ctx.lineTo(Math.cos(an)*r1,Math.sin(an)*r1); ctx.stroke();
   }
   ctx.globalCompositeOperation='source-over';
@@ -3420,7 +3423,7 @@ function gArriveFx(x,y,w,h,col,age,big,ang){
   ctx.rotate(ang||0); ctx.globalAlpha=Math.min(1,e*1.6);
   ctx.fillStyle=col; ctx.shadowColor=col; ctx.shadowBlur=R*.45*e;
   ctx.beginPath(); ctx.roundRect(-w*pop/2,-h*pop/2,w*pop,h*pop,Math.max(3,h*pop*.28)); ctx.fill();
-  ctx.shadowBlur=0; ctx.strokeStyle=`rgba(255,255,255,${.9*e})`; ctx.lineWidth=Math.max(1.5,h*.07); ctx.stroke();
+  ctx.shadowBlur=0; ctx.strokeStyle=`rgba(255,255,255,${.9*e})`; ctx.lineWidth=G_FX.LINE*Math.max(1.5,h*.07); ctx.stroke();
   ctx.restore();
 }
 
@@ -3665,8 +3668,12 @@ function groupMoveAt(k){
   if(!groupTL) resetGroupTimeline();
   const T=groupTotal(), b=clamp(Math.floor(k),0,Math.max(0,T-1)), j=groupSegAt(b), g=groupTL[j], move=groupRoutine[g.mi], sk=skillById(move.id);
   const local=b-g.start, nx=groupTL[j+1];
-  return {i:g.mi, seg:j, move, sk, local, left:g.start+g.len-b, rep:!!g.rep, hasNext:!!nx, nextSame:!!nx&&nx.mi===g.mi, pose:sk.cyc[gmod(local,sk.cyc.length)]};
+  const fast=!!move.fast;
+  return {i:g.mi, seg:j, move, sk, local, fast, left:g.start+g.len-b, rep:!!g.rep, hasNext:!!nx, nextSame:!!nx&&nx.mi===g.mi, pose:sk.cyc[gmod(local*(fast?2:1),sk.cyc.length)]};
 }
+
+function groupHalfPose(M){ return M.fast ? M.sk.cyc[gmod(M.local*2+1,M.sk.cyc.length)] : M.pose; }
+const gNameOf=M=>shortName(M.sk)+(M.fast?' · 빠르게':'');
 function practiceMoveAt(k){                        
   const T=practiceTotal(); let b=gmod(Math.floor(k+practiceOffset),T),i=0;
   while(i<groupPracticeRoutine.length-1&&b>=groupPracticeRoutine[i].b){b-=groupPracticeRoutine[i].b;i++;}
@@ -3677,7 +3684,7 @@ function gPose(k){
   if(groupRunKind==='practice') return practiceMoveAt(k).pose;
   return groupMoveAt(k).pose;
 }
-function gGhost(k){ return groupRunKind==='practice' ? !!practiceMoveAt(k).sk.ghost : !!groupMoveAt(k).sk.ghost; }
+function gGhost(k){ if(groupRunKind==='practice') return !!practiceMoveAt(k).sk.ghost; const M=groupMoveAt(k); return !!(M.sk.ghost||M.fast); }   
 
 function gBlend(bf){
   const bi=Math.round(bf), frac=bf-bi; let tt=0;
@@ -3740,17 +3747,18 @@ function gLane(W,H,bf,pulse){
     const nb=base+s*.5, dist=nb-bf; if(dist<(FX?-G_FX.LIFE:-.1)||dist>LOOK+.05) continue;
     const isHalf=Math.abs(gmod(nb,1))>.01, beatK=Math.round(isHalf?nb-.5:nb);
     if(beatK<0||beatK>=T) continue;
-    const M=groupMoveAt(beatK), p=M.pose;
-    if(isHalf && !M.sk.ghost) continue;
+    const M=groupMoveAt(beatK);
+    if(isHalf && !M.sk.ghost && !M.fast) continue;
+    const full=!isHalf||M.fast, p=isHalf&&M.fast?groupHalfPose(M):M.pose, hs=full?1:.6;   
     if(FX && dist<0){   
       if(!p.jump) continue;
       for(const side of ['L','R']){ const f=p[side]; if(!['land','tap'].includes(f.st)) continue; const T0=tgt(f);
-        gArriveFx(T0.x,T0.y,T0.w*(isHalf?.6:1),T0.h*(isHalf?.6:1),GCOL[side],-dist/G_FX.LIFE,!isHalf&&beatK%4===0,f.a); }
+        gArriveFx(T0.x,T0.y,T0.w*hs,T0.h*hs,GCOL[side],-dist/G_FX.LIFE,!isHalf&&beatK%4===0,f.a); }
       continue;
     }
     if(FX && p.jump && dist<G_FX.APPROACH){
       for(const side of ['L','R']){ const f=p[side]; if(!['land','tap'].includes(f.st)) continue; const T0=tgt(f);
-        gApproachRing(T0.x,T0.y,T0.w*(isHalf?.6:1),T0.h*(isHalf?.6:1),GCOL[side],dist,f.a); }
+        gApproachRing(T0.x,T0.y,T0.w*hs,T0.h*hs,GCOL[side],dist,f.a); }
     }
     const z=Math.max(0,1-dist/TRAVEL), laneY=horizon+Math.pow(z,1.75)*(hitY-horizon), sc=.2+.95*Math.pow(z,1.25);
     const pw=130*sc*S, ph=46*sc*S, alpha=(.14+.86*z)*(dist<0?Math.max(0,1+dist/.1):1);
@@ -3759,12 +3767,12 @@ function gLane(W,H,bf,pulse){
     
     const closeUnit=Math.max(.145*zh(z),pw*.35), wideUnit=Math.max(.23*zh(z),pw*.55);
     const laneOffset=x=>Math.sign(x)*(Math.min(Math.abs(x),.45)*closeUnit+Math.max(0,Math.abs(x)-.45)*wideUnit);
-    if(isHalf){ for(const side of ['L','R']) gFootNote(W/2+laneOffset(p[side].x),y,pw*.55,ph*.55,GCOL[side],alpha*.55,0,'ghost'); continue; }
+    if(!full){ for(const side of ['L','R']) gFootNote(W/2+laneOffset(p[side].x),y,pw*.55,ph*.55,GCOL[side],alpha*.55,0,'ghost'); continue; }
     
-    if(M.local===0 && z>.08){
+    if(M.local===0 && !isHalf && z>.08){
       ctx.save(); ctx.globalAlpha=alpha*.85; ctx.strokeStyle='#BEF264'; ctx.lineWidth=Math.max(1,2*sc*S); ctx.setLineDash([10*sc*S,8*sc*S]);
       ctx.beginPath(); ctx.moveTo(W/2-zh(z)*1.02,y-ph*1.4); ctx.lineTo(W/2+zh(z)*1.02,y-ph*1.4); ctx.stroke(); ctx.restore();
-      if(z>.25) gLabel(shortName(M.sk),W/2+zh(z)*1.06,y-ph*1.4,Math.max(9,ph*.42),`rgba(190,242,100,${alpha})`,'left');
+      if(z>.25) gLabel(gNameOf(M),W/2+zh(z)*1.06,y-ph*1.4,Math.max(9,ph*.42),`rgba(190,242,100,${alpha})`,'left');
     }
     const pos={}; let minX=Infinity,maxX=-Infinity;
     for(const side of ['L','R']){
@@ -3806,7 +3814,8 @@ function gGridCell(f){
   return {c,r};
 }
 function gGridFeet(p){
-  const L=gGridCell(p.L), R=gGridCell(p.R), same=L.c===R.c&&L.r===R.r;
+  
+  const L=gGridCell(p.L), R=gGridCell(p.R), same=L.c===R.c;
   const crossed=!!p.cross || p.L.x>p.R.x;           
   return [
     {side:'L',c:L.c,r:L.r,st:p.L.st,half:same?(crossed?'r':'l'):null},
@@ -3949,8 +3958,8 @@ function drawGroupSceneGrid(now){
     const M=groupMoveAt(Math.round(Math.max(0,bf))), cur=M.pose, port=H>W*1.05;
     drawMergedGrid(W,H,bf,pulse);
     const fs=Math.max(14,Math.min(H*.035,W*.045));
-    gLabel(shortName(M.sk),W*.48,H*.89,fs,'#fff');
-    if(M.left<=4&&M.hasNext&&!M.nextSame){const nx=groupMoveAt(Math.round(Math.max(0,bf))+M.left);gLabel(`다음 · ${shortName(nx.sk)} · ${M.left}박 후`,W*.48,H*.94,fs*.65,'#BEF264');}
+    gLabel(gNameOf(M),W*.48,H*.89,fs,'#fff');
+    if(M.left<=4&&M.hasNext&&!M.nextSame){const nx=groupMoveAt(Math.round(Math.max(0,bf))+M.left);gLabel(`다음 · ${gNameOf(nx)} · ${M.left}박 후`,W*.48,H*.94,fs*.65,'#BEF264');}
 
   }
 }
@@ -3967,8 +3976,8 @@ function drawMergedGrid(W,H,bf,pulse){
   for(let k=Math.floor(bf)+4;k>=Math.max(0,Math.floor(bf)-1);k-=.5){
     if(k>=groupTotal())continue;
     const dist=k-bf; if(dist>LOOK||dist<(FX?-G_FX.LIFE:-.3))continue;
-    const half=gmod(k,1)>.01, M=groupMoveAt(Math.floor(k)), p=M.pose;
-    if(half&&!M.sk.ghost)continue;
+    const half0=gmod(k,1)>.01, M=groupMoveAt(Math.floor(k)), p=half0&&M.fast?groupHalfPose(M):M.pose, half=half0&&!M.fast;   
+    if(half0&&!M.sk.ghost&&!M.fast)continue;
     for(const f of gGridFeet(p)){
       if(f.st==='air')continue; 
       const tx=cx-S/2+f.c*(cell+gap)+cell/2+(f.half?(f.half==='l'?-1:1)*cell*.24:0);
@@ -3977,7 +3986,7 @@ function drawMergedGrid(W,H,bf,pulse){
       const x=cx+(tx-cx)*progress, y=originY+(ty-originY)*progress;
       const w=cell*(f.half?.38:.72)*scale,h=cell*.65*scale,col=GCOL[f.side];
       const hitOk=FX&&(f.st==='land'||f.st==='tap'), w1=cell*(f.half?.38:.72)*(half?.7:1), h1=cell*.65*(half?.7:1);
-      if(hitOk&&dist<0){ gArriveFx(tx,ty,w1,h1,col,-dist/G_FX.LIFE,!half&&Math.round(k)%4===0,p[f.side].a); continue; }
+      if(hitOk&&dist<0){ gArriveFx(tx,ty,w1,h1,col,-dist/G_FX.LIFE,!half0&&Math.round(k)%4===0,p[f.side].a); continue; }
       if(hitOk&&dist>0) gApproachRing(tx,ty,w1,h1,col,dist,p[f.side].a);
       ctx.save(); ctx.globalAlpha=(dist<0?1+dist/.3:.25+.75*progress)*(half?.45:1);ctx.fillStyle=col;ctx.strokeStyle=col;ctx.lineWidth=2;
       if(dist>=0){
@@ -4055,12 +4064,12 @@ function drawGroupScene(now){
     const M=groupMoveAt(Math.round(Math.max(0,bf)));
     const cur=M.pose, cph=H*.19, cy=H*.35, cfs=Math.max(11,H*.028);
     gDrawPad(W/2,cy,cph,cph,cur,cur,0,0,.92,false);
-    gLabel(`지금 · ${shortName(M.sk)}`,W/2,cy-cph/2-H*.018,cfs,'rgba(255,255,255,.92)','center','bottom');
+    gLabel(`지금 · ${gNameOf(M)}`,W/2,cy-cph/2-H*.018,cfs,'rgba(255,255,255,.92)','center','bottom');
     if(bf>-1 && M.left<=4 && M.hasNext && !M.nextSame){
       const Nx=groupMoveAt(Math.round(Math.max(0,bf))+M.left), fade=clamp(4.6-M.left,0,1), pp=Nx.sk.cyc[0];
       const nph=H*.14, nx=W*.67, ny=H*.35, fs=Math.max(10,H*.024);
       gDrawPad(nx,ny,nph,nph,pp,pp,0,0,.85*fade,false);
-      gLabel(`다음 · ${shortName(Nx.sk)}`,nx,ny-nph/2-H*.022,fs,`rgba(190,242,100,${fade})`,'center','bottom');
+      gLabel(`다음 · ${gNameOf(Nx)}`,nx,ny-nph/2-H*.022,fs,`rgba(190,242,100,${fade})`,'center','bottom');
       gLabel(`${M.left}박 후`,nx+nph/2+nph*.42,ny,fs,`rgba(234,244,241,${fade*.85})`,'left');
     }
   }
@@ -4161,13 +4170,13 @@ function openRoutineEditor(kind='play'){
 }
 function closeRoutineEditor(){ $('routineModal').hidden=true; routineDraft=null; }
 function renderRoutineModal(){
-  const d=routineDraft, at=id=>d.findIndex(m=>m.id===id);
+  const d=routineDraft, cnt=id=>d.filter(m=>m.id===id).length;
   document.querySelectorAll('[data-rm-cat]').forEach(b=>{const active=b.dataset.rmCat===routineCategory;b.classList.toggle('on',active);b.setAttribute('aria-pressed',String(active));});
   $('rmSkills').innerHTML=SKILLS.filter(s=>s.cat===routineCategory).map(s=>{
-    const i=at(s.id);
-    return `<button type="button" class="rm-skill" role="checkbox" aria-checked="${i>=0}" data-id="${s.id}"><span class="rm-dot"></span><span class="rm-nm">${esc(s.n)}</span><small>${i>=0?`${i+1}번째`:'선택'}</small></button>`;
+    const n=cnt(s.id);   
+    return `<button type="button" class="rm-skill" aria-label="${esc(s.n)} 추가" data-id="${s.id}" data-on="${n>0}"><span class="rm-dot"></span><span class="rm-nm">${esc(s.n)}</span><small>${n>0?`${n}번 담김 · + 추가`:'+ 추가'}</small></button>`;
   }).join('');
-  $('rmOrder').innerHTML=d.length ? d.map((m,i)=>{const sk=skillById(m.id);return `<div class="rm-row" data-rm-index="${i}"><em>${i+1}</em><span class="rm-row-main"><strong>${esc(sk.n)}</strong></span><span class="rm-beats">${[8,16,32].map(b=>`<button type="button" data-i="${i}" data-b="${b}" aria-pressed="${m.b===b}">${b}박</button>`).join('')}</span><button class="rm-remove" type="button" data-rm-remove="${i}" aria-label="${esc(sk.n)} 선택 취소">×</button><span class="rm-drag" role="button" tabindex="0" aria-label="${i+1}번째 동작 순서 옮기기">⠿</span></div>`}).join('')
+  $('rmOrder').innerHTML=d.length ? d.map((m,i)=>{const sk=skillById(m.id);return `<div class="rm-row" data-rm-index="${i}"><em>${i+1}</em><span class="rm-row-main"><strong>${esc(sk.n)}</strong></span><span class="rm-beats">${[8,16,32].map(b=>`<button type="button" data-i="${i}" data-b="${b}" aria-pressed="${m.b===b}">${b}박</button>`).join('')}${routineEditKind==='practice'?'':`<button type="button" class="rm-fast" data-fast="${i}" aria-pressed="${!!m.fast}" title="한 박에 두 번 뛰기">×2 빠르게</button>`}</span><button class="rm-remove" type="button" data-rm-remove="${i}" aria-label="${esc(sk.n)} 선택 취소">×</button><span class="rm-drag" role="button" tabindex="0" aria-label="${i+1}번째 동작 순서 옮기기">⠿</span></div>`}).join('')
     : `<p class="rm-empty">왼쪽 기술을 눌러 담아 주세요.</p>`;
   const T=d.reduce((s,m)=>s+m.b,0), b=+$('bpm').value||120, sec=Math.round(T*60/b);
   $('rmSum').innerHTML=`<b>${d.length}</b>개 종목 · 한 순환 <b>${T}</b>박 · ${b}BPM 약 <b>${Math.floor(sec/60)}분 ${sec%60}초</b>`;
@@ -4614,14 +4623,14 @@ $('spUp').addEventListener('click',()=>changePracticeSpeed(10));
 $('rmCategorySeg').addEventListener('click',e=>{const b=e.target.closest('[data-rm-cat]');if(!b||!routineDraft)return;routineCategory=b.dataset.rmCat;renderRoutineModal();});
 $('rmSkills').addEventListener('click',e=>{
   const r=e.target.closest('.rm-skill'); if(!r||!routineDraft) return;
-  const i=routineDraft.findIndex(m=>m.id===r.dataset.id);
-  if(i>=0) routineDraft.splice(i,1); else routineDraft.push({id:r.dataset.id,b:16});
+  routineDraft.push({id:r.dataset.id,b:16});   
   renderRoutineModal();
 });
 $('rmOrder').addEventListener('click',e=>{
   const b=e.target.closest('button'); if(!b||!routineDraft) return;
   const d=routineDraft;
   if(b.dataset.b){ d[+b.dataset.i].b=+b.dataset.b; }
+  if(b.dataset.fast!=null){ const m=d[+b.dataset.fast]; if(m.fast) delete m.fast; else m.fast=true; }
   if(b.dataset.rmRemove!=null){d.splice(+b.dataset.rmRemove,1);}
   renderRoutineModal();
 });
@@ -4664,7 +4673,7 @@ $('routineModal').addEventListener('click',e=>{ if(e.target===$('routineModal'))
 $('rmSave').addEventListener('click',()=>{
   if(!routineDraft||!routineDraft.length) return;
   if(routineEditKind==='practice'){
-    groupPracticeRoutine=routineDraft.map(m=>({...m})); groupSkillId=groupPracticeRoutine[0].id;
+    groupPracticeRoutine=routineDraft.map(m=>({id:m.id,b:m.b})); groupSkillId=groupPracticeRoutine[0].id;
     store.set('jmp_group_practice_v1',JSON.stringify(groupPracticeRoutine));
   }else{
     groupRoutine=routineDraft.map(m=>({...m}));
