@@ -232,7 +232,7 @@ html.embed .app.running .side-note{bottom:24px}
 <body>
 <main class="app stage-follow" id="app">
   <aside class="side">
-    <div class="brand">AI <em>KICK</em> MASTER</div><div class="version">GROUP COMBINATION · v1.3</div>
+    <div class="brand">AI <em>KICK</em> MASTER</div><div class="version">GROUP COMBINATION · v1.4</div>
     <div class="control-stack">
       <div class="tabs" role="tablist"><button class="on" data-stage="follow">따라하기</button><button data-stage="call">구령만</button></div>
       <div class="stage-hint" id="stageHint"></div>
@@ -491,18 +491,19 @@ const goal=()=>+$('kickGoal').value||10;
 const done=()=>isCombo()?bundles:count;
 
 function fastTempo(){return +$('bpm').value>120;}
-function voiceRate(){return fastTempo()?3.2:1.8;}
+function voiceRate(){return 1.8;}
+const READY_RATE=1.0, READY_MS=2400;
+function callOnly(){return stage==='call'&&!fastTempo();}
 function hitDelay(){return fastTempo()?180:HIT_MS;}
 function sayGap(){return fastTempo()?.04:SAY_GAP;}
 function callLead(){return fastTempo()?.06:CALL_LEAD;}
-function speechSec(t){const syl=(t.match(/[가-힣]/g)||[]).length,other=(t.match(/[A-Za-z0-9]/g)||[]).length,pause=(t.match(/[,·]/g)||[]).length;return syl*.16/voiceRate()+other*.08+pause*.18+.15;}
+function speechSec(t,rate=voiceRate()){const syl=(t.match(/[가-힣]/g)||[]).length,other=(t.match(/[A-Za-z0-9]/g)||[]).length,pause=(t.match(/[,·]/g)||[]).length;return syl*.16/rate+other*.08+pause*.18+.15;}
 function compile(){
   const r=routine(), n=r.cycle.length;
   const steps=r.cycle.map((s,i)=>{
     let q={...s};if(q.t!=='ready'&&r.id!=='custom'){
       const h=$('kickHeight').value,word=h==='face'?'얼굴':'몸통';q.t=q.t.replace(/-(right|left)$/,`-${h}-$1`);q.n+=' '+word;q.chip=q.n;q.d=`${word} 높이로 찹니다. `+q.d.replace('몸통 높이로 찹니다','균형을 잡습니다');if(q.call)q.call+=' '+word;
     }
-    if(fastTempo()&&q.t!=='ready'){q.chain=false;q.call=q.n.replace('오른발','오른').replace('왼발','왼').replace('앞차기','앞').replace('돌려차기','돌려');}
     return {...q,i,act:q.t!=='ready',counted:q.t!=='ready'&&!q.quiet,announce:null};
   });
   steps.forEach(s=>{s.phraseStart=s.act&&!s.chain;});
@@ -535,13 +536,13 @@ function countWord(st){return COUNT_WORD[((isCombo()?st.ord:count)-1+10)%10];}
 let _compiling=null;
 
 function callTextFor(st){
-  if(!st||!st.act||!st.phraseStart) return null;
+  if(fastTempo()||!st||!st.act||!st.phraseStart) return null;
   return st.phrase;
 }
 const firstPhrase=()=>{const i=TL.steps.findIndex(s=>s.phraseStart);return i<0?0:i;};
 function phraseStartOf(i){const n=TL.n;let j=i;for(let k=0;k<n&&TL.steps[j].chain;k++)j=(j-1+n)%n;return j;}
 function nextActionAfter(i){const n=TL.n;for(let k=1;k<=n;k++){const j=(i+k)%n;if(TL.steps[j].act)return j;}return i;}
-function introBeats(text,warm){return Math.max(2,Math.ceil((SAY_DELAY+(warm?WARM_LEAD+.25:0)+speechSec(text||'')+CALL_LEAD)/(TL.beatMs/1000)));}
+function introBeats(text,warm){return Math.max(2,Math.ceil((SAY_DELAY+(warm?WARM_LEAD+.25:0)+speechSec(text||'',fastTempo()?READY_RATE:voiceRate())+CALL_LEAD)/(TL.beatMs/1000)));}
 
 function curStep(){return seg.mode==='intro'?seg.intro:TL.steps[seg.si];}
 function runFrom(idx,why){
@@ -550,7 +551,7 @@ function runFrom(idx,why){
   const target=TL.steps[idx], r=routine();
   const introName=why==='again'?'다시 한 번':'발차기 준비';
   seg={tok,mode:'intro',si:idx,target:idx,beat:0,g:0,anchor:performance.now(),
-       intro:{n:introName,t:'ready',b:introBeats(callTextFor(target),why==='start'||why==='resume')+Math.ceil(1800/TL.beatMs),d:why==='set'?`${setNo}세트 시작`:r.intro.d,intro:true}};
+       intro:{n:introName,t:'ready',b:introBeats(fastTempo()?target.n:callTextFor(target),why==='start'||why==='resume')+Math.ceil(READY_MS/TL.beatMs),d:why==='set'?`${setNo}세트 시작`:r.intro.d,intro:true}};
   V.idle=false;
   tick(tok);
 }
@@ -576,7 +577,7 @@ function finishStep(st){
 }
 function stepStart(st){
   const now=performance.now(); V.cur=st; V.stepAt=now;
-  if(st.intro){V.upcoming=TL.steps[seg.target];V.announced=false;speak(st.n);planSay(seg.target,1800);planCall(seg.target,now+st.b*TL.beatMs);paintStep(st);return;}
+  if(st.intro){V.upcoming=TL.steps[seg.target];V.announced=false;speak(st.n,READY_RATE);planSay(seg.target,READY_MS);planCall(seg.target,now+st.b*TL.beatMs,true);paintStep(st);return;}
   if(st.act){
     
     const hitMs=Math.min(hitDelay(),st.b*TL.beatMs*HIT_CAP);
@@ -601,12 +602,14 @@ function planSay(i,delayMs){
   sayTimer=setTimeout(()=>{if(tok!==segToken||paused||!running)return;V.announced=true;paintPreview();paintNext();paintStrip();},delayMs||0);
 }
 
-function planCall(i,whistleAt){
+function planCall(i,whistleAt,intro=false){
   const tok=segToken;clearTimeout(callTimer);
-  const t=callTextFor(TL.steps[i]);if(!t)return;
-  const now=performance.now(),lead=(speechSec(t)+callLead()+(warmCall?WARM_LEAD:0))*1000;
-  const at=Math.max(now+sayGap()*1000,whistleAt-lead);
-  callTimer=setTimeout(()=>{if(tok!==segToken||paused||!running)return;warmCall=false;const tt=callTextFor(TL.steps[i]);if(tt)speak(tt);},at-now);
+  if(fastTempo()&&!intro)return;
+  const t=fastTempo()?TL.steps[i].n:callTextFor(TL.steps[i]);if(!t)return;
+  const rate=fastTempo()?READY_RATE:voiceRate();
+  const now=performance.now(),lead=(speechSec(t,rate)+callLead()+(warmCall?WARM_LEAD:0))*1000;
+  const at=Math.max(now+(intro?READY_MS:sayGap()*1000),whistleAt-lead);
+  callTimer=setTimeout(()=>{if(tok!==segToken||paused||!running)return;warmCall=false;if(t)speak(t,rate);},at-now);
 }
 function beatsUntilUpcoming(){
   if(!seg||!V.upcoming) return 0;
@@ -741,7 +744,7 @@ function impactSound(heavy){
 function chime(){[523,659,784,1047].forEach((f,i)=>setTimeout(()=>tone(f,.22,'sine',.1),i*110));}
 function pickVoice(){try{const vs=speechSynthesis.getVoices()||[];koVoice=vs.find(v=>/ko[-_]KR/i.test(v.lang)&&/Google|Neural|Natural/i.test(v.name))||vs.find(v=>/^ko/i.test(v.lang))||null;}catch(e){}}
 try{pickVoice();speechSynthesis.onvoiceschanged=pickVoice;}catch(e){}
-function speak(t){if(!t)return;try{const s=window.speechSynthesis;if(!s)return;s.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='ko-KR';u.rate=voiceRate();if(koVoice)u.voice=koVoice;s.speak(u);}catch(e){}}
+function speak(t,rate=voiceRate()){if(!t)return;try{const s=window.speechSynthesis;if(!s)return;s.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='ko-KR';u.rate=rate;if(koVoice)u.voice=koVoice;s.speak(u);}catch(e){}}
 
 function warmVoice(t){try{const s=window.speechSynthesis;if(!s)return;if(!koVoice)pickVoice();s.cancel();const u=new SpeechSynthesisUtterance(t||'준비');u.lang='ko-KR';u.rate=voiceRate();u.volume=0;if(koVoice)u.voice=koVoice;s.speak(u);}catch(e){}}
 function cancelSpeech(){try{window.speechSynthesis&&speechSynthesis.cancel();}catch(e){}}
@@ -764,7 +767,7 @@ try{HOST&&HOST.document.addEventListener('fullscreenchange',paintFs);}catch(e){}
 function paintAll(){paintHead();paintStep(V.cur);paintCounts();paintNext();paintStrip();paintClassCue();}
 function paintHead(){
   const r=routine();$('routineName').textContent=r.name;
-  $('stageHint').textContent=P.hints[stage];
+  $('stageHint').textContent=fastTempo()?'고속 · 준비와 첫 동작은 천천히 안내합니다. 운동 중에는 화면을 보고 호루라기에 찹니다.':P.hints[stage];
   document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.stage===stage));
   const app=$('app');[...app.classList].filter(c=>c.startsWith('stage-')).forEach(c=>app.classList.remove(c));app.classList.add('stage-'+stage);
   const note=TL.capped?` · <i>구령 이름을 말할 시간이 필요해 ${TL.bpm}으로 진행</i>`:'';
@@ -777,7 +780,7 @@ function paintPreview(){
   if(!previewing()) return;
   const u=V.upcoming,h=$('cue'),p=$('detail');
   h.className='';
-  h.innerHTML=stage==='call'?(u.counted?`${u.ord}<span style="color:#5b6577"> / ${u.of}</span>`:'·'):P.label(u);
+  h.innerHTML=callOnly()?(u.counted?`${u.ord}<span style="color:#5b6577"> / ${u.of}</span>`:'·'):P.label(u);
   p.textContent=stage==='follow'?(u.d||''):'';
   paintPreviewBeat();fitCue();
 }
@@ -786,7 +789,7 @@ function paintStep(st){
   if(st&&!st.intro&&!st.act&&previewing()){paintPreview();paintNext();paintStrip();return;}
   const h=$('cue'),p=$('detail'),b=$('beat');
   if(!st){h.className='';h.innerHTML=P.label({n:routine().intro.n,t:'ready'});p.textContent=V.idle?'시작을 누르면 3초 뒤 시작합니다':routine().intro.d;b.textContent='READY';paintStrip();fitCue();return;}
-  const call=stage==='call';
+  const call=callOnly();
   if(st.intro){h.className='soft';h.innerHTML=st.n;p.textContent=st.d||'';b.textContent='준비';}
   else if(st.act){
     h.className='';
@@ -799,7 +802,7 @@ function paintStep(st){
 function paintNext(){
   const box=$('stNextBox'),u=V.upcoming;
   if(!u){$('stNext').textContent='—';$('stWhen').textContent='대기';box.classList.remove('on');return;}
-  $('stNext').innerHTML=stage==='call'?'구령을 들어요':P.label(u);
+  $('stNext').innerHTML=callOnly()?'구령을 들어요':P.label(u);
   box.classList.toggle('on',!!V.announced);
   if(running&&phase==='run'){const b=beatsUntilUpcoming();$('stWhen').textContent=V.announced?(b<=0?'지금':`${b}박 후`):'대기';}
   else $('stWhen').textContent=running?'곧':'첫 동작';
@@ -821,7 +824,7 @@ function drawBeat(st){
 }
 function paintStrip(){
   const el=$('strip');if(!TL){el.innerHTML='';return;}
-  const call=stage==='call',cur=V.cur&&!V.cur.intro?V.cur.i:-1,up=V.upcoming?V.upcoming.i:-1;
+  const call=callOnly(),cur=V.cur&&!V.cur.intro?V.cur.i:-1,up=V.upcoming?V.upcoming.i:-1;
   let bundleStart=0;
   if(cur>=0&&isCombo()){for(let k=1;k<=TL.n;k++){const q=(cur-k+TL.n)%TL.n;if(TL.steps[q].end){bundleStart=(q+1)%TL.n;break;}}}
   el.innerHTML=TL.steps.map((s,i)=>{
@@ -862,7 +865,7 @@ function frame(now){
   if(W&&H){
     if(gc.width!==Math.round(W*dpr)||gc.height!==Math.round(H*dpr)){gc.width=Math.round(W*dpr);gc.height=Math.round(H*dpr);}
     gx.setTransform(dpr,0,0,dpr,0,0);gx.clearRect(0,0,W,H);
-    V.stage=stage;
+    V.stage=fastTempo()?'follow':stage;
     try{P.draw(gx,W,H,now,V);}catch(e){}
   }
   requestAnimationFrame(frame);
