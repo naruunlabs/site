@@ -174,6 +174,12 @@ html.embed .side-note{bottom:62px}
 .km-box{width:min(1040px,100%);max-height:94dvh;overflow:auto;background:#111820;border:1px solid #ffffff30;border-radius:20px;padding:24px}.km-box p{color:#b4becb;margin:8px 0 16px}.km-body{display:grid;grid-template-columns:.82fr 1.18fr;gap:18px}.km-body section{min-width:0;background:#ffffff05;border:1px solid #ffffff18;border-radius:12px;padding:14px}.km-body h3{margin-bottom:12px}.km-body small{font-size:13px;color:var(--acc-lit)}
 #comboSkills{display:grid;grid-template-columns:1fr 1fr;gap:8px}#comboOrder{max-height:40vh;overflow:auto}.km-box button{border:1px solid #ffffff25;border-radius:8px;padding:10px;background:#ffffff09;min-height:42px}.km-box button:hover{background:#ffffff19}.km-row{display:flex;align-items:center;gap:6px;margin-bottom:8px}.km-row span{flex:1;min-width:0;font-size:14px}.km-row button{padding:6px;min-width:34px}.km-mine{margin-top:18px;border-top:1px solid #ffffff20;padding-top:12px}.km-mine>span{font-size:12px;color:#aab3c2;margin-left:12px}#comboSlots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:8px}.km-slot{display:flex;flex-wrap:wrap;align-items:center;gap:6px}.km-slot strong{font-size:12px;width:100%}.km-actions{display:flex;gap:8px}.km-actions #comboUse{margin-left:auto;background:#923042}.km-box button:disabled{opacity:.35;cursor:default}
 @media(max-width:760px){#comboModal{padding:8px}.km-box{padding:16px}.km-body{grid-template-columns:1fr}#comboOrder{max-height:28vh}#comboSlots{grid-template-columns:1fr}.km-slot strong{width:auto;margin-right:auto}}
+
+.reentry{position:absolute;z-index:8;left:50%;top:50%;transform:translate(-50%,-50%);width:min(660px,calc(100% - 550px));min-width:220px;text-align:center;padding:20px 14px;background:radial-gradient(ellipse,#071017ed 30%,#071017a8 65%,transparent 75%);pointer-events:none}.reentry[hidden]{display:none}.reentry>span{display:block;font-size:clamp(18px,2.2vw,30px);font-weight:900;color:#bfe8ee;letter-spacing:.04em}.reentry>b{display:block;font:1000 clamp(110px,16vw,200px)/1 system-ui,sans-serif;color:#fff;text-shadow:0 0 32px #67e8f955}.reentry>p{font-size:clamp(16px,2.2vw,28px);font-weight:900;color:var(--acc-lit);margin:14px 0}.reentry-dots{display:flex;justify-content:center;gap:10px;margin-top:14px}.reentry-dots i{width:14px;height:14px;border-radius:50%;background:#ffffff26}.reentry-dots i.on{background:#a5f3fc;box-shadow:0 0 12px #67e8f955}#stage.reentry-active>.cue{visibility:hidden}#stage.reentry-active>.arena{opacity:.28}
+@media(max-width:860px){.reentry{width:calc(100% - 390px);min-width:180px}.reentry>b{font-size:clamp(100px,17vw,150px)}}
+
+.gw-sequence{border:1px solid #75d9e644;background:#15343a66;border-radius:12px;padding:14px 18px}.gw-sequence>b{font-size:14px;color:#a5f3fc}.gw-sequence p{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}.gw-sequence p span{font-size:14px;font-weight:800;background:#ffffff0c;border-radius:6px;padding:7px 10px}.gw-sequence small{font-size:12px;color:#bacdd1}#countNum[data-preview="true"]{font-size:clamp(34px,5vw,68px)}
+.tabs[hidden]{display:none}
 </style>
 <style id="public-group-lobby">
 .group-welcome{position:absolute;z-index:6;left:290px;right:36px;top:108px;bottom:82px;display:flex;flex-direction:column;gap:18px;overflow:auto;overscroll-behavior:contain;padding:8px 12px 12px;color:#f1f6f4;text-shadow:none;scrollbar-width:thin}
@@ -232,10 +238,11 @@ html.embed .app.running .side-note{bottom:24px}
 <body>
 <main class="app stage-follow" id="app">
   <aside class="side">
-    <div class="brand">AI <em>KICK</em> MASTER</div><div class="version">GROUP COMBINATION · v1.4</div>
+    <div class="brand">AI <em>KICK</em> MASTER</div><div class="version">GROUP COMBINATION · v1.5</div>
     <div class="control-stack">
       <div class="tabs" role="tablist"><button class="on" data-stage="follow">따라하기</button><button data-stage="call">구령만</button></div>
       <div class="stage-hint" id="stageHint"></div>
+      <label class="field"><span>진행 신호</span><select id="voiceMode"><option value="rhythm">리듬 집중 · 화면 + 호루라기</option><option value="coach">음성 코치 · 120 이하 연습용</option></select></label>
       <label class="field"><span>루틴</span><select id="routine"></select></label>
       <div class="grid"><label class="field"><span>수업 진행</span><select id="lessonFlow" title="단계 자동 = 따라하기 세트 뒤 구령만 세트 (팀 교대면 A·B 가 단계마다 한 번씩)"><option value="single">한 단계 반복</option><option value="ladder">단계 자동</option></select></label><label class="field"><span>팀 운영</span><select id="teamMode"><option value="all">전원 함께</option><option value="rotate">A/B팀 교대</option></select></label></div>
       <div class="class-cue" id="classCue"></div>
@@ -256,14 +263,15 @@ html.embed .app.running .side-note{bottom:24px}
   <section class="stage" id="stage">
     <section class="group-welcome" id="groupWelcome" aria-label="단체 수업 선택">
       <header><div class="gw-eyebrow">단체 수업 · 카메라 없이 함께</div><h2>오늘은 어떤 운동을 할까요?</h2><p class="gw-intro">루틴을 고르고, 왼쪽에서 속도와 팀 운영을 맞춰 주세요.</p></header>
-      <div class="gw-cards" id="groupWelcomeCards"></div>
+      <div class="gw-sequence"><b>선택한 루틴 순서</b><p id="groupWelcomeSequence"></p><small>순서를 먼저 익히고 시작하세요. 운동 중에는 박자 숫자와 휘슬에 집중합니다.</small></div><div class="gw-cards" id="groupWelcomeCards"></div>
       <footer class="gw-footer"><div class="gw-summary" id="groupWelcomeSummary" aria-live="polite"></div><button class="gw-start" id="groupWelcomeStart" type="button">이 수업 시작 ▶</button></footer>
-      <div class="gw-note">구령을 듣고 휘슬에 맞춰 운동하세요. 진행 횟수는 화면 기준이며, 학생의 실제 성공 횟수는 측정하지 않습니다.</div>
+      <div class="gw-note">순서를 확인하고 큰 박자 숫자와 휘슬에 맞춰 운동하세요. 진행 횟수는 화면 기준이며, 학생의 실제 성공 횟수는 측정하지 않습니다.</div>
     </section>
 
     <div class="top"><div class="routine-name" id="routineName"></div><div class="progress"><i id="progress"></i></div><div class="meta"><span id="countText"></span><span class="stage-class-cue" id="stageClassCue"></span><span id="setText"></span></div></div>
     <button class="fs" id="fsBtn" type="button">전체화면</button>
     <div class="cue"><div class="beat" id="beat">READY</div><h2 id="cue">준비 자세</h2><p id="detail"></p><div class="dots" id="dots"></div></div>
+    <div class="reentry" id="reentry" hidden aria-label="다음 발차기까지 남은 박자"><span id="reentryLabel">다음 묶음까지</span><b id="reentryNum">3</b><span class="reentry-unit">박 후 시작</span><p id="reentryMove"></p><div id="reentryDots" class="reentry-dots"></div></div>
     <div class="floor"></div>
     <div class="arena" id="arena"><img class="opp-img" src="assets/chrome-fighter-guard.webp" alt="" aria-hidden="true"><canvas class="guide-canvas" id="guideCanvas"></canvas></div>
 
@@ -405,7 +413,7 @@ function drawKickGuide(gx,W,H,now,type,alpha=1,ghost=false){
 
 function drawImpact(gx,W,H,now,V){
   const age=now-V.impactAt;if(!V.impactStep||V.impactAt<0||age<0||age>=430)return;
-  const end={x:W/2,y:H*.35},p=age/430,ease=1-Math.pow(1-p,3),power=1-p;
+  const end=kickGeom(W,H,V.impactStep.t).end,p=age/430,ease=1-Math.pow(1-p,3),power=1-p;
   gx.save();gx.translate(end.x,end.y);gx.globalCompositeOperation='lighter';
   const glow=gx.createRadialGradient(0,0,0,0,0,54+32*ease);
   glow.addColorStop(0,`rgba(255,255,255,${power*.96})`);glow.addColorStop(.2,`rgba(255,220,100,${power*.72})`);glow.addColorStop(1,'rgba(255,70,50,0)');
@@ -466,7 +474,7 @@ const store={
   save(){try{localStorage.setItem(P.storeKey,JSON.stringify(settingsNow()))}catch(e){}}
 };
 function settingsNow(){
-  const o={...store.load(),stage,routine:P.routines[ri].id,bpm:+$('bpm').value,sets:+$('sets').value,rest:+$('rest').value,kickHeight:$('kickHeight').value,lessonFlow:$('lessonFlow').value,teamMode:$('teamMode').value};
+  const o={...store.load(),stage,routine:P.routines[ri].id,bpm:+$('bpm').value,sets:+$('sets').value,rest:+$('rest').value,voiceMode:$('voiceMode').value,kickHeight:$('kickHeight').value,lessonFlow:$('lessonFlow').value,teamMode:$('teamMode').value};
   o['goal_'+routine().type]=+$('kickGoal').value;
   if($('stance')) o.stance=$('stance').value;
   return o;
@@ -491,9 +499,11 @@ const goal=()=>+$('kickGoal').value||10;
 const done=()=>isCombo()?bundles:count;
 
 function fastTempo(){return +$('bpm').value>120;}
-function voiceRate(){return 1.8;}
+function voiceRate(){return 1.0;}
+function namesVoiced(){return !fastTempo()&&$('voiceMode').value==='coach';}
+function signalLabel(){return namesVoiced()?STAGE_NAME[stage]:'리듬 집중';}
 const READY_RATE=1.0, READY_MS=2400;
-function callOnly(){return stage==='call'&&!fastTempo();}
+function callOnly(){return stage==='call'&&namesVoiced();}
 function hitDelay(){return fastTempo()?180:HIT_MS;}
 function sayGap(){return fastTempo()?.04:SAY_GAP;}
 function callLead(){return fastTempo()?.06:CALL_LEAD;}
@@ -536,7 +546,7 @@ function countWord(st){return COUNT_WORD[((isCombo()?st.ord:count)-1+10)%10];}
 let _compiling=null;
 
 function callTextFor(st){
-  if(fastTempo()||!st||!st.act||!st.phraseStart) return null;
+  if(!namesVoiced()||!st||!st.act||!st.phraseStart) return null;
   return st.phrase;
 }
 const firstPhrase=()=>{const i=TL.steps.findIndex(s=>s.phraseStart);return i<0?0:i;};
@@ -551,7 +561,7 @@ function runFrom(idx,why){
   const target=TL.steps[idx], r=routine();
   const introName=why==='again'?'다시 한 번':'발차기 준비';
   seg={tok,mode:'intro',si:idx,target:idx,beat:0,g:0,anchor:performance.now(),
-       intro:{n:introName,t:'ready',b:introBeats(fastTempo()?target.n:callTextFor(target),why==='start'||why==='resume')+Math.ceil(READY_MS/TL.beatMs),d:why==='set'?`${setNo}세트 시작`:r.intro.d,intro:true}};
+       intro:{n:introName,t:'ready',b:namesVoiced()?introBeats(callTextFor(target),why==='start'||why==='resume')+Math.ceil(READY_MS/TL.beatMs):Math.ceil(READY_MS/TL.beatMs)+3,d:why==='set'?`${setNo}세트 시작`:r.intro.d,intro:true}};
   V.idle=false;
   tick(tok);
 }
@@ -559,6 +569,9 @@ function tick(tok){
   if(tok!==segToken||!running||paused) return;
   let st=curStep();
   if(seg.beat>=st.b){
+    
+    if(st.intro&&window.speechSynthesis?.speaking&&performance.now()-V.stepAt<12000){tickTimer=setTimeout(()=>tick(tok),80);return;}
+    if(st.intro)seg.anchor=performance.now()-seg.g*TL.beatMs;
     if(!finishStep(st)) return;
     if(seg.mode==='intro'){seg.mode='cycle';seg.si=seg.target;} else seg.si=(seg.si+1)%TL.n;
     seg.beat=0; st=curStep();
@@ -571,6 +584,7 @@ function tick(tok){
 }
 function finishStep(st){
   if(st.intro) return true;
+  if(st.lastInSet){if(isCombo()){bundles++;totalDone++;}paintCounts();endSet(runToken);return false;}
   if(st.end){bundles++;if(isCombo())totalDone++;paintCounts();if(isCombo()&&bundles>=goal()){endSet(runToken);return false;}}
   if(!isCombo()&&st.counted&&count>=goal()){endSet(runToken);return false;}
   return true;
@@ -584,15 +598,23 @@ function stepStart(st){
     V.impactStep=st;V.impactAt=now+hitMs;V.cueAt=now;
     if(st.counted){count++;if(!isCombo())totalDone++;}
     if(st.quiet) P.soft(st); else P.hit(st);
-    const nx=nextActionAfter(st.i);V.upcoming=TL.steps[nx];V.announced=false;
+    const nx=nextActionAfter(st.i);st.lastInSet=endsSetAfter(st,nx);
+    V.upcoming=st.lastInSet?null:TL.steps[nx];V.announced=false;
+    if(st.lastInSet){clearTimeout(sayTimer);clearTimeout(callTimer);}
     const tok=segToken;clearTimeout(hitTimer);
     hitTimer=setTimeout(()=>{if(tok!==segToken||paused||!running)return;impactNow(st,nx);},st.quiet?Math.min(120,hitMs):hitMs);
   }
   paintStep(st);paintCounts();
 }
 
+function endsSetAfter(st,nx){
+  if(!isCombo())return st.counted&&count>=goal();
+  let endings=0;for(let k=1;k<=TL.n;k++){const i=(st.i+k)%TL.n;if(TL.steps[i].end)endings++;if(i===nx)break;}
+  return bundles+endings>=goal();
+}
 function impactNow(st,nx){
   if(!st.quiet){P.impact(st);if(st.kiai&&stage!=='call')showKiai();}
+  if(st.lastInSet){paintNext();return;}
   planSay(nx,st.quiet?0:sayGap()*1000);
   planCall(nx,V.cueAt+TL.steps[nx].window*TL.beatMs);
 }
@@ -604,16 +626,16 @@ function planSay(i,delayMs){
 
 function planCall(i,whistleAt,intro=false){
   const tok=segToken;clearTimeout(callTimer);
-  if(fastTempo()&&!intro)return;
-  const t=fastTempo()?TL.steps[i].n:callTextFor(TL.steps[i]);if(!t)return;
-  const rate=fastTempo()?READY_RATE:voiceRate();
+  if(!namesVoiced())return;
+  const t=callTextFor(TL.steps[i]);if(!t)return;
+  const rate=voiceRate();
   const now=performance.now(),lead=(speechSec(t,rate)+callLead()+(warmCall?WARM_LEAD:0))*1000;
   const at=Math.max(now+(intro?READY_MS:sayGap()*1000),whistleAt-lead);
   callTimer=setTimeout(()=>{if(tok!==segToken||paused||!running)return;warmCall=false;if(t)speak(t,rate);},at-now);
 }
 function beatsUntilUpcoming(){
   if(!seg||!V.upcoming) return 0;
-  const st=curStep();let b=st.b-seg.beat;if(b<0)b=0;
+  const st=curStep();let b=st.b-Math.floor(Math.max(0,performance.now()-V.stepAt)/TL.beatMs);if(b<0)b=0;
   if(seg.mode==='intro') return b;
   for(let k=1;k<=TL.n;k++){const j=(seg.si+k)%TL.n;if(TL.steps[j]===V.upcoming)return b;b+=TL.steps[j].b;}
   return b;
@@ -629,18 +651,20 @@ async function start(){
   const first=TL.steps[firstPhrase()];
   V.upcoming=first;V.announced=true;V.cur=null;V.idle=false;
   paintAll();
-  $('countdown').hidden=false;$('countSub').textContent=`${STAGE_NAME[stage]} · 첫 동작 ${P.plain(first)}`;paintSeq($('cdSeq'));
-  warmVoice(callTextFor(first)||P.plain(first));   
-  for(const n of ['3','2','1','시작']){
+  $('countdown').hidden=false;$('countSub').textContent=`${signalLabel()} · 첫 동작 ${P.plain(first)}`;paintSeq($('cdSeq'));
+  $('countNum').dataset.preview='true';
+  warmVoice('발차기 준비');   
+  for(const n of ['순서 확인','순서 확인','순서 확인','준비']){
     if(token!==runToken) return;
-    $('countNum').classList.remove('pz');$('countNum').textContent=n;beep(n==='시작'?900:560);
+    $('countNum').classList.remove('pz');$('countNum').textContent=n;
     await sleep(700);
   }
   if(token!==runToken) return;
-  $('countdown').hidden=true;
+  $('countdown').hidden=true;$('countNum').dataset.preview='false';
   runFrom(firstPhrase(),'start');
 }
 async function endSet(token){
+  cancelSpeech();V.upcoming=null;V.announced=false;
   segToken++;clearTimeout(tickTimer);clearTimeout(sayTimer);clearTimeout(hitTimer);clearTimeout(callTimer);
   if(token!==runToken) return;
   if(setNo<+$('sets').value){
@@ -656,7 +680,7 @@ async function endSet(token){
 }
 function finishAll(){
   running=false;paused=false;phase='done';segToken++;clearTimeout(tickTimer);clearTimeout(sayTimer);clearTimeout(hitTimer);clearTimeout(callTimer);
-  keepAwake(false);speak('운동 끝');chime();
+  keepAwake(false);cancelSpeech();V.upcoming=null;V.announced=false;speak('운동 끝');chime();
   const sets=+$('sets').value;
   $('finishSum').innerHTML=`<div><span>세트</span><b>${sets}</b></div><div><span>완주</span><b>${totalDone}<small style="font-size:.5em;color:#aab3c2"> ${unit()}</small></b></div>`;
   $('finishScreen').hidden=false;$('beat').textContent='FINISH';
@@ -690,11 +714,12 @@ function resumeNow(){
   paused=false;trainingClock.resume();if(audio?.state==='suspended')audio.resume().catch(()=>{});
   keepAwake(true);
   if(phase==='run'&&resumeIdx!=null) resumeRun(resumeIdx);
-  else if(phase==='countdown') $('countSub').textContent=`${STAGE_NAME[stage]} · 첫 동작 ${P.plain(TL.steps[firstPhrase()])}`;
+  else if(phase==='countdown') $('countSub').textContent=`${signalLabel()} · 첫 동작 ${P.plain(TL.steps[firstPhrase()])}`;
   setControls();
 }
 async function resumeRun(idx){
   const tok=++resumeToken, token=runToken;phase='resume';setControls();
+  $('countNum').dataset.preview='false';
   $('countdown').hidden=false;$('countSub').textContent=`이어서 · ${P.plain(TL.steps[idx])}`;
   for(const n of ['3','2','1']){if(tok!==resumeToken||token!==runToken)return;$('countNum').classList.remove('pz');$('countNum').textContent=n;beep(560);await sleep(1000);}
   if(tok!==resumeToken||token!==runToken) return;
@@ -767,9 +792,12 @@ try{HOST&&HOST.document.addEventListener('fullscreenchange',paintFs);}catch(e){}
 function paintAll(){paintHead();paintStep(V.cur);paintCounts();paintNext();paintStrip();paintClassCue();}
 function paintHead(){
   const r=routine();$('routineName').textContent=r.name;
-  $('stageHint').textContent=fastTempo()?'고속 · 준비와 첫 동작은 천천히 안내합니다. 운동 중에는 화면을 보고 호루라기에 찹니다.':P.hints[stage];
+  $('stageHint').textContent=namesVoiced()?'연습용 · 자연스러운 말 속도로 안내합니다. 구령이 들어갈 만큼 진행 속도를 조절합니다.':'순서는 준비 화면에서 확인합니다. 운동 중에는 큰 박자 숫자를 보고 호루라기에 찹니다. 발차기 이름은 말하지 않습니다.';
   document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.stage===stage));
-  const app=$('app');[...app.classList].filter(c=>c.startsWith('stage-')).forEach(c=>app.classList.remove(c));app.classList.add('stage-'+stage);
+  const app=$('app');[...app.classList].filter(c=>c.startsWith('stage-')).forEach(c=>app.classList.remove(c));app.classList.add('stage-'+(namesVoiced()?stage:'follow'));
+  document.querySelector('.tabs').hidden=!namesVoiced();
+  $('voiceMode').querySelector('[value=coach]').disabled=fastTempo();
+  $('lessonFlow').querySelector('[value=ladder]').textContent=namesVoiced()?'단계 자동':'리듬 2회 반복 · 팀별 적용';
   const note=TL.capped?` · <i>구령 이름을 말할 시간이 필요해 ${TL.bpm}으로 진행</i>`:'';
   $('speedNote').innerHTML=`${isCombo()?'한 묶음':'동작 간격'} 약 <b>${TL.unitSec.toFixed(1)}초</b>${note}`;
   $('goalLab').textContent=isCombo()?'세트 목표 · 묶음':'세트 목표 · 횟수';
@@ -784,11 +812,23 @@ function paintPreview(){
   p.textContent=stage==='follow'?(u.d||''):'';
   paintPreviewBeat();fitCue();
 }
-function paintPreviewBeat(){const b=beatsUntilUpcoming();$('beat').textContent=b<=0?'준비':`준비 · ${b}박 후`;}
+function paintPreviewBeat(){const b=beatsUntilUpcoming();$('beat').textContent=b<=0?'준비':`준비 · ${b}박 후`;paintReentry();}
+function paintReentry(){
+  const el=$('reentry');let b=0,show=false,label='';
+  if(running&&!paused&&phase==='run'&&seg&&V.upcoming){
+    const st=curStep();b=beatsUntilUpcoming();
+    show=b>0&&(st.intro?b<=3:!st.act);
+    label=st.intro?'호루라기에 시작':isCombo()&&V.upcoming.ord===1?'다음 묶음까지':'다음 발차기까지';
+  }
+  el.hidden=!show;$('stage').classList.toggle('reentry-active',show);
+  if(!show)return;
+  $('reentryLabel').textContent=label;$('reentryNum').textContent=String(b);$('reentryMove').textContent=V.upcoming.n;
+  $('reentryDots').innerHTML=Array.from({length:Math.min(b,8)},()=>'<i class="on"></i>').join('');
+}
 function paintStep(st){
   if(st&&!st.intro&&!st.act&&previewing()){paintPreview();paintNext();paintStrip();return;}
   const h=$('cue'),p=$('detail'),b=$('beat');
-  if(!st){h.className='';h.innerHTML=P.label({n:routine().intro.n,t:'ready'});p.textContent=V.idle?'시작을 누르면 3초 뒤 시작합니다':routine().intro.d;b.textContent='READY';paintStrip();fitCue();return;}
+  if(!st){h.className='';h.innerHTML=P.label({n:routine().intro.n,t:'ready'});p.textContent=V.idle?'순서를 확인하고 준비 안내 뒤 호루라기에 시작합니다':routine().intro.d;b.textContent='READY';paintStrip();fitCue();return;}
   const call=callOnly();
   if(st.intro){h.className='soft';h.innerHTML=st.n;p.textContent=st.d||'';b.textContent='준비';}
   else if(st.act){
@@ -801,7 +841,7 @@ function paintStep(st){
 }
 function paintNext(){
   const box=$('stNextBox'),u=V.upcoming;
-  if(!u){$('stNext').textContent='—';$('stWhen').textContent='대기';box.classList.remove('on');return;}
+  if(!u){$('stNext').textContent=running?'세트 마무리':'—';$('stWhen').textContent=running?'다음 동작 없음':'대기';box.classList.remove('on');return;}
   $('stNext').innerHTML=callOnly()?'구령을 들어요':P.label(u);
   box.classList.toggle('on',!!V.announced);
   if(running&&phase==='run'){const b=beatsUntilUpcoming();$('stWhen').textContent=V.announced?(b<=0?'지금':`${b}박 후`):'대기';}
@@ -820,7 +860,7 @@ function drawBeat(st){
   if(box.childElementCount!==n) box.innerHTML='<i></i>'.repeat(n);
   [...box.children].forEach((d,i)=>{d.className=i<seg.beat?'done':i===seg.beat?'on':'';});
   if(previewing())paintPreviewBeat();
-  paintNext();
+  paintNext();paintReentry();
 }
 function paintStrip(){
   const el=$('strip');if(!TL){el.innerHTML='';return;}
@@ -837,13 +877,12 @@ function paintStrip(){
 }
 function paintSeq(el){
   const r=routine();let steps=TL.steps;
-  if(isCombo()){const e=steps.findIndex(s=>s.end);steps=steps.slice(0,e+1);}
   el.innerHTML=steps.filter(s=>s.act).map(s=>`<span class="chip">${P.plain(s)}</span>`).join('<span class="arr" style="align-self:center">›</span>');
 }
 function fitCue(){const h=$('cue');h.style.fontSize='';const w=h.parentElement.clientWidth;if(!w)return;let fs=parseFloat(getComputedStyle(h).fontSize)||60;let guard=0;while(h.scrollWidth>w&&fs>24&&guard++<30){fs-=3;h.style.fontSize=fs+'px';}}
 function showKiai(){const k=$('kiai');k.classList.remove('show');void k.offsetWidth;k.classList.add('show');}
 function setControls(){
-  paintGroupWelcome();
+  paintGroupWelcome();paintReentry();
   const live=running&&!paused;
   $('start').textContent=running?(paused?'멈춤':'진행 중'):phase==='done'?'다시 시작':'시작';
   $('start').disabled=running;
@@ -865,7 +904,7 @@ function frame(now){
   if(W&&H){
     if(gc.width!==Math.round(W*dpr)||gc.height!==Math.round(H*dpr)){gc.width=Math.round(W*dpr);gc.height=Math.round(H*dpr);}
     gx.setTransform(dpr,0,0,dpr,0,0);gx.clearRect(0,0,W,H);
-    V.stage=fastTempo()?'follow':stage;
+    V.stage=namesVoiced()?stage:'follow';
     try{P.draw(gx,W,H,now,V);}catch(e){}
   }
   requestAnimationFrame(frame);
@@ -878,11 +917,11 @@ function fillGoals(keep){
   $('kickGoal').innerHTML=opts.map(v=>`<option value="${v}">${v}${t==='combo'?'묶음':'회'}</option>`).join('');
   $('kickGoal').value=String(opts.includes(+want)?want:P.defGoal[t]);
 }
-function onSetting(){if(running)return;store.save();idleView();setControls();}
+function onSetting(){if(running)return;if(fastTempo())$('voiceMode').value='rhythm';store.save();idleView();setControls();}
 function bind(){
   document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{if(running)return;stage=b.dataset.stage;onSetting();});
   $('routine').onchange=e=>{ri=+e.target.value;fillGoals();onSetting();};
-  ['bpm','kickGoal','sets','rest','kickHeight','stance','lessonFlow','teamMode'].forEach(id=>{if($(id))$(id).addEventListener('change',()=>{if(id==='lessonFlow'||id==='teamMode')syncLessonFlow();if(id==='sets'||id==='rest'){store.save();paintCounts();paintClassCue();paintGroupWelcome();return;}onSetting();setControls();});});
+  ['bpm','kickGoal','sets','rest','voiceMode','kickHeight','stance','lessonFlow','teamMode'].forEach(id=>{if($(id))$(id).addEventListener('change',()=>{if(id==='lessonFlow'||id==='teamMode')syncLessonFlow();if(id==='sets'||id==='rest'){store.save();paintCounts();paintClassCue();paintGroupWelcome();return;}onSetting();setControls();});});
   $('start').onclick=()=>{if(HOST&&running){reset();return;}start();};$('pause').onclick=togglePause;$('reset').onclick=reset;
   $('again').onclick=againBundle;$('fsBtn').onclick=toggleFs;
   $('finAgain').onclick=()=>{$('finishScreen').hidden=true;phase='idle';start();};
@@ -923,8 +962,9 @@ function paintGroupWelcome(){
   box.style.setProperty('--gw-accent',P.exitUrl.includes('strike')?'#d8b4fe':'#ff8994');
   box.querySelectorAll('[data-group-routine]').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.groupRoutine===ri)));
   const label=document.createElement('b');label.textContent=routine().name;
-  const details=document.createElement('span');details.textContent=`${STAGE_NAME[stage]} · ${$('teamMode').value==='rotate'?'A/B팀 교대':'전원 함께'} · ${$('sets').value}세트 · ${TL.bpm} BPM`;
+  const details=document.createElement('span');details.textContent=`${signalLabel()} · ${$('teamMode').value==='rotate'?'A/B팀 교대':'전원 함께'} · ${$('sets').value}세트 · ${TL.bpm} BPM · ${namesVoiced()?'음성 코치':'리듬 집중'}`;
   $('groupWelcomeSummary').replaceChildren(label,details);
+  $('groupWelcomeSequence').replaceChildren(...TL.steps.filter(s=>s.act).map((s,i)=>{const item=document.createElement('span');item.textContent=`${i+1}. ${s.n}`;return item;}));
 }
 
 function init(){
@@ -932,7 +972,8 @@ function init(){
   fillRoutines();
   const idx=P.routines.findIndex(r=>r.id===s.routine);ri=idx>=0?idx:0;$('routine').value=String(ri);
   if(STAGE_NAME[s.stage]) stage=s.stage;
-  for(const id of ['bpm','sets','rest','kickHeight','stance','lessonFlow','teamMode']) if($(id)&&s[id]!=null&&[...$(id).options].some(o=>o.value===String(s[id]))) $(id).value=String(s[id]);
+  for(const id of ['bpm','sets','rest','voiceMode','kickHeight','stance','lessonFlow','teamMode']) if($(id)&&s[id]!=null&&[...$(id).options].some(o=>o.value===String(s[id]))) $(id).value=String(s[id]);
+  if(fastTempo())$('voiceMode').value='rhythm';
   if(ladderOn())$('sets').value=String(ladderSets());
   fillGoals();bind();bindCombo();initGroupWelcome();idleView();setControls();paintFs();
   if($('finishNote')) $('finishNote').textContent='화면의 수업 진행 기록입니다. 학생의 실제 성공 횟수는 측정하지 않습니다.';
