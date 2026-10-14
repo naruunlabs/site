@@ -174,14 +174,13 @@ html.embed .side-note{bottom:62px}
 
 #comboModal{position:fixed;inset:0;z-index:1000;background:#000b;display:grid;place-items:center;padding:20px}#comboModal[hidden]{display:none}
 .km-box{width:min(1040px,100%);max-height:94dvh;overflow:auto;background:#111820;border:1px solid #ffffff30;border-radius:20px;padding:24px}.km-box p{color:#b4becb;margin:8px 0 16px}.km-body{display:grid;grid-template-columns:.82fr 1.18fr;gap:18px}.km-body section{min-width:0;background:#ffffff05;border:1px solid #ffffff18;border-radius:12px;padding:14px}.km-body h3{margin-bottom:12px}.km-body small{font-size:13px;color:var(--acc-lit)}
-#comboSkills{display:grid;grid-template-columns:1fr 1fr;gap:8px}#comboOrder{max-height:40vh;overflow:auto}.km-box button{border:1px solid #ffffff25;border-radius:8px;padding:10px;background:#ffffff09;min-height:42px}.km-box button:hover{background:#ffffff19}.km-row{display:flex;align-items:center;gap:6px;margin-bottom:8px}.km-row span{flex:1;min-width:0;font-size:14px}.km-row button{padding:6px;min-width:34px}.km-mine{margin-top:18px;border-top:1px solid #ffffff20;padding-top:12px}.km-mine>span{font-size:12px;color:#aab3c2;margin-left:12px}#comboSlots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:8px}.km-slot{display:flex;flex-wrap:wrap;align-items:center;gap:6px}.km-slot strong{font-size:12px;width:100%}.km-actions{display:flex;gap:8px}.km-actions #comboUse{margin-left:auto;background:#923042}.km-box button:disabled{opacity:.35;cursor:default}
+#comboSkills{display:grid;grid-template-columns:1fr 1fr;gap:8px}#comboOrder{max-height:40vh;overflow:auto}.km-box button{border:1px solid #ffffff25;border-radius:8px;padding:10px;background:#ffffff09;min-height:42px}.km-box button:hover{background:#ffffff19}.km-row{display:flex;align-items:center;gap:6px;margin-bottom:8px}.km-row span{flex:1;min-width:0;font-size:14px}.km-row button{padding:6px;min-width:34px}.km-mine{margin-top:18px;border-top:1px solid #ffffff20;padding-top:12px}.km-mine>span{font-size:12px;color:#aab3c2;margin-left:12px}#comboSlots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:8px}.km-slot{display:flex;flex-wrap:wrap;align-items:center;gap:6px}.km-slot strong{font-size:12px;width:100%}.km-actions{display:flex;gap:8px}.km-actions #comboUse{margin-left:auto;background:var(--acc-deep)}.km-box button:disabled{opacity:.35;cursor:default}
 @media(max-width:760px){#comboModal{padding:8px}.km-box{padding:16px}.km-body{grid-template-columns:1fr}#comboOrder{max-height:28vh}#comboSlots{grid-template-columns:1fr}.km-slot strong{width:auto;margin-right:auto}}
-
-.reentry{position:absolute;z-index:8;left:50%;top:50%;transform:translate(-50%,-50%);width:min(660px,calc(100% - 550px));min-width:220px;text-align:center;padding:20px 14px;background:radial-gradient(ellipse,#071017ed 30%,#071017a8 65%,transparent 75%);pointer-events:none}.reentry[hidden]{display:none}.reentry>span{display:block;font-size:clamp(18px,2.2vw,30px);font-weight:900;color:#bfe8ee;letter-spacing:.04em}.reentry>b{display:block;font:1000 clamp(110px,16vw,200px)/1 system-ui,sans-serif;color:#fff;text-shadow:0 0 32px #67e8f955}.reentry>p{font-size:clamp(16px,2.2vw,28px);font-weight:900;color:var(--acc-lit);margin:14px 0}.reentry-dots{display:flex;justify-content:center;gap:10px;margin-top:14px}.reentry-dots i{width:14px;height:14px;border-radius:50%;background:#ffffff26}.reentry-dots i.on{background:#a5f3fc;box-shadow:0 0 12px #67e8f955}#stage.reentry-active>.cue{visibility:hidden}#stage.reentry-active>.arena{opacity:.28}
-@media(max-width:860px){.reentry{width:calc(100% - 390px);min-width:180px}.reentry>b{font-size:clamp(100px,17vw,150px)}}
 
 .gw-sequence{border:1px solid #75d9e644;background:#15343a66;border-radius:12px;padding:14px 18px}.gw-sequence>b{font-size:14px;color:#a5f3fc}.gw-sequence p{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}.gw-sequence p span{font-size:14px;font-weight:800;background:#ffffff0c;border-radius:6px;padding:7px 10px}.gw-sequence small{font-size:12px;color:#bacdd1}#countNum[data-preview="true"]{font-size:clamp(34px,5vw,68px)}
 .tabs[hidden]{display:none}
+
+select[hidden]{display:none!important}.routine-name.team-turn{font-size:clamp(44px,5vw,66px);line-height:1.05;font-weight:1000;color:#fff;letter-spacing:.02em}.app.team-rotate .cue{top:calc(14.5% + 44px)}.rest #restLabel{font-size:clamp(24px,3vw,42px);color:#fff}
 </style>
 <style id="public-group-lobby">
 .group-welcome{position:absolute;z-index:6;left:290px;right:36px;top:108px;bottom:82px;display:flex;flex-direction:column;gap:18px;overflow:auto;overscroll-behavior:contain;padding:8px 12px 12px;color:#f1f6f4;text-shadow:none;scrollbar-width:thin}
@@ -238,17 +237,17 @@ html.embed .app.running .side-note{bottom:24px}
 </style>
 </head>
 <body>
+<select id="routine" hidden aria-hidden="true" tabindex="-1"></select>
 <main class="app stage-follow" id="app">
   <aside class="side">
-    <div class="brand">AI <em>KICK</em> MASTER</div><div class="version">GROUP COMBINATION · v1.6</div>
+    <div class="brand">AI <em>KICK</em> MASTER</div><div class="version">GROUP COMBINATION · v1.8</div>
     <div class="control-stack">
       <div class="tabs" role="tablist"><button class="on" data-stage="follow">따라하기</button><button data-stage="call">구령만</button></div>
       <div class="stage-hint" id="stageHint"></div>
       <label class="field"><span>진행 신호</span><select id="voiceMode"><option value="rhythm">리듬 집중 · 화면 + 호루라기</option><option value="coach">음성 코치 · 120 이하 연습용</option></select></label>
-      <label class="field"><span>루틴</span><select id="routine"></select></label>
-      <div class="grid"><label class="field"><span>수업 진행</span><select id="lessonFlow" title="단계 자동 = 따라하기 세트 뒤 구령만 세트 (팀 교대면 A·B 가 단계마다 한 번씩)"><option value="single">한 단계 반복</option><option value="ladder">단계 자동</option></select></label><label class="field"><span>팀 운영</span><select id="teamMode"><option value="all">전원 함께</option><option value="rotate">A/B팀 교대</option></select></label></div>
-      <div class="class-cue" id="classCue"></div>
       
+      <div class="grid"><label class="field"><span>수업 진행</span><select id="lessonFlow" title="단계 자동 = 따라하기 세트 뒤 구령만 세트 (팀 교대면 A·B 가 단계마다 한 번씩)"><option value="single">한 단계 반복</option><option value="ladder">단계 자동</option></select></label><label class="field"><span>팀 운영</span><select id="teamMode"><option value="all">전원 함께</option><option value="rotate">A/B팀 교대</option></select></label></div>
+
       <button type="button" id="comboOpen" style="padding:12px;border:1px solid var(--line);border-radius:10px;width:100%;margin:8px 0">콤보 설정</button><label class="field"><span>발차기 높이 · 기본 루틴</span><select id="kickHeight"><option value="body">몸통</option><option value="face">얼굴</option></select></label>
       <div class="grid"><label class="field"><span>속도</span><select id="bpm"><option value="60">느리게 · 60</option><option value="80" selected>기본 · 80</option><option value="100">빠르게 · 100</option><option value="120">매우 빠르게 · 120</option><option value="140">고속 · 140</option><option value="160">최고속 · 160</option></select></label><label class="field"><span>세트</span><select id="sets"><option>1</option><option selected>2</option><option>3</option><option>4</option></select></label></div>
       <div class="speed-note" id="speedNote"></div>
@@ -265,15 +264,14 @@ html.embed .app.running .side-note{bottom:24px}
   <section class="stage" id="stage">
     <section class="group-welcome" id="groupWelcome" aria-label="단체 수업 선택">
       <header><div class="gw-eyebrow">단체 수업 · 카메라 없이 함께</div><h2>오늘은 어떤 운동을 할까요?</h2><p class="gw-intro">루틴을 고르고, 왼쪽에서 속도와 팀 운영을 맞춰 주세요.</p></header>
-      <div class="gw-sequence"><b>선택한 루틴 순서</b><p id="groupWelcomeSequence"></p><small>순서를 먼저 익히고 시작하세요. 운동 중에는 박자 숫자와 휘슬에 집중합니다.</small></div><div class="gw-cards" id="groupWelcomeCards"></div>
+      <div class="gw-sequence"><b>선택한 루틴 순서</b><p id="groupWelcomeSequence"></p><small>순서를 먼저 익히고 시작하세요. 운동 중에는 발차기 이름을 보고 휘슬에 맞춰 찹니다.</small></div><div class="gw-cards" id="groupWelcomeCards"></div>
       <footer class="gw-footer"><div class="gw-summary" id="groupWelcomeSummary" aria-live="polite"></div><button class="gw-start" id="groupWelcomeStart" type="button">이 수업 시작 ▶</button></footer>
-      <div class="gw-note">순서를 확인하고 큰 박자 숫자와 휘슬에 맞춰 운동하세요. 진행 횟수는 화면 기준이며, 학생의 실제 성공 횟수는 측정하지 않습니다.</div>
+      <div class="gw-note">발차기 이름을 보고 휘슬에 맞춰 운동하세요. 진행 횟수는 화면 기준이며, 학생의 실제 성공 횟수는 측정하지 않습니다.</div>
     </section>
 
-    <div class="top"><div class="routine-name" id="routineName"></div><div class="progress"><i id="progress"></i></div><div class="meta"><span id="countText"></span><span class="stage-class-cue" id="stageClassCue"></span><span id="setText"></span></div></div>
+    <div class="top"><div class="routine-name" id="routineName"></div><div class="progress"><i id="progress"></i></div><div class="meta"><span id="countText"></span><span id="setText"></span></div></div>
     <button class="fs" id="fsBtn" type="button">전체화면</button>
     <div class="cue"><div class="beat" id="beat">READY</div><h2 id="cue">준비 자세</h2><p id="detail"></p><div class="dots" id="dots"></div></div>
-    <div class="reentry" id="reentry" hidden aria-label="다음 발차기까지 남은 박자"><span id="reentryLabel">다음 묶음까지</span><b id="reentryNum">3</b><span class="reentry-unit">박 후 시작</span><p id="reentryMove"></p><div id="reentryDots" class="reentry-dots"></div></div>
     <div class="floor"></div>
     <div class="arena" id="arena"><img class="opp-img" src="assets/chrome-fighter-guard.webp" alt="" aria-hidden="true"><canvas class="guide-canvas" id="guideCanvas"></canvas></div>
 
@@ -285,7 +283,7 @@ html.embed .app.running .side-note{bottom:24px}
     <div class="side-note">좌우는 학생 기준 · 화면 오른쪽 = 내 오른쪽</div>
     <div class="kiai" id="kiai">기합!</div>
     <div class="overlay countdown" id="countdown" hidden><div class="box"><b class="big" id="countNum">3</b><span class="sub" id="countSub"></span><div class="cd-seq" id="cdSeq"></div></div></div>
-    <div class="overlay rest" id="restScreen" hidden><div class="box"><span class="lab">다음 세트 준비</span><b class="big" id="restNum">15</b><em id="restNext"></em></div></div>
+    <div class="overlay rest" id="restScreen" hidden><div class="box"><span class="lab" id="restLabel">다음 세트 준비</span><b class="big" id="restNum">15</b><em id="restNext"></em></div></div>
     <div class="overlay finish" id="finishScreen" hidden><div class="card"><h3>운동 <em>끝</em></h3><div class="sum" id="finishSum"></div><p id="finishNote">화면의 수업 진행 기록입니다. 학생의 실제 성공 횟수는 측정하지 않습니다.</p><div class="row"><button class="again" id="finAgain">다시 시작</button><button id="finClose">닫기</button></div></div></div>
   </section>
 </main>
@@ -486,12 +484,11 @@ const rotateOn=()=>$('teamMode').value==='rotate';
 
 const ladderSets=()=>STAGE_ORDER.length*(rotateOn()?2:1);
 function stageForSet(n){const k=rotateOn()?Math.floor((n-1)/2):n-1;return STAGE_ORDER[Math.min(STAGE_ORDER.length-1,Math.max(0,k))];}
+function activeTeam(n=setNo){return n%2?'A팀':'B팀';}
 function paintClassCue(){
-  const focus=P.focus[(setNo-1)%P.focus.length],rotate=$('teamMode').value==='rotate';
-  let stageText;
-  if(rotate){const active=setNo%2?'A':'B',base=active==='A'?'B':'A';$('classCue').innerHTML=`<b>${active}팀 루틴</b> · ${base}팀 ${P.baseRole}<br><em>${base}팀 관찰 · ${focus}</em>`;stageText=`${active}팀 루틴 · ${base}팀 ${P.baseRole} · <em>${focus}</em>`;}
-  else{$('classCue').innerHTML=`<b>전원 함께</b><br><em>이번 세트 집중 · ${focus}</em>`;stageText=`전원 함께 · <em>${focus}</em>`;}
-  $('stageClassCue').innerHTML=stageText;
+ const rotate=rotateOn();$('app').classList.toggle('team-rotate',rotate);
+ const title=$('routineName');title.classList.toggle('team-turn',rotate);title.textContent=rotate?activeTeam():routine().name;
+ title.setAttribute('aria-label',rotate?activeTeam():routine().name);
 }
 function syncLessonFlow(){if(ladderOn()){$('sets').value=String(ladderSets());stage=stageForSet(setNo);}paintClassCue();}
 const routine=()=>P.routines[ri];
@@ -673,6 +670,7 @@ async function endSet(token){
     phase='rest';setControls();const sec=+$('rest').value;
     const first=TL.steps[firstPhrase()];
     $('restNext').innerHTML=`${setNo+1}세트 첫 동작 · <i>${P.plain(first)}</i>`;
+    $('restLabel').textContent=rotateOn()?activeTeam(setNo+1):'다음 세트 준비';
     $('restScreen').hidden=false;speak('잘했어요. 쉬어요');
     for(let n=sec;n>0;n--){if(token!==runToken)return;$('restNum').textContent=n;if(n<=3)beep(520);await sleep(1000);}
     if(token!==runToken) return;
@@ -793,8 +791,8 @@ try{HOST&&HOST.document.addEventListener('fullscreenchange',paintFs);}catch(e){}
 
 function paintAll(){paintHead();paintStep(V.cur);paintCounts();paintNext();paintStrip();paintClassCue();}
 function paintHead(){
-  const r=routine();$('routineName').textContent=r.name;
-  $('stageHint').textContent=namesVoiced()?'연습용 · 자연스러운 말 속도로 안내합니다. 구령이 들어갈 만큼 진행 속도를 조절합니다.':'순서는 준비 화면에서 확인합니다. 운동 중에는 큰 박자 숫자를 보고 호루라기에 찹니다. 발차기 이름은 말하지 않습니다.';
+  const r=routine();paintClassCue();
+  $('stageHint').textContent=namesVoiced()?'연습용 · 자연스러운 말 속도로 안내합니다. 구령이 들어갈 만큼 진행 속도를 조절합니다.':'순서는 준비 화면에서 확인합니다. 운동 중에는 발차기 이름을 보고 호루라기에 찹니다. 발차기 이름은 말하지 않습니다.';
   document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.stage===stage));
   const app=$('app');[...app.classList].filter(c=>c.startsWith('stage-')).forEach(c=>app.classList.remove(c));app.classList.add('stage-'+(namesVoiced()?stage:'follow'));
   document.querySelector('.tabs').hidden=!namesVoiced();
@@ -814,19 +812,7 @@ function paintPreview(){
   p.textContent=stage==='follow'?(u.d||''):'';
   paintPreviewBeat();fitCue();
 }
-function paintPreviewBeat(){const b=beatsUntilUpcoming();$('beat').textContent=b<=0?'준비':`준비 · ${b}박 후`;paintReentry();}
-function paintReentry(){
-  const el=$('reentry');let b=0,show=false,label='';
-  if(running&&!paused&&phase==='run'&&seg&&V.upcoming){
-    const st=curStep();b=beatsUntilUpcoming();
-    show=b>0&&(st.intro?b<=3:!st.act);
-    label=st.intro?'호루라기에 시작':isCombo()&&V.upcoming.ord===1?'다음 묶음까지':'다음 발차기까지';
-  }
-  el.hidden=!show;$('stage').classList.toggle('reentry-active',show);
-  if(!show)return;
-  $('reentryLabel').textContent=label;$('reentryNum').textContent=String(b);$('reentryMove').textContent=V.upcoming.n;
-  $('reentryDots').innerHTML=Array.from({length:Math.min(b,8)},()=>'<i class="on"></i>').join('');
-}
+function paintPreviewBeat(){const b=beatsUntilUpcoming();$('beat').textContent=b<=0?'준비':`준비 · ${b}박 후`;}
 function paintStep(st){
   if(st&&!st.intro&&!st.act&&previewing()){paintPreview();paintNext();paintStrip();return;}
   const h=$('cue'),p=$('detail'),b=$('beat');
@@ -868,7 +854,7 @@ function drawBeat(st){
   if(box.childElementCount!==n) box.innerHTML='<i></i>'.repeat(n);
   [...box.children].forEach((d,i)=>{d.className=i<seg.beat?'done':i===seg.beat?'on':'';});
   if(previewing())paintPreviewBeat();
-  paintNext();paintReentry();
+  paintNext();
 }
 function paintStrip(){
   const el=$('strip');if(!TL){el.innerHTML='';return;}
@@ -890,7 +876,7 @@ function paintSeq(el){
 function fitCue(){const h=$('cue');h.style.fontSize='';const w=h.parentElement.clientWidth;if(!w)return;let fs=parseFloat(getComputedStyle(h).fontSize)||60;let guard=0;while(h.scrollWidth>w&&fs>24&&guard++<30){fs-=3;h.style.fontSize=fs+'px';}}
 function showKiai(){const k=$('kiai');k.classList.remove('show');void k.offsetWidth;k.classList.add('show');}
 function setControls(){
-  paintGroupWelcome();paintReentry();
+  paintGroupWelcome();
   const live=running&&!paused;
   $('start').textContent=running?(paused?'멈춤':'진행 중'):phase==='done'?'다시 시작':'시작';
   $('start').disabled=running;
