@@ -169,6 +169,11 @@ html.embed .app.running .control-stack>:not(.actions){display:none}
 html.embed .side-note{bottom:62px}
 .meta .stage-class-cue{position:static;transform:none;padding:3px 12px;font-size:12.5px;background:rgba(5,6,9,.55);backdrop-filter:none;border-color:rgba(var(--acc-rgb),.35)}
 .meta{align-items:center;gap:8px}
+
+#comboModal{position:fixed;inset:0;z-index:1000;background:#000b;display:grid;place-items:center;padding:20px}#comboModal[hidden]{display:none}
+.km-box{width:min(1040px,100%);max-height:94dvh;overflow:auto;background:#111820;border:1px solid #ffffff30;border-radius:20px;padding:24px}.km-box p{color:#b4becb;margin:8px 0 16px}.km-body{display:grid;grid-template-columns:.82fr 1.18fr;gap:18px}.km-body section{min-width:0;background:#ffffff05;border:1px solid #ffffff18;border-radius:12px;padding:14px}.km-body h3{margin-bottom:12px}.km-body small{font-size:13px;color:var(--acc-lit)}
+#comboSkills{display:grid;grid-template-columns:1fr 1fr;gap:8px}#comboOrder{max-height:40vh;overflow:auto}.km-box button{border:1px solid #ffffff25;border-radius:8px;padding:10px;background:#ffffff09;min-height:42px}.km-box button:hover{background:#ffffff19}.km-row{display:flex;align-items:center;gap:6px;margin-bottom:8px}.km-row span{flex:1;min-width:0;font-size:14px}.km-row button{padding:6px;min-width:34px}.km-mine{margin-top:18px;border-top:1px solid #ffffff20;padding-top:12px}.km-mine>span{font-size:12px;color:#aab3c2;margin-left:12px}#comboSlots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:8px}.km-slot{display:flex;flex-wrap:wrap;align-items:center;gap:6px}.km-slot strong{font-size:12px;width:100%}.km-actions{display:flex;gap:8px}.km-actions #comboUse{margin-left:auto;background:#923042}.km-box button:disabled{opacity:.35;cursor:default}
+@media(max-width:760px){#comboModal{padding:8px}.km-box{padding:16px}.km-body{grid-template-columns:1fr}#comboOrder{max-height:28vh}#comboSlots{grid-template-columns:1fr}.km-slot strong{width:auto;margin-right:auto}}
 </style>
 <style id="public-group-lobby">
 .group-welcome{position:absolute;z-index:6;left:290px;right:36px;top:108px;bottom:82px;display:flex;flex-direction:column;gap:18px;overflow:auto;overscroll-behavior:contain;padding:8px 12px 12px;color:#f1f6f4;text-shadow:none;scrollbar-width:thin}
@@ -227,7 +232,7 @@ html.embed .app.running .side-note{bottom:24px}
 <body>
 <main class="app stage-follow" id="app">
   <aside class="side">
-    <div class="brand">AI <em>KICK</em> MASTER</div><div class="version">GROUP COMBINATION · v1.2</div>
+    <div class="brand">AI <em>KICK</em> MASTER</div><div class="version">GROUP COMBINATION · v1.3</div>
     <div class="control-stack">
       <div class="tabs" role="tablist"><button class="on" data-stage="follow">따라하기</button><button data-stage="call">구령만</button></div>
       <div class="stage-hint" id="stageHint"></div>
@@ -235,9 +240,10 @@ html.embed .app.running .side-note{bottom:24px}
       <div class="grid"><label class="field"><span>수업 진행</span><select id="lessonFlow" title="단계 자동 = 따라하기 세트 뒤 구령만 세트 (팀 교대면 A·B 가 단계마다 한 번씩)"><option value="single">한 단계 반복</option><option value="ladder">단계 자동</option></select></label><label class="field"><span>팀 운영</span><select id="teamMode"><option value="all">전원 함께</option><option value="rotate">A/B팀 교대</option></select></label></div>
       <div class="class-cue" id="classCue"></div>
       
-      <div class="grid"><label class="field"><span>속도</span><select id="bpm"><option value="60">느리게 · 60</option><option value="80" selected>기본 · 80</option><option value="100">빠르게 · 100</option><option value="120">매우 빠르게 · 120</option></select></label><label class="field"><span>세트</span><select id="sets"><option>1</option><option selected>2</option><option>3</option><option>4</option></select></label></div>
+      <button type="button" id="comboOpen" style="padding:12px;border:1px solid var(--line);border-radius:10px;width:100%;margin:8px 0">콤보 설정</button><label class="field"><span>발차기 높이 · 기본 루틴</span><select id="kickHeight"><option value="body">몸통</option><option value="face">얼굴</option></select></label>
+      <div class="grid"><label class="field"><span>속도</span><select id="bpm"><option value="60">느리게 · 60</option><option value="80" selected>기본 · 80</option><option value="100">빠르게 · 100</option><option value="120">매우 빠르게 · 120</option><option value="140">고속 · 140</option><option value="160">최고속 · 160</option></select></label><label class="field"><span>세트</span><select id="sets"><option>1</option><option selected>2</option><option>3</option><option>4</option></select></label></div>
       <div class="speed-note" id="speedNote"></div>
-      <div class="grid"><label class="field"><span id="goalLab">세트 목표</span><select id="kickGoal"></select></label><label class="field"><span>세트 휴식</span><select id="rest"><option value="10">10초</option><option value="15" selected>15초</option><option value="20">20초</option><option value="30">30초</option></select></label></div>
+      <div class="grid"><label class="field"><span id="goalLab">세트 목표</span><select id="kickGoal"></select></label><label class="field"><span>세트 휴식</span><select id="rest"><option value="5">5초</option><option value="10">10초</option><option value="15" selected>15초</option><option value="20">20초</option><option value="30">30초</option></select></label></div>
       <div class="actions">
         <button class="start" id="start">시작</button>
         <button id="pause" disabled>Ⅱ 일시정지</button><button id="reset">처음으로</button>
@@ -273,6 +279,12 @@ html.embed .app.running .side-note{bottom:24px}
     <div class="overlay finish" id="finishScreen" hidden><div class="card"><h3>운동 <em>끝</em></h3><div class="sum" id="finishSum"></div><p id="finishNote">화면의 수업 진행 기록입니다. 학생의 실제 성공 횟수는 측정하지 않습니다.</p><div class="row"><button class="again" id="finAgain">다시 시작</button><button id="finClose">닫기</button></div></div></div>
   </section>
 </main>
+<div id="comboModal" role="dialog" aria-modal="true" aria-labelledby="comboTitle" hidden>
+ <div class="km-box"><h2 id="comboTitle">발차기 콤보 설정</h2><p>동작을 눌러 순서대로 담으세요. 같은 동작도 여러 번 넣을 수 있습니다.</p>
+ <div class="km-body"><section><h3>동작 고르기</h3><div id="comboSkills"></div></section><section><h3>선택한 동작 <small id="comboSum"></small></h3><div id="comboOrder"></div></section></div>
+ <div class="km-mine"><strong>내 콤보</strong><span>이 기기에 3개까지 저장</span><div id="comboSlots"></div></div><p id="comboMessage" role="status"></p>
+ <div class="km-actions"><button id="comboClear">비우기</button><button id="comboClose">닫기</button><button id="comboUse">현재 콤보 사용</button></div></div>
+</div>
 <script>
 
 if(new URLSearchParams(location.search).get('product')==='strike'){try{location.replace('groupstrikemaster.html'+location.hash);}catch(e){}}
@@ -317,7 +329,7 @@ const PRODUCT={
   plain:s=>s.n,
   label:s=>String(s.n).replace(/^(오른발|왼발)/,m=>`<span class="sw-${m==='오른발'?'right':'left'}">${m}</span>`),
   hit:()=>whistle(),                                                     
-  impact:st=>{impactSound(/^round/.test(st.t));const a=document.getElementById('app');a.classList.remove('hit');void a.offsetWidth;a.classList.add('hit');},   
+  impact:st=>{impactSound(true);const a=document.getElementById('app');a.classList.remove('hit');void a.offsetWidth;a.classList.add('hit');},   
   soft:()=>tone(900,.04,'sine',.05),
   draw(ctx,W,H,now,V){
     const st=V.stage, up=V.upcoming, cur=V.cur;
@@ -328,6 +340,40 @@ const PRODUCT={
     drawImpact(ctx,W,H,now,V);
   }
 };
+const KICK_SKILLS=[];
+for(const kind of ['front','round'])for(const height of ['face','body'])for(const side of ['right','left']){
+ const n=`${side==='right'?'오른발':'왼발'} ${kind==='front'?'앞차기':'돌려차기'} ${height==='face'?'얼굴':'몸통'}`;
+ KICK_SKILLS.push({id:`${kind}-${height}-${side}`,n,t:`${kind}-${height}-${side}`,b:2,d:`${height==='face'?'얼굴':'몸통'} 높이로 차고 균형을 잡습니다`,chip:n});
+}
+const COMBO_KEY='akm_group_combos_v1';
+const validCombo=a=>Array.isArray(a)?a.filter(id=>KICK_SKILLS.some(s=>s.id===id)).slice(0,16):[];
+function readCombos(){try{const d=JSON.parse(localStorage.getItem(COMBO_KEY)||'{}');return {active:validCombo(d.active),slots:Array.from({length:3},(_,i)=>validCombo(d.slots?.[i]))};}catch(e){return {active:[],slots:[[],[],[]]};}}
+let comboData=readCombos(),comboDraft=[],comboFocus=null;
+const customRoutine={id:'custom',name:'내 발차기 콤보',type:'combo',intro:{n:'발차기 준비',d:'설정한 순서대로 연속해서 찹니다'},cycle:[]};
+function applyCombo(ids){customRoutine.cycle=[...validCombo(ids).map(id=>({...KICK_SKILLS.find(s=>s.id===id)})),R('준비 자세',2,'다음 묶음을 준비합니다',{end:true})];}
+applyCombo(comboData.active.length?comboData.active:['front-body-right','round-face-left']);
+PRODUCT.routines.push(customRoutine);
+function saveCombos(){try{localStorage.setItem(COMBO_KEY,JSON.stringify(comboData));return true;}catch(e){$('comboMessage').textContent='저장 공간을 확인해 주세요. 현재 화면에서는 사용할 수 있습니다.';return false;}}
+function openCombo(){if(running)return;comboFocus=document.activeElement;comboDraft=customRoutine.cycle.filter(s=>s.t!=='ready').map(s=>s.id);$('comboMessage').textContent='';renderCombo();$('comboModal').hidden=false;$('comboClose').focus();}
+function closeCombo(){$('comboModal').hidden=true;comboFocus?.focus();}
+function renderCombo(){
+ const skills=$('comboSkills');skills.replaceChildren();
+ KICK_SKILLS.forEach(s=>{const b=document.createElement('button');b.textContent=s.n;b.disabled=comboDraft.length>=16;b.onclick=()=>{comboDraft.push(s.id);renderCombo();};skills.append(b);});
+ const order=$('comboOrder');order.replaceChildren();
+ if(!comboDraft.length)order.textContent='왼쪽에서 동작을 선택하세요.';
+ comboDraft.forEach((id,i)=>{const row=document.createElement('div');row.className='km-row';const label=document.createElement('span');label.textContent=`${i+1}. ${KICK_SKILLS.find(s=>s.id===id).n}`;row.append(label);
+ [['↑','위로',i===0,-1],['↓','아래로',i===comboDraft.length-1,1],['×','삭제',false,0]].forEach(([text,name,disabled,dir])=>{const b=document.createElement('button');b.textContent=text;b.setAttribute('aria-label',`${i+1}번 동작 ${name}`);b.disabled=disabled;b.onclick=()=>{if(dir)[comboDraft[i],comboDraft[i+dir]]=[comboDraft[i+dir],comboDraft[i]];else comboDraft.splice(i,1);renderCombo();};row.append(b);});order.append(row);});
+ $('comboSum').textContent=`${comboDraft.length}/16개 · 한 묶음`;$('comboUse').disabled=!comboDraft.length;
+ const slots=$('comboSlots');slots.replaceChildren();comboData.slots.forEach((ids,i)=>{const box=document.createElement('div');box.className='km-slot';const name=document.createElement('strong');name.textContent=`${i+1} · ${ids.length?ids.length+'개 동작':'비어 있음'}`;box.title=ids.map(id=>KICK_SKILLS.find(s=>s.id===id).n).join(' → ');box.append(name);
+ const save=document.createElement('button');save.textContent='저장';save.disabled=!comboDraft.length;save.onclick=()=>{comboData.slots[i]=[...comboDraft];const saved=saveCombos();renderCombo();if(saved)$('comboMessage').textContent=`${i+1}번에 저장했습니다.`;};
+ const load=document.createElement('button');load.textContent='불러오기';load.disabled=!ids.length;load.onclick=()=>{comboDraft=[...ids];renderCombo();};box.append(save,load);slots.append(box);});
+}
+function bindCombo(){
+ $('comboOpen').onclick=openCombo;$('comboClose').onclick=closeCombo;$('comboClear').onclick=()=>{comboDraft=[];renderCombo();};
+ $('comboUse').onclick=()=>{if(!comboDraft.length)return;comboData.active=[...comboDraft];saveCombos();applyCombo(comboDraft);ri=P.routines.indexOf(customRoutine);$('routine').value=String(ri);fillGoals();onSetting();closeCombo();};
+ $('comboModal').onclick=e=>{if(e.target===$('comboModal'))closeCombo();};
+ $('comboModal').addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();closeCombo();}if(e.key==='Tab'){const a=[...$('comboModal').querySelectorAll('button:not(:disabled)')],first=a[0],last=a[a.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}}});
+}
 
 function drawKickRings(gx,W,H,now){
   gx.save();gx.lineWidth=2;
@@ -339,7 +385,7 @@ function drawKickRings(gx,W,H,now){
 }
 function kickGeom(W,H,type){
   const left=type.endsWith('left'),round=type.startsWith('round'),side=left?-1:1;
-  return {left,round,side,start:{x:W/2+(round?side*W*.105:0),y:H*.83},end:{x:W/2,y:H*.35},ctrl:{x:W/2+side*W*.31,y:H*.62}};
+  return {left,round,side,start:{x:W/2+(round?side*W*.105:0),y:H*.83},end:{x:W/2,y:H*(type.includes('-face-')?.172:.35)},ctrl:{x:W/2+side*W*.31,y:H*.62}};
 }
 function drawKickGuide(gx,W,H,now,type,alpha=1,ghost=false){
   const G=kickGeom(W,H,type),{left,round,start,end,ctrl}=G,rgb=left?'86,180,255':'255,82,101',pale=left?'190,230,255':'255,202,208';
@@ -420,7 +466,7 @@ const store={
   save(){try{localStorage.setItem(P.storeKey,JSON.stringify(settingsNow()))}catch(e){}}
 };
 function settingsNow(){
-  const o={...store.load(),stage,routine:P.routines[ri].id,bpm:+$('bpm').value,sets:+$('sets').value,rest:+$('rest').value,lessonFlow:$('lessonFlow').value,teamMode:$('teamMode').value};
+  const o={...store.load(),stage,routine:P.routines[ri].id,bpm:+$('bpm').value,sets:+$('sets').value,rest:+$('rest').value,kickHeight:$('kickHeight').value,lessonFlow:$('lessonFlow').value,teamMode:$('teamMode').value};
   o['goal_'+routine().type]=+$('kickGoal').value;
   if($('stance')) o.stance=$('stance').value;
   return o;
@@ -444,10 +490,21 @@ const unit=()=>isCombo()?'묶음':'회';
 const goal=()=>+$('kickGoal').value||10;
 const done=()=>isCombo()?bundles:count;
 
-function speechSec(t){const syl=(t.match(/[가-힣]/g)||[]).length,other=(t.match(/[A-Za-z0-9]/g)||[]).length,pause=(t.match(/[,·]/g)||[]).length;return syl*.16/VOICE_RATE+other*.08+pause*.18+.15;}
+function fastTempo(){return +$('bpm').value>120;}
+function voiceRate(){return fastTempo()?3.2:1.8;}
+function hitDelay(){return fastTempo()?180:HIT_MS;}
+function sayGap(){return fastTempo()?.04:SAY_GAP;}
+function callLead(){return fastTempo()?.06:CALL_LEAD;}
+function speechSec(t){const syl=(t.match(/[가-힣]/g)||[]).length,other=(t.match(/[A-Za-z0-9]/g)||[]).length,pause=(t.match(/[,·]/g)||[]).length;return syl*.16/voiceRate()+other*.08+pause*.18+.15;}
 function compile(){
   const r=routine(), n=r.cycle.length;
-  const steps=r.cycle.map((s,i)=>({...s,i,act:s.t!=='ready',counted:s.t!=='ready'&&!s.quiet,announce:null}));
+  const steps=r.cycle.map((s,i)=>{
+    let q={...s};if(q.t!=='ready'&&r.id!=='custom'){
+      const h=$('kickHeight').value,word=h==='face'?'얼굴':'몸통';q.t=q.t.replace(/-(right|left)$/,`-${h}-$1`);q.n+=' '+word;q.chip=q.n;q.d=`${word} 높이로 찹니다. `+q.d.replace('몸통 높이로 찹니다','균형을 잡습니다');if(q.call)q.call+=' '+word;
+    }
+    if(fastTempo()&&q.t!=='ready'){q.chain=false;q.call=q.n.replace('오른발','오른').replace('왼발','왼').replace('앞차기','앞').replace('돌려차기','돌려');}
+    return {...q,i,act:q.t!=='ready',counted:q.t!=='ready'&&!q.quiet,announce:null};
+  });
   steps.forEach(s=>{s.phraseStart=s.act&&!s.chain;});
   steps.forEach((s,i)=>{
     if(s.phraseStart){
@@ -467,7 +524,7 @@ function compile(){
   const pick=+$('bpm').value||80;
   
   let cap=Infinity;
-  steps.forEach(s=>{const t=callTextFor(s);if(t&&s.window)cap=Math.min(cap,60*s.window/(HIT_MS/1000+SAY_GAP+speechSec(t)+CALL_LEAD));});
+  steps.forEach(s=>{const t=callTextFor(s);if(t&&s.window)cap=Math.min(cap,60*s.window/(hitDelay()/1000+sayGap()+speechSec(t)+callLead()));});
   const bpm=Math.max(40,Math.min(pick,Math.floor(cap)));
   const cycleBeats=steps.reduce((a,s)=>a+s.b,0), perCycle=r.type==='combo'?steps.filter(s=>s.end).length:steps.filter(s=>s.counted).length;
   TL={steps,n,bpm,pick,capped:bpm<pick,beatMs:60000/bpm,unitSec:cycleBeats/Math.max(1,perCycle)*60/bpm};
@@ -491,9 +548,9 @@ function runFrom(idx,why){
   segToken++;const tok=segToken;clearTimeout(tickTimer);clearTimeout(sayTimer);clearTimeout(hitTimer);clearTimeout(callTimer);
   phase='run';resumeIdx=null;warmCall=(why==='start'||why==='resume');setControls();
   const target=TL.steps[idx], r=routine();
-  const introName=why==='again'?'다시 한 번':why==='resume'?'이어서':r.intro.n;
+  const introName=why==='again'?'다시 한 번':'발차기 준비';
   seg={tok,mode:'intro',si:idx,target:idx,beat:0,g:0,anchor:performance.now(),
-       intro:{n:introName,t:'ready',b:introBeats(callTextFor(target),why==='start'||why==='resume'),d:why==='set'?`${setNo}세트 시작`:r.intro.d,intro:true}};
+       intro:{n:introName,t:'ready',b:introBeats(callTextFor(target),why==='start'||why==='resume')+Math.ceil(1800/TL.beatMs),d:why==='set'?`${setNo}세트 시작`:r.intro.d,intro:true}};
   V.idle=false;
   tick(tok);
 }
@@ -519,10 +576,10 @@ function finishStep(st){
 }
 function stepStart(st){
   const now=performance.now(); V.cur=st; V.stepAt=now;
-  if(st.intro){V.upcoming=TL.steps[seg.target];V.announced=false;planSay(seg.target,SAY_DELAY*1000);planCall(seg.target,now+st.b*TL.beatMs);paintStep(st);return;}
+  if(st.intro){V.upcoming=TL.steps[seg.target];V.announced=false;speak(st.n);planSay(seg.target,1800);planCall(seg.target,now+st.b*TL.beatMs);paintStep(st);return;}
   if(st.act){
     
-    const hitMs=Math.min(HIT_MS,st.b*TL.beatMs*HIT_CAP);
+    const hitMs=Math.min(hitDelay(),st.b*TL.beatMs*HIT_CAP);
     V.impactStep=st;V.impactAt=now+hitMs;V.cueAt=now;
     if(st.counted){count++;if(!isCombo())totalDone++;}
     if(st.quiet) P.soft(st); else P.hit(st);
@@ -535,7 +592,7 @@ function stepStart(st){
 
 function impactNow(st,nx){
   if(!st.quiet){P.impact(st);if(st.kiai&&stage!=='call')showKiai();}
-  planSay(nx,st.quiet?0:SAY_GAP*1000);
+  planSay(nx,st.quiet?0:sayGap()*1000);
   planCall(nx,V.cueAt+TL.steps[nx].window*TL.beatMs);
 }
 
@@ -547,8 +604,8 @@ function planSay(i,delayMs){
 function planCall(i,whistleAt){
   const tok=segToken;clearTimeout(callTimer);
   const t=callTextFor(TL.steps[i]);if(!t)return;
-  const now=performance.now(),lead=(speechSec(t)+CALL_LEAD+(warmCall?WARM_LEAD:0))*1000;
-  const at=Math.max(now+SAY_GAP*1000,whistleAt-lead);
+  const now=performance.now(),lead=(speechSec(t)+callLead()+(warmCall?WARM_LEAD:0))*1000;
+  const at=Math.max(now+sayGap()*1000,whistleAt-lead);
   callTimer=setTimeout(()=>{if(tok!==segToken||paused||!running)return;warmCall=false;const tt=callTextFor(TL.steps[i]);if(tt)speak(tt);},at-now);
 }
 function beatsUntilUpcoming(){
@@ -656,7 +713,7 @@ function beep(freq=620){tone(freq,.1,'sine',.07);}
 function whistle(){
   try{
     const a=ensureAudio();if(!a)return;
-    const t=a.currentTime,f=1900,rise=60,dur=.26,vol=.32;
+    const t=a.currentTime,f=1900,rise=60,dur=fastTempo()?.1:.26,vol=.32;
     const out=a.createGain(),lp=a.createBiquadFilter();lp.type='lowpass';lp.frequency.value=f*2.6;lp.Q.value=.5;
     out.gain.setValueAtTime(.0001,t);out.gain.exponentialRampToValueAtTime(vol,t+.018);out.gain.setValueAtTime(vol*.9,t+dur-.06);out.gain.exponentialRampToValueAtTime(.0001,t+dur);
     const o=a.createOscillator(),o2=a.createOscillator(),g2=a.createGain();o.type='sine';o2.type='sine';
@@ -679,14 +736,14 @@ function impactSound(heavy){
     src.connect(bp);bp.connect(g);g.connect(a.destination);src.start(t);
     const o=a.createOscillator(),og=a.createGain();o.type='sine';o.frequency.setValueAtTime(heavy?125:190,t);o.frequency.exponentialRampToValueAtTime(heavy?50:85,t+.14);
     og.gain.setValueAtTime(heavy?.6:.34,t);og.gain.exponentialRampToValueAtTime(.0001,t+.18);o.connect(og);og.connect(a.destination);o.start(t);o.stop(t+.2);
-  }catch(e){beep(heavy?300:700)}
+  }catch(e){tone(150,.18,'triangle',.3)}
 }
 function chime(){[523,659,784,1047].forEach((f,i)=>setTimeout(()=>tone(f,.22,'sine',.1),i*110));}
 function pickVoice(){try{const vs=speechSynthesis.getVoices()||[];koVoice=vs.find(v=>/ko[-_]KR/i.test(v.lang)&&/Google|Neural|Natural/i.test(v.name))||vs.find(v=>/^ko/i.test(v.lang))||null;}catch(e){}}
 try{pickVoice();speechSynthesis.onvoiceschanged=pickVoice;}catch(e){}
-function speak(t){if(!t)return;try{const s=window.speechSynthesis;if(!s)return;s.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='ko-KR';u.rate=VOICE_RATE;if(koVoice)u.voice=koVoice;s.speak(u);}catch(e){}}
+function speak(t){if(!t)return;try{const s=window.speechSynthesis;if(!s)return;s.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='ko-KR';u.rate=voiceRate();if(koVoice)u.voice=koVoice;s.speak(u);}catch(e){}}
 
-function warmVoice(t){try{const s=window.speechSynthesis;if(!s)return;if(!koVoice)pickVoice();s.cancel();const u=new SpeechSynthesisUtterance(t||'준비');u.lang='ko-KR';u.rate=VOICE_RATE;u.volume=0;if(koVoice)u.voice=koVoice;s.speak(u);}catch(e){}}
+function warmVoice(t){try{const s=window.speechSynthesis;if(!s)return;if(!koVoice)pickVoice();s.cancel();const u=new SpeechSynthesisUtterance(t||'준비');u.lang='ko-KR';u.rate=voiceRate();u.volume=0;if(koVoice)u.voice=koVoice;s.speak(u);}catch(e){}}
 function cancelSpeech(){try{window.speechSynthesis&&speechSynthesis.cancel();}catch(e){}}
 
 async function keepAwake(on){
@@ -792,7 +849,7 @@ function setControls(){
   $('pause').disabled=!running;$('pause').textContent=paused?'▶ 계속하기':'Ⅱ 일시정지';
   $('again').disabled=!(running&&!paused&&phase==='run');
   document.querySelectorAll('.control-stack select,.tabs button').forEach(el=>{if(el.id==='sets'||el.id==='rest')return;el.disabled=running;});
-  $('sets').disabled=running||ladderOn();
+  $('sets').disabled=running||ladderOn();$('comboOpen').disabled=running;$('kickHeight').disabled=running||routine().id==='custom';
 }
 function idleView(){
   compile();V.cur=null;V.idle=true;V.upcoming=TL.steps[firstPhrase()];V.announced=true;V.impactAt=-1;
@@ -818,18 +875,18 @@ function fillGoals(keep){
   $('kickGoal').innerHTML=opts.map(v=>`<option value="${v}">${v}${t==='combo'?'묶음':'회'}</option>`).join('');
   $('kickGoal').value=String(opts.includes(+want)?want:P.defGoal[t]);
 }
-function onSetting(){if(running)return;store.save();idleView();}
+function onSetting(){if(running)return;store.save();idleView();setControls();}
 function bind(){
   document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{if(running)return;stage=b.dataset.stage;onSetting();});
   $('routine').onchange=e=>{ri=+e.target.value;fillGoals();onSetting();};
-  ['bpm','kickGoal','sets','rest','stance','lessonFlow','teamMode'].forEach(id=>{if($(id))$(id).addEventListener('change',()=>{if(id==='lessonFlow'||id==='teamMode')syncLessonFlow();if(id==='sets'||id==='rest'){store.save();paintCounts();paintClassCue();paintGroupWelcome();return;}onSetting();setControls();});});
+  ['bpm','kickGoal','sets','rest','kickHeight','stance','lessonFlow','teamMode'].forEach(id=>{if($(id))$(id).addEventListener('change',()=>{if(id==='lessonFlow'||id==='teamMode')syncLessonFlow();if(id==='sets'||id==='rest'){store.save();paintCounts();paintClassCue();paintGroupWelcome();return;}onSetting();setControls();});});
   $('start').onclick=()=>{if(HOST&&running){reset();return;}start();};$('pause').onclick=togglePause;$('reset').onclick=reset;
   $('again').onclick=againBundle;$('fsBtn').onclick=toggleFs;
   $('finAgain').onclick=()=>{$('finishScreen').hidden=true;phase='idle';start();};
   $('finClose').onclick=()=>{$('finishScreen').hidden=true;reset();};
   $('exitGroup').onclick=()=>{stopAll();if(HOST){try{HOST.closeGroupOverlay();return;}catch(e){}}location.replace(P.exitUrl);};
   document.addEventListener('keydown',e=>{
-    if(e.altKey||e.ctrlKey||e.metaKey) return;
+    if(!$('comboModal').hidden||e.altKey||e.ctrlKey||e.metaKey) return;
     const k=e.key,a=el=>el&&el.tagName;
     const act=[' ','b','B','.','F5','Pause','MediaPlayPause'].includes(k)?'toggle':['ArrowRight','PageDown','Enter'].includes(k)?'ok':['ArrowLeft','PageUp'].includes(k)?'again':(k==='f'||k==='F')?'fs':'';
     if(!act) return;
@@ -872,9 +929,9 @@ function init(){
   fillRoutines();
   const idx=P.routines.findIndex(r=>r.id===s.routine);ri=idx>=0?idx:0;$('routine').value=String(ri);
   if(STAGE_NAME[s.stage]) stage=s.stage;
-  for(const id of ['bpm','sets','rest','stance','lessonFlow','teamMode']) if($(id)&&s[id]!=null&&[...$(id).options].some(o=>o.value===String(s[id]))) $(id).value=String(s[id]);
+  for(const id of ['bpm','sets','rest','kickHeight','stance','lessonFlow','teamMode']) if($(id)&&s[id]!=null&&[...$(id).options].some(o=>o.value===String(s[id]))) $(id).value=String(s[id]);
   if(ladderOn())$('sets').value=String(ladderSets());
-  fillGoals();bind();initGroupWelcome();idleView();setControls();paintFs();
+  fillGoals();bind();bindCombo();initGroupWelcome();idleView();setControls();paintFs();
   if($('finishNote')) $('finishNote').textContent='화면의 수업 진행 기록입니다. 학생의 실제 성공 횟수는 측정하지 않습니다.';
   if(P.init) P.init();
   requestAnimationFrame(frame);
