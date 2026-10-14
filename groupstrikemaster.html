@@ -181,6 +181,7 @@ html.embed .side-note{bottom:62px}
 .tabs[hidden]{display:none}
 
 select[hidden]{display:none!important}.routine-name.team-turn{font-size:clamp(44px,5vw,66px);line-height:1.05;font-weight:1000;color:#fff;letter-spacing:.02em}.app.team-rotate .cue{top:calc(14.5% + 44px)}.rest #restLabel{font-size:clamp(24px,3vw,42px);color:#fff}
+.rhythm-mode{font-size:13px;font-weight:900;color:var(--acc-lit);padding:5px 0}
 </style>
 <style id="public-group-lobby">
 .group-welcome{position:absolute;z-index:6;left:290px;right:36px;top:108px;bottom:82px;display:flex;flex-direction:column;gap:18px;overflow:auto;overscroll-behavior:contain;padding:8px 12px 12px;color:#f1f6f4;text-shadow:none;scrollbar-width:thin}
@@ -240,13 +241,11 @@ html.embed .app.running .side-note{bottom:24px}
 <select id="routine" hidden aria-hidden="true" tabindex="-1"></select>
 <main class="app stage-follow" id="app">
   <aside class="side">
-    <div class="brand">AI <em>STRIKE</em> MASTER</div><div class="version">GROUP COMBINATION · v1.3</div>
+    <div class="brand">AI <em>STRIKE</em> MASTER</div><div class="version">GROUP COMBINATION · v1.4</div>
     <div class="control-stack">
-      <div class="tabs" role="tablist"><button class="on" data-stage="follow">따라하기</button><button data-stage="call">구령만</button></div>
-      <div class="stage-hint" id="stageHint"></div>
-      <label class="field"><span>진행 신호</span><select id="voiceMode"><option value="rhythm">리듬 집중 · 화면 + 호루라기</option><option value="coach">음성 코치 · 120 이하 연습용</option></select></label>
+      <div class="rhythm-mode">리듬 집중 · 화면 + 호루라기</div><div class="stage-hint" id="stageHint"></div>
       
-      <div class="grid"><label class="field"><span>수업 진행</span><select id="lessonFlow" title="단계 자동 = 따라하기 세트 뒤 구령만 세트 (팀 교대면 A·B 가 단계마다 한 번씩)"><option value="single">한 단계 반복</option><option value="ladder">단계 자동</option></select></label><label class="field"><span>팀 운영</span><select id="teamMode"><option value="all">전원 함께</option><option value="rotate">A/B팀 교대</option></select></label></div>
+      <label class="field"><span>팀 운영</span><select id="teamMode"><option value="all">전원 함께</option><option value="rotate">A/B팀 교대</option></select></label><p class="stage-hint" id="teamHint"></p>
 
       <button type="button" id="comboOpen" style="padding:12px;border:1px solid var(--line);border-radius:10px;width:100%;margin:8px 0">콤보 설정</button><label class="field"><span>자세</span><select id="stance"><option value="orth">왼발 앞 · 왼손 잽</option><option value="south">오른발 앞 · 오른손 잽</option></select></label>
       <div class="grid"><label class="field"><span>속도</span><select id="bpm"><option value="60">느리게 · 60</option><option value="80" selected>기본 · 80</option><option value="100">빠르게 · 100</option><option value="120">매우 빠르게 · 120</option><option value="140">고속 · 140</option><option value="160">최고속 · 160</option></select></label><label class="field"><span>세트</span><select id="sets"><option>1</option><option selected>2</option><option>3</option><option>4</option></select></label></div>
@@ -299,7 +298,7 @@ const A=(n,t,limb,b,d,o={})=>Object.assign({n,t,limb,b,d},o);
 const R=(n,b,d,o={})=>Object.assign({n,t:'ready',b,d},o);
 const PRODUCT={
   key:'strike', storeKey:'asm_group_settings_v1', exitUrl:'aistrikemaster.html',
-  goals:{single:[6,10,20,30],combo:[4,6,10,15]}, defGoal:{single:10,combo:6},
+  goals:{single:[4,6,8,10,16,20],combo:[4,6,8,10,16,20]}, defGoal:{single:10,combo:6},
   hints:{
     follow:'궤적 · 이름 구령을 모두 보여줘요. 휘슬에 뻗습니다.',
     call:'궤적 없이 순서만 보여요. 콤보 구령을 듣고 휘슬에 뻗습니다.'
@@ -516,8 +515,6 @@ const HOST=(()=>{try{return window.parent!==window&&window.parent.closeGroupOver
 if(HOST) document.documentElement.classList.add('embed');      
 const P=PRODUCT;
 
-const STAGE_NAME={follow:'따라하기',call:'구령만'};
-const STAGE_ORDER=['follow','call'];
 const COUNT_WORD=['하나','둘','셋','넷','다섯','여섯','일곱','여덟','아홉','열'];
 const VOICE_RATE=1.25, SAY_DELAY=.35, SAY_MARGIN=.1;
 
@@ -537,23 +534,19 @@ const store={
   save(){try{localStorage.setItem(P.storeKey,JSON.stringify(settingsNow()))}catch(e){}}
 };
 function settingsNow(){
-  const o={...store.load(),stage,routine:P.routines[ri].id,bpm:+$('bpm').value,sets:+$('sets').value,rest:+$('rest').value,voiceMode:$('voiceMode').value,lessonFlow:$('lessonFlow').value,teamMode:$('teamMode').value};
+  const o={...store.load(),routine:P.routines[ri].id,bpm:+$('bpm').value,sets:+$('sets').value,rest:+$('rest').value,teamMode:$('teamMode').value};
+  for(const key of ['stage','voiceMode','kickHeight','lessonFlow'])delete o[key];
   o['goal_'+routine().type]=+$('kickGoal').value;
   if($('stance')) o.stance=$('stance').value;
   return o;
 }
-const ladderOn=()=>$('lessonFlow').value==='ladder';
 const rotateOn=()=>$('teamMode').value==='rotate';
-
-const ladderSets=()=>STAGE_ORDER.length*(rotateOn()?2:1);
-function stageForSet(n){const k=rotateOn()?Math.floor((n-1)/2):n-1;return STAGE_ORDER[Math.min(STAGE_ORDER.length-1,Math.max(0,k))];}
 function activeTeam(n=setNo){return n%2?'A팀':'B팀';}
 function paintClassCue(){
  const rotate=rotateOn();$('app').classList.toggle('team-rotate',rotate);
  const title=$('routineName');title.classList.toggle('team-turn',rotate);title.textContent=rotate?activeTeam():routine().name;
  title.setAttribute('aria-label',rotate?activeTeam():routine().name);
 }
-function syncLessonFlow(){if(ladderOn()){$('sets').value=String(ladderSets());stage=stageForSet(setNo);}paintClassCue();}
 const routine=()=>P.routines[ri];
 const isCombo=()=>routine().type==='combo';
 const unit=()=>isCombo()?'묶음':'회';
@@ -562,8 +555,8 @@ const done=()=>isCombo()?bundles:count;
 
 function fastTempo(){return +$('bpm').value>120;}
 function voiceRate(){return 1.0;}
-function namesVoiced(){return !fastTempo()&&$('voiceMode').value==='coach';}
-function signalLabel(){return namesVoiced()?STAGE_NAME[stage]:'리듬 집중';}
+function namesVoiced(){return false;}
+function signalLabel(){return '리듬 집중';}
 const READY_RATE=1.0, READY_MS=2400;
 function callOnly(){return stage==='call'&&namesVoiced();}
 function hitDelay(){return fastTempo()?180:HIT_MS;}
@@ -620,7 +613,7 @@ function runFrom(idx,why){
   phase='run';resumeIdx=null;warmCall=(why==='start'||why==='resume');setControls();
   const target=TL.steps[idx], r=routine();
   const introName=why==='again'?'다시 한 번':'공격 준비';
-  seg={tok,mode:'intro',si:idx,target:idx,beat:0,g:0,anchor:performance.now(),
+  seg={tok,mode:why==='team'?'cycle':'intro',si:idx,target:idx,beat:0,g:0,anchor:performance.now(),
        intro:{n:introName,t:'ready',b:namesVoiced()?introBeats(callTextFor(target),why==='start'||why==='resume')+Math.ceil(READY_MS/TL.beatMs):Math.ceil(READY_MS/TL.beatMs)+3,d:why==='set'?`${setNo}세트 시작`:r.intro.d,intro:true}};
   V.idle=false;
   tick(tok);
@@ -704,7 +697,7 @@ function beatsUntilUpcoming(){
 async function start(){
   if(!window.groupAccessAllowed()) return;
   if(running||document.hidden) return;
-  trainingClock.resume();setNo=1;if(ladderOn())stage=stageForSet(setNo);compile();
+  trainingClock.resume();setNo=1;compile();
   $('finishScreen').hidden=true;
   const token=++runToken;setNo=1;count=bundles=0;totalDone=0;running=true;paused=false;phase='countdown';
   setControls();keepAwake(true);ensureAudio();
@@ -728,6 +721,10 @@ async function endSet(token){
   segToken++;clearTimeout(tickTimer);clearTimeout(sayTimer);clearTimeout(hitTimer);clearTimeout(callTimer);
   if(token!==runToken) return;
   if(setNo<+$('sets').value){
+    if(rotateOn()){
+      setNo++;count=bundles=0;V.cur=null;V.upcoming=TL.steps[firstPhrase()];V.announced=true;
+      $('restScreen').hidden=true;paintAll();runFrom(firstPhrase(),'team');return;
+    }
     phase='rest';setControls();const sec=+$('rest').value;
     const first=TL.steps[firstPhrase()];
     $('restNext').innerHTML=`${setNo+1}세트 첫 동작 · <i>${P.plain(first)}</i>`;
@@ -735,7 +732,7 @@ async function endSet(token){
     $('restScreen').hidden=false;speak('잘했어요. 쉬어요');
     for(let n=sec;n>0;n--){if(token!==runToken)return;$('restNum').textContent=n;if(n<=3)beep(520);await sleep(1000);}
     if(token!==runToken) return;
-    setNo++;count=bundles=0;if(ladderOn()){stage=stageForSet(setNo);compile();}$('restScreen').hidden=true;paintAll();
+    setNo++;count=bundles=0;$('restScreen').hidden=true;paintAll();
     runFrom(firstPhrase(),'set');
   }else finishAll();
 }
@@ -843,14 +840,11 @@ function paintAll(){paintHead();paintStep(V.cur);paintCounts();paintNext();paint
 function paintHead(){
   const r=routine();paintClassCue();
   $('stageHint').textContent=namesVoiced()?'연습용 · 자연스러운 말 속도로 안내합니다. 구령이 들어갈 만큼 진행 속도를 조절합니다.':'순서는 준비 화면에서 확인합니다. 운동 중에는 동작 이름을 보고 호루라기에 찹니다. 동작 이름은 말하지 않습니다.';
-  document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.stage===stage));
   const app=$('app');[...app.classList].filter(c=>c.startsWith('stage-')).forEach(c=>app.classList.remove(c));app.classList.add('stage-'+(namesVoiced()?stage:'follow'));
-  document.querySelector('.tabs').hidden=!namesVoiced();
-  $('voiceMode').querySelector('[value=coach]').disabled=fastTempo();
-  $('lessonFlow').querySelector('[value=ladder]').textContent=namesVoiced()?'단계 자동':'리듬 2회 반복 · 팀별 적용';
+  $('teamHint').textContent=rotateOn()?'A팀 → B팀, 쉬는 시간 없이 교대합니다. 상대팀 차례가 휴식입니다.':'세트가 끝나면 설정한 시간만큼 함께 쉽니다.';
   const note=TL.capped?` · <i>구령 이름을 말할 시간이 필요해 ${TL.bpm}으로 진행</i>`:'';
   $('speedNote').innerHTML=`${isCombo()?'한 묶음':'동작 간격'} 약 <b>${TL.unitSec.toFixed(1)}초</b>${note}`;
-  $('goalLab').textContent=isCombo()?'세트 목표 · 묶음':'세트 목표 · 횟수';
+  $('goalLab').textContent=isCombo()?'세트 목표 · 콤보 반복':'세트 목표 · 횟수';
 }
 
 function previewing(){return !!(running&&phase==='run'&&V.announced&&V.upcoming&&V.upcoming.act&&V.cur!==V.upcoming);}
@@ -935,7 +929,7 @@ function setControls(){
   $('pause').disabled=!running;$('pause').textContent=paused?'▶ 계속하기':'Ⅱ 일시정지';
   $('again').disabled=!(running&&!paused&&phase==='run');
   document.querySelectorAll('.control-stack select,.tabs button').forEach(el=>{if(el.id==='sets'||el.id==='rest')return;el.disabled=running;});
-  $('sets').disabled=running||ladderOn();$('comboOpen').disabled=running;
+  $('sets').disabled=running;$('rest').disabled=rotateOn();$('comboOpen').disabled=running;
 }
 function idleView(){
   compile();V.cur=null;V.idle=true;V.upcoming=TL.steps[firstPhrase()];V.announced=true;V.impactAt=-1;
@@ -957,15 +951,15 @@ function frame(now){
 function fillRoutines(){$('routine').innerHTML=P.routines.map((r,i)=>`<option value="${i}">${r.name}${r.type==='combo'?' · 콤보':''}</option>`).join('');}
 function fillGoals(keep){
   const t=routine().type,opts=P.goals[t],saved=store.load()['goal_'+t];
-  const want=keep||saved||P.defGoal[t];
-  $('kickGoal').innerHTML=opts.map(v=>`<option value="${v}">${v}${t==='combo'?'묶음':'회'}</option>`).join('');
-  $('kickGoal').value=String(opts.includes(+want)?want:P.defGoal[t]);
+  const candidate=Number(keep||saved||P.defGoal[t]),want=Number.isFinite(candidate)?candidate:P.defGoal[t];
+  const chosen=opts.reduce((a,b)=>Math.abs(b-want)<Math.abs(a-want)?b:a,opts[0]);
+  $('kickGoal').innerHTML=opts.map(v=>`<option value="${v}">${v}회</option>`).join('');
+  $('kickGoal').value=String(chosen);
 }
-function onSetting(){if(running)return;if(fastTempo())$('voiceMode').value='rhythm';store.save();idleView();setControls();}
+function onSetting(){if(running)return;store.save();idleView();setControls();}
 function bind(){
-  document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{if(running)return;stage=b.dataset.stage;onSetting();});
   $('routine').onchange=e=>{ri=+e.target.value;fillGoals();onSetting();};
-  ['bpm','kickGoal','sets','rest','voiceMode','stance','lessonFlow','teamMode'].forEach(id=>{if($(id))$(id).addEventListener('change',()=>{if(id==='lessonFlow'||id==='teamMode')syncLessonFlow();if(id==='sets'||id==='rest'){store.save();paintCounts();paintClassCue();paintGroupWelcome();return;}onSetting();setControls();});});
+  ['bpm','kickGoal','sets','rest','stance','teamMode'].forEach(id=>{if($(id))$(id).addEventListener('change',()=>{if(id==='teamMode')paintClassCue();if(id==='sets'||id==='rest'){store.save();paintCounts();paintClassCue();paintGroupWelcome();return;}onSetting();setControls();});});
   $('start').onclick=()=>{if(HOST&&running){reset();return;}start();};$('pause').onclick=togglePause;$('reset').onclick=reset;
   $('again').onclick=againBundle;$('fsBtn').onclick=toggleFs;
   $('finAgain').onclick=()=>{$('finishScreen').hidden=true;phase='idle';start();};
@@ -1015,11 +1009,9 @@ function init(){
   const s=store.load();
   fillRoutines();
   const idx=P.routines.findIndex(r=>r.id===s.routine);ri=idx>=0?idx:0;$('routine').value=String(ri);
-  if(STAGE_NAME[s.stage]) stage=s.stage;
-  for(const id of ['bpm','sets','rest','voiceMode','stance','lessonFlow','teamMode']) if($(id)&&s[id]!=null&&[...$(id).options].some(o=>o.value===String(s[id]))) $(id).value=String(s[id]);
-  if(fastTempo())$('voiceMode').value='rhythm';
-  if(ladderOn())$('sets').value=String(ladderSets());
-  fillGoals();bind();bindCombo();initGroupWelcome();idleView();setControls();paintFs();
+  for(const id of ['bpm','sets','rest','stance','teamMode']) if($(id)&&s[id]!=null&&[...$(id).options].some(o=>o.value===String(s[id]))) $(id).value=String(s[id]);
+  
+  fillGoals();bind();bindCombo();initGroupWelcome();idleView();setControls();paintFs();store.save();
   if($('finishNote')) $('finishNote').textContent='화면의 수업 진행 기록입니다. 학생의 실제 성공 횟수는 측정하지 않습니다.';
   if(P.init) P.init();
   requestAnimationFrame(frame);
