@@ -1069,7 +1069,7 @@ body.jmp-group-lobby #groupWelcome{left:calc(max(220px, var(--u)*19) + max(16px,
 
 <script type="module">
 
-const APP_VERSION = '3.9.6';   
+const APP_VERSION = '3.9.7';   
 try{ window.__NL_VER = APP_VERSION; }catch(e){}   
 
 const MP_VERSION  = '1.0.1';
@@ -4535,6 +4535,16 @@ function stepResultHtml(){
     <div class="rline">${line}</div>
     <div class="rline" style="opacity:.75">오른쪽 화살표 뒤는 AI가 대신 본 모양입니다. 기록은 로비의 '시험 기록 내려받기'에 쌓입니다.</div></div>`;
 }
+
+window.__nlLabPayload=function(){
+  try{ labFlush(); }catch(e){}
+  const n=(labLog?labLog.length:0)+(labRounds?labRounds.length:0)+(stepRounds?stepRounds.length:0);
+  return {count:n, kind:'jump-lab', label:'점프 '+(labLog?labLog.length:0)+'건 · 판 '+(labRounds?labRounds.length:0)+' · 스텝 '+(stepRounds?stepRounds.length:0),
+    data:{app:'AI JUMP MASTER', version:APP_VERSION, exported_at:new Date().toISOString(),
+      note:'숫자 계측값만 들어 있습니다. 영상·사진·이름은 수집하지 않습니다.',
+      count:labLog?labLog.length:0, rows:labLog||[], rounds:labRounds||[],
+      stepjump:{rule_now:STEP, note_names:STEP_NAME, rounds:stepRounds||[]}}};
+};
 function stepExport(){
   let lab=false; try{ lab=jmpIsLab(); }catch(e){}
   if(!lab) return;
@@ -5650,6 +5660,7 @@ $('labDlCsv')?.addEventListener('click',()=>{
 $('labClear')?.addEventListener('click',()=>{
   if(!jmpIsLab()) return;
   if(!confirm('쌓인 측정 기록을 모두 지웁니다. 계속할까요?')) return;
+  try{ window.__nlLabSync && window.__nlLabSync(); }catch(e){}   /* 2026-10-15 · 비우기 전에 서버에 한 번 올린다 */
   labLog=[]; labRecent=[]; labDirty=false; labFlush(); labSave(); labRenderRecent(); labRenderCount();
 });
 
@@ -6156,6 +6167,48 @@ if('serviceWorker' in navigator){
   };
 })();
 
+</script>
+<script id="nl-lab-sync">
+
+(function(){
+  var P='jmp', LS='jmp_license_v1', DEV='jmp_device_id';
+  var EP=P+'_labsync_epoch', SENT=P+'_labsync_sent', CNT=P+'_labsync_count';
+  var URL='https://ebgoolsymyzkftvavpyj.supabase.co/functions/v1/lab-records?action=upload';
+  var live=/(^|\.)naruunlabs\.kr$/.test(location.hostname);
+  var busy=false;
+  function ls(k,v){ try{ if(v===undefined) return localStorage.getItem(k); if(v===null) localStorage.removeItem(k); else localStorage.setItem(k,v); }catch(e){} return null; }
+  function b64(s){ var b=new TextEncoder().encode(s), x=''; for(var i=0;i<b.length;i++) x+=String.fromCharCode(b[i]); return btoa(x); }
+  function day(){ return new Date(Date.now()+9*3600000).toISOString().slice(2,10).split('-').join(''); }
+  function sync(){
+    if(!live || busy || typeof CompressionStream==='undefined') return;
+    var c=null; try{ c=JSON.parse(ls(LS)||'null'); }catch(e){}
+    if(!c || !c.is_beta || !c.license_key) return;
+    var get=window.__nlLabPayload; if(typeof get!=='function') return;
+    var pl=null; try{ pl=get(); }catch(e){ return; }
+    var n=pl ? (pl.count|0) : 0;
+    var last=parseInt(ls(CNT)||'0',10)||0;
+    if(!n){ ls(EP,null); ls(CNT,'0'); return; }
+    if(n<last){ ls(EP,null); }
+    var ep=ls(EP); if(!ep){ ep=Date.now().toString(36); ls(EP,ep); }
+    var text=JSON.stringify(pl.data);
+    var id=P+'-'+day()+'-'+ep;
+    var sig=id+'|'+n+'|'+text.length;
+    ls(CNT,String(n));
+    if(ls(SENT)===sig) return;
+    busy=true;
+    var meta=b64(JSON.stringify({id:id, kind:pl.kind||'jump-lab', label:pl.label||'', raw_bytes:text.length}));
+    new Response(new Blob([text]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer()
+      .then(function(buf){ return fetch(URL,{method:'POST', headers:{'Content-Type':'application/gzip','x-lab-key':c.license_key,'x-lab-device':ls(DEV)||'','x-lab-meta':meta}, body:buf}); })
+      .then(function(r){ return r.json(); })
+      .then(function(j){ if(j && j.ok) ls(SENT,sig); })
+      .catch(function(){})
+      .then(function(){ busy=false; });
+  }
+  setInterval(sync, 60000);
+  setTimeout(sync, 15000);
+  document.addEventListener('visibilitychange', function(){ if(document.visibilityState==='hidden') sync(); });
+  window.__nlLabSync=sync;
+})();
 </script>
 </body>
 </html>

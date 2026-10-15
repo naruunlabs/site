@@ -52,7 +52,7 @@ var PRODUCT = {
   code    : 'S',                    
   name    : 'AI STRIKE MASTER',
   short   : 'STRIKE',
-  version : '0.9.10',
+  version : '0.9.11',   
   built   : '2026-10-14'
 };
 try{ window.PRODUCT = PRODUCT; }catch(e){}
@@ -8332,12 +8332,26 @@ window.downloadDiagLog=async function(){
   naruunSaveToast('저장했습니다', name, '발차기 '+diagLog.length+'건 · 로킥/니킥 '+skCount+'건 · 펀치 '+punchCount+'건 · 다운로드 폴더');
 };
 
+window.__nlLabPayload=function(){
+  const punch=(typeof buildPunchDiagnostic==='function')?buildPunchDiagnostic():null;
+  const punchCount=(punch&&punch.records)?punch.records.length:0;
+  const skCount=(typeof strikeKickLogCount==='function')?strikeKickLogCount():0;
+  return {count:diagLog.length+punchCount+skCount, kind:'strike-diag',
+    label:'발차기 '+diagLog.length+' · 로킥니킥 '+skCount+' · 펀치 '+punchCount,
+    data:{format:'NaruunLabs Strike Diagnostic', version:2, exportedAt:new Date().toISOString(),
+      kick:{count:diagLog.length, records:diagLog},
+      strikeKick:{count:skCount, thresholds:(typeof STRIKE_KICK_TH!=='undefined')?STRIKE_KICK_TH:null,
+                  records:(typeof strikeKickLog!=='undefined')?strikeKickLog:[]},
+      punch:punch}};
+};
+
 window.clearDiagLog=function(){
 
   const punchCount=punchLogCount();
   const skCount=strikeKickLogCount();
   if(!diagLog.length && !punchCount && !skCount){ alert('지울 기록이 없습니다.'); return; }
   if(!confirm('발차기 '+diagLog.length+'건 · 로킥니킥 '+skCount+'건 · 펀치 '+punchCount+'건을 모두 지울까요?\n되돌릴 수 없습니다. 필요하면 먼저 다운로드하세요.')) return;
+  try{ window.__nlLabSync && window.__nlLabSync(); }catch(e){}   
   diagLog=[];
   try{ localStorage.removeItem(DIAG_LS_KEY); }catch(e){}
   if(typeof clearPunchLog==='function') clearPunchLog();
@@ -14164,6 +14178,48 @@ html body #handNextPrompt .h-frame::before,html body #handNextPrompt .h-frame::a
   };
 })();
 
+</script>
+<script id="nl-lab-sync">
+
+(function(){
+  var P='asm', LS='asm_license_v1', DEV='asm_device_id';
+  var EP=P+'_labsync_epoch', SENT=P+'_labsync_sent', CNT=P+'_labsync_count';
+  var URL='https://ebgoolsymyzkftvavpyj.supabase.co/functions/v1/lab-records?action=upload';
+  var live=/(^|\.)naruunlabs\.kr$/.test(location.hostname);
+  var busy=false;
+  function ls(k,v){ try{ if(v===undefined) return localStorage.getItem(k); if(v===null) localStorage.removeItem(k); else localStorage.setItem(k,v); }catch(e){} return null; }
+  function b64(s){ var b=new TextEncoder().encode(s), x=''; for(var i=0;i<b.length;i++) x+=String.fromCharCode(b[i]); return btoa(x); }
+  function day(){ return new Date(Date.now()+9*3600000).toISOString().slice(2,10).split('-').join(''); }
+  function sync(){
+    if(!live || busy || typeof CompressionStream==='undefined') return;
+    var c=null; try{ c=JSON.parse(ls(LS)||'null'); }catch(e){}
+    if(!c || !c.is_beta || !c.license_key) return;
+    var get=window.__nlLabPayload; if(typeof get!=='function') return;
+    var pl=null; try{ pl=get(); }catch(e){ return; }
+    var n=pl ? (pl.count|0) : 0;
+    var last=parseInt(ls(CNT)||'0',10)||0;
+    if(!n){ ls(EP,null); ls(CNT,'0'); return; }
+    if(n<last){ ls(EP,null); }
+    var ep=ls(EP); if(!ep){ ep=Date.now().toString(36); ls(EP,ep); }
+    var text=JSON.stringify(pl.data);
+    var id=P+'-'+day()+'-'+ep;
+    var sig=id+'|'+n+'|'+text.length;
+    ls(CNT,String(n));
+    if(ls(SENT)===sig) return;
+    busy=true;
+    var meta=b64(JSON.stringify({id:id, kind:pl.kind||'strike-diag', label:pl.label||'', raw_bytes:text.length}));
+    new Response(new Blob([text]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer()
+      .then(function(buf){ return fetch(URL,{method:'POST', headers:{'Content-Type':'application/gzip','x-lab-key':c.license_key,'x-lab-device':ls(DEV)||'','x-lab-meta':meta}, body:buf}); })
+      .then(function(r){ return r.json(); })
+      .then(function(j){ if(j && j.ok) ls(SENT,sig); })
+      .catch(function(){})
+      .then(function(){ busy=false; });
+  }
+  setInterval(sync, 60000);
+  setTimeout(sync, 15000);
+  document.addEventListener('visibilitychange', function(){ if(document.visibilityState==='hidden') sync(); });
+  window.__nlLabSync=sync;
+})();
 </script>
 </body>
 </html>
