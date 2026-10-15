@@ -214,6 +214,12 @@ table.t input{width:100%}
     <button type="button" data-v="15">15초</button>
   </div>
 
+  <div class="lb-label">동작 판정음 · 관장 시범은 항상 꺼짐</div>
+  <div class="seg c2" id="segFeedback">
+    <button type="button" data-v="off">끄기</button>
+    <button type="button" data-v="on">켜기<small>학생 · 2인 연습</small></button>
+  </div>
+
   <div class="lb-label">카메라 · 인식 모델</div>
   <div class="seg c2" id="segCam">
     <button type="button" data-v="user">앞 카메라</button>
@@ -232,9 +238,9 @@ table.t input{width:100%}
   </div>
 
   <div class="lb-tip">
-    <b>카메라 놓는 법</b> · 태블릿을 학생 <b>정면 4~5m</b>, 허리 높이에 가로로 둡니다. 준비 자세에서 카메라를 보고 시작합니다.<br>
+    <b>카메라 놓는 법</b> · 태블릿을 학생 <b>정면 4~5m</b>, 허리 높이에 가로로 둡니다. 카메라를 보고 차렷으로 기다리다가, “준비” 구령에 준비 자세를 합니다.<br>
     태극 1장은 좌우로 한 걸음씩, 앞으로 두 번 나왔다 돌아옵니다. <b>양옆과 앞쪽 끝이 다 화면에 들어오는지</b> 먼저 확인하세요.<br>
-    <b>동작마다 잠깐 멈춤</b>이 있어야 동작이 끝난 것으로 봅니다. 평소 속도로 하면 됩니다.
+    <b>준비 자세가 확인되면 “시작”</b>을 안내합니다. 동작마다 잠깐 멈추며 평소 속도로 하세요.<br>마지막에는 <b>“바로” → 준비 자세 확인 → “쉬어”</b>까지 진행합니다. 구령이 안 들리면 화면 안내를 보세요.
   </div>
 </section>
 
@@ -255,7 +261,7 @@ table.t input{width:100%}
 <script id="psm-core">
 
 var PSM = (function(){
-  var VERSION = '0.3.0';
+  var VERSION = '0.4.0';
 
   var DEFAULT_CFG = {
     SMOOTH: 0.5,        
@@ -597,7 +603,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
   function fmtT(ms){ var s=Math.max(0,Math.floor(ms/1000)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
 
-  var pref=Object.assign({role:'master', wait:'10', cam:'user', model:'full'}, lsGet(LS_PREF,{}));
+  var pref=Object.assign({role:'master', wait:'10', cam:'user', model:'full', feedback:'off'}, lsGet(LS_PREF,{}));
   var cfg=Object.assign({}, PSM.DEFAULT_CFG, lsGet(LS_CFG,{}));
   function getKey(){
     var saved=lsGet(LS_KEY,null);
@@ -704,7 +710,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
 
   function boot(){
     if(booted) return; booted=true;
-    segInit('segRole','role'); segInit('segWait','wait'); segInit('segCam','cam'); segInit('segModel','model');
+    segInit('segFeedback','feedback'); segInit('segRole','role'); segInit('segWait','wait'); segInit('segCam','cam'); segInit('segModel','model');
     $('lobby').hidden=false;
     $('btnStart').addEventListener('click', startSession);
     $('btnFold').addEventListener('click', function(){
@@ -832,13 +838,15 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
         var f= hit ? PSM.feat(hit.lm, hit.wl, srcW, srcH) : null;
         var ev=live.det[k].push(t, f);
         if(ev) onLiveEvent(k, ev);
+        if(live.phase==='prepare' || live.phase==='return') checkReady(k,hit,f,now);
       }
       if(rec.mode===2){ if(fr.p.length>=2) live.both++; live.frames++; }
-
-      var lastIdx=KEY.length-1, allEnd=true, allBaro=true, moving=false;
-      for(var q=0;q<rec.mode;q++){ if(live.ptr[q]<lastIdx) allEnd=false; if(live.ptr[q]<KEY.length) allBaro=false; if(live.det[q].speed()>PSM.DEFAULT_CFG.MOVE_T) moving=true; }
-      if(moving) live.lastMove=now;
-      if(allEnd && ((allBaro && now-(live.lastStop||0)>1200) || now-(live.lastMove||now)>4000)) finishSession('자동');
+      if(live.phase==='perform'){
+        var allEnd=true;
+        for(var q=0;q<rec.mode;q++) if(live.ptr[q]<KEY.length-1) allEnd=false;
+        if(allEnd) beginReturn();
+      }
+      advanceRitual(now);
       if(t > 180000) finishSession('시간');
     }
     draw();
@@ -865,7 +873,60 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     }
   }
 
-  var cdTimer=null, wakeLock=null;
+  var cdTimer=null, wakeLock=null, cueTimer=null, cueToken=0;
+  function cue(text, done){
+    var token=++cueToken, ended=false;
+    clearTimeout(cueTimer);
+    function end(){ if(ended || token!==cueToken) return; ended=true; clearTimeout(cueTimer); if(done) done(); }
+    cueTimer=setTimeout(end, 3000);
+    try{
+      if(!window.speechSynthesis) { cueTimer=setTimeout(end,900); return; }
+      speechSynthesis.cancel();
+      var u=new SpeechSynthesisUtterance(text); u.lang='ko-KR'; u.rate=0.9;
+      u.onend=end; u.onerror=end; speechSynthesis.speak(u);
+    }catch(e){ end(); }
+  }
+  function phaseMessage(title, detail){
+    $('cdN').style.fontSize='min(20vw,120px)';
+    $('countdown').hidden=false; $('cdN').textContent=title; $('cdT').textContent=detail;
+  }
+  function beginPerformance(){
+    live.phase='starting';
+    phaseMessage('준비 완료','시작 구령 뒤 품새를 시작하세요'); beep(1047,160,0.15);
+    cue('시작', function(){
+      if(!rec || !rec.running || live.phase!=='starting') return;
+      live.phase='perform';
+      for(var k=0;k<rec.mode;k++){ live.ptr[k]=1; live.marks[k][0]='ok'; }
+      beep(1320,350,0.3); $('countdown').hidden=true;
+    });
+  }
+  function beginReturn(){
+    live.phase='returnCue'; live.readySince=[null,null];
+    phaseMessage('바로','정면을 보고 준비 자세로 돌아오세요');
+    cue('바로', function(){ if(rec && rec.running && live.phase==='returnCue') live.phase='return'; });
+  }
+  function checkReady(k, hit, f, now){
+    var cls=f ? PSM.classify(PSM.aggregate([f]),cfg) : null;
+    var visible=hit && [11,12,15,16,23,24,27,28].every(function(i){
+      return hit.lm[i*4+3]>=0.5 && hit.lm[i*4]>=0 && hit.lm[i*4]<=1 && hit.lm[i*4+1]>=0 && hit.lm[i*4+1]<=1;
+    });
+    var shoulder=hit ? Math.abs(hit.lm[11*4]-hit.lm[12*4]) : 0;
+    var handsInFront=hit && shoulder>0.02 && Math.abs(hit.lm[15*4]-hit.lm[16*4])<shoulder*0.95;
+    var ready=visible && handsInFront && cls && cls.dir==='F' && cls.tech==='준비' && live.det[k].inStop() && live.det[k].speed()<cfg.STILL_T;
+    if(!ready) live.readySince[k]=null;
+    else if(live.readySince[k]===null) live.readySince[k]=now;
+  }
+  function advanceRitual(now){
+    if(live.phase!=='prepare' && live.phase!=='return') return;
+    var ready=true;
+    for(var k=0;k<rec.mode;k++) if(live.readySince[k]===null || now-live.readySince[k]<700) ready=false;
+    if(!ready) return;
+    if(live.phase==='prepare') beginPerformance();
+    else {
+      live.phase='rest'; phaseMessage('쉬어','품새를 마쳤습니다. 편하게 쉬세요');
+      cue('쉬어', function(){ if(rec && rec.running && live.phase==='rest') finishSession('자동'); });
+    }
+  }
   function beep(freq,ms,vol){
     try{
       var A=beep.ac||(beep.ac=new (window.AudioContext||window.webkitAudioContext)());
@@ -878,6 +939,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   }
 
   function startSession(){
+    $('cdN').style.fontSize='';
     beep(660,60,0.05);
     var mode=pref.role==='pair'?2:1;
     ensurePoses();
@@ -885,28 +947,29 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     rec={id:'psm-'+Date.now().toString(36), app:'psm-lab', ver:PSM.VERSION, created:new Date().toISOString(),
       role:pref.role, label:($('inLabel').value||'').trim(), poomsae:'tg1', mode:mode, cam:pref.cam, model:pref.model,
       W:srcW, H:srcH, ua:navigator.userAgent, screen:innerWidth+'x'+innerHeight, cfg:Object.assign({},cfg), key:KEY, frames:[], running:false};
-    live={det:[], ptr:[0,0], marks:[[],[]], last:['',''], seen:[0,0], miss:[0,0], both:0, frames:0, lastMove:0, lastStop:0, events:[]};
+    live={det:[], ptr:[0,0], marks:[[],[]], last:['',''], seen:[0,0], miss:[0,0], both:0, frames:0, lastMove:0, lastStop:0, events:[], phase:'countdown', readySince:[null,null]};
     for(var k=0;k<mode;k++) live.det.push(PSM.makeDetector(cfg));
     $('lobby').hidden=true;
     document.body.classList.add('recording');
     buildHud(mode);
     $('hud').hidden=false; $('btnCancel').hidden=false;
     var n=parseInt(pref.wait,10)||10, cd=$('countdown');
-    cd.hidden=false; $('cdN').textContent=n; $('cdT').textContent= mode===2 ? '두 사람 모두 준비 자세로' : '준비 자세로 서 주세요';
+    cd.hidden=false; $('cdN').textContent=n; $('cdT').textContent= mode===2 ? '두 사람 모두 차렷으로 기다리세요' : '차렷으로 기다리세요';
     try{ navigator.wakeLock && navigator.wakeLock.request('screen').then(function(w){ wakeLock=w; }).catch(function(){}); }catch(e){}
     cdTimer=setInterval(function(){
       n--;
       if(n>0){ $('cdN').textContent=n; if(n<=3) beep(880,120,0.25); return; }
       clearInterval(cdTimer); cdTimer=null;
-      $('cdN').textContent='시작'; $('cdT').textContent='준비 자세에서 잠깐 멈춘 뒤 시작하세요';
-      beep(1320,350,0.3);
-      setTimeout(function(){ cd.hidden=true; }, 900);
-      rec.t0=performance.now(); rec.running=true;
+      phaseMessage('준비','준비 자세를 하고 잠깐 유지하세요 · 전신이 보여야 합니다');
+      live.phase='prepareCue'; rec.t0=performance.now(); rec.running=true;
+      cue('준비', function(){ if(rec && rec.running && live.phase==='prepareCue') live.phase='prepare'; });
       $('btnEnd').hidden=false;
     },1000);
   }
 
   function stopCommon(){
+    ++cueToken; clearTimeout(cueTimer);
+    try{ if(window.speechSynthesis) speechSynthesis.cancel(); }catch(e){}
     if(cdTimer){ clearInterval(cdTimer); cdTimer=null; }
     $('countdown').hidden=true; $('hud').hidden=true; $('btnEnd').hidden=true; $('btnCancel').hidden=true;
     document.body.classList.remove('recording');
@@ -929,7 +992,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   }
 
   function onLiveEvent(k, ev){
-    if(ev.type!=='stop') return;
+    if(live.phase!=='perform' || ev.type!=='stop') return;
     var cls=ev.stop.liveCls, p=live.ptr[k], key=KEY;
     if(!cls || p>=key.length) return;
     var j0=PSM.judge(cls,key[p]), j1= p+1<key.length ? PSM.judge(cls,key[p+1]) : {score:-1};
@@ -945,7 +1008,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
       live.marks[k][took]= (jd.ok.dir && jd.ok.tech) ? 'ok' : 'ng';
       live.ptr[k]=took+1;
       txt='<b>'+key[took].n+'번</b> '+mk(jd.ok.dir,'방향',PSM.DIR_NAME[cls.dir])+' · '+mk(jd.ok.stance,'서기',cls.stance)+' · '+mk(jd.ok.tech,'기술',cls.tech)+(skipped?' <span class="x">('+key[took-1].n+'번 놓침)</span>':'');
-      beep(jd.ok.dir&&jd.ok.tech?1500:520,60,0.08);
+      if(rec.role!=='master' && pref.feedback==='on') beep(jd.ok.dir&&jd.ok.tech?1500:520,60,0.08);
       live.lastStop=performance.now();
     }
     live.last[k]=txt;
@@ -973,7 +1036,8 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     for(var k=0;k<rec.mode;k++){
       var c=cards[k]; if(!c) continue;
       var p=live.ptr[k], key=KEY[p];
-      c.querySelector('.c-next').innerHTML= key ? '<span class="dir">'+PSM.DIR_NAME[key.dir]+'</span>'+(key.n? key.n+'. ':'')+esc(key.name) : '끝! 바로 자세';
+      c.querySelector('.c-next').innerHTML= key ? '<span class="dir">'+PSM.DIR_NAME[key.dir]+'</span>'+(key.n? key.n+'. ':'')+esc(key.name) : '준비 자세로 마무리';
+      if(live.phase!=='perform') c.querySelector('.c-next').textContent=live.phase==='rest'?'쉬어':(live.phase==='starting'?'준비 완료':(live.phase==='return' || live.phase==='returnCue'?'바로 · 준비 자세로 돌아오세요':'준비 자세를 해 주세요'));
       c.querySelector('.c-last').innerHTML=live.last[k]||'';
       var ds=c.querySelectorAll('.c-dots i');
       for(var j=0;j<ds.length;j++){ var mkk=live.marks[k][j+1]; ds[j].className=(mkk||'')+(p===j+1?' cur':''); }
