@@ -52,7 +52,7 @@ var PRODUCT = {
   code    : 'S',                    
   name    : 'AI STRIKE MASTER',
   short   : 'STRIKE',
-  version : '0.9.11',   
+  version : '0.9.12',   
   built   : '2026-10-14'
 };
 try{ window.PRODUCT = PRODUCT; }catch(e){}
@@ -4216,6 +4216,14 @@ body.akm-group-open.akm-group-running .stage>.panel>.mode-row *{visibility:hidde
 
       <button class="settings-home-btn" type="button" id="shortcutBtn" style="margin-top:0;">바탕화면에 바로가기 추가</button>
       <button class="settings-home-btn" type="button" onclick="location.href='/kickmaster'">홈페이지로 돌아가기</button>
+
+      <div class="settings-section" id="nlConsentBox" style="display:none;">
+        <hr class="settings-divider">
+        <div class="settings-label">데이터측정 동의 <span id="nlConsentState">-</span></div>
+        <button class="settings-home-btn" type="button" id="nlConsentBtn" style="margin-top:0;">동의하기</button>
+        <div class="settings-hint">동작 측정값(관절 숫자)을 나른랩스 서버로 보내 판정 개선에 씁니다. 영상·사진·이름은 보내지 않으며 10일 뒤 자동 삭제됩니다. 동의하지 않아도 프로그램은 똑같이 쓸 수 있습니다.</div>
+        <div class="settings-hint" id="nlConsentNote"></div>
+      </div>
 
       <hr class="settings-divider">
 
@@ -14193,7 +14201,8 @@ html body #handNextPrompt .h-frame::before,html body #handNextPrompt .h-frame::a
   function sync(){
     if(!live || busy || typeof CompressionStream==='undefined') return;
     var c=null; try{ c=JSON.parse(ls(LS)||'null'); }catch(e){}
-    if(!c || !c.is_beta || !c.license_key) return;
+    if(!c || !c.license_key) return;
+    if(!c.is_beta && ls(P+'_data_consent')!=='1') return;   
     var get=window.__nlLabPayload; if(typeof get!=='function') return;
     var pl=null; try{ pl=get(); }catch(e){ return; }
     var n=pl ? (pl.count|0) : 0;
@@ -14219,6 +14228,54 @@ html body #handNextPrompt .h-frame::before,html body #handNextPrompt .h-frame::a
   setTimeout(sync, 15000);
   document.addEventListener('visibilitychange', function(){ if(document.visibilityState==='hidden') sync(); });
   window.__nlLabSync=sync;
+
+  var CONS=P+'_data_consent', NOTE=P+'_consent_notice';
+  var CURL='https://ebgoolsymyzkftvavpyj.supabase.co/functions/v1/lab-records';
+  var cstate=null;
+  function lic(){ try{ return JSON.parse(ls(LS)||'null'); }catch(e){ return null; } }
+  function cpost(body){ return fetch(CURL,{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)}).then(function(r){ return r.json(); }); }
+  function ymd(at){ try{ var d=new Date(at); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }catch(e){ return ''; } }
+  function render(){
+    var box=document.getElementById('nlConsentBox'); if(!box) return;
+    if(!cstate || !cstate.enabled){ box.style.display='none'; return; }
+    box.style.display='';
+    var st=document.getElementById('nlConsentState'), btn=document.getElementById('nlConsentBtn'), nt=document.getElementById('nlConsentNote');
+    if(st) st.textContent= cstate.consent ? ('동의함 · '+ymd(cstate.at)) : '동의 안 함';
+    if(btn){ btn.textContent= cstate.consent ? '동의 철회' : '동의하기'; btn.disabled=false; }
+    if(nt) nt.textContent= cstate.master ? '마스터 라이선스는 동의와 관계없이 연구 기록이 보관됩니다.' : '';
+  }
+  function notice(){
+    try{
+      var el=document.createElement('div');
+      el.style.cssText='position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:2147483646;max-width:min(560px,92vw);padding:14px 20px;border-radius:14px;background:rgba(6,16,31,.94);border:1px solid rgba(120,200,255,.45);color:#eaf4ff;font-size:15px;font-weight:700;text-align:center;line-height:1.5;pointer-events:none;';
+      el.textContent='설정 > 기기에서 데이터측정 동의를 할 수 있습니다. 동의하지 않아도 프로그램은 똑같이 쓸 수 있습니다.';
+      document.body.appendChild(el); setTimeout(function(){ el.remove(); }, 6000);
+    }catch(e){}
+  }
+  function refresh(){
+    if(!live) return;
+    var c=lic(); if(!c || !c.license_key) return;
+    cpost({action:'consent-status', license_key:c.license_key, device_id:ls(DEV)||''}).then(function(j){
+      if(!j || !j.ok) return;
+      cstate=j; ls(CONS, (j.enabled && j.consent) ? '1' : '0'); render();
+      if(j.enabled && !j.consent && !j.master && !ls(NOTE)){ ls(NOTE,'1'); notice(); }
+    }).catch(function(){});
+  }
+  function toggle(){
+    if(!cstate || !cstate.enabled) return;
+    var c=lic(); if(!c || !c.license_key) return;
+    var btn=document.getElementById('nlConsentBtn'); if(btn) btn.disabled=true;
+    cpost({action:'consent-set', license_key:c.license_key, device_id:ls(DEV)||'', consent:!cstate.consent}).then(function(j){
+      if(j && j.ok){ cstate=j; ls(CONS, (j.enabled && j.consent) ? '1' : '0'); }
+      render();
+    }).catch(function(){ render(); });
+  }
+  document.addEventListener('click', function(e){
+    var t=e.target; if(!t || !t.closest) return;
+    if(t.closest('#nlConsentBtn')){ toggle(); return; }
+    if(t.closest('#settingsBtn, #setTabBtn_dev, [onclick*="toggleHudSettings"]')) setTimeout(refresh, 80);
+  });
+  setTimeout(refresh, 6000);
 })();
 </script>
 </body>
