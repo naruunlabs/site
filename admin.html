@@ -1040,6 +1040,13 @@ table.cg tfoot td.num{text-align:right}
       <div class="owned-note">다른 제품을 누르면 이 도장 정보를 채운 채 발급창이 열립니다.</div>
     </div>
 
+    <div class="modal-section" id="consentSection" style="display:none;">
+      <div class="modal-section-title">데이터측정 동의 <span class="now-tag">버튼을 누르는 즉시 적용</span></div>
+      <div id="consentBox" class="use-note"></div>
+      <button type="button" class="btn-sm btn-toggle" id="consentToggleBtn" style="margin-top:10px;" onclick="toggleConsentEnabled()">칸 보이기</button>
+      <div class="modal-help">켜면 이 도장 프로그램의 설정창에 동의 칸이 생깁니다. 끄면 칸이 사라지고 동의도 함께 풀립니다.</div>
+    </div>
+
     <div class="modal-section" id="usageSection" style="display:none;">
       <div class="modal-section-title">사용 기록</div>
       <div id="usageBox" class="use-note">불러오는 중…</div>
@@ -1876,6 +1883,7 @@ function openAddModal() {
   const cn0 = document.getElementById('convertNote'); if (cn0) cn0.textContent = '';
   document.getElementById('deviceSlotSection').style.display = 'none';
   document.getElementById('usageSection').style.display = 'none';
+  document.getElementById('consentSection').style.display = 'none';   
   showDeviceHistory('');
   document.getElementById('ownedSection').style.display = 'none';   
   document.getElementById('saveBtn').textContent = '발급';
@@ -1997,6 +2005,7 @@ function openEditModal(encoded) {
   document.getElementById('deviceSlotSection').style.display = 'block';
   renderDeviceSlotsUI();
   showUsage(d.license_key);
+  renderConsent(d);   
   showDeviceHistory(d.license_key);
   document.getElementById('saveBtn').textContent = '저장';
   document.getElementById('saveCopyBtn').textContent = '저장하고 카톡 복사';
@@ -2367,6 +2376,33 @@ async function removeDeviceSlot(idx) {
     renderDeviceSlotsUI();
     await loadLicenses();
   } catch (err) { alert('삭제 실패: ' + err.message); }
+}
+
+function renderConsent(d){
+  const sec=document.getElementById('consentSection'), box=document.getElementById('consentBox'), btn=document.getElementById('consentToggleBtn');
+  if(!sec||!box||!btn) return;
+  sec.style.display='block';
+  const on=!!d.data_consent_enabled, agreed=!!d.data_consent;
+  const at=d.data_consent_at ? new Date(d.data_consent_at).toLocaleString('ko-KR') : '';
+  box.innerHTML = '설정창 칸: <b>'+(on?'보임':'숨김')+'</b><br>관장님 동의: <b>'+(agreed?('동의함 · '+at):'동의 안 함')+'</b>'
+    + (d.is_beta ? '<br><span style="color:var(--muted)">마스터 라이선스는 동의와 관계없이 연구 기록이 보관됩니다.</span>' : '');
+  btn.textContent = on ? '칸 숨기기 (동의도 풀림)' : '칸 보이기';
+}
+async function toggleConsentEnabled(){
+  if(!currentEditLicenseId) return;
+  const d=(LICENSES||[]).find(x=>String(x.id)===String(currentEditLicenseId));
+  if(!d) return;
+  const on=!d.data_consent_enabled;
+  if(on && !d.is_beta && !confirm('이 도장 설정창에 데이터측정 동의 칸을 보이게 할까요?\n(개인정보처리방침 개정·공고를 먼저 마쳤는지 확인하세요)')) return;
+  const fields = on ? { data_consent_enabled:true } : { data_consent_enabled:false, data_consent:false, data_consent_at:null, data_consent_device:null };
+  const btn=document.getElementById('consentToggleBtn'); if(btn) btn.disabled=true;
+  try{
+    await edgeCall('UPDATE_LICENSE', Object.assign({ id: currentEditLicenseId }, fields));
+    Object.assign(d, fields);
+    renderConsent(d);
+    await loadLicenses();
+  }catch(err){ alert('바꾸기 실패: ' + err.message); }
+  finally{ if(btn) btn.disabled=false; }
 }
 
 async function resetDeviceSlots() {
