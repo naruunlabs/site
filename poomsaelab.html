@@ -261,11 +261,11 @@ table.t input{width:100%}
 <script id="psm-core">
 
 var PSM = (function(){
-  var VERSION = '0.4.0';
+  var VERSION = '0.4.1';
 
   var DEFAULT_CFG = {
     SMOOTH: 0.5,        
-    STILL_T: 0.65,      
+    STILL_T: 0.75,      
     MOVE_T: 1.1,        
     STILL_MS: 160,      
     SPEED_WIN: 150,     
@@ -413,9 +413,11 @@ var PSM = (function(){
     return {dir:dir, stance:stance, tech:tech, arm:act};
   }
 
+  function noTech(k){ return !!k && k.dir==='B' && k.tech==='몸통지르기'; }
   function judge(cls, k){
     if(!cls || !k) return {score:0, ok:{dir:false,stance:false,tech:false}};
-    var ok={dir: cls.dir===k.dir, stance: cls.stance===k.stance, tech: cls.tech===k.tech};
+    
+    var ok={dir: cls.dir===k.dir, stance: cls.stance===k.stance, tech: noTech(k) ? true : cls.tech===k.tech};
     
     return {score: (ok.dir?0.55:0)+(ok.tech?0.45:0), ok:ok};
   }
@@ -571,7 +573,7 @@ var PSM = (function(){
   }
 
   return {VERSION:VERSION, DEFAULT_CFG:DEFAULT_CFG, CFG_INFO:CFG_INFO, DIR_NAME:DIR_NAME, TECHS:TECHS, STANCES:STANCES,
-    KEY_TG1:KEY_TG1, feat:feat, aggregate:aggregate, classify:classify, judge:judge, makeDetector:makeDetector,
+    KEY_TG1:KEY_TG1, noTech:noTech, feat:feat, aggregate:aggregate, classify:classify, judge:judge, makeDetector:makeDetector,
     replay:replay, align:align, summarize:summarize, syncPairs:syncPairs, stopLite:stopLite, round:r};
 })();
 if(typeof module!=='undefined' && module.exports) module.exports=PSM;
@@ -1105,7 +1107,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
       var c=s0.cls||{};
       h+='<td>'+cell(jd.ok.dir, PSM.DIR_NAME[c.dir], PSM.DIR_NAME[k.dir])+'</td>';
       h+='<td>'+cell(jd.ok.stance, c.stance, k.stance)+'</td>';
-      h+='<td>'+cell(jd.ok.tech, c.tech, k.tech)+'</td>';
+      h+='<td>'+(PSM.noTech(k) ? '<span class="dim">판정 안 함 (뒤라 손이 안 보임)</span>' : cell(jd.ok.tech, c.tech, k.tech))+'</td>';
       h+='<td class="num dim">'+(s0.t0/1000).toFixed(1)+'s</td></tr>';
     });
     h+='</tbody></table>';
