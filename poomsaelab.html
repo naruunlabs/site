@@ -166,8 +166,8 @@ table.t input{width:100%}
   <div class="gate-box">
     <div class="gate-brand">NARUUN LABS · POOMSAE</div>
     <div class="gate-title">품새 측정기</div>
-    <p class="gate-sub">품새마스터 개발용 시험 도구입니다.<br>나른랩스 마스터 라이선스로만 열립니다.</p>
-    <input id="gateKey" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="STR-0000-XXXX-0000" aria-label="라이선스 키">
+    <p class="gate-sub">품새마스터 개발용 시험 도구입니다.<br>품새 라이선스(PMS-)로만 열립니다.</p>
+    <input id="gateKey" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="PMS-0000-XXXX-0000" aria-label="라이선스 키">
     <button class="gate-btn" id="gateBtn" type="button">인증하기</button>
     <div class="gate-err" id="gateErr" role="alert"></div>
   </div>
@@ -255,7 +255,7 @@ table.t input{width:100%}
 <script id="psm-core">
 
 var PSM = (function(){
-  var VERSION = '0.1.0';
+  var VERSION = '0.1.1';
 
   var DEFAULT_CFG = {
     SMOOTH: 0.5,        
@@ -572,9 +572,8 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   var $=function(id){ return document.getElementById(id); };
   var LOCAL = (location.protocol==='file:' || location.hostname==='localhost' || location.hostname==='127.0.0.1');
   var TEST = LOCAL && /[?&]fake=1/.test(location.search);
-  var VERIFY_URL='https://ebgoolsymyzkftvavpyj.supabase.co/functions/v1/verify-license';
+  var VERIFY_URL='https://ebgoolsymyzkftvavpyj.supabase.co/functions/v1/verify-pms';
   var LS_AUTH='psm_lab_auth_v1', LS_PREF='psm_lab_pref_v1', LS_KEY='psm_lab_key_tg1', LS_CFG='psm_lab_cfg_v1';
-  var DEV_KEYS={AKM:'akm_device_id', JMP:'jmp_device_id', STR:'asm_device_id'};
   var PUBKEY={"kty":"EC","crv":"P-256","x":"TRVuOcoZYEagtQgi5GRgUOSIkAjiW_aUS4O9U6cfK0I","y":"IknjHnofBQw-5FhVBgeI2hx9WFT4OIs90G4aPYBNbuc"};
   var MODELS={
     full:'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task',
@@ -616,7 +615,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
       }).catch(function(){ return null; });
   }
   function deviceId(key){
-    var pre=String(key).slice(0,3), name=DEV_KEYS[pre]||'psm_device_id';
+    var name='psm_device_id';
     try{
       var id=localStorage.getItem(name);
       if(!id){ id='dev-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10); localStorage.setItem(name,id); }
@@ -632,7 +631,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   function grant(auth){
     $('gate').hidden=true;
     $('tbDojang').textContent=auth.dojang||'POOMSAE MASTER';
-    $('tbAuth').textContent='● 마스터 라이선스 · '+String(auth.key).slice(0,3);
+    $('tbAuth').textContent='● 품새 마스터 라이선스';
     boot();
   }
   function lock(msg){
@@ -642,7 +641,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   }
   function doLogin(){
     var key=$('gateKey').value.trim().toUpperCase(), err=$('gateErr'), btn=$('gateBtn');
-    if(!/^(AKM|JMP|STR)-/.test(key)){ err.textContent='나른랩스 라이선스 키를 입력해 주세요.'; return; }
+    if(!/^PMS-/.test(key)){ err.textContent='품새 라이선스 키(PMS-)를 입력해 주세요.'; return; }
     btn.disabled=true; btn.textContent='인증 중…'; err.textContent='';
     verifyOnline(key).then(function(res){
       if(!res || !res.valid){ throw new Error(res && res.reason==='rate_limited' ? '인증 시도가 너무 많습니다. 잠시 뒤 다시 해 주세요.' : ((res&&res.error)||'유효하지 않은 키입니다.')); }
@@ -662,7 +661,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   function startAuth(){
     if(TEST){ grant({key:'TST-LOCAL', dojang:'로컬 시험'}); return; }
     var a=lsGet(LS_AUTH,null);
-    if(!a || !a.key || !a.tok || Date.now()-a.at > 7*86400000){ lock(''); return; }
+    if(!a || !/^PMS-/.test(a.key||'') || !a.tok || Date.now()-a.at > 7*86400000){ lock(''); return; }
     checkTok(a.key,a.tok).then(function(c){
       if(!c || !c.bt){ lock('다시 인증해 주세요.'); return; }
       grant(a);
