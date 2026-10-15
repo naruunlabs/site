@@ -261,7 +261,7 @@ table.t input{width:100%}
 <script id="psm-core">
 
 var PSM = (function(){
-  var VERSION = '0.4.1';
+  var VERSION = '0.4.2';
 
   var DEFAULT_CFG = {
     SMOOTH: 0.5,        
@@ -845,7 +845,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
       if(rec.mode===2){ if(fr.p.length>=2) live.both++; live.frames++; }
       if(live.phase==='perform'){
         var allEnd=true;
-        for(var q=0;q<rec.mode;q++) if(live.ptr[q]<KEY.length-1) allEnd=false;
+        for(var q=0;q<rec.mode;q++) if(live.ptr[q]<=lastMove(KEY)) allEnd=false;
         if(allEnd) beginReturn();
       }
       advanceRitual(now);
@@ -993,29 +993,45 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
       .then(function(){ return uploadRec(done, result); });
   }
 
+  var LIVE_AHEAD=3;
+  function lastMove(key){ var i=key.length-1; while(i>0 && key[i].opt) i--; return i; }
   function onLiveEvent(k, ev){
     if(live.phase!=='perform' || ev.type!=='stop') return;
-    var cls=ev.stop.liveCls, p=live.ptr[k], key=KEY;
-    if(!cls || p>=key.length) return;
-    var j0=PSM.judge(cls,key[p]), j1= p+1<key.length ? PSM.judge(cls,key[p+1]) : {score:-1};
+    var cls=ev.stop.liveCls, p=live.ptr[k], key=KEY, last=lastMove(KEY);
+    if(!cls || p>last) return;
+    var took=-1, from=p, txt;
+    if(p>=last-3 && cls.dir==='F' && cls.tech==='준비'){
+      for(var q=p;q<=last;q++) live.marks[k][q]='miss';
+      live.ptr[k]=last+1;
+      live.last[k]='<b>바로</b> 자세 확인'+(p<=last?' <span class="x">('+missText(key,p,last)+' 놓침)</span>':'');
+      live.events.push({k:k, t:ev.stop.t0, took:'end', cls:cls});
+      return;
+    }
+    var j0=PSM.judge(cls,key[p]), j1= p+1<=last ? PSM.judge(cls,key[p+1]) : {score:-1};
     var jp= p>0 ? PSM.judge(cls,key[p-1]) : {score:-1};
-    var took=-1, skipped=false;
     if(p>0 && jp.score>=0.99 && j0.score<0.6 && live.marks[k][p-1]!==undefined){ took=-2; }
-    else if(j1.score>j0.score+0.25 && j1.score>=0.6){ live.marks[k][p]='miss'; took=p+1; skipped=true; }
-    else took=p;
-    var txt;
+    else if(j0.score>=0.99) took=p;
+    else if(j1.score>j0.score+0.25 && j1.score>=0.6) took=p+1;
+    else {
+      took=p;
+      if(j0.score<0.6){
+        for(var c=p+2;c<=Math.min(p+LIVE_AHEAD,last);c++){ if(PSM.judge(cls,key[c]).score>=0.99){ took=c; break; } }
+      }
+    }
     if(took===-2){ txt='같은 동작에서 한 번 더 멈춤 (넘어감)'; }
     else {
+      for(var m=from;m<took;m++) live.marks[k][m]='miss';
       var jd=PSM.judge(cls,key[took]);
       live.marks[k][took]= (jd.ok.dir && jd.ok.tech) ? 'ok' : 'ng';
       live.ptr[k]=took+1;
-      txt='<b>'+key[took].n+'번</b> '+mk(jd.ok.dir,'방향',PSM.DIR_NAME[cls.dir])+' · '+mk(jd.ok.stance,'서기',cls.stance)+' · '+mk(jd.ok.tech,'기술',cls.tech)+(skipped?' <span class="x">('+key[took-1].n+'번 놓침)</span>':'');
+      txt='<b>'+key[took].n+'번</b> '+mk(jd.ok.dir,'방향',PSM.DIR_NAME[cls.dir])+' · '+mk(jd.ok.stance,'서기',cls.stance)+' · '+mk(jd.ok.tech,'기술',cls.tech)+(took>from?' <span class="x">('+missText(key,from,took-1)+' 놓침)</span>':'');
       if(rec.role!=='master' && pref.feedback==='on') beep(jd.ok.dir&&jd.ok.tech?1500:520,60,0.08);
       live.lastStop=performance.now();
     }
     live.last[k]=txt;
     live.events.push({k:k, t:ev.stop.t0, took:took, cls:cls});
   }
+  function missText(key,a,b){ var o=[]; for(var i=a;i<=b;i++) o.push(key[i].n); return o.join('·')+'번'; }
   function mk(ok,label,val){ return label+' <span class="'+(ok?'o':'x')+'">'+(ok?'○':'×')+'</span> '+esc(val); }
 
   function buildHud(mode){
