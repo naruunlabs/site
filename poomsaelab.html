@@ -255,36 +255,33 @@ table.t input{width:100%}
 <script id="psm-core">
 
 var PSM = (function(){
-  var VERSION = '0.2.0';
+  var VERSION = '0.3.0';
 
   var DEFAULT_CFG = {
     SMOOTH: 0.5,        
-    STILL_T: 0.55,      
+    STILL_T: 0.65,      
     MOVE_T: 1.1,        
-    STILL_MS: 200,      
+    STILL_MS: 160,      
     SPEED_WIN: 150,     
-    MIN_PATH: 0.45,     
+    MIN_PATH: 0.3,      
     AGG_MS: 600,        
-    SW_FRONT: 0.72,     
-    SIDE_T: 0.45,       
-    FACE_VIS: 0.5,      
+    YAW_FRONT: 30,      
+    YAW_BACK: 143,      
     NARROW_T: 0.95,     
     LONG_T: 1.75,       
     MID_T: 1.2,         
     KNEE_BENT: 148,     
-    KNEE_STRAIGHT: 160, 
-    READY_REACH: 0.62,  
+    RAISE_H: 0.4,       
     FACE_UP: 0.0,       
-    LOW_H: 0.8,         
-    PUNCH_ELBOW: 142    
+    PUNCH_ELBOW: 138,   
+    READY_SYM: 0.1      
   };
   var CFG_INFO = {
     SMOOTH:['관절 부드럽게','0~1'], STILL_T:['멈춤 속도','몸통/초'], MOVE_T:['움직임 속도','몸통/초'],
     STILL_MS:['멈춤 유지 시간','ms'], SPEED_WIN:['속도 재는 폭','ms'], MIN_PATH:['새 동작 최소 이동','몸통'], AGG_MS:['자세 평균 시간','ms'],
-    SW_FRONT:['정면 어깨폭','비율'], SIDE_T:['옆모습 판단 점수','0~1'], FACE_VIS:['뒤 판단 얼굴 가시성','0~1'], NARROW_T:['준비 발 간격','몸통'],
-    LONG_T:['앞굽이 발 간격','몸통'], MID_T:['굽힘 앞굽이 최소 간격','몸통'], KNEE_BENT:['굽힌 무릎','도'],
-    KNEE_STRAIGHT:['편 무릎','도'], READY_REACH:['준비 손 거리','몸통'], FACE_UP:['얼굴막기 높이','몸통'],
-    LOW_H:['아래막기 높이','비율'], PUNCH_ELBOW:['지르기 팔꿈치','도']
+    YAW_FRONT:['정면 판단 각도','도'], YAW_BACK:['뒤 판단 각도','도'],
+    NARROW_T:['(참고) 준비 발 간격','몸통'], LONG_T:['(참고) 앞굽이 발 간격','몸통'], MID_T:['(참고) 굽힘 앞굽이 간격','몸통'], KNEE_BENT:['(참고) 굽힌 무릎','도'],
+    RAISE_H:['든 팔 높이','비율'], FACE_UP:['얼굴막기 높이','몸통'], PUNCH_ELBOW:['지르기 팔꿈치','도'], READY_SYM:['준비 두 손 높이 차','비율']
   };
 
   var DIR_NAME = {F:'정면', L:'왼쪽', R:'오른쪽', B:'뒤'};
@@ -310,7 +307,8 @@ var PSM = (function(){
     {n:15, dir:'R', stance:'앞서기', tech:'얼굴막기',   name:'오른앞서기 얼굴막기', hand:'오른팔'},
     {n:16, dir:'R', stance:'앞서기', tech:'몸통지르기', name:'왼발 앞차기 → 왼앞서기 몸통반대지르기', hand:'왼주먹'},
     {n:17, dir:'B', stance:'앞굽이', tech:'아래막기',   name:'왼앞굽이 아래막기', hand:'왼팔'},
-    {n:18, dir:'B', stance:'앞굽이', tech:'몸통지르기', name:'오른앞굽이 몸통반대지르기 (기합)', hand:'오른주먹'}
+    {n:18, dir:'B', stance:'앞굽이', tech:'몸통지르기', name:'오른앞굽이 몸통반대지르기 (기합)', hand:'오른주먹'},
+    {n:19, dir:'F', stance:'준비',  tech:'준비',      name:'바로 (나란히서기)', hand:'', opt:true}
   ];
 
   var KP = [11,12,13,14,15,16,23,24,25,26,27,28];
@@ -346,6 +344,7 @@ var PSM = (function(){
       noseVis: lmF[3],
       eyeVis: (lmF[2*4+3] + lmF[5*4+3])/2,
       yaw: Math.atan2(w11.z - w12.z, w11.x - w12.x)*180/Math.PI,
+      hipYaw: Math.atan2(w23.z - w24.z, w23.x - w24.x)*180/Math.PI,
       noseZ: Q(0).z - wsm.z,
       ankW: d3(Q(27),Q(28))/wt,
       ankI: d2(P(27),P(28))/torso,
@@ -373,41 +372,46 @@ var PSM = (function(){
     for(var k=0;k<NUM_KEYS.length;k++){
       var key=NUM_KEYS[k], s=0; for(var i=0;i<fs.length;i++) s+=fs[i][key]; a[key]=s/fs.length;
     }
-    var sx=0, sy=0; for(var j=0;j<fs.length;j++){ sx+=Math.cos(fs[j].yaw*Math.PI/180); sy+=Math.sin(fs[j].yaw*Math.PI/180); }
-    a.yaw=Math.atan2(sy,sx)*180/Math.PI;
+    function circ(key){ var sx=0, sy=0; for(var j=0;j<fs.length;j++){ var v=fs[j][key]; if(v==null) continue; sx+=Math.cos(v*Math.PI/180); sy+=Math.sin(v*Math.PI/180); } return Math.atan2(sy,sx)*180/Math.PI; }
+    a.yaw=circ('yaw'); a.hipYaw=circ('hipYaw');
+    
+    var bx=Math.cos(a.yaw*Math.PI/180)+Math.cos(a.hipYaw*Math.PI/180), by=Math.sin(a.yaw*Math.PI/180)+Math.sin(a.hipYaw*Math.PI/180);
+    a.bodyYaw=Math.atan2(by,bx)*180/Math.PI;
     return a;
   }
 
   function classify(a, cfg){
     if(!a || !a.n) return null;
 
-    var cl=function(v){ return Math.max(-1,Math.min(1,v)); };
-    var yr=a.yaw*Math.PI/180;
-    var faceHidden = a.noseVis < cfg.FACE_VIS && a.eyeVis < cfg.FACE_VIS;
-    var fs = (cl(a.sw/cfg.SW_FRONT) + Math.cos(yr))/2 - (faceHidden?0.5:0);
-    var dir;
-    if(fs >= cfg.SIDE_T) dir='F';
-    else if(fs <= -cfg.SIDE_T) dir='B';
-    else dir = (Math.sin(yr) + cl(a.noseOff/0.15))/2 > 0 ? 'L' : 'R';
+    var y=a.bodyYaw, ay=Math.abs(y), dir;
+    if(ay <= cfg.YAW_FRONT) dir='F';
+    else if(ay >= cfg.YAW_BACK) dir='B';
+    else dir = y > 0 ? 'L' : 'R';
+    
     var knee=Math.min(a.kneeL, a.kneeR), stance;
-    if(a.ankW < cfg.NARROW_T && knee > cfg.KNEE_STRAIGHT) stance='준비';
+    if(a.ankW < cfg.NARROW_T && Math.abs(a.hL-a.hR) < cfg.READY_SYM*2) stance='준비';
     else if(a.ankW >= cfg.LONG_T || (knee < cfg.KNEE_BENT && a.ankW >= cfg.MID_T)) stance='앞굽이';
     else stance='앞서기';
-    var act = a.rL >= a.rR ? 'L' : 'R';
+
+    var act = a.hL <= a.hR ? 'L' : 'R';
     var e = act==='L'?a.eL:a.eR, h = act==='L'?a.hL:a.hR, nn = act==='L'?a.nL:a.nR;
     var tech;
-    if(stance==='준비' && Math.max(a.rL,a.rR) < cfg.READY_REACH) tech='준비';
-    else if(nn > cfg.FACE_UP) tech='얼굴막기';
-    else if(h > cfg.LOW_H) tech='아래막기';
-    else if(e >= cfg.PUNCH_ELBOW) tech='몸통지르기';
-    else tech='몸통안막기';
+    if(h < cfg.RAISE_H){
+      if(nn > cfg.FACE_UP) tech='얼굴막기';
+      else if(e >= cfg.PUNCH_ELBOW) tech='몸통지르기';
+      else tech='몸통안막기';
+    } else {
+      tech = (dir==='F' && Math.abs(a.hL-a.hR) < cfg.READY_SYM) ? '준비' : '아래막기';
+      if(tech==='준비') stance='준비';
+    }
     return {dir:dir, stance:stance, tech:tech, arm:act};
   }
 
   function judge(cls, k){
     if(!cls || !k) return {score:0, ok:{dir:false,stance:false,tech:false}};
     var ok={dir: cls.dir===k.dir, stance: cls.stance===k.stance, tech: cls.tech===k.tech};
-    return {score: (ok.dir?0.45:0)+(ok.stance?0.2:0)+(ok.tech?0.35:0), ok:ok};
+    
+    return {score: (ok.dir?0.55:0)+(ok.tech?0.45:0), ok:ok};
   }
 
   function groupDisp(A, Aw, B, Bw, tor, wtor){
@@ -423,7 +427,7 @@ var PSM = (function(){
   }
   function makeDetector(cfg){
     var sm=null, wsm=null, prevT=0, tor=0, wtor=0, sp=0, stillSince=0, buf=[], cur=null, first=true;
-    var hist=[], anchor=null, path=0;
+    var hist=[], anchor=null, path=0, rej=[], rejAt=-1;
     var stops=[];
     function finalize(t){
       if(!cur) return null;
@@ -460,6 +464,7 @@ var PSM = (function(){
       if(sp < cfg.STILL_T){
         if(!stillSince){ stillSince=t; buf=[]; }
         buf.push({t:t,f:f}); if(buf.length>40) buf.shift();
+        if(t - stillSince >= cfg.STILL_MS && !first && path < cfg.MIN_PATH && rejAt!==stillSince){ rejAt=stillSince; rej.push({t:stillSince, path:Math.round(path*100)/100}); }
         if(t - stillSince >= cfg.STILL_MS && (first || path >= cfg.MIN_PATH)){
           cur={t0:stillSince, tc:t, fr:buf.slice()};
           var la=aggregate(buf.map(function(o){ return o.f; }));
@@ -473,7 +478,7 @@ var PSM = (function(){
       return null;
     }
     function flush(t){ if(cur){ var s=finalize(t); stops.push(s); return {type:'end', stop:s}; } return null; }
-    return {push:push, flush:flush, stops:stops, speed:function(){ return sp; }, inStop:function(){ return !!cur; }};
+    return {push:push, flush:flush, stops:stops, rej:rej, speed:function(){ return sp; }, inStop:function(){ return !!cur; }};
   }
 
   function replay(rec, track, cfg){
@@ -489,7 +494,7 @@ var PSM = (function(){
       det.push(fr.t, f);
     }
     det.flush(lastT);
-    return {stops:det.stops, seen:seen, miss:miss};
+    return {stops:det.stops, seen:seen, miss:miss, rej:det.rej};
   }
 
   function align(stops, key){
@@ -524,7 +529,7 @@ var PSM = (function(){
       var k=key[j], si=al.map[j], s= si>=0 ? stops[si] : null;
       var jd= s ? judge(s.cls,k) : null;
       rows.push({k:k, si:si, stop:s, jd:jd});
-      if(k.n===0) continue;
+      if(k.n===0 || k.opt) continue;
       st.n++;
       var cl = k.dir==='F'?'F':(k.dir==='B'?'B':'S');
       st.byDir[cl][1]++;
@@ -544,7 +549,7 @@ var PSM = (function(){
     var out=[];
     for(var j=0;j<sumA.rows.length;j++){
       var a=sumA.rows[j], b=sumB.rows[j];
-      if(a.k.n===0) continue;
+      if(a.k.n===0 || a.k.opt) continue;
       if(a.stop && b.stop){
         var dt=Math.abs(a.stop.t0 - b.stop.t0)/1000;
         out.push({n:a.k.n, dt:dt, grade: dt<=0.25?'PERFECT':(dt<=0.5?'GOOD':'어긋남')});
@@ -829,7 +834,11 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
         if(ev) onLiveEvent(k, ev);
       }
       if(rec.mode===2){ if(fr.p.length>=2) live.both++; live.frames++; }
-      if(live.doneAt && now>=live.doneAt) finishSession('자동');
+
+      var lastIdx=KEY.length-1, allEnd=true, allBaro=true, moving=false;
+      for(var q=0;q<rec.mode;q++){ if(live.ptr[q]<lastIdx) allEnd=false; if(live.ptr[q]<KEY.length) allBaro=false; if(live.det[q].speed()>PSM.DEFAULT_CFG.MOVE_T) moving=true; }
+      if(moving) live.lastMove=now;
+      if(allEnd && ((allBaro && now-(live.lastStop||0)>1200) || now-(live.lastMove||now)>4000)) finishSession('자동');
       if(t > 180000) finishSession('시간');
     }
     draw();
@@ -876,7 +885,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     rec={id:'psm-'+Date.now().toString(36), app:'psm-lab', ver:PSM.VERSION, created:new Date().toISOString(),
       role:pref.role, label:($('inLabel').value||'').trim(), poomsae:'tg1', mode:mode, cam:pref.cam, model:pref.model,
       W:srcW, H:srcH, ua:navigator.userAgent, screen:innerWidth+'x'+innerHeight, cfg:Object.assign({},cfg), key:KEY, frames:[], running:false};
-    live={det:[], ptr:[0,0], marks:[[],[]], last:['',''], seen:[0,0], miss:[0,0], both:0, frames:0, doneAt:0, events:[]};
+    live={det:[], ptr:[0,0], marks:[[],[]], last:['',''], seen:[0,0], miss:[0,0], both:0, frames:0, lastMove:0, lastStop:0, events:[]};
     for(var k=0;k<mode;k++) live.det.push(PSM.makeDetector(cfg));
     $('lobby').hidden=true;
     document.body.classList.add('recording');
@@ -937,10 +946,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
       live.ptr[k]=took+1;
       txt='<b>'+key[took].n+'번</b> '+mk(jd.ok.dir,'방향',PSM.DIR_NAME[cls.dir])+' · '+mk(jd.ok.stance,'서기',cls.stance)+' · '+mk(jd.ok.tech,'기술',cls.tech)+(skipped?' <span class="x">('+key[took-1].n+'번 놓침)</span>':'');
       beep(jd.ok.dir&&jd.ok.tech?1500:520,60,0.08);
-      if(live.ptr[k]>=key.length){
-        var allDone=true; for(var q=0;q<rec.mode;q++){ if(live.ptr[q]<key.length) allDone=false; }
-        if(allDone) live.doneAt=performance.now()+1800;
-      }
+      live.lastStop=performance.now();
     }
     live.last[k]=txt;
     live.events.push({k:k, t:ev.stop.t0, took:took, cls:cls});
@@ -952,7 +958,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     var meter=$('meter'); meter.innerHTML='';
     for(var k=0;k<mode;k++){
       var who= mode===2 ? (k===0?'화면 왼쪽 사람':'화면 오른쪽 사람') : (pref.role==='master'?'관장 시범':'학생 시험');
-      var dots=''; for(var j=1;j<KEY.length;j++) dots+='<i data-j="'+j+'">'+j+'</i>';
+      var dots=''; for(var j=1;j<KEY.length;j++){ if(KEY[j].opt) continue; dots+='<i data-j="'+j+'">'+j+'</i>'; }
       var c=document.createElement('div'); c.className='card k'+k;
       c.innerHTML='<div class="c-who">'+who+'</div><div class="c-next-lbl">다음 동작</div><div class="c-next"></div><div class="c-last"></div><div class="c-dots">'+dots+'</div>';
       box.appendChild(c);
@@ -980,7 +986,8 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   }
 
   function analyze(r, c){
-    var out={tracks:[]}, key=r.key||KEY;
+    var out={tracks:[]}, key=(r.key||KEY).slice();
+    if(!key.some(function(k){ return k.opt; })) key.push(PSM.KEY_TG1[PSM.KEY_TG1.length-1]);   
     for(var k=0;k<r.mode;k++){
       var rp=PSM.replay(r, k, c);
       var sm=PSM.summarize(rp.stops, key);
@@ -1022,11 +1029,11 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     h+='<div class="r-k"><div class="l">방향 · 정면</div><div class="v num">'+pct(s.byDir.F[0],s.byDir.F[1])+'</div><div class="s">'+s.byDir.F[0]+'/'+s.byDir.F[1]+'</div></div>';
     h+='<div class="r-k"><div class="l">방향 · 옆모습</div><div class="v num">'+pct(s.byDir.S[0],s.byDir.S[1])+'</div><div class="s">'+s.byDir.S[0]+'/'+s.byDir.S[1]+'</div></div>';
     h+='<div class="r-k"><div class="l">방향 · 뒷모습</div><div class="v num">'+pct(s.byDir.B[0],s.byDir.B[1])+'</div><div class="s">'+s.byDir.B[0]+'/'+s.byDir.B[1]+' · 가장 중요한 숫자</div></div>';
-    h+='<div class="r-k"><div class="l">서기</div><div class="v num">'+pct(s.stance,s.match)+'</div><div class="s">'+s.stance+'/'+s.match+'</div></div>';
+    h+='<div class="r-k"><div class="l">서기 (참고 · 점수 제외)</div><div class="v num">'+pct(s.stance,s.match)+'</div><div class="s">'+s.stance+'/'+s.match+'</div></div>';
     h+='<div class="r-k"><div class="l">기술</div><div class="v num">'+pct(s.tech,s.match)+'</div><div class="s">'+s.tech+'/'+s.match+'</div></div>';
     h+='<div class="r-k"><div class="l">찾은 동작 / 남는 멈춤</div><div class="v num">'+s.match+'/'+s.n+'</div><div class="s">남는 멈춤 '+s.extra+'개 · 사람 보임 '+pct(t.seen,tot)+'</div></div>';
     h+='</div>';
-    h+='<table class="t"><thead><tr><th>#</th><th>정답</th><th>방향</th><th>서기</th><th>기술</th><th>시각</th></tr></thead><tbody>';
+    h+='<table class="t"><thead><tr><th>#</th><th>정답</th><th>방향</th><th>서기 (참고)</th><th>기술</th><th>시각</th></tr></thead><tbody>';
     t.sum.rows.forEach(function(row){
       var k=row.k, s0=row.stop, jd=row.jd;
       h+='<tr><td class="n">'+k.n+'</td><td>'+esc(k.name)+'</td>';
