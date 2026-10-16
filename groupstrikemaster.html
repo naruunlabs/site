@@ -526,6 +526,8 @@ let stage='follow', ri=0;
 let running=false, paused=false, phase='idle';        
 let runToken=0, segToken=0, resumeToken=0, tickTimer=0, sayTimer=0, hitTimer=0, callTimer=0, resumeIdx=null, warmCall=false;
 let setNo=1, count=0, bundles=0, totalDone=0;
+let switchTimer=0, switchPending=false;
+const TEAM_GAP_BEATS=4;   
 let TL=null, seg=null, audio=null, wakeLock=null, koVoice=null;
 const V={cur:null,upcoming:null,announced:false,impactAt:-1,impactStep:null,stepAt:0,beatAt:0,beat:0,stage:'follow',idle:true};
 
@@ -542,6 +544,9 @@ function settingsNow(){
 }
 const rotateOn=()=>$('teamMode').value==='rotate';
 function activeTeam(n=setNo){return n%2?'A팀':'B팀';}
+
+function totalTurns(){return +$('sets').value*(rotateOn()?2:1);}
+function dispSet(n=setNo){return rotateOn()?Math.ceil(n/2):n;}
 function paintClassCue(){
  const rotate=rotateOn();$('app').classList.toggle('team-rotate',rotate);
  const title=$('routineName');title.classList.toggle('team-turn',rotate);title.textContent=rotate?activeTeam():routine().name;
@@ -614,7 +619,7 @@ function runFrom(idx,why){
   const target=TL.steps[idx], r=routine();
   const introName=why==='again'?'다시 한 번':'공격 준비';
   seg={tok,mode:why==='team'?'cycle':'intro',si:idx,target:idx,beat:0,g:0,anchor:performance.now(),
-       intro:{n:introName,t:'ready',b:namesVoiced()?introBeats(callTextFor(target),why==='start'||why==='resume')+Math.ceil(READY_MS/TL.beatMs):Math.ceil(READY_MS/TL.beatMs)+3,d:why==='set'?`${setNo}세트 시작`:r.intro.d,intro:true}};
+       intro:{n:introName,t:'ready',b:namesVoiced()?introBeats(callTextFor(target),why==='start'||why==='resume')+Math.ceil(READY_MS/TL.beatMs):Math.ceil(READY_MS/TL.beatMs)+3,d:why==='set'?`${dispSet()}세트 시작`:r.intro.d,intro:true}};
   V.idle=false;
   tick(tok);
 }
@@ -667,7 +672,7 @@ function endsSetAfter(st,nx){
 }
 function impactNow(st,nx){
   if(!st.quiet){P.impact(st);if(st.kiai&&stage!=='call')showKiai();}
-  if(st.lastInSet){paintNext();return;}
+  if(st.lastInSet){paintNext();if(rotateOn()&&setNo<totalTurns())planTeamSwitch();return;}
   planSay(nx,st.quiet?0:sayGap()*1000);
   planCall(nx,V.cueAt+TL.steps[nx].window*TL.beatMs);
 }
@@ -720,14 +725,17 @@ async function endSet(token){
   cancelSpeech();V.upcoming=null;V.announced=false;
   segToken++;clearTimeout(tickTimer);clearTimeout(sayTimer);clearTimeout(hitTimer);clearTimeout(callTimer);
   if(token!==runToken) return;
-  if(setNo<+$('sets').value){
+  if(setNo<totalTurns()){
     if(rotateOn()){
       setNo++;count=bundles=0;V.cur=null;V.upcoming=TL.steps[firstPhrase()];V.announced=true;
-      $('restScreen').hidden=true;paintAll();runFrom(firstPhrase(),'team');return;
+      $('restScreen').hidden=true;paintAll();
+      
+      switchPending=true;clearTimeout(switchTimer);
+      switchTimer=setTimeout(()=>{switchPending=false;if(token!==runToken||paused||!running)return;runFrom(firstPhrase(),'team');},TEAM_GAP_BEATS*TL.beatMs);return;
     }
     phase='rest';setControls();const sec=+$('rest').value;
     const first=TL.steps[firstPhrase()];
-    $('restNext').innerHTML=`${setNo+1}세트 첫 동작 · <i>${P.plain(first)}</i>`;
+    $('restNext').innerHTML=`${dispSet(setNo+1)}세트 첫 동작 · <i>${P.plain(first)}</i>`;
     $('restLabel').textContent=rotateOn()?activeTeam(setNo+1):'다음 세트 준비';
     $('restScreen').hidden=false;speak('잘했어요. 쉬어요');
     for(let n=sec;n>0;n--){if(token!==runToken)return;$('restNum').textContent=n;if(n<=3)beep(520);await sleep(1000);}
@@ -740,12 +748,13 @@ function finishAll(){
   running=false;paused=false;phase='done';segToken++;clearTimeout(tickTimer);clearTimeout(sayTimer);clearTimeout(hitTimer);clearTimeout(callTimer);
   keepAwake(false);cancelSpeech();V.upcoming=null;V.announced=false;speak('운동 끝');chime();
   const sets=+$('sets').value;
-  $('finishSum').innerHTML=`<div><span>세트</span><b>${sets}</b></div><div><span>완주</span><b>${totalDone}<small style="font-size:.5em;color:#aab3c2"> ${unit()}</small></b></div>`;
+  $('finishSum').innerHTML=`<div><span>세트</span><b>${sets}</b></div><div><span>${rotateOn()?'팀당 완주':'완주'}</span><b>${rotateOn()?Math.round(totalDone/2):totalDone}<small style="font-size:.5em;color:#aab3c2"> ${unit()}</small></b></div>`;
   $('finishScreen').hidden=false;$('beat').textContent='FINISH';
   setControls();
 }
 function stopAll(){
   runToken++;segToken++;resumeToken++;clearTimeout(tickTimer);clearTimeout(sayTimer);clearTimeout(hitTimer);clearTimeout(callTimer);
+  clearTimeout(switchTimer);switchPending=false;
   running=paused=false;phase='idle';trainingClock.resume();cancelSpeech();keepAwake(false);
   ['countdown','restScreen','finishScreen'].forEach(id=>$(id).hidden=true);
 }
@@ -762,6 +771,7 @@ function pauseNow(){
     segToken++;clearTimeout(tickTimer);clearTimeout(sayTimer);clearTimeout(hitTimer);clearTimeout(callTimer);
     const st=curStep();
     resumeIdx=st.intro?seg.target:phraseStartOf(nextActionAfter(seg.si));
+    if(switchPending){clearTimeout(switchTimer);switchPending=false;resumeIdx=firstPhrase();}   
     $('countdown').hidden=false;$('countNum').textContent='잠시 멈춤';$('countNum').classList.add('pz');
     $('countSub').textContent=`잠시 멈춤 · 계속을 누르면 3초 뒤 ${P.plain(TL.steps[resumeIdx])}부터`;$('cdSeq').innerHTML='';
   }else if(phase==='countdown'||phase==='resume') $('countSub').textContent='잠시 멈춤 · 계속을 누르면 이어서 셉니다';
@@ -813,6 +823,8 @@ function whistle(){
   }catch(e){beep(1500)}
 }
 
+function teamSwitchSound(){tone(1319,.2,'triangle',.13);setTimeout(()=>tone(988,.32,'triangle',.13),170);}
+function planTeamSwitch(){const token=runToken;setTimeout(()=>{if(token!==runToken||paused||!running)return;teamSwitchSound();},320);}
 function chime(){[523,659,784,1047].forEach((f,i)=>setTimeout(()=>tone(f,.22,'sine',.1),i*110));}
 function pickVoice(){try{const vs=speechSynthesis.getVoices()||[];koVoice=vs.find(v=>/ko[-_]KR/i.test(v.lang)&&/Google|Neural|Natural/i.test(v.name))||vs.find(v=>/^ko/i.test(v.lang))||null;}catch(e){}}
 try{pickVoice();speechSynthesis.onvoiceschanged=pickVoice;}catch(e){}
@@ -888,7 +900,7 @@ function paintNext(){
 function paintCounts(){
   const g=goal(),d=done();
   $('countText').innerHTML=`<b>${d}</b> / ${g}${unit()}`;
-  $('setText').innerHTML=`<b>${setNo}</b>세트 / ${$('sets').value}`;
+  $('setText').innerHTML=`<b>${dispSet()}</b>세트 / ${$('sets').value}`;
   $('progress').style.width=Math.min(100,d/g*100)+'%';
   $('stDoneLab').textContent=isCombo()?'완주 묶음':'횟수';
   $('stDone').innerHTML=`${d}<small>/ ${g}</small>`;
