@@ -179,7 +179,7 @@
   --line:rgba(94,234,212,.22);
   --kr:'JM Noto KR','Noto Sans KR',system-ui,-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;
   --num:'JM Archivo','Archivo','JM Noto KR','Noto Sans KR',system-ui,sans-serif;
-
+  
   --u:max(5.5px,min(1vw,1.78vh));
   --sat:env(safe-area-inset-top,0px);
   --sab:env(safe-area-inset-bottom,0px);
@@ -617,7 +617,7 @@ body.step-round #video{filter:saturate(.8) brightness(.7) contrast(1.04);transit
 @media (max-width:760px){
   .title-block .tb-meta{display:none}
   .tb-dojang{max-width:46vw}
-
+  
   .mode-badge{top:calc(var(--sat) + 96px);max-width:70vw}
   .mb-sub{display:none}
   .guide,.runners,.grp-top{top:calc(var(--sat) + 128px)}
@@ -774,16 +774,16 @@ body.jmp-racing .jt-duo{display:none!important}
   </section>
 
   <div class="hud" id="hud">
-
+    
     <div class="title-block">
       <div class="tb-dojang" id="dojangName">AI JUMP MASTER</div>
       <div class="tb-auth">● 정품 인증됨</div>
       <div class="tb-meta" id="tbMeta">v3.2.0</div>
       <div class="tb-meta">Powered by Google MediaPipe</div>
-
+      
       <div class="tb-btns">
         <button class="tb-btn" id="settingsBtn" type="button">설정</button>
-
+        
         <button class="tb-btn tb-lab-btn" id="labBtn" type="button">점프 연구소</button>
       </div>
     </div>
@@ -814,7 +814,7 @@ body.jmp-racing .jt-duo{display:none!important}
     </div>
 
 <div id="jumpRace" hidden aria-label="점프 레이스"><section class="race-lane blue" id="raceLane0"><strong>BLUE</strong><div class="race-finish"></div><div class="race-start">START</div><div class="race-runway"><div class="race-car" id="raceCar0"><svg viewBox="0 0 80 140" aria-hidden="true"><ellipse cx="28" cy="130" rx="4" ry="5" fill="#b9d1dd" opacity=".45"/><ellipse cx="52" cy="130" rx="4" ry="5" fill="#b9d1dd" opacity=".45"/><g fill="#06101c"><rect x="3" y="24" width="15" height="30" rx="5"/><rect x="62" y="24" width="15" height="30" rx="5"/><rect x="3" y="89" width="15" height="30" rx="5"/><rect x="62" y="89" width="15" height="30" rx="5"/></g><path d="M25 5 Q40 -2 55 5 L65 32 L64 116 Q40 130 16 116 L15 32 Z" fill="currentColor" stroke="#ffffffa0" stroke-width="2"/><path d="M25 39 L55 39 L59 65 L21 65 Z" fill="#092035" stroke="#bceaff"/><path d="M24 91 L56 91 L53 108 L27 108Z" fill="#092035"/><path d="M35 7 H45 V34 H35Z M35 112 H45 V123 H35Z" fill="white" opacity=".85"/><path d="M19 24 H29 M51 24 H61" stroke="#fff5bd" stroke-width="6" stroke-linecap="round"/><path d="M20 115 H29 M51 115 H60" stroke="#ffefb0" stroke-width="4"/></svg><span class="race-counter" id="raceCount0">0 / 50</span></div></div><div class="race-status" id="raceStatus0">준비</div></section><section class="race-lane red" id="raceLane1"><strong>RED</strong><div class="race-finish"></div><div class="race-start">START</div><div class="race-runway"><div class="race-car" id="raceCar1"><svg viewBox="0 0 80 140" aria-hidden="true"><ellipse cx="28" cy="130" rx="4" ry="5" fill="#b9d1dd" opacity=".45"/><ellipse cx="52" cy="130" rx="4" ry="5" fill="#b9d1dd" opacity=".45"/><g fill="#06101c"><rect x="3" y="24" width="15" height="30" rx="5"/><rect x="62" y="24" width="15" height="30" rx="5"/><rect x="3" y="89" width="15" height="30" rx="5"/><rect x="62" y="89" width="15" height="30" rx="5"/></g><path d="M25 5 Q40 -2 55 5 L65 32 L64 116 Q40 130 16 116 L15 32 Z" fill="currentColor" stroke="#ffffffa0" stroke-width="2"/><path d="M25 39 L55 39 L59 65 L21 65 Z" fill="#092035" stroke="#bceaff"/><path d="M24 91 L56 91 L53 108 L27 108Z" fill="#092035"/><path d="M35 7 H45 V34 H35Z M35 112 H45 V123 H35Z" fill="white" opacity=".85"/><path d="M19 24 H29 M51 24 H61" stroke="#fff5bd" stroke-width="6" stroke-linecap="round"/><path d="M20 115 H29 M51 115 H60" stroke="#ffefb0" stroke-width="4"/></svg><span class="race-counter" id="raceCount1">0 / 50</span></div></div><div class="race-status" id="raceStatus1">준비</div></section></div>
-
+    
     <div class="runners" id="runners" hidden></div>
     <div class="relay-cue" id="relayCue" hidden><strong id="relayCueMain">1번 주자</strong><span id="relayCueSub">30회를 채우면 다음 주자로 넘어갑니다</span></div>
 
@@ -883,7 +883,7 @@ body.jmp-racing .jt-duo{display:none!important}
     </div>
 
     <div class="opts" id="optSolo">
-
+      
       <div id="soloKindWrap" hidden>
         <span class="option-label">1인 놀이</span>
         <div class="seg two" id="soloKindSeg">
@@ -990,7 +990,7 @@ body.jmp-racing .jt-duo{display:none!important}
 
     <div class="lobby-error" id="lobbyError" role="status" aria-live="polite"></div>
   </section>
-
+  
   <div class="ctrl" id="ctrl">
     <div class="speed-row" id="speedRow" hidden><span>속도</span><button type="button" id="spDown" aria-label="느리게">−</button><b id="spVal">100</b><button type="button" id="spUp" aria-label="빠르게">+</button></div>
     <div class="rep-row" id="repRow" hidden><button type="button" id="repBtn">↻ 구간 반복</button><span id="repState">어려운 동작만 다시</span></div>
@@ -1004,9 +1004,9 @@ body.jmp-racing .jt-duo{display:none!important}
 
   <section class="panel" id="result" hidden aria-live="polite">
     <div id="resultBody"></div>
-
+    
     <div id="resultNext"><div class="rn-main">다음 선수 들어오세요</div><div class="rn-sub">한 손을 머리 위로 2초 들면 시작해요</div><div class="rn-last" id="resultLast"></div></div>
-
+    
     <div class="rbtn-row">
       <button class="rbtn" id="againBtn" type="button">한 번 더</button>
       <button class="rbtn2" id="homeBtn" type="button">설정 바꾸기</button>
@@ -1153,7 +1153,7 @@ const SYNC = {
 
 const ROPE = {
   LEAD: 0,          
-
+                    
   SEGMENTS: 44,     
   TRAIL_GAP: 0.022, 
   BACK_ALPHA: 0.17, 
@@ -1252,7 +1252,7 @@ function createJumpEngine(){
   E.feed=function(hipY, torso, t, onEvent){
     if(!(torso>0.02)) return;
     E.curTorso=torso;
-
+    
     E.torsoS = (E.torsoS==null) ? torso : E.torsoS*0.96 + torso*0.04;
     const raw = hipY/E.torsoS;
     if(E.gridT==null){ E.gridT=t; E.prevSampT=t; E.prevSampV=raw; return; }
@@ -1262,11 +1262,11 @@ function createJumpEngine(){
       E.gridT+=step;
       const u=(E.gridT-E.prevSampT)/Math.max(1e-6,(t-E.prevSampT));
       const v=E.prevSampV+(raw-E.prevSampV)*Math.max(0,Math.min(1,u));
-
+      
       E.mC=E.mB; E.mB=E.mA; E.mA=v;
       let med=v;
       if(E.mC!=null){ const s=[E.mA,E.mB,E.mC].sort((p,q)=>p-q); med=s[1]; }
-
+      
       E.aB=E.aA; E.aA=med;
       E.sigNow=(E.aB!=null)?(med+E.aA+E.aB)/3:med;
       pushSig(E.sigNow);
@@ -1324,7 +1324,7 @@ function createJumpEngine(){
     }
 
     const periodic = E.periodR>=C.R_PERIODIC && E.periodMs>0;
-
+    
     const steady = E.periodR>=C.R_STRICT && E.periodCV<=C.CV_MAX &&
                    E.periodMs>=C.PERIOD_LO && E.periodMs<=C.PERIOD_HI && E.rhythmOK;
     E.gateOn = (E.ampNow>=C.AMP_HUGE) ||
@@ -1345,7 +1345,7 @@ function createJumpEngine(){
     }
     E.pEff=pEff;
     const minGap = periodic ? Math.max(C.GAP_FLOOR_MS, pEff*C.GAP_LOCK_RATIO) : C.GAP_NO_LOCK_MS;
-
+    
     const promK = !periodic ? C.PROM_RATIO*C.PROM_K_NOLOCK : (steady ? C.PROM_RATIO*C.PROM_K_STEADY : C.PROM_RATIO);
     const prom = Math.max(C.MIN_RISE_FLOOR*0.6, E.ampNow*promK);
 
@@ -1385,7 +1385,7 @@ function createJumpEngine(){
           const ratio=(now-E.jumpLastT)/(C.HFIX?pEff:E.periodMs), steps=Math.round(ratio);
           if(steps>=2 && steps<=3 && Math.abs(ratio-steps)<=C.GAP_FILL_TOL) gapFill=steps-1;
         }
-
+        
         if(C.LFILL && E.recoverGaps && E.hasCountedPeak && E.jumpLastT>0 && E.cntTs && E.cntTs.length>=5){
           const iv=[]; for(let i=1;i<E.cntTs.length;i++) iv.push(E.cntTs[i]-E.cntTs[i-1]);
           iv.sort((a,b)=>a-b); const m=iv[iv.length>>1], g=now-E.jumpLastT, r=g/m;
@@ -1572,7 +1572,7 @@ function groupRepeatStop(k){
   if(!groupRepeat) return;
   const sw=Math.ceil((Math.floor(k)+4)/4)*4;           
   let j=groupSegAt(k);
-
+  
   while(groupTL[j].start+groupTL[j].len<sw && groupTL[j+1] && groupTL[j+1].rep) j++;
   while(groupTL[j].start+groupTL[j].len<sw){ groupTL.splice(j+1,0,{mi:groupRepeat.mi,start:0,len:groupRoutine[groupRepeat.mi].b,rep:true}); rebaseGroup(j+1); j++; }
   const c=groupSegAt(sw-1);
@@ -2017,7 +2017,7 @@ async function createPose(num){
     poseInfo=`엔진 ${v.src} · 모델 ${localModel?'폴더':'인터넷'} · ${r.delegate}`;
     return r;
   }catch(e){
-
+    
     if(v.src!=='폴더' && !localModel) throw e;
     console.warn('폴더의 MediaPipe 파일로 시작 실패 → 인터넷으로 재시도', e);
     const r=await attempt(MP_CDN+'/wasm', MODEL_CDN);
@@ -2430,7 +2430,7 @@ function hfJump(p,J){
     if(lastRoundMode!=='solo') return;
     HoloFX.layout(hfBody());
     const gaps=(J.gaps||[]).filter(g=>g>0 && g<2000);
-
+    
     const last=gaps[gaps.length-1];
     const prev=gaps.slice(-7,-1).slice().sort((a,b)=>a-b), med=prev.length?prev[Math.floor(prev.length/2)]:null;
     if(last==null || (J.gaps||[]).slice(-1)[0]>=2000) hfStreakN=1;
@@ -2502,10 +2502,10 @@ function handlePose(lms,t){
   const slots=new Array(players.length).fill(null);
   if(players.length===1){ slots[0]=found[0]||null; }
   else{
-
+    
     found.sort((a,b)=>a.sx-b.sx);
     if(found.length>=2){
-
+      
       slots[0]=found[0]; slots[1]=found[found.length-1];
     }else if(found.length===1){
       const x=found[0].sx, d0=players[0].trackX==null?Math.abs(x-.25):Math.abs(x-players[0].trackX), d1=players[1].trackX==null?Math.abs(x-.75):Math.abs(x-players[1].trackX);
@@ -2538,7 +2538,7 @@ function updatePlayer(p,f,t){
     if(running && mode==='solo' && soloJumpType==='alternate' && !stepRound) feedAlternateJump(p,f.lm,f.torso,t);
   }else{
     p.seen=false;
-
+    
     if(p.lostSince==null){ p.lostSince=t; return; }
     if(t-p.lostSince>LOST_GRACE_MS){ p.engine.recalibrate(); resetAlternateJump(p); p.lostSince=null; p.rig=null; }
   }
@@ -2559,7 +2559,7 @@ function feedAlternateJump(p,lm,torso,t){
   if(lv<.45||rv<.45||!(torso>.01)) return;
   const ly=lm[27].y, ry=lm[28].y;
   if(p.altBaseL==null){ p.altBaseL=ly; p.altBaseR=ry; return; }
-
+  
   p.altBaseL += (ly>p.altBaseL ? .20 : .006)*(ly-p.altBaseL);
   p.altBaseR += (ry>p.altBaseR ? .20 : .006)*(ry-p.altBaseR);
   const liftL=(p.altBaseL-ly)/torso, liftR=(p.altBaseR-ry)/torso;
@@ -2600,7 +2600,7 @@ function updateRig(p,lm){
   if(!r){ p.rig={lx:L.x,ly:L.y,rx:R.x,ry:R.y,floor:floorNow,shW}; return; }
   const a=.45;
   r.lx+=(L.x-r.lx)*a; r.ly+=(L.y-r.ly)*a; r.rx+=(R.x-r.rx)*a; r.ry+=(R.y-r.ry)*a; r.shW+=(shW-r.shW)*.2;
-
+  
   if(floorNow>r.floor) r.floor=floorNow; else r.floor+=(floorNow-r.floor)*.015;
 }
 
@@ -2614,7 +2614,7 @@ function jmpPilotPush(p,ev){
   const vals=jmpPilotHistory.map(v=>v.height), lo=Math.min(...vals,70), hi=Math.max(...vals,130), span=Math.max(20,hi-lo);
   const gaps=[]; for(let i=1;i<n;i++) gaps.push(jmpPilotHistory[i].t-jmpPilotHistory[i-1].t);
   const avg=gaps.length?gaps.reduce((a,b)=>a+b,0)/gaps.length:0;
-
+  
   const gapCv=avg&&gaps.length>1?Math.sqrt(gaps.reduce((s,v)=>s+(v-avg)*(v-avg),0)/gaps.length)/avg:null;
   const bpmNow=avg?Math.round(60000/avg):0, rhythm=avg?clamp(1-(gapCv||0)*2.8,.12,1):.2, hp=clamp(height/130,.12,1);
   setText($('jpgRhythm'),avg?bpmNow:'—'); setText($('jpgHeight'),Math.round(height)); setText($('jpgCount'),n+'/10');
@@ -2991,7 +2991,7 @@ async function boot(){
   bootBusy=true; $('playBtn').disabled=true;
   setLobbyError('');
   saveLobbyPrefs();
-
+  
   if(soundOn||stepOn()) await initAudio();
   if(stepOn()) prepareStepMusic(); else releaseStepMusic();
   bpm=mode==='group'&&groupActivity==='pace'?paceTarget*60/paceTime:+$('bpm').value; beatMs=60000/bpm;
@@ -3128,7 +3128,7 @@ async function resumeRound(){
   jumpResumeBusy=true;try{
   const ok=await runCountdown('이어서 시작합니다');
   if(!ok || document.hidden || appState!=='running' || !pausedAt) return;
-
+  
   const gap=performance.now()-pausedAt; pausedAt=0;
   gameStartPerf+=gap;
   if(lastRoundMode==='duo'&&duoType==='battle'&&race.completeAt) race.completeAt+=gap;
@@ -3176,7 +3176,7 @@ function finish(cancelled){
       else if(m==='duo') last='방금 기록 · 청 '+players[0].count+' · 홍 '+players[1].count;
     }catch(e){}
     $('resultLast').textContent=last;
-
+    
     if(!(m==='solo'&&stepRound)) resultCompactTimer=setTimeout(()=>{ if(appState==='result') $('result').classList.add('compact'); },3000);
   }
   if(!(m==='solo'&&stepRound)) labRoundFinished(m);   
@@ -3444,13 +3444,13 @@ function render(now){
     drawSkeleton(p.lm, COLOR[key]);
   });
   if(m==='solo') stepRender(now,inGame);   
-
+  
   if(inGame && m==='duo' && duoType==='cooperate'){
     const phase=(now-gameStartPerf)/beatMs;
     players.forEach((p,i)=>{ if(p.seen&&p.rig) ropeFor(p.rig,phase,RGB[i===0?'blue':'red']); });
   }
   if(inGame && m==='duo' && duoType==='cooperate') gBeatTarget(W/2,H*.23,Math.min(W,H)*.052,(now-gameStartPerf)/beatMs,1,'함께 착지');
-
+  
   if(labOpen && jmpIsLab() && m==='solo' && players[0]?.seen) drawCalibration(players[0]);
 }
 
@@ -3609,19 +3609,19 @@ function gArriveFx(x,y,w,h,col,age,big,ang){
   if(!(age>=0&&age<1)) return;
   const e=1-age, ea=1-Math.pow(1-age,3), R=Math.max(w,h)*(big?1.25:1), seed=(x*7+y*13)%1;
   ctx.save(); ctx.translate(x,y);
-
+  
   ctx.globalCompositeOperation='lighter';
   const br=R*(.75+.75*ea), g=ctx.createRadialGradient(0,0,0,0,0,br);
   g.addColorStop(0,`rgba(255,255,255,${(big?.95:.8)*e*e})`); g.addColorStop(.32,gHexA(col,.75*e)); g.addColorStop(1,gHexA(col,0));
   ctx.fillStyle=g; ctx.beginPath(); ctx.arc(0,0,br,0,Math.PI*2); ctx.fill();
-
+  
   for(const [d,wk] of [[0,1],[.16,.6]]){
     const t=(age-d)/(1-d); if(t<0||t>=1) continue;
     const r=R*(.5+(big?1.35:1.05)*(1-Math.pow(1-t,2.4)));
     ctx.strokeStyle=d?`rgba(255,255,255,${.7*(1-t)})`:gHexA(col,.95*(1-t));
     ctx.lineWidth=G_FX.LINE*Math.max(1.5,R*.1*wk*(1-t)); ctx.beginPath(); ctx.arc(0,0,r,0,Math.PI*2); ctx.stroke();
   }
-
+  
   const n=big?G_FX.SPARKS_BIG:G_FX.SPARKS; ctx.lineCap='round';
   for(let i=0;i<n;i++){
     const an=(i/n+seed*.13)*Math.PI*2, r0=R*(.42+.75*ea), r1=r0+R*(.28+.22*(i%3===0))*e;
@@ -3629,7 +3629,7 @@ function gArriveFx(x,y,w,h,col,age,big,ang){
     ctx.beginPath(); ctx.moveTo(Math.cos(an)*r0,Math.sin(an)*r0); ctx.lineTo(Math.cos(an)*r1,Math.sin(an)*r1); ctx.stroke();
   }
   ctx.globalCompositeOperation='source-over';
-
+  
   const pop=1+(big?.32:.22)*Math.sin(Math.min(1,age*2.5)*Math.PI)*e;
   ctx.rotate(ang||0); ctx.globalAlpha=Math.min(1,e*1.6);
   ctx.fillStyle=col; ctx.shadowColor=col; ctx.shadowBlur=R*.45*e;
@@ -3711,7 +3711,7 @@ function gJoints(p,u,cx,ground,lift){
   const leg=(side)=>{
     const f=p[side], hip=side==='L'?J.hipL:J.hipR, sgn=side==='L'?-1:1;
     const fx=cx+f.x*u*.15;
-
+    
     const depth=-(f.y||0);               
     const fy=ground+depth*u*.05;
     let ankle,knee,toeA=f.a||0,footLen=u*.055*(1+depth*.28),shadow=true;
@@ -3748,21 +3748,21 @@ function gLerpJ(a,b,t){
 function gDrawCoach(J,u,ground,p,glowK,bf){
   const line=(A,B)=>{ctx.moveTo(A.x,A.y);ctx.lineTo(B.x,B.y);};
   const lw=Math.max(2,u*.022);
-
+  
   for(const [lg,c] of [[J.legL,GCOL.L],[J.legR,GCOL.R]]){
     if(!lg.shadow) continue;
     ctx.save(); ctx.globalAlpha=.55; ctx.fillStyle=c; ctx.shadowColor=c; ctx.shadowBlur=10*view.dpr;
     ctx.beginPath(); ctx.ellipse(lg.sx,lg.sy+u*.012,u*.05*(1+lg.depth*.25),u*.013*(1+lg.depth*.25),0,0,Math.PI*2); ctx.fill(); ctx.restore();
   }
-
+  
   ctx.save(); ctx.lineCap='round'; ctx.strokeStyle='rgba(190,242,100,.6)'; ctx.lineWidth=Math.max(1.5,u*.011); ctx.shadowColor='#A3E635'; ctx.shadowBlur=8*view.dpr;
   const gy=ground+u*.035;
   if(p.arms==='swingL'||p.arms==='swingR'){
-
+    
     const d=p.arms==='swingL'?-1:1, hx=(J.hL.x+J.hR.x)/2, hy=(J.hL.y+J.hR.y)/2;
     const top=J.shY-u*.16, bottom=ground+u*.015, ry=(bottom-top)/2, rx=u*.12, ox=hx+d*rx*.95, oy=(top+bottom)/2;
     ctx.beginPath(); ctx.ellipse(ox,oy,rx,ry,0,0,Math.PI*2); ctx.stroke();
-
+    
     const th=((bf%1)+1)%1*Math.PI*2*d - Math.PI/2;
     const ax=ox+Math.cos(th)*rx, ay=oy+Math.sin(th)*ry, tx=-Math.sin(th)*rx*d, ty=Math.cos(th)*ry*d, tl=Math.hypot(tx,ty)||1;
     const ux=tx/tl, uy=ty/tl, ah=u*.05;
@@ -3812,20 +3812,20 @@ function gPadFoot(f){
 function gDrawPad(cx,cy,pw,ph,pA,pB,tt,beatGlow,alphaAll,big,bf=null){
   const r=Math.min(pw,ph)*.08;
   ctx.save(); ctx.globalAlpha=alphaAll;
-
+  
   ctx.fillStyle='rgba(8,26,44,.86)'; ctx.strokeStyle=`rgba(94,234,212,${.3+.45*beatGlow})`; ctx.lineWidth=big?2+2*beatGlow:1.5;
   ctx.shadowColor='#2DD4BF'; ctx.shadowBlur=big?(6+18*beatGlow)*view.dpr:0;
   ctx.beginPath(); ctx.roundRect(cx-pw/2,cy-ph/2,pw,ph,r); ctx.fill(); ctx.stroke(); ctx.shadowBlur=0;
-
+  
   ctx.strokeStyle='rgba(234,244,241,.09)'; ctx.lineWidth=1; ctx.setLineDash([6,6]);
   ctx.beginPath(); ctx.moveTo(cx,cy-ph*.44); ctx.lineTo(cx,cy+ph*.44); ctx.moveTo(cx-pw*.44,cy-ph*.27); ctx.lineTo(cx+pw*.44,cy-ph*.27); ctx.moveTo(cx-pw*.44,cy+ph*.27); ctx.lineTo(cx+pw*.44,cy+ph*.27); ctx.stroke(); ctx.setLineDash([]);
   if(big){
-
+    
     ctx.fillStyle='rgba(234,244,241,.55)'; ctx.font=`800 ${Math.max(10,ph*.055)}px 'JM Noto KR','Noto Sans KR',sans-serif`; ctx.textAlign='left'; ctx.textBaseline='middle';
     ctx.fillText('앞 ↑',cx-pw/2+pw*.05,cy-ph/2+ph*.07); ctx.fillText('뒤 ↓',cx-pw/2+pw*.05,cy+ph/2-ph*.07);
   }
   if(big && bf!=null) gBeatTarget(cx,cy,Math.min(pw,ph)*.2,bf,alphaAll,'');
-
+  
   const p=tt<.5?pA:pB;
   for(const side of ['L','R']){
     const fa=pA[side], fb=pB[side], A=gPadFoot(fa), B=gPadFoot(fb);
@@ -3853,7 +3853,7 @@ function gDrawPad(cx,cy,pw,ph,pA,pB,tt,beatGlow,alphaAll,big,bf=null){
     const word=G_PAD_WORD[f.st];
     if(big&&word){ ctx.save(); ctx.globalAlpha=alphaAll; ctx.fillStyle='#fff'; ctx.font=`900 ${Math.max(11,ph*.065)}px 'JM Noto KR','Noto Sans KR',sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.shadowColor='#000'; ctx.shadowBlur=6*view.dpr; ctx.fillText(word,x,y); ctx.restore(); }
   }
-
+  
   const arms=p.arms, hy=cy-ph*.05, hr=Math.max(4,ph*.032), side=pw/2+hr*2.4;
   ctx.fillStyle='#BEF264'; ctx.strokeStyle='#BEF264'; ctx.lineWidth=Math.max(2,ph*.012); ctx.lineCap='round';
   const dot=(x,y)=>{ctx.beginPath();ctx.arc(x,y,hr,0,Math.PI*2);ctx.fill();};
@@ -3921,7 +3921,7 @@ function gLabel(txt,x,y,size,color,align='center',base='middle'){
   ctx.shadowColor='#000'; ctx.shadowBlur=6*view.dpr; ctx.fillText(txt,x,y); ctx.restore();
 }
 function gNightBg(W,H,horizon,pulse,t){
-
+  
   let g=ctx.createLinearGradient(0,0,0,H);
   g.addColorStop(0,'#08152C'); g.addColorStop(.5,'#0A203A'); g.addColorStop(1,'#020812');
   ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
@@ -3937,7 +3937,7 @@ function gLane(W,H,bf,pulse){
   const S=W/1000, horizon=H*.5, hitY=H*.88, bottom=H*1.06, beatPhase=gmod(bf,1), T=groupTotal();
   const zy=z=>horizon+Math.pow(Math.max(0,z),2.15)*(bottom-horizon);
   const zh=z=>W*.3*(.06+.94*Math.pow(Math.max(0,z),2.15));
-
+  
   ctx.save();
   for(const side of ['L','R']){
     const direction=side==='L'?-1:1,col=GCOL[side];
@@ -3951,7 +3951,7 @@ function gLane(W,H,bf,pulse){
   ctx.beginPath();ctx.moveTo(W/2-W*.22,hitY);ctx.lineTo(W/2+W*.22,hitY);ctx.stroke();ctx.restore();
 
   const LOOK=3.5, TRAVEL=3.5, base=Math.ceil(bf*2)/2-(FX?.5:0);
-
+  
   const tgt=(f)=>{const sc=1.15,pw=130*sc*S,ph=46*sc*S,y=hitY-ph*.825,cu=Math.max(.145*zh(1),pw*.35),wu=Math.max(.23*zh(1),pw*.55),ax=Math.abs(f.x||0);
     const len=ph*1.65; return {x:W/2+Math.sign(f.x||0)*(Math.min(ax,.45)*cu+Math.max(0,ax-.45)*wu),y:y+(f.y||0)*ph*1.5,w:Math.min(pw*.34,len*.43),h:len};};
   for(let s=LOOK*2+(FX?1:0);s>=0;s--){
@@ -3975,11 +3975,11 @@ function gLane(W,H,bf,pulse){
     const pw=130*sc*S, ph=46*sc*S, alpha=(.14+.86*z)*(dist<0?Math.max(0,1+dist/.1):1);
 
     const y=laneY-ph*.825;
-
+    
     const closeUnit=Math.max(.145*zh(z),pw*.35), wideUnit=Math.max(.23*zh(z),pw*.55);
     const laneOffset=x=>Math.sign(x)*(Math.min(Math.abs(x),.45)*closeUnit+Math.max(0,Math.abs(x)-.45)*wideUnit);
     if(!full){ for(const side of ['L','R']) gFootNote(W/2+laneOffset(p[side].x),y,pw*.55,ph*.55,GCOL[side],alpha*.55,0,'ghost'); continue; }
-
+    
     if(M.local===0 && !isHalf && z>.08){
       ctx.save(); ctx.globalAlpha=alpha*.85; ctx.strokeStyle='#BEF264'; ctx.lineWidth=Math.max(1,2*sc*S); ctx.setLineDash([10*sc*S,8*sc*S]);
       ctx.beginPath(); ctx.moveTo(W/2-zh(z)*1.02,y-ph*1.4); ctx.lineTo(W/2+zh(z)*1.02,y-ph*1.4); ctx.stroke(); ctx.restore();
@@ -4001,7 +4001,7 @@ function gLane(W,H,bf,pulse){
       const word=G_FOOT_WORD[f.st]||((f.y||0)<0?'앞':(f.y||0)>0?'뒤':'');
       if(word && z>.45) gLabel(word,pos[side].x,pos[side].y,Math.max(9,ph*.42),`rgba(255,255,255,${alpha})`);
     }
-
+    
     const badge=p.arms!=='open'?p.arms:p.armBadge;
     if(badge && z>.3 && isFinite(minX)) gArmGlyph((minX+maxX)/2,y,Math.max(11,ph*1.05),badge,alpha);
   }
@@ -4025,7 +4025,7 @@ function gGridCell(f){
   return {c,r};
 }
 function gGridFeet(p){
-
+  
   const L=gGridCell(p.L), R=gGridCell(p.R), same=L.c===R.c;
   const crossed=!!p.cross || p.L.x>p.R.x;           
   return [
@@ -4104,13 +4104,13 @@ function gLane2(W,H,bf,pulse,LX,topF=.08){
     ctx.beginPath(); ctx.moveTo(x,top); ctx.lineTo(x,bottom); ctx.moveTo(x+laneW,top); ctx.lineTo(x+laneW,bottom); ctx.stroke();
     gLabel(side==='L'?'왼발':'오른발',xs[side],bottom+H*.025,Math.max(10,H*.022),`rgba(234,244,241,.6)`);
   }
-
+  
   const jx0=xs.L-laneW*.75, jx1=xs.R+laneW*.75;
   ctx.strokeStyle='#fff'; ctx.lineWidth=(3+2*pulse)*view.dpr*.6; ctx.shadowColor='#A3E635'; ctx.shadowBlur=(10+14*pulse)*view.dpr;
   ctx.beginPath(); ctx.moveTo(jx0,hitY); ctx.lineTo(jx1,hitY); ctx.stroke(); ctx.shadowBlur=0;
   const bi=Math.floor(bf);
   if(bf>=0 && bi<T) gLabel(String(gmod(bi,4)+1),jx0-laneW*.25,hitY,Math.max(16,laneW*.45),`rgba(190,242,100,${.5+.5*pulse})`,'right');   
-
+  
   const base=Math.ceil(bf*2)/2;
   for(let s=Math.ceil(LOOK*2);s>=0;s--){   
     const nb=base+s*.5, dist=nb-bf; if(dist<-.25||dist>LOOK) continue;
@@ -4222,7 +4222,7 @@ function drawPaceScene(now){
   const W=view.W,H=view.H,b=clamp((now-gameStartPerf)/beatMs,0,paceTarget), phase=gmod(b,1);
   gGridBg(W,H,0);
   const cx=W*.47, ground=H*.77, u=Math.min(H*.59,W*.53);
-
+  
   const active=b>0&&b<paceTarget;
   const jumpPhase=clamp((phase-.62)/.38,0,1);
   const lift=active?Math.sin(Math.PI*jumpPhase)*u*.065:0;
@@ -4230,7 +4230,7 @@ function drawPaceScene(now){
   const frame=1,F=PACE_FRAMES[frame]; 
   const scale=u/908, dx=cx-F.w*scale/2, dy=ground-F.h*scale-lift;
   const J={hL:{x:dx+(F.l-F.x)*scale,y:dy+(F.hy-F.y)*scale},hR:{x:dx+(F.r-F.x)*scale,y:dy+(F.hy-F.y)*scale}};
-
+  
   const angle=(phase+.2)*Math.PI*2, handY=(J.hL.y+J.hR.y)/2;
   const extent=(ground-handY-lift)+u*.025; 
   const rope=(front)=>{
@@ -4247,7 +4247,7 @@ function drawPaceScene(now){
   if(paceAthlete.complete&&paceAthlete.naturalWidth){
     ctx.drawImage(paceAthlete,F.x,F.y,F.w,F.h,dx,dy,F.w*scale,F.h*scale);
   }else{
-
+    
     gDrawCoach(gJoints(p,u,cx,ground,lift),u,ground,p,0,b);
   }
   rope(true);ctx.restore();
@@ -4264,10 +4264,10 @@ function drawGroupScene(now){
   if(groupRunKind==='practice'){
     gNightBg(W,H,H*.42,pulse,now);
     const B=gCoachAt(bf,H*.5,W*.24,H*.79,pulse);
-
+    
     const ph=H*.46, pcx=W*.56, pcy=H*.64;
     gDrawPad(pcx,pcy,ph,ph,B.pA,B.pB,B.tt,pulse,1,true,bf);
-
+    
     const nph=ph*.3, ny=pcy-ph/2-H*.1-nph/2, nP=B.tt>.5?B.pC:B.pB;
     gDrawPad(pcx,ny,nph,nph,nP,nP,0,0,.72,false);
     const fs=Math.max(11,H*.026);
@@ -4549,7 +4549,7 @@ function stepClose(k,tk,r,quiet,early,now){
   Object.assign(note,{n:r.n,d:r.d,gap:r.gap,lift:r.lift,hx:r.hx,amp:r.amp,got:r.got,ok:r.got===note.exp,done:true,
                       early:!!early, tOk:(early&&now!=null)?now-tk:null});
   if(note.lead){
-
+    
     if(k===STEP.LEAD-1 && c){
       const xs=stp.notes.slice(0,STEP.LEAD).map(n=>n.hx).filter(v=>v!=null);
       if(xs.length>=2){ c.x0=stepMed(xs); c.refined=true; }
@@ -4731,7 +4731,7 @@ function stepDrawNotes(G,bf){
       stepRR(G.cx+pos*G.dir*G.tw*s-fw/2, y-fh/2, fw, fh, Math.min(4*view.dpr*s,fh*.15)); ctx.fill();
       ctx.restore();
     }
-
+    
     if(!note.lead && z>.3 && dist>=0 && (k===0 || stp.notes[k-1].exp!==note.exp || stp.notes[k-1].lead))
     { const lx=G.cx+1.62*G.tw*s+6, px=Math.max(13,G.th*.5*s), fits=lx+px*3.2<view.W;      
       stepText(STEP_NAME[note.exp], fits?lx:G.cx-1.62*G.tw*s-6, y, px, `rgba(234,244,241,${alpha})`, fits?'left':'right'); }
@@ -4788,7 +4788,7 @@ function stepRender(now,inGame){
   }
   const bf=(now-gameStartPerf)/beatMs, cx=W>H ? W/2 : W*.4, cy=Math.max(H*.15,104);
   if(bf<STEP.LEAD-.5) stepText(bf<-.2 ? '준비' : '제자리에서 박자 맞추기', cx, cy, Math.max(16,u*.036), '#EAF4F1');
-
+  
   const L=stp.last;
   if(L && now-L.at<1300){
     const txt=L.ok ? `✔ ${STEP_NAME[L.exp]}` : `✕ ${STEP_NAME[L.exp]} → ${STEP_NAME[L.got]}`;
@@ -5109,7 +5109,7 @@ function licenseLabel(c){
 function showAuthed(c){
   setText($('dojangName'), c?.dojang_name || 'AI JUMP MASTER');
   const max=Number(c?.max_devices)||2;
-
+  
   setText($('tbMeta'), `v${APP_VERSION}`);
   const exp=c?.expires_at ? new Date(c.expires_at) : null;
   $('licenseInfo').innerHTML =
@@ -5240,7 +5240,7 @@ function _jmpShouldBlock(result){
   if(!result || result.valid) return false;
   const r=result.reason;
   if(!r) return true;                                   
-
+  
   return r==='inactive' || r==='trial_expired' || r==='expired';
 }
 function _jmpApplyBlock(){
@@ -5293,7 +5293,7 @@ function _jmpStartHeartbeat(){
 }
 
 (async function _jmpBoot(){
-
+  
   try{
     const raw=sessionStorage.getItem(_JMP_BLOCK_MSG_KEY);
     if(raw){
@@ -5431,7 +5431,7 @@ function labPoseAt(p,t){
 function labRecordJump(p,ev){
   if(!jmpIsLab()) return;
   const e=p.engine, now=performance.now();
-
+  
   const snap=ev.type==='jump'?labPoseAt(p,ev.t):{pose:null,delay:null}, pose=snap.pose||{};
   const row={
     ts        : new Date().toISOString(),
@@ -5516,7 +5516,7 @@ function labTick(now){
     rh += labCell(tag+'점프 주기', labNum(e.periodMs,0,' ms'));
     rh += labCell(tag+'분당 횟수', hz?labNum(hz*60,0,' 회'):'—');
     rh += labCell(tag+'주기 신뢰도', labNum(e.periodR,2), e.periodR>=ENGINE.R_PERIODIC?'good':'');
-
+    
     rh += labCell(tag+'주기 흔들림', e.periodCV<1?labNum(e.periodCV,3):'—', (e.periodCV<=0.10)?'good':'');
     rh += labCell(tag+'박자 확증', e.rhythmOK?'O':'X', e.rhythmOK?'good':'');
 
@@ -5603,7 +5603,7 @@ function labDownload(name,text,type,sub){
     const a=document.createElement('a');
     a.href=url; a.download=name; document.body.appendChild(a); a.click();
     setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); },400);
-
+    
     naruunSaveToast('저장했습니다', name, (sub?sub+' · ':'')+'다운로드 폴더');
   }catch(e){ naruunSaveToast('저장하지 못했습니다', name, '다시 한 번 눌러주세요', true); }
 }

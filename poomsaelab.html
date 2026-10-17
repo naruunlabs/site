@@ -261,7 +261,7 @@ table.t input{width:100%}
 <script id="psm-core">
 
 var PSM = (function(){
-  var VERSION = '0.4.2';
+  var VERSION = '0.4.3';
 
   var DEFAULT_CFG = {
     SMOOTH: 0.5,        
@@ -1014,7 +1014,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     else if(j1.score>j0.score+0.25 && j1.score>=0.6) took=p+1;
     else {
       took=p;
-      if(j0.score<0.6){
+      if(j0.score<0.6 && !j0.ok.dir){
         for(var c=p+2;c<=Math.min(p+LIVE_AHEAD,last);c++){ if(PSM.judge(cls,key[c]).score>=0.99){ took=c; break; } }
       }
     }
