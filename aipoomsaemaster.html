@@ -346,7 +346,7 @@ table.t input{width:100%}
 <script id="psm-core">
 
 var PSM = (function(){
-  var VERSION = '0.7.0';
+  var VERSION = '0.8.0';   
 
   var DEFAULT_CFG = {
     SMOOTH: 0.5,        
@@ -883,7 +883,8 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   function loadGroupFrame(){
     var f=$('groupFrame');
     if(!f){ f=document.createElement('iframe'); f.id='groupFrame'; f.title='품새 시범 로봇'; f.allow='fullscreen'; $('stage').appendChild(f); }
-    f.src='poomsaerobot.html?p='+encodeURIComponent(pref.poomsae)+'&embed=1'+(TEST?'&fake=1':'');
+    
+    f.src='poomsaerobot.html?p='+encodeURIComponent(pref.poomsae)+'&embed=1&v='+encodeURIComponent(VERSION)+(TEST?'&fake=1':'');
     waitRobot();
   }
   var robotWait=null;
