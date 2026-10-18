@@ -45,68 +45,91 @@ button{cursor:pointer;border:0;background:none;padding:0}
 #video.mirror{transform:scaleX(-1)}
 #canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 body.recording #video{filter:brightness(.82)}
-body.recording #status, body.recording .title-block .tb-meta, body.recording .title-block .tb-tag{display:none}
-body.recording #cards.two{top:calc(62px + env(safe-area-inset-top,0px))}
+body.recording #status, body.recording .title-block .tb-meta, body.recording .title-block .tb-tag, body.recording .tb-btns, body.recording #lobbyStats{display:none}
 
-.title-block{position:fixed;left:16px;top:calc(12px + env(safe-area-inset-top,0px));z-index:20;max-width:46vw}
-.tb-dojang{font-weight:900;font-size:20px;line-height:1.15;text-shadow:0 2px 8px rgba(0,0,0,.6)}
+:root{--start:#4ADE80; --sat:env(safe-area-inset-top,0px); --sab:env(safe-area-inset-bottom,0px); --sh:0 2px 3px rgba(0,0,0,.95),0 0 14px rgba(0,0,0,.78)}
+
+.title-block{position:fixed;left:16px;top:calc(14px + var(--sat));z-index:20;max-width:46vw;filter:drop-shadow(0 3px 10px rgba(0,0,0,.78))}
+.tb-dojang{font-weight:900;font-size:16px;line-height:1.15;letter-spacing:-.04em;max-width:40vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tb-auth{margin-top:3px;font-size:11px;font-weight:700;color:var(--lime-lit)}
 .tb-meta{margin-top:2px;font-size:9.5px;line-height:1.25;font-weight:700;color:rgba(234,244,241,.55)}
-.tb-tag{display:inline-block;margin-top:5px;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:900;background:rgba(251,191,36,.18);color:var(--amber);border:1px solid rgba(251,191,36,.4)}
+.tb-tag{display:inline-block;margin-top:5px;padding:1px 7px;border-radius:999px;font-size:10.5px;font-weight:900;color:var(--amber);border:1px solid rgba(251,191,36,.5)}
+.tb-btns{display:flex;gap:14px;margin-top:6px}
+.tb-btn{padding:3px 0;font-size:11.5px;font-weight:900;color:rgba(226,244,255,.86);text-shadow:0 2px 8px rgba(0,0,0,.95)}
+.tb-btn:hover,.tb-btn:focus-visible{color:#fff;text-shadow:0 0 12px rgba(94,234,212,.72),0 2px 8px rgba(0,0,0,.95)}
 
-#status{position:fixed;left:16px;top:calc(118px + env(safe-area-inset-top,0px));z-index:20;font-size:13px;font-weight:700;color:var(--teal-lit);text-shadow:0 1px 6px #000;max-width:46vw}
+.mode-badge{position:fixed;top:calc(14px + var(--sat));left:50%;transform:translateX(-50%);z-index:14;text-align:center;pointer-events:none;max-width:44vw;text-shadow:0 2px 10px rgba(0,0,0,.9)}
+.mb-title{display:block;font-size:clamp(20px,2.3vw,34px);font-weight:900;letter-spacing:-.03em;line-height:1.05;white-space:nowrap}
+.mb-sub{display:block;margin-top:4px;font-size:clamp(12px,1.05vw,16px);font-weight:800;color:rgba(234,244,241,.72)}
+#status{position:fixed;left:50%;transform:translateX(-50%);top:calc(84px + var(--sat));z-index:14;max-width:44vw;text-align:center;pointer-events:none;font-size:13px;font-weight:800;color:var(--teal-lit);text-shadow:0 1px 6px #000}
 
-#lobby{position:fixed;right:14px;top:14px;bottom:14px;z-index:15;width:min(430px,calc(100vw - 28px));overflow:auto;
-  background:rgba(8,20,36,.9);backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:18px;padding:18px 16px 20px}
-.lb-h{font-size:22px;font-weight:900;margin:0 0 2px}
-.lb-top{display:flex;align-items:center;gap:8px}
-.lb-top .lb-h{flex:1}
-.lb-fold{padding:8px 12px;border-radius:10px;background:#18324d;font-weight:800;font-size:13px}
-#lobby.mini{top:auto;bottom:14px;max-height:none}
-#lobby.mini > :not(.lb-top):not(.lb-start){display:none}
-#lobby.mini .lb-start{margin-top:10px}
-.lb-sub{font-size:13px;color:var(--muted);margin:0 0 14px;line-height:1.5}
-.lb-label{font-size:12px;font-weight:900;color:var(--teal-lit);margin:14px 0 6px;letter-spacing:.02em}
-.seg{display:grid;gap:6px}
+#lobby{position:fixed;z-index:15;left:16px;top:calc(var(--sat) + clamp(118px,17vh,160px));bottom:calc(var(--sab) + 104px);width:clamp(230px,24vw,330px);
+  overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none;padding-right:4px;text-shadow:var(--sh)}
+#lobby::-webkit-scrollbar{display:none}
+.modelist{display:grid;gap:2px}
+.choice{display:block;width:100%;padding:9px 11px;text-align:left;border-left:5px solid transparent;color:rgba(255,255,255,.62);
+  background:linear-gradient(90deg,rgba(3,15,27,.52),rgba(3,15,27,0));font-size:clamp(14px,1.15vw,19px);font-weight:900;line-height:1.15;transition:color .13s,border-color .13s,background .13s}
+.choice small{display:block;margin-top:2px;font-size:.64em;font-weight:700;color:rgba(255,255,255,.5)}
+.choice:hover{color:rgba(255,255,255,.86)}
+.choice.on{border-left-color:var(--lime);color:#fff;background:linear-gradient(90deg,rgba(255,255,255,.18),rgba(255,255,255,0))}
+.choice.on small{color:var(--teal-lit)}
+.lb-label{display:block;margin:13px 0 5px;font-size:12px;font-weight:900;color:rgba(255,255,255,.72)}
+.seg{display:grid;gap:3px}
 .seg.c3{grid-template-columns:repeat(3,1fr)} .seg.c2{grid-template-columns:repeat(2,1fr)}
-.seg button{padding:11px 6px;border-radius:11px;border:1px solid #2b4560;background:#0b1d31;font-weight:800;font-size:14px;line-height:1.25}
-.seg button small{display:block;font-size:11px;font-weight:700;color:var(--muted);margin-top:2px}
-.seg button.on{background:rgba(20,184,166,.2);border-color:var(--teal);color:#fff}
+.seg button{padding:8px 3px;text-align:center;font-size:13px;font-weight:900;line-height:1.2;background:rgba(3,15,27,.38);color:rgba(255,255,255,.62);border-bottom:3px solid transparent}
+.seg button small{display:block;margin-top:1px;font-size:10.5px;font-weight:700;color:rgba(255,255,255,.45)}
+.seg button.on{border-bottom-color:var(--lime);color:#fff;background:rgba(20,184,166,.22)}
 .seg button.on small{color:var(--teal-lit)}
-.lb-input{width:100%;padding:11px 12px;border-radius:11px;border:1px solid #2b4560;background:#071526;font-size:15px}
-.lb-start{width:100%;margin-top:18px;padding:16px;border-radius:14px;background:var(--lime);color:#13230a;font-weight:900;font-size:20px}
-.lb-start:disabled{opacity:.45}
-.lb-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:10px}
-.lb-row button{padding:10px 4px;border-radius:11px;background:#10263d;border:1px solid #23405d;font-size:13px;font-weight:800}
-.lb-tip{margin-top:14px;font-size:12.5px;line-height:1.6;color:#b9c9dc;background:#0b1a2c;border-radius:12px;padding:10px 12px;border:1px solid #1d3550}
+.lb-input{width:100%;padding:8px 9px;border:0;border-bottom:2px solid rgba(255,255,255,.2);background:rgba(3,15,27,.4);color:#fff;font-size:14px}
+.lb-tip{margin-top:12px;font-size:11.5px;line-height:1.55;color:rgba(234,244,241,.66)}
 .lb-tip b{color:#fff}
 
-#hud{position:fixed;inset:0;z-index:12;pointer-events:none}
-#cards{position:absolute;left:0;right:0;top:calc(14px + env(safe-area-inset-top,0px));display:flex;justify-content:center;gap:14px;padding:0 14px}
-#cards.two{justify-content:space-between}
-.card{width:min(460px,46vw);background:rgba(5,13,24,.78);border:1px solid var(--line);border-radius:16px;padding:10px 14px 12px;backdrop-filter:blur(6px)}
-.card.k0{border-color:rgba(94,234,212,.5)} .card.k1{border-color:rgba(190,242,100,.5)}
-.c-who{font-size:12px;font-weight:900;color:var(--teal-lit)}
+.ctrl{position:fixed;z-index:22;left:16px;bottom:calc(var(--sab) + 18px);display:flex;flex-direction:column;align-items:flex-start;gap:6px}
+.ctrl-link{padding:2px 0;font-size:clamp(12px,.95vw,16px);font-weight:900;color:rgba(255,255,255,.62);text-shadow:0 2px 8px rgba(0,0,0,.95)}
+.ctrl-link:hover{color:#fff}
+.bigbtn{display:block;padding:4px 0 0;text-align:left;font-size:clamp(27px,2.2vw,44px);font-weight:900;letter-spacing:-1.2px;line-height:1.05;text-shadow:0 3px 12px rgba(0,0,0,.86)}
+.playbtn{color:var(--start);text-shadow:0 3px 12px rgba(0,0,0,.86),0 0 18px rgba(74,222,128,.4)}
+.playbtn::before{content:'▶ ';font-size:.86em}
+.playbtn:disabled{opacity:.4;cursor:default}
+.stopbtn{color:#FF6578}
+.stopbtn::before{content:'■ ';font-size:.86em}
+.fs-btn{position:fixed;z-index:22;right:16px;bottom:calc(var(--sab) + 18px);padding:3px;font-size:clamp(13px,1vw,17px);font-weight:900;color:rgba(255,255,255,.42);text-shadow:0 2px 10px rgba(0,0,0,.95)}
+.fs-btn:hover{color:#fff}
+
+.side{position:fixed;z-index:12;right:16px;top:calc(var(--sat) + clamp(110px,15vh,150px));width:clamp(220px,24vw,380px);display:flex;flex-direction:column;gap:clamp(10px,2vh,20px);text-align:right;pointer-events:none;text-shadow:var(--sh)}
+.st-lab{font-size:clamp(12px,1.05vw,18px);font-weight:900;letter-spacing:.5px;color:rgba(255,255,255,.62)}
+.st-val{margin-top:2px;font-family:var(--num);font-weight:900;font-size:clamp(34px,3.6vw,72px);line-height:1;letter-spacing:-.03em;color:#fff;text-shadow:0 4px 18px rgba(0,0,0,.96),0 0 22px rgba(94,234,212,.45)}
+.st-val.txt{font-family:var(--kr);font-size:clamp(22px,2.3vw,40px);letter-spacing:-.04em}
+.st-sub{margin-top:3px;font-size:clamp(11px,.95vw,15px);font-weight:800;color:rgba(234,244,241,.72)}
+
+#hud{position:fixed;z-index:12;right:16px;top:calc(var(--sat) + 70px);width:clamp(260px,32vw,460px);display:flex;flex-direction:column;gap:12px;text-align:right;pointer-events:none;text-shadow:var(--sh)}
+#hud[hidden]{display:none}
+#clock{order:-1;font-family:var(--num);font-size:clamp(30px,3vw,54px);font-weight:900;line-height:1;color:var(--teal-lit)}
+#cards{display:flex;flex-direction:column;gap:16px}
+.card{padding:0}
+.c-who{font-size:clamp(12px,1.05vw,17px);font-weight:900;color:var(--teal-lit)}
 .card.k1 .c-who{color:var(--lime-lit)}
-.c-next-lbl{font-size:11px;color:var(--muted);font-weight:700;margin-top:4px}
-.c-next{font-size:clamp(17px,2.3vw,26px);font-weight:900;line-height:1.25;margin-top:1px}
-.c-next .dir{display:inline-block;min-width:3.2em;padding:1px 8px;margin-right:6px;border-radius:8px;background:#163452;color:#cfe8ff;font-size:.78em;text-align:center}
-.c-last{margin-top:8px;font-size:13.5px;line-height:1.45;min-height:2.9em;color:#d7e5f2}
+.c-next-lbl{font-size:11px;color:rgba(255,255,255,.55);font-weight:800;margin-top:3px}
+.c-next{font-size:clamp(20px,2.4vw,38px);font-weight:900;line-height:1.2;margin-top:1px;color:#fff}
+.c-next .dir{display:inline-block;margin-right:6px;color:var(--teal-lit);font-size:.66em}
+.c-last{margin-top:6px;font-size:clamp(12px,1.05vw,16px);line-height:1.45;min-height:2.6em;color:rgba(234,244,241,.86)}
 .c-last .o{color:var(--ok);font-weight:900} .c-last .x{color:var(--bad);font-weight:900}
-.c-dots{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
-.c-dots i{width:16px;height:16px;border-radius:5px;background:#1c3149;font-style:normal;font-size:9px;font-weight:900;display:flex;align-items:center;justify-content:center;color:#7d93ad;font-family:var(--num)}
+.c-dots{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:4px;margin-top:8px}
+.c-dots i{width:16px;height:16px;border-radius:4px;background:rgba(28,49,73,.72);font-style:normal;font-size:9px;font-weight:900;display:flex;align-items:center;justify-content:center;color:#9bb0c8;font-family:var(--num);text-shadow:none}
 .c-dots i.cur{outline:2px solid #fff}
 .c-dots i.ok{background:#1f6f4a;color:#d9ffe9} .c-dots i.ng{background:#7b2737;color:#ffe0e6} .c-dots i.miss{background:#4b3a12;color:#ffe9b3}
-.c-miss{font-size:11px;color:var(--amber);margin-top:4px;min-height:1.2em}
-#meter{position:absolute;left:16px;bottom:calc(84px + env(safe-area-inset-bottom,0px));width:180px}
-#meter .m-lbl{font-size:11px;font-weight:800;color:var(--muted);margin-bottom:4px}
-#meter .m-bar{height:8px;border-radius:99px;background:#1a2c42;overflow:hidden;margin-bottom:5px}
-#meter .m-bar b{display:block;height:100%;width:0;background:var(--teal);transition:width .08s linear}
+#meter{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+#meter > div{width:min(220px,100%)}
+#meter .m-lbl{font-size:11px;font-weight:800;color:rgba(255,255,255,.6);margin-bottom:4px}
+#meter .m-bar{height:6px;background:rgba(26,44,66,.8);overflow:hidden;margin-bottom:4px}
+#meter .m-bar b{display:block;height:100%;width:0;background:var(--teal);transition:width .08s linear;margin-left:auto}
 #meter .m-bar.k1 b{background:var(--lime)}
-#meter .m-st{font-size:12px;font-weight:900;margin-bottom:6px}
-#clock{position:absolute;right:16px;bottom:calc(20px + env(safe-area-inset-bottom,0px));font-family:var(--num);font-size:22px;font-weight:800;color:#fff;text-shadow:0 2px 8px #000}
-#btnEnd{position:fixed;left:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:22;padding:13px 20px;border-radius:14px;background:rgba(251,113,133,.92);color:#2a0710;font-weight:900;font-size:16px}
-#btnCancel{position:fixed;left:150px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:22;padding:13px 16px;border-radius:14px;background:rgba(30,50,75,.9);font-weight:800;font-size:14px}
+#meter .m-st{font-size:12px;font-weight:900}
+
+#groupFrame{position:absolute;inset:0;width:100%;height:100%;border:0;display:block;background:#08111F}
+body.group-mode #video, body.group-mode #canvas{visibility:hidden}
+body.group-mode .side, body.group-mode #status, body.group-mode .mode-badge{display:none}
+body.group-running #lobby, body.group-running .tb-btns, body.group-running .tb-meta, body.group-running .tb-tag{display:none}
 #countdown{position:fixed;inset:0;z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;text-shadow:0 4px 24px rgba(0,0,0,.8)}
 #countdown .cd-n{font-family:var(--num);font-weight:900;font-size:min(34vw,240px);line-height:1;color:var(--lime-lit)}
 #countdown .cd-t{font-size:clamp(18px,3vw,30px);font-weight:900;margin-top:8px}
@@ -150,12 +173,12 @@ table.t input{width:100%}
 .cfg-grid input{background:#071526;border:1px solid #284563;border-radius:8px;padding:7px;font-family:var(--num);font-size:14px;width:100%}
 
 @media (max-width:760px), (orientation:portrait){
-  #lobby{top:auto;left:10px;right:10px;width:auto;bottom:10px;max-height:62vh}
-  body.recording #cards, body.recording #cards.two{top:calc(62px + env(safe-area-inset-top,0px))}
-  .card{width:min(460px,92vw)}
-  #cards.two{flex-direction:column;align-items:center;gap:8px}
-  #cards.two .card{width:min(520px,94vw);padding:7px 12px 8px}
-  #cards.two .c-last{min-height:0}
+  #lobby{width:min(300px,74vw);top:calc(var(--sat) + 150px)}
+  #hud{top:calc(var(--sat) + 150px)}
+  .mode-badge{top:calc(var(--sat) + 74px);max-width:70vw}
+  #status{top:calc(var(--sat) + 136px);max-width:70vw}
+  #lobbyStats{display:none}
+  #hud{width:min(420px,62vw)}
   .title-block{max-width:60vw}
 }
 </style>
@@ -184,22 +207,22 @@ table.t input{width:100%}
   <div class="tb-meta" id="tbVer">품새마스터</div>
   <div class="tb-meta">Powered by Google MediaPipe</div>
   <div class="tb-tag">시험용 · 비공개</div>
+  <div class="tb-btns">
+    <button class="tb-btn" type="button" id="btnKey">정답지</button>
+    <button class="tb-btn" type="button" id="btnRecs">저장 기록</button>
+    <button class="tb-btn" type="button" id="btnCfg">판정 기준값</button>
+  </div>
 </div>
+<div class="mode-badge" id="modeBadge"><b class="mb-title" id="mbTitle">관장 시범</b><span class="mb-sub" id="mbSub">태극 1장 · 18동작</span></div>
 <div id="status">카메라 준비 중…</div>
 
-<section id="lobby" hidden>
-  <div class="lb-top"><h2 class="lb-h">품새마스터</h2><button type="button" class="lb-fold" id="btnFold">접기 ▾</button></div>
-  <p class="lb-sub">멈춘 순간마다 AI 가 <b>방향 · 서기 · 기술</b>을 보고 정답지와 비교합니다. 영상은 저장하지 않고 관절 좌표만 이 기기와 나른랩스 서버(10일 보관)에 자동 저장됩니다.</p>
-
-  <div class="lb-label">누가 하나요</div>
-  <div class="seg c3" id="segRole">
-    <button type="button" data-v="master">관장 시범<small>기준 기록</small></button>
-    <button type="button" data-v="student">학생 시험<small>판정 확인</small></button>
-    <button type="button" data-v="pair">2인 동시<small>함께 인식 시험</small></button>
+<section id="lobby" hidden aria-label="모드 선택">
+  <div class="modelist" id="segRole">
+    <button type="button" class="choice" data-v="master">관장 시범<small>기준 기록</small></button>
+    <button type="button" class="choice" data-v="student">학생 시험<small>판정 확인</small></button>
+    <button type="button" class="choice" data-v="pair">2인 동시<small>두 사람 함께</small></button>
+    <button type="button" class="choice" data-v="group">단체 모드<small>로봇 구령 따라하기 · 카메라 안 씀</small></button>
   </div>
-
-  <div class="lb-label">메모 (실명 대신 별칭)</div>
-  <input class="lb-input" id="inLabel" type="text" maxlength="40" placeholder="예: 관장 1회 · 초2 A · 일부러 7번 틀림">
 
   <div class="lb-label">품새</div>
   <div class="seg c2" id="segPoomsae">
@@ -207,50 +230,82 @@ table.t input{width:100%}
     <button type="button" data-v="tg2">태극 2장<small>18동작</small></button>
   </div>
 
-  <div class="lb-label">시작 전 대기</div>
-  <div class="seg c3" id="segWait">
-    <button type="button" data-v="5">5초</button>
-    <button type="button" data-v="10">10초</button>
-    <button type="button" data-v="15">15초</button>
+  <div id="optCam">
+    <div class="lb-label">메모 (실명 대신 별칭)</div>
+    <input class="lb-input" id="inLabel" type="text" maxlength="40" placeholder="예: 관장 1회 · 초2 A">
+
+    <div class="lb-label">시작 전 대기</div>
+    <div class="seg c3" id="segWait">
+      <button type="button" data-v="5">5초</button>
+      <button type="button" data-v="10">10초</button>
+      <button type="button" data-v="15">15초</button>
+    </div>
+
+    <div class="lb-label">동작 판정음 · 관장 시범은 항상 꺼짐</div>
+    <div class="seg c2" id="segFeedback">
+      <button type="button" data-v="off">끄기</button>
+      <button type="button" data-v="on">켜기<small>학생 · 2인</small></button>
+    </div>
+
+    <div class="lb-label">카메라 · 인식 모델</div>
+    <div class="seg c2" id="segCam">
+      <button type="button" data-v="user">앞 카메라</button>
+      <button type="button" data-v="environment">뒤 카메라</button>
+    </div>
+    <div class="seg c2" id="segModel" style="margin-top:3px">
+      <button type="button" data-v="full">정확하게<small>full</small></button>
+      <button type="button" data-v="lite">빠르게<small>lite</small></button>
+    </div>
+
+    <div class="lb-tip">
+      <b>카메라</b> · 태블릿을 학생 <b>정면 4~5m</b>, 허리 높이에 가로로 둡니다. <b>양옆과 앞쪽 끝까지</b> 화면에 들어오는지 먼저 보세요.<br>
+      차렷 → “준비” 구령에 준비 자세 → <b>“시작”</b> → 동작마다 잠깐 멈추며 평소 속도로 → <b>“바로” → “쉬어”</b>.
+    </div>
   </div>
 
-  <div class="lb-label">동작 판정음 · 관장 시범은 항상 꺼짐</div>
-  <div class="seg c2" id="segFeedback">
-    <button type="button" data-v="off">끄기</button>
-    <button type="button" data-v="on">켜기<small>학생 · 2인 연습</small></button>
-  </div>
-
-  <div class="lb-label">카메라 · 인식 모델</div>
-  <div class="seg c2" id="segCam">
-    <button type="button" data-v="user">앞 카메라</button>
-    <button type="button" data-v="environment">뒤 카메라</button>
-  </div>
-  <div class="seg c2" id="segModel" style="margin-top:6px">
-    <button type="button" data-v="full">정확하게<small>full</small></button>
-    <button type="button" data-v="lite">빠르게<small>lite</small></button>
-  </div>
-
-  <button class="lb-start" id="btnStart" type="button" disabled>시작</button>
-  <div class="lb-row">
-    <button type="button" id="btnKey">정답지</button>
-    <button type="button" id="btnRecs">저장 기록</button>
-    <button type="button" id="btnCfg">판정 기준값</button>
-  </div>
-
-  <div class="lb-tip">
-    <b>카메라 놓는 법</b> · 태블릿을 학생 <b>정면 4~5m</b>, 허리 높이에 가로로 둡니다. 카메라를 보고 차렷으로 기다리다가, “준비” 구령에 준비 자세를 합니다.<br>
-    태극 1·2장은 좌우로 한 걸음씩, 앞으로 나왔다 돌아옵니다. <b>양옆과 앞쪽 끝이 다 화면에 들어오는지</b> 먼저 확인하세요.<br>
-    <b>준비 자세가 확인되면 “시작”</b>을 안내합니다. 동작마다 잠깐 멈추며 평소 속도로 하세요.<br>마지막에는 <b>“바로” → 준비 자세 확인 → “쉬어”</b>까지 진행합니다. 구령이 안 들리면 화면 안내를 보세요.
+  <div id="optGroup" hidden>
+    <div class="lb-label">속도</div>
+    <div class="seg c3" id="segGSpeed">
+      <button type="button" data-v="0.5">0.5배</button>
+      <button type="button" data-v="0.75">0.75배</button>
+      <button type="button" data-v="1">1배</button>
+    </div>
+    <div class="lb-label">보는 쪽</div>
+    <div class="seg c2" id="segGView">
+      <button type="button" data-v="back">뒷모습<small>따라 하기</small></button>
+      <button type="button" data-v="front">앞모습</button>
+      <button type="button" data-v="side">옆모습</button>
+      <button type="button" data-v="free">자유 시점<small>끌어서 돌리기</small></button>
+    </div>
+    <div class="lb-label">거울 · 발 위치</div>
+    <div class="seg c2" id="segGMirror">
+      <button type="button" data-v="on">거울 켜기</button>
+      <button type="button" data-v="off">거울 끄기</button>
+    </div>
+    <div class="seg c2" id="segGFoot" style="margin-top:3px">
+      <button type="button" data-v="on">발 위치 켜기</button>
+      <button type="button" data-v="off">발 위치 끄기</button>
+    </div>
+    <div class="lb-tip">카메라를 쓰지 않습니다. 화면을 아이들 앞에 두고 <b>시작</b>을 누르면 로봇이 구령과 함께 품새를 보여 줍니다. 뒷모습이면 아이들이 그대로 따라 하면 됩니다.</div>
   </div>
 </section>
+
+<div class="side" id="lobbyStats">
+  <div><div class="st-lab">품새</div><div class="st-val txt" id="lsPoomsae">태극 1장</div><div class="st-sub" id="lsMoves">18동작</div></div>
+  <div><div class="st-lab">판정</div><div class="st-val txt">방향 · 기술</div><div class="st-sub">서기는 참고로만 표시</div></div>
+</div>
 
 <div id="hud" hidden>
   <div id="cards"></div>
   <div id="meter"></div>
   <div id="clock" class="num">0:00</div>
 </div>
-<button id="btnEnd" type="button" hidden>끝내기</button>
-<button id="btnCancel" type="button" hidden>취소</button>
+<div class="ctrl" id="ctrl">
+  <button class="ctrl-link" id="btnCancel" type="button" hidden>취소</button>
+  <button class="bigbtn playbtn" id="btnStart" type="button" disabled>시작!</button>
+  <button class="bigbtn stopbtn" id="btnEnd" type="button" hidden>끝내기</button>
+</div>
+<button class="fs-btn" id="fsBtn" type="button">전체화면</button>
 <div id="countdown" hidden><div class="cd-n" id="cdN">5</div><div class="cd-t" id="cdT">준비 자세로 서 주세요</div></div>
 
 <div class="modal" id="mResult" hidden><div class="m-box" id="resultBox"></div></div>
@@ -261,7 +316,7 @@ table.t input{width:100%}
 <script id="psm-core">
 
 var PSM = (function(){
-  var VERSION = '0.5.0';
+  var VERSION = '0.6.0';
 
   var DEFAULT_CFG = {
     SMOOTH: 0.5,        
@@ -630,7 +685,8 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
   function fmtT(ms){ var s=Math.max(0,Math.floor(ms/1000)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
 
-  var pref=Object.assign({role:'master', wait:'10', cam:'user', model:'full', feedback:'off', poomsae:'tg1'}, lsGet(LS_PREF,{}));
+  var pref=Object.assign({role:'master', wait:'10', cam:'user', model:'full', feedback:'off', poomsae:'tg1',
+    gSpeed:'1', gView:'back', gMirror:'on', gFoot:'on'}, lsGet(LS_PREF,{}));
   if(!PSM.KEYS[pref.poomsae]) pref.poomsae='tg1';
   
   function lsKey(){ return 'psm_lab_key_'+pref.poomsae; }
@@ -734,30 +790,102 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
       var old=pref[key]; pref[key]=b.dataset.v; lsSet(LS_PREF,pref); paint();
       if(key==='cam' && old!==pref.cam) startCamera();
       if(key==='model' && old!==pref.model) loadModel();
-      if(key==='role') ensurePoses();
-      if(key==='poomsae') KEY=getKey();
+      if(key==='role'){ if(pref.role==='group') enterGroup(); else { if(old==='group') leaveGroup(); ensurePoses(); } }
+      if(key==='poomsae'){ KEY=getKey(); if(pref.role==='group' && old!==pref.poomsae) loadGroupFrame(); }
+      if(/^g[A-Z]/.test(key)) applyRobot();
+      updateModeUi();
     });
     paint();
+  }
+
+  var ROLE_NAME={master:'관장 시범', student:'학생 시험', pair:'2인 동시', group:'단체 모드'};
+  function updateModeUi(){
+    var pName=PSM.POOMSAE_NAME[pref.poomsae]||'', moves=lastMove(baseKey());
+    $('mbTitle').textContent=ROLE_NAME[pref.role]||'';
+    $('mbSub').textContent=pName+' · '+moves+'동작';
+    $('lsPoomsae').textContent=pName; $('lsMoves').textContent=moves+'동작';
+    $('optCam').hidden= pref.role==='group';
+    $('optGroup').hidden= pref.role!=='group';
+    document.body.classList.toggle('group-mode', pref.role==='group');
+  }
+
+  var groupRunning=false, groupWantPlay=false;
+  function robot(){ var f=$('groupFrame'); try{ return f && f.contentWindow && f.contentWindow.__robot; }catch(e){ return null; } }
+  function enterGroup(){
+    if(stream){ stream.getTracks().forEach(function(t){ t.stop(); }); stream=null; }
+    loadGroupFrame();
+    readyCheck();
+  }
+  function leaveGroup(){
+    stopGroup(true);
+    var f=$('groupFrame'); if(f) f.remove();
+    $('btnStart').disabled=true; readyCheck();
+    if(!fake){ startCamera(); if(!landmarker) loadModel(); }
+  }
+  function loadGroupFrame(){
+    var f=$('groupFrame');
+    if(!f){ f=document.createElement('iframe'); f.id='groupFrame'; f.title='품새 시범 로봇'; f.allow='fullscreen'; $('stage').appendChild(f); }
+    f.src='poomsaerobot.html?p='+encodeURIComponent(pref.poomsae)+'&embed=1'+(TEST?'&fake=1':'');
+    waitRobot();
+  }
+  var robotWait=null;
+  function waitRobot(){
+    clearInterval(robotWait);
+    var n=0;
+    robotWait=setInterval(function(){
+      var r=robot();
+      if(r){ clearInterval(robotWait); robotWait=null; applyRobot(); if(groupWantPlay) r.play(); return; }
+      if(++n>150){ clearInterval(robotWait); robotWait=null; }
+    },200);
+  }
+  function applyRobot(){
+    var r=robot(); if(!r) return;
+    r.rate(parseFloat(pref.gSpeed)||1); r.view(pref.gView); r.mirror(pref.gMirror==='on'); r.foot(pref.gFoot==='on');
+  }
+  function startGroup(){
+    groupRunning=true; groupWantPlay=true;
+    document.body.classList.add('group-running');
+    $('btnStart').hidden=true; $('btnEnd').hidden=false; $('btnEnd').textContent='중지';
+    try{ navigator.wakeLock && navigator.wakeLock.request('screen').then(function(w){ wakeLock=w; }).catch(function(){}); }catch(e){}
+    var r=robot(); if(r){ applyRobot(); r.play(); } else if(!robotWait) loadGroupFrame();
+  }
+  function stopGroup(quiet){
+    if(!groupRunning && !quiet) return;
+    groupRunning=false; groupWantPlay=false;
+    var r=robot(); if(r) r.stop();
+    document.body.classList.remove('group-running');
+    $('btnStart').hidden=false; $('btnEnd').hidden=true; $('btnEnd').textContent='끝내기';
+    try{ wakeLock && wakeLock.release(); }catch(e){} wakeLock=null;
+  }
+  
+  window.__psmGroupDone=function(){ if(groupRunning) stopGroup(); };
+
+  function toggleFullscreen(){
+    var d=document, el=d.documentElement;
+    try{
+      if(d.fullscreenElement || d.webkitFullscreenElement){ (d.exitFullscreen||d.webkitExitFullscreen).call(d); }
+      else { (el.requestFullscreen||el.webkitRequestFullscreen).call(el); }
+    }catch(e){}
   }
 
   function boot(){
     if(booted) return; booted=true;
     segInit('segPoomsae','poomsae'); segInit('segFeedback','feedback'); segInit('segRole','role'); segInit('segWait','wait'); segInit('segCam','cam'); segInit('segModel','model');
+    segInit('segGSpeed','gSpeed'); segInit('segGView','gView'); segInit('segGMirror','gMirror'); segInit('segGFoot','gFoot');
+    updateModeUi();
     $('lobby').hidden=false;
-    $('btnStart').addEventListener('click', startSession);
-    $('btnFold').addEventListener('click', function(){
-      var on=!$('lobby').classList.contains('mini'); $('lobby').classList.toggle('mini', on);
-      this.textContent= on ? '펼치기 ▴' : '접기 ▾';
-    });
-    $('btnEnd').addEventListener('click', function(){ finishSession('수동'); });
+    $('btnStart').addEventListener('click', function(){ if(pref.role==='group') startGroup(); else startSession(); });
+    $('fsBtn').addEventListener('click', toggleFullscreen);
+    $('btnEnd').addEventListener('click', function(){ if(groupRunning) stopGroup(); else finishSession('수동'); });
     $('btnCancel').addEventListener('click', cancelSession);
     $('btnKey').addEventListener('click', openKey);
     $('btnRecs').addEventListener('click', openRecs);
     $('btnCfg').addEventListener('click', openCfg);
     window.addEventListener('resize', fitCanvas); fitCanvas();
     window.addEventListener('online', function(){ setTimeout(retryUploads, 2000); });
-    if(TEST && window.__psmFake){ fake=window.__psmFake; srcW=fake.W; srcH=fake.H; setStatus('가짜 자세 입력'); readyCheck(); fakeLoop(); return; }
-    startCamera(); loadModel(); requestAnimationFrame(loop);
+    if(TEST && window.__psmFake){ fake=window.__psmFake; srcW=fake.W; srcH=fake.H; setStatus('가짜 자세 입력'); readyCheck(); fakeLoop(); if(pref.role==='group') enterGroup(); return; }
+    if(pref.role==='group') enterGroup(); else { startCamera(); loadModel(); }
+    requestAnimationFrame(loop);
     setTimeout(retryUploads, 4000);
   }
 
@@ -771,6 +899,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     setStatus('카메라 준비 중…');
     navigator.mediaDevices.getUserMedia({audio:false, video:{facingMode:pref.cam, width:{ideal:1280}, height:{ideal:720}}})
       .then(function(s){
+        if(pref.role==='group'){ s.getTracks().forEach(function(t){ t.stop(); }); return; }   
         stream=s; video.srcObject=s;
         video.classList.toggle('mirror', pref.cam==='user');
         return video.play();
@@ -800,6 +929,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     landmarker.setOptions({numPoses:want}).then(function(){ poses=want; }).catch(function(){ loadModel(); });
   }
   function readyCheck(){
+    if(pref.role==='group'){ $('btnStart').disabled=false; return; }
     var ok = !!fake || (!!landmarker && !!stream);
     $('btnStart').disabled=!ok;
     if(ok) setStatus('준비됨 · 카메라 앞에 서면 뼈대가 보입니다');

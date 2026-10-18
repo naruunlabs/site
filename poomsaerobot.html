@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
 <title>품새마스터 · 로봇</title>
+<script>
+if(/[?&]embed=1/.test(location.search)) document.documentElement.classList.add('embed','idle');</script>
 
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@500;700;900&display=swap" rel="stylesheet">
 <style>
@@ -48,6 +50,14 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);font-family
 @media (max-width:1100px){#footBox{right:28px;top:324px;width:230px;height:190px}}
 @media (max-width:700px){#footBox{right:12px;top:200px;width:140px;height:128px;border-radius:14px}#footBox .lb{display:none}#fiSpec{display:none}#fiName{font-size:13px}#footInfo{padding:2px 6px 6px}
   #mirrorBox{width:140px;height:180px;right:12px;top:12px}#prog .t{font-size:26px}#mv .nm{font-size:18px}#mv{bottom:140px}#call{bottom:140px}}
+
+html.embed #ctl{display:none}
+html.embed #prog{left:50%;transform:translateX(-50%);top:16px;text-align:center}
+html.embed #prog .bar{justify-content:center}
+html.embed #prog .k{display:none}
+html.embed #mv{bottom:110px}
+html.embed #call{bottom:96px}
+html.embed.idle #mv, html.embed.idle #call{visibility:hidden}
 </style>
 <style>
 #gate{position:fixed;inset:0;z-index:50;background:#08111F;display:flex;align-items:center;justify-content:center;padding:16px}
@@ -1003,10 +1013,13 @@ function drawFootPanel(m,dt){
 }
 
 let t=0, playing=true, rate=1, last=performance.now(), mirrorOn=true;
+const EMBED=document.documentElement.classList.contains('embed'); if(EMBED) playing=false;   
 const tgt=new THREE.Vector3(0,.95,0);
 function tick(now){
   const dt=Math.min(.1,(now-last)/1000); last=now;
-  if(playing){ t+=dt*1000*rate; if(t>D.dur+1500) t=0; }
+  if(playing){ t+=dt*1000*rate; if(t>D.dur+1500){
+    if(EMBED){ playing=false; t=D.dur; document.documentElement.classList.add('idle'); try{ parent.__psmGroupDone && parent.__psmGroupDone(); }catch(e){} }   
+    else t=0; } }
   const tt=Math.min(t,D.dur);
   const J=pose(tt); const m=ui(tt); glow(m,J,dt);
   const want=new THREE.Vector3(robot.position.x, .95, robot.position.z); tgt.lerp(want,Math.min(1,dt*2));
@@ -1042,6 +1055,15 @@ el('head').oninput=e=>headScale=+e.target.value;
 el('hand').oninput=e=>handScale=+e.target.value;
 el('belt').onchange=e=>beltMat.color.set(e.target.value);
 addEventListener('keydown',e=>{ if(e.code==='Space'){ e.preventDefault(); el('play').click(); } });
+
+window.__robot={
+  play(){ t=0; playing=true; document.documentElement.classList.remove('idle'); },
+  stop(){ playing=false; t=0; document.documentElement.classList.add('idle'); },
+  rate(r){ rate=r; el('speed').value=String(r); },
+  view(v){ view=v; el('view').value=v; if(v==='free') orbit.target.copy(tgt); },
+  mirror(b){ if(mirrorOn!==b) el('mirrorBtn').click(); },
+  foot(b){ if(footOn!==b) el('footBtn').click(); }
+};
 window.__sample={DIM,HEAD_BASE,NF,moves:MV,SET,t:D.t,CAM_TILT,noPath:()=>computeSet(smClean,true,true,false),P};
 </script>
 </body>
