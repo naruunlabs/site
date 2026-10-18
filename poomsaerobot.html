@@ -160,7 +160,7 @@ html.embed.idle #mv, html.embed.idle #call{visibility:hidden}
       {n:21, name:'바로 (나란히서기)', hand:'', dir:'F', turn:180} ] }
   };
   const spec=SPECS[P]; if(!spec) return;
-  const TIME={SUB:620, SUB_HOLD:320, ATTN:1800, ATTN_TO_READY:1800, READY:2600, TRANS:950, TURN_BIG:1150, KICK:1800, HOLD:800, LAST_HOLD:1100, END_HOLD:1500, FPS:30};
+  const TIME={SUB:420, SUB_HOLD:140,     ATTN:1800, ATTN_TO_READY:1800, READY:2600, TRANS:950, TURN_BIG:1150, KICK:1800, HOLD:800, LAST_HOLD:1100, END_HOLD:1500, FPS:30};
   const YAW={F:0, L:Math.PI/2, B:Math.PI, R:-Math.PI/2};
   
   const mv=spec.moves.map(m=>Object.assign({},m)); let t=0, yaw=0;
@@ -580,7 +580,9 @@ function correct(J,f){
           pole=YV.clone().negate().addScaledVector(side,.4).addScaledVector(fwd,.3).normalize(); hd={d:YV.clone().addScaledVector(fwd,.15).normalize(), s:side.clone()}; }
         else if(mi.block==='kout'){   
           T=J.hip.clone().addScaledVector(YV,DIM.torso*.98).addScaledVector(side,SH_W+.07).addScaledVector(fwd,.16);
-          pole=YV.clone().negate().addScaledVector(side,.5).normalize(); hd={d:YV.clone().addScaledVector(fwd,.2).normalize(), s:side.clone().negate()}; }
+          pole=YV.clone().negate().addScaledVector(side,.5).normalize();
+          
+          hd={d:YV.clone().multiplyScalar(.85).addScaledVector(fwd,.45).normalize(), s:side.clone().multiplyScalar(-.82).addScaledVector(fwd,-.57)}; }
         else if(mi.block==='kneck'){  
           const R2=(DIM.up+DIM.fo)*.96, C=J.hip.clone().addScaledVector(YV,DIM.torso*1.10).addScaledVector(side,.04), D0=C.clone().sub(Sh);
           const b=D0.dot(fwd), d=-b+Math.sqrt(Math.max(0,b*b-(D0.lengthSq()-R2*R2))); T=C.addScaledVector(fwd,d);
@@ -672,12 +674,15 @@ function straightenArms(FR,rawRel){
         const C=new THREE.Vector3(0,(Aw.y+B.y)/2,0), a0=Math.atan2(Aw.x,Aw.z), a1=Math.atan2(B.x,B.z);
         let da=a1-a0; da=Math.atan2(Math.sin(da),Math.cos(da));
         arc={a0,da,r0:Math.hypot(Aw.x,Aw.z),r1:Math.hypot(B.x,B.z),y0:Aw.y,y1:B.y,C};
-        hA={d:hB.d.clone().applyAxisAngle(YV,-da), s:hB.s.clone().applyAxisAngle(YV,-da)}; }
+        
+        arc.hUp={d:YV.clone().addScaledVector(hB.d,-.15).normalize(), s:hB.s.clone()};
+        hA={d:arc.hUp.d.clone().applyAxisAngle(YV,-da), s:arc.hUp.s.clone().applyAxisAngle(YV,-da)}; }
       if(isMain && tech==='kout'){    
         via=V(KOUT_VIA(sd));
         hA={d:new THREE.Vector3(-sd*.89,0,.45), s:new THREE.Vector3(sd*.45,0,.89)}; }
-      
-      const twistSign= isMain && tech==='punch' ? sd : 0;
+
+      if(isMain && tech==='in') hA={d:YV.clone().addScaledVector(XV,sd*.2).normalize(), s:XV.clone().multiplyScalar(-sd)};
+      const twistSign= isMain && (tech==='punch'||tech==='in') ? sd : 0, twistFrom= tech==='in' ? .05 : .45;
       const kickArm= D.synth && mi.kick;
       const GV=V(KICK_GUARD.POS(sd)), GP=V(KICK_GUARD.POLE(sd)).normalize(), GH={d:new THREE.Vector3(0,.3,1).normalize(), s:YV.clone()};
       for(let f=fa+1;f<fb;f++){
@@ -694,15 +699,15 @@ function straightenArms(FR,rawRel){
             else { const s=(g-gAx)/Math.max(1e-3,1-gAx);
               if(arc){ const ss=smooth3(s), a=arc.a0+arc.da*ss, r=arc.r0+(arc.r1-arc.r0)*ss;
                 P3=new THREE.Vector3(r*Math.sin(a), arc.y0+(arc.y1-arc.y0)*ss, r*Math.cos(a)); pole=Ap.clone().lerp(pB,s);
-                hd={d:hB.d.clone().applyAxisAngle(YV,arc.da*(ss-1)), s:hB.s.clone().applyAxisAngle(YV,arc.da*(ss-1))}; }
+                const hh=blendHand(arc.hUp,hB,sm3((ss-.25)/.7)); hd={d:hh.d.applyAxisAngle(YV,arc.da*(ss-1)), s:hh.s.applyAxisAngle(YV,arc.da*(ss-1))}; }
               else if(via){ const ss=smooth3(s), v=1-ss, Q=via.clone().multiplyScalar(2).sub(Aw.clone().add(B).multiplyScalar(.5));
                 P3=Aw.clone().multiplyScalar(v*v).add(Q.multiplyScalar(2*v*ss)).add(B.clone().multiplyScalar(ss*ss)); pole=Ap.clone().lerp(pB,s); hd=blendHand(hA,hB,ss); }
               else { P3=herm(Aw,B,Vt2.clone().multiplyScalar(1-gAx),Z,s); pole=Ap.clone().lerp(pB,s);
-                hd=blendHand(hA,hB,s, twistSign? sm3((s-.45)/.55) : s, twistSign); } } } }
+                hd=blendHand(hA,hB,s, twistSign? sm3((s-twistFrom)/(1-twistFrom)) : s, twistSign); } } } }
         else if(f<=fA){ const u=smooth3((D.t[f]-D.t[fa])/Math.max(1,D.t[fA]-D.t[fa]));
           P3=S0.clone().lerp(Aw,u); P3.z+=PATH.ARC*Math.sin(Math.PI*u); pole=p0.clone().lerp(Ap,u); hd=blendHand(h0,hA,u); }
         else { const u= byTime ? smooth3((D.t[f]-D.t[fA])/Math.max(1,D.t[fb]-D.t[fA])) : Math.min(1,us[f-fA]/top);
-          P3=Aw.clone().lerp(B,u); pole=Ap.clone().lerp(pB,u); hd=blendHand(hA,hB,u, twistSign? sm3((u-.45)/.55) : u, twistSign); }
+          P3=Aw.clone().lerp(B,u); pole=Ap.clone().lerp(pB,u); hd=blendHand(hA,hB,u, twistSign? sm3((u-twistFrom)/(1-twistFrom)) : u, twistSign); }
         const J=FR[f], y=yawOf(J), T=P3.applyAxisAngle(YV,y).add(J.hip); pole.normalize().applyAxisAngle(YV,y);
         const r=ik2(J['sh'+s],T,DIM.up,DIM.fo,pole); J['el'+s]=r.mid; J['wr'+s]=r.end;
         J['hd'+s].d=hd.d.clone().normalize().applyAxisAngle(YV,y); J['hd'+s].s=hd.s.clone().normalize().applyAxisAngle(YV,y); } } } }
@@ -1051,7 +1056,9 @@ function pose(t){
     if(front.lengthSq()<1e-4) front=fd.clone(); front.normalize();
     const p=Math.min(1,Math.max(0,(fd.dot(u.clone().negate())-.2)/.6));
     const up=u.clone().lerp(front,p).normalize().lerp(Y,plant).normalize();
-    let z=front.clone().lerp(u.clone().negate(),p); z.addScaledVector(up,-z.dot(up)).normalize(); const x=new THREE.Vector3().crossVectors(up,z);
+    
+    const fdh=new THREE.Vector3(fd.x,0,fd.z), front2= fdh.lengthSq()>1e-6 ? front.clone().lerp(fdh.normalize(),plant*(1-p)) : front;
+    let z=front2.clone().lerp(u.clone().negate(),p); z.addScaledVector(up,-z.dot(up)).normalize(); const x=new THREE.Vector3().crossVectors(up,z);
     const len=DIM.ft*1.25*handScale/1.2*1.1, h=.075*handScale, w=.095*handScale;
     f.scale.set(w,h,len); placeBasis(f,an.clone().addScaledVector(up,-.04).addScaledVector(z,len*.28),x,up,z); }
 
