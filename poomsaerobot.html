@@ -715,6 +715,23 @@ function straightenArms(FR,rawRel){
         const r=ik2(J['sh'+s],T,DIM.up,DIM.fo,pole); J['el'+s]=r.mid; J['wr'+s]=r.end;
         J['hd'+s].d=hd.d.clone().normalize().applyAxisAngle(YV,y); J['hd'+s].s=hd.s.clone().normalize().applyAxisAngle(YV,y); } } } }
 
+const BARO_UP_AT=.5;
+function backToReady(FR){
+  const j=D.moves.length-1, pv=D.moves[j-1], nm=D.moves[j]; if(!MINFO[j]||!MINFO[j].ready||pv.t1==null||nm.t0==null) return;
+  let fa=0; while(fa<NF-1&&D.t[fa+1]<=pv.t1) fa++; let fb=fa; while(fb<NF-1&&D.t[fb]<nm.t0) fb++; if(fb-fa<3) return;
+  const fist=.085*1.2, Ja=FR[fa], Jb=FR[fb], ya=yawOf(Ja), yb=yawOf(Jb), toL=(v,y)=>v.clone().applyAxisAngle(YV,-y);
+  for(const s of ['L','R']){ const sd=s==='L'?1:-1;
+    const S0=toL(Ja['wr'+s].clone().sub(Ja.hip),ya), B=toL(Jb['wr'+s].clone().sub(Jb.hip),yb);
+    const P1=new THREE.Vector3(sd*(fist/2+.03+fist*.55), DIM.torso*.80, .24), pl=new THREE.Vector3(sd,0,-.3).normalize();
+    const h0={d:toL(Ja['hd'+s].d,ya), s:toL(Ja['hd'+s].s,ya)}, hB={d:toL(Jb['hd'+s].d,yb), s:toL(Jb['hd'+s].s,yb)}, hP={d:new THREE.Vector3(-sd,0,0), s:YV.clone()};
+    const p0=toL(poleOf(Ja['sh'+s],Ja['el'+s],Ja['wr'+s]),ya);
+    for(let f=fa+1;f<fb;f++){ const g=smooth3((D.t[f]-D.t[fa])/Math.max(1,D.t[fb]-D.t[fa])); let P, pole, hd;
+      if(g<BARO_UP_AT){ const u=g/BARO_UP_AT; P=S0.clone().lerp(P1,sm3(u)); P.z+=PATH.ARC*Math.sin(Math.PI*u); pole=p0.clone().lerp(pl,u); hd=blendHand(h0,hP,sm3(u)); }
+      else { const u=(g-BARO_UP_AT)/(1-BARO_UP_AT); P=P1.clone().lerp(B,sm3(u)); pole=pl.clone(); hd=blendHand(hP,hB,sm3(u)); }
+      const J=FR[f], y=yawOf(J), T=P.applyAxisAngle(YV,y).add(J.hip); pole.normalize().applyAxisAngle(YV,y);
+      const r=ik2(J['sh'+s],T,DIM.up,DIM.fo,pole); J['el'+s]=r.mid; J['wr'+s]=r.end;
+      J['hd'+s].d=hd.d.clone().normalize().applyAxisAngle(YV,y); J['hd'+s].s=hd.s.clone().normalize().applyAxisAngle(YV,y); } } }
+
 function blendHand(a,b,k,tk,sign){
   const ad=a.d.clone().normalize(), bd=b.d.clone().normalize();
   const d=ad.clone().applyQuaternion(new THREE.Quaternion().slerpQuaternions(new THREE.Quaternion(), new THREE.Quaternion().setFromUnitVectors(ad,bd), k)).normalize();
@@ -809,7 +826,7 @@ function computeSet(smX,clean,fix,path=true){
     D.moves.forEach((m,nx)=>{ if(!MINFO[nx].kick||nx<1) return; const pv=D.moves[nx-1]; let fr=0; while(fr<NF-1&&D.t[fr+1]<=pv.t1) fr++;
       const s=MINFO[nx].kick==='L'?'R':'L'; KREF[nx]=FR[fr]['an'+s].clone().sub(FR[fr].hip); (refAt[fr]=refAt[fr]||[]).push([nx,s]); });
     FR.forEach((J,f)=>{ correct(J,f); (refAt[f]||[]).forEach(([nx,s])=>{ KREF[nx]=J['an'+s].clone().sub(J.hip); }); });
-    if(path) straightenArms(FR,rawRel); }
+    if(path){ straightenArms(FR,rawRel); backToReady(FR); } }
   const planted= fix&&path ? plantFeet(FR) : null;
   armOutAll(FR);
   

@@ -95,6 +95,11 @@ body.recording #status, body.recording .title-block .tb-meta, body.recording .ti
 .playbtn:disabled{opacity:.4;cursor:default}
 .stopbtn{color:#FF6578}
 .stopbtn::before{content:'■ ';font-size:.86em}
+
+.pausebtn{color:#fff}
+.pausebtn::before{content:'⏸ ';font-size:.86em}
+.resumebtn{color:var(--start);text-shadow:0 3px 12px rgba(0,0,0,.86),0 0 18px rgba(74,222,128,.4)}
+.resumebtn::before{content:'▶ ';font-size:.86em}
 .fs-btn{position:fixed;z-index:22;right:16px;bottom:calc(var(--sab) + 18px);padding:3px;font-size:clamp(13px,1vw,17px);font-weight:900;color:rgba(255,255,255,.42);text-shadow:0 2px 10px rgba(0,0,0,.95)}
 .fs-btn:hover{color:#fff}
 
@@ -324,7 +329,7 @@ table.t input{width:100%}
   <button class="ctrl-link" id="btnCancel" type="button" hidden>취소</button>
   
   <div class="gctl" id="groupCtl">
-    <button type="button" id="gPause">⏸ 일시정지</button>
+    <button type="button" id="gStop">■ 중지</button>
     <button type="button" id="gPrev">◀ 이전 동작</button>
     <button type="button" id="gNext">다음 동작 ▶</button>
     <button type="button" id="gBack">↺ 뒷모습</button>
@@ -869,7 +874,8 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
 
   var groupRunning=false, groupWantPlay=false, groupPaused=false;
   
-  function setGroupPaused(b){ groupPaused=b; $('gPause').textContent= b ? '▶ 계속' : '⏸ 일시정지'; $('gPause').classList.toggle('on', b); }
+  function setGroupPaused(b){ groupPaused=b; var e=$('btnEnd'); if(!groupRunning) return;
+    e.classList.remove('stopbtn'); e.classList.toggle('pausebtn',!b); e.classList.toggle('resumebtn',b); e.textContent= b ? '계속' : '일시정지'; }
   function robot(){ var f=$('groupFrame'); try{ return f && f.contentWindow && f.contentWindow.__robot; }catch(e){ return null; } }
   function enterGroup(){
     if(stream){ stream.getTracks().forEach(function(t){ t.stop(); }); stream=null; }
@@ -905,7 +911,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   function startGroup(){
     groupRunning=true; groupWantPlay=true; setGroupPaused(false);
     document.body.classList.add('group-running');
-    $('btnStart').hidden=true; $('btnEnd').hidden=false; $('btnEnd').textContent='중지';
+    $('btnStart').hidden=true; $('btnEnd').hidden=false;
     try{ navigator.wakeLock && navigator.wakeLock.request('screen').then(function(w){ wakeLock=w; }).catch(function(){}); }catch(e){}
     var r=robot(); if(r){ applyRobot(); r.play(); } else if(!robotWait) loadGroupFrame();
   }
@@ -915,8 +921,10 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     var r=robot(); if(r) r.stop();
     document.body.classList.remove('group-running');
     $('btnStart').hidden=false; $('btnEnd').hidden=true; $('btnEnd').textContent='끝내기';
+    $('btnEnd').classList.remove('pausebtn','resumebtn'); $('btnEnd').classList.add('stopbtn');
     try{ wakeLock && wakeLock.release(); }catch(e){} wakeLock=null;
   }
+  function toggleGroupPause(){ var r=robot(); if(!r) return; if(groupPaused){ r.resume(); setGroupPaused(false); } else { r.pause(); setGroupPaused(true); } }
   
   window.__psmGroupDone=function(){ if(groupRunning) stopGroup(); };
 
@@ -942,8 +950,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
       updateModeUi();
     });
     
-    $('gPause').addEventListener('click', function(){ var r=robot(); if(!r) return;
-      if(groupPaused){ r.resume(); setGroupPaused(false); } else { r.pause(); setGroupPaused(true); } });
+    $('gStop').addEventListener('click', function(){ stopGroup(); });
     $('gPrev').addEventListener('click', function(){ var r=robot(); if(r){ r.step(-1); setGroupPaused(true); } });
     $('gNext').addEventListener('click', function(){ var r=robot(); if(r){ r.step(1); setGroupPaused(true); } });
     $('gBack').addEventListener('click', function(){ var r=robot(); if(r) r.view('back'); });
@@ -964,7 +971,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     $('lobby').hidden=false;
     $('btnStart').addEventListener('click', function(){ if(pref.role==='group') startGroup(); else startSession(); });
     $('fsBtn').addEventListener('click', toggleFullscreen);
-    $('btnEnd').addEventListener('click', function(){ if(groupRunning) stopGroup(); else finishSession('수동'); });
+    $('btnEnd').addEventListener('click', function(){ if(groupRunning) toggleGroupPause(); else finishSession('수동'); });
     $('btnCancel').addEventListener('click', cancelSession);
     $('btnKey').addEventListener('click', openKey);
     $('btnRecs').addEventListener('click', openRecs);
