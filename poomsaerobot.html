@@ -160,7 +160,7 @@ html.embed.idle #mv, html.embed.idle #call{visibility:hidden}
       {n:21, name:'바로 (나란히서기)', hand:'', dir:'F', turn:180} ] }
   };
   const spec=SPECS[P]; if(!spec) return;
-  const TIME={SUB:420, SUB_HOLD:140,     ATTN:1800, ATTN_TO_READY:1800, READY:2600, TRANS:950, TURN_BIG:1150, KICK:1800, HOLD:800, LAST_HOLD:1100, END_HOLD:1500, FPS:30};
+  const TIME={SUB:420, SUB_HOLD:140,     ATTN:1800, ATTN_TO_READY:2400, READY:2600, TRANS:950, TURN_BIG:1150, KICK:1800, HOLD:800, LAST_HOLD:1100, BARO:2000, END_HOLD:1500, FPS:30};
   const YAW={F:0, L:Math.PI/2, B:Math.PI, R:-Math.PI/2};
   
   const mv=spec.moves.map(m=>Object.assign({},m)); let t=0, yaw=0;
@@ -170,7 +170,7 @@ html.embed.idle #mv, html.embed.idle #call{visibility:hidden}
     let d=YAW[m.dir]-pv.yaw%(2*Math.PI); d=Math.atan2(Math.sin(d),Math.cos(d));
     if(m.turn!=null) d=m.turn*Math.PI/180; m.yaw=pv.yaw+d; m.kick=kick;
     const sub= pv.n===m.n, nextSub= j+1<mv.length && mv[j+1].n===m.n;   
-    const tr= sub?TIME.SUB : kick?TIME.KICK : Math.abs(d)>Math.PI*.75?TIME.TURN_BIG : TIME.TRANS;
+    const tr= sub?TIME.SUB : kick?TIME.KICK : j===mv.length-1?TIME.BARO : Math.abs(d)>Math.PI*.75?TIME.TURN_BIG : TIME.TRANS;   
     m.t0=t+tr; m.t1=m.t0+(nextSub?TIME.SUB_HOLD: j===mv.length-1?TIME.END_HOLD: j===mv.length-2?TIME.LAST_HOLD: TIME.HOLD); t=m.t1; });
   
   const outro={a0:t, a1:t+700, b0:t+800, b1:t+1400, b2:t+1900, b3:t+2500};
@@ -427,7 +427,20 @@ const SUPPORT_EDGE=120;
 let KREF={};
 const KICK_LEAN_KEEP=.12;                                  
 const READY={HALF:DIM.shHalf*.95};                      
-const READY_HAND={UP:TORSO_Y0+.02, FWD:.20, GAP:.10};    
+const READY_HAND={UP:TORSO_Y0-.03, FWD:.17, GAP:.10};    
+
+const READY_PATH={LOW:TORSO_Y0-.06, LOW_FWD:.16, MID_H:.80, MID_FWD:.24};
+function readyPath(u,sd,S0,h0,T){
+  const fist=.085*1.2, X=(x,y,z)=>new THREE.Vector3(x,y,z), sw=sd*(fist/2+.03+fist*.55);
+  const PL=X(sw,READY_PATH.LOW,READY_PATH.LOW_FWD), PM=X(sw,DIM.torso*READY_PATH.MID_H,READY_PATH.MID_FWD), PE=X(sd*(fist/2+READY_HAND.GAP/2+fist*.55),READY_HAND.UP,READY_HAND.FWD);
+  const hOpen={d:X(-sd,0,.25).normalize(), s:X(0,0,1)}, hFist={d:X(-sd,0,0), s:X(0,1,0)}, pole=X(sd,0,-.3).normalize();
+  let P,hd,open;
+  if(u<T[0]){ const v=sm3(u/T[0]); P=S0.clone().lerp(PL,v); P.z+=.05*Math.sin(Math.PI*v); hd=blendHand(h0,hOpen,v); open= u>T[0]*.35 ? 1 : 0; }
+  else if(u<T[1]){ const v=sm3((u-T[0])/(T[1]-T[0])); P=PL.clone().lerp(PM,v); hd=hOpen; open=1; }
+  else if(u<T[2]){ const v=sm3((u-T[1])/(T[2]-T[1])); P=PM.clone(); hd=blendHand(hOpen,hFist,v); open= v<.6 ? 1 : 0; }
+  else { const v=sm3((u-T[2])/(1-T[2])); P=PM.clone().lerp(PE,v); hd=hFist; open=0; }
+  return {P,hd,open,pole}; }
+const READY_T_START=[.25,.55,.68], READY_T_BARO=[.30,.60,.70];   
 const UPRIGHT=1;                                        
 const CHAMBER={UP:TORSO_Y0+.035, OUT:.045, BACK:.03};
 const KEYDIR=['F','L','L','R','R','F','F','R','R','L','L','F','F','L','L','R','R','B','B','F'];   
@@ -548,15 +561,14 @@ function correct(J,f){
         const r=ik2(Sh,W0.clone().lerp(T,aw),DIM.up,DIM.fo,poleOf(Sh,E0,W0).lerp(fwd.clone().negate(),aw).normalize()); J['el'+s]=r.mid; J['wr'+s]=r.end;
         const Hd=J['hd'+s]; Hd.d=Hd.d.clone().lerp(YV.clone().negate(),aw).normalize(); Hd.s=Hd.s.clone().lerp(fwd,aw).normalize(); } }
     const m0=D.moves[0], tt=D.t[f];
-    if(D.attn!=null && tt>D.attn && tt<m0.t0){ const u=(tt-D.attn)/(m0.t0-D.attn), fist=.085*1.2;
+    if(D.attn!=null && tt>D.attn && tt<m0.t0){ const u=(tt-D.attn)/(m0.t0-D.attn);
       
-      for(const s of ['L','R']){ const Sh=J['sh'+s], E0=J['el'+s], W0=J['wr'+s], side=left.clone().multiplyScalar(sgn(s));
-        const P0=Sh.clone().addScaledVector(YV,-(DIM.up+DIM.fo)*.985).addScaledVector(side,.035);
-        const P1=J.hip.clone().addScaledVector(YV,DIM.torso*.80).addScaledVector(fwd,.24).addScaledVector(side,fist/2+.03+fist*.55);
-        const P2=J.hip.clone().addScaledVector(YV,READY_HAND.UP).addScaledVector(fwd,READY_HAND.FWD).addScaledVector(side,fist/2+READY_HAND.GAP/2+fist*.55);
-        const T= u<.55 ? P0.clone().lerp(P1,sm3(u/.55)) : P1.clone().lerp(P2,sm3((u-.55)/.45));
-        const pl=side.clone().addScaledVector(fwd,-.3).normalize(), r=ik2(Sh,T,DIM.up,DIM.fo,pl); J['el'+s]=r.mid; J['wr'+s]=r.end;
-        const Hd=J['hd'+s], k=sm3(u/.55); Hd.d=YV.clone().negate().lerp(side.clone().negate(),k).normalize(); Hd.s=fwd.clone().lerp(YV,k).normalize(); } }
+      const W=v=>left.clone().multiplyScalar(v.x).addScaledVector(YV,v.y).addScaledVector(fwd,v.z);
+      for(const s of ['L','R']){ const Sh=J['sh'+s], sd=sgn(s);
+        const A0=Sh.clone().addScaledVector(YV,-(DIM.up+DIM.fo)*.985).addScaledVector(left,sd*.035).sub(J.hip), S0=new THREE.Vector3(A0.dot(left),A0.y,A0.dot(fwd));
+        const R=readyPath(u,sd,S0,{d:new THREE.Vector3(0,-1,0),s:new THREE.Vector3(0,0,1)},READY_T_START);
+        const r=ik2(Sh,J.hip.clone().add(W(R.P)),DIM.up,DIM.fo,W(R.pole)); J['el'+s]=r.mid; J['wr'+s]=r.end;
+        J['hd'+s].d=W(R.hd.d).normalize(); J['hd'+s].s=W(R.hd.s).normalize(); J['open'+s]=R.open; } }
     if(bw>0){ const c=J.hip.clone(), q=new THREE.Quaternion().setFromAxisAngle(left,THREE.MathUtils.degToRad(ATT.BOW)*bw);   
       for(const k of ['chest','shL','shR','elL','elR','wrL','wrR']) J[k].sub(c).applyQuaternion(q).add(c);
       for(const k of ['x','y','z']) J.che[k].applyQuaternion(q);
@@ -715,22 +727,17 @@ function straightenArms(FR,rawRel){
         const r=ik2(J['sh'+s],T,DIM.up,DIM.fo,pole); J['el'+s]=r.mid; J['wr'+s]=r.end;
         J['hd'+s].d=hd.d.clone().normalize().applyAxisAngle(YV,y); J['hd'+s].s=hd.s.clone().normalize().applyAxisAngle(YV,y); } } } }
 
-const BARO_UP_AT=.5;
 function backToReady(FR){
   const j=D.moves.length-1, pv=D.moves[j-1], nm=D.moves[j]; if(!MINFO[j]||!MINFO[j].ready||pv.t1==null||nm.t0==null) return;
   let fa=0; while(fa<NF-1&&D.t[fa+1]<=pv.t1) fa++; let fb=fa; while(fb<NF-1&&D.t[fb]<nm.t0) fb++; if(fb-fa<3) return;
   const fist=.085*1.2, Ja=FR[fa], Jb=FR[fb], ya=yawOf(Ja), yb=yawOf(Jb), toL=(v,y)=>v.clone().applyAxisAngle(YV,-y);
   for(const s of ['L','R']){ const sd=s==='L'?1:-1;
     const S0=toL(Ja['wr'+s].clone().sub(Ja.hip),ya), B=toL(Jb['wr'+s].clone().sub(Jb.hip),yb);
-    const P1=new THREE.Vector3(sd*(fist/2+.03+fist*.55), DIM.torso*.80, .24), pl=new THREE.Vector3(sd,0,-.3).normalize();
-    const h0={d:toL(Ja['hd'+s].d,ya), s:toL(Ja['hd'+s].s,ya)}, hB={d:toL(Jb['hd'+s].d,yb), s:toL(Jb['hd'+s].s,yb)}, hP={d:new THREE.Vector3(-sd,0,0), s:YV.clone()};
-    const p0=toL(poleOf(Ja['sh'+s],Ja['el'+s],Ja['wr'+s]),ya);
-    for(let f=fa+1;f<fb;f++){ const g=smooth3((D.t[f]-D.t[fa])/Math.max(1,D.t[fb]-D.t[fa])); let P, pole, hd;
-      if(g<BARO_UP_AT){ const u=g/BARO_UP_AT; P=S0.clone().lerp(P1,sm3(u)); P.z+=PATH.ARC*Math.sin(Math.PI*u); pole=p0.clone().lerp(pl,u); hd=blendHand(h0,hP,sm3(u)); }
-      else { const u=(g-BARO_UP_AT)/(1-BARO_UP_AT); P=P1.clone().lerp(B,sm3(u)); pole=pl.clone(); hd=blendHand(hP,hB,sm3(u)); }
-      const J=FR[f], y=yawOf(J), T=P.applyAxisAngle(YV,y).add(J.hip); pole.normalize().applyAxisAngle(YV,y);
-      const r=ik2(J['sh'+s],T,DIM.up,DIM.fo,pole); J['el'+s]=r.mid; J['wr'+s]=r.end;
-      J['hd'+s].d=hd.d.clone().normalize().applyAxisAngle(YV,y); J['hd'+s].s=hd.s.clone().normalize().applyAxisAngle(YV,y); } } }
+    const h0={d:toL(Ja['hd'+s].d,ya), s:toL(Ja['hd'+s].s,ya)};
+    for(let f=fa+1;f<fb;f++){ const g=(D.t[f]-D.t[fa])/Math.max(1,D.t[fb]-D.t[fa]), R=readyPath(g,sd,S0,h0,READY_T_BARO);
+      const J=FR[f], y=yawOf(J), T=R.P.clone().applyAxisAngle(YV,y).add(J.hip), pole=R.pole.clone().applyAxisAngle(YV,y);
+      const r=ik2(J['sh'+s],T,DIM.up,DIM.fo,pole); J['el'+s]=r.mid; J['wr'+s]=r.end; J['open'+s]=R.open;
+      J['hd'+s].d=R.hd.d.clone().normalize().applyAxisAngle(YV,y); J['hd'+s].s=R.hd.s.clone().normalize().applyAxisAngle(YV,y); } } }
 
 function blendHand(a,b,k,tk,sign){
   const ad=a.d.clone().normalize(), bd=b.d.clone().normalize();
@@ -1089,7 +1096,7 @@ function pose(t){
   for(const [s,wr,hd] of [['L',J.wrL,J.hdL],['R',J.wrR,J.hdR]]){
     const y=hd.d; let x=hd.s.clone().addScaledVector(y,-hd.s.dot(y)).normalize(); const z=new THREE.Vector3().crossVectors(x,y);
     const sz=.085*handScale;
-    const knifeNow= s===knifeArm;
+    const op=J['open'+s], knifeNow= s===knifeArm || op>.5;   
     for(const [k,on] of [['fs',!knifeNow],['ks',knifeNow]]){ const f=P[k+s]; f.visible=on; if(!on) continue;
       f.scale.set(sz*1.05,sz*1.05,sz*.85); placeBasis(f,wr.clone().addScaledVector(y,sz*.55),x,y,z); } }
   
