@@ -10,13 +10,13 @@ if(/[?&]embed=1/.test(location.search)) document.documentElement.classList.add('
 
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@500;700;900&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#08111F;--panel:#101E33;--line:#2A3E5C;--txt:#E8EEF6;--dim:#9FC2FF;--glow:#3D8BFF}
+:root{--bg:#08111F;--panel:#101E33;--line:#4A3F22;--txt:#E8EEF6;--dim:#E9D49A;--glow:#F5B829}   
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);font-family:'Noto Sans KR',sans-serif;overflow:hidden}
 #main{position:fixed;left:0;top:0;width:100%;height:100%;display:block}
 .hud{position:fixed;pointer-events:none}
 #prog{left:32px;top:26px}
-#prog .k{font-size:13px;letter-spacing:3px;color:#7FB0FF;font-weight:700}
+#prog .k{font-size:13px;letter-spacing:3px;color:#E9D49A;font-weight:700}
 #prog .t{font-size:36px;font-weight:900}
 #prog .bar{display:flex;align-items:center;gap:10px;margin-top:4px}
 #prog .bar i{display:block;width:220px;height:10px;border-radius:5px;background:#1C2C45;overflow:hidden}
@@ -64,9 +64,9 @@ html.embed.idle #mv, html.embed.idle #call{visibility:hidden}
 #gate[hidden]{display:none}
 #gate .gb{width:min(380px,100%);background:#101E33;border:1px solid #2A3E5C;border-radius:16px;padding:26px 22px;text-align:center}
 #gate .gt{font-size:22px;font-weight:900;margin:4px 0 6px}
-#gate .gs{font-size:13px;color:#9FC2FF;margin:0 0 16px;line-height:1.6}
+#gate .gs{font-size:13px;color:#E9D49A;margin:0 0 16px;line-height:1.6}
 #gate input{width:100%;font:inherit;font-size:16px;padding:12px;border-radius:10px;border:1px solid #2A3E5C;background:#08111F;color:#E8EEF6;text-align:center;letter-spacing:.04em}
-#gate button{width:100%;margin-top:10px;font:inherit;font-weight:900;font-size:16px;padding:12px;border-radius:10px;border:0;background:#3D8BFF;color:#fff;cursor:pointer}
+#gate button{width:100%;margin-top:10px;font:inherit;font-weight:900;font-size:16px;padding:12px;border-radius:10px;border:0;background:#F5B829;color:#2A1C00;cursor:pointer}
 #gate .ge{min-height:1.4em;margin-top:10px;font-size:13px;color:#FF8A9A}
 #pick{font:inherit}
 </style>
@@ -174,7 +174,7 @@ html.embed.idle #mv, html.embed.idle #call{visibility:hidden}
 </head>
 <body>
 <div id="gate" hidden><div class="gb">
-  <div style="font-size:12px;letter-spacing:.14em;color:#9FC2FF">NARUUN LABS · POOMSAE</div>
+  <div style="font-size:12px;letter-spacing:.14em;color:#E9D49A">NARUUN LABS · POOMSAE</div>
   <div class="gt">품새마스터 · 로봇</div>
   <p class="gs">시험용 비공개 화면입니다.<br>품새마스터 마스터 라이선스(PMS-)로만 열립니다.</p>
   <input id="gateKey" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="PMS-0000-XXXX-0000" aria-label="라이선스 키">
