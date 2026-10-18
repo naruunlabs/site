@@ -1198,6 +1198,21 @@ let currentLicenseProduct = 'kick';
 function escapeHtml(v) {
   return String(v ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
 }
+
+function adminAction(action,args){
+  return 'data-admin-action="'+action+'" data-admin-args="'+escapeHtml(JSON.stringify(args))+'"';
+}
+document.addEventListener('click',function(event){
+  const button=event.target.closest('[data-admin-action]');
+  if(!button || button.disabled)return;
+  const allowed={copyKeyOnly:copyKeyOnly,openEditModal:openEditModal,openMsgPicker:openMsgPicker,gotoLedger:gotoLedger,sendToLedger:sendToLedger,toggleActive:toggleActive,deleteLicense:deleteLicense,openOwnedLicense:openOwnedLicense,issueForDojang:issueForDojang,openIpRiskLicense:openIpRiskLicense,removeDeviceSlot:removeDeviceSlot,toggleCustSort:toggleCustSort,toggleNotes:toggleNotes,deleteCustomer:deleteCustomer,deleteNote:deleteNote,addNote:addNote,deleteAcademyProject:deleteAcademyProject,switchLicenseSubtab:switchLicenseSubtab,pickMsgKind:pickMsgKind,setTodayView:setTodayView,gotoCustomer:gotoCustomer,openConvert:openConvert,saveAdminTask:saveAdminTask,toggleErrorRow:toggleErrorRow};
+  const fn=allowed[button.dataset.adminAction];
+  if(typeof fn!=='function')return;
+  let args;try{args=JSON.parse(button.dataset.adminArgs||'[]');}catch(_){return;}
+  if(!Array.isArray(args))return;
+  fn.apply(null,args);
+});
+
 function todayStr() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -1652,7 +1667,7 @@ function renderTable() {
       <td class="cell-main" data-label="도장">
         <span class="dojang-name" title="등록 ${(d.created_at||'').slice(0,10)||'-'} · ${escapeHtml(d.license_key)}">${escapeHtml(d.dojang_name)}</span>
         ${ipRisk?'<span class="license-ip-flag" title="기기별 접속 IP 앞자리가 다릅니다. 실제 거리는 알 수 없으니 확인해 주세요">접속망 확인</span>':''}
-        <button class="key-btn" title="${escapeHtml(d.license_key)}" onclick="copyKeyOnly('${escapeHtml(d.license_key)}')">키 복사</button>
+        <button class="key-btn" title="${escapeHtml(d.license_key)}" ${adminAction("copyKeyOnly",[d.license_key])}>키 복사</button>
         <button type="button" class="mobile-expand" onclick="toggleMobileCard(this)" aria-expanded="false">상세 보기</button>
         <span class="dojang-line">${line2}</span>
         ${d.memo?`<span class="dojang-memo" title="${escapeHtml(d.memo)}">${escapeHtml(d.memo)}</span>`:''}
@@ -1664,13 +1679,13 @@ function renderTable() {
       <td data-label="결제" style="font-size:13px">${payDisplay}</td>
       <td data-label="상태"><span class="badge ${statusCls}">${statusText}</span></td>
       <td class="cell-act" data-label="관리"><div class="action-btns">
-        <button class="btn-sm btn-edit" onclick="openEditModal('${encoded}')">회원정보</button>
-        <button class="btn-sm btn-copy" onclick="openMsgPicker('${encoded}')">카톡</button>
+        <button class="btn-sm btn-edit" ${adminAction("openEditModal",[encoded])}>회원정보</button>
+        <button class="btn-sm btn-copy" ${adminAction("openMsgPicker",[encoded])}>카톡</button>
         ${inLedger
-          ? `<button class="btn-sm btn-ledger done" onclick="gotoLedger('${escapeHtml(d.license_key)}')">장부 ✓</button>`
-          : `<button class="btn-sm btn-ledger" onclick="sendToLedger('${d.id}')">장부로</button>`}
-        <button class="btn-sm btn-toggle" onclick="toggleActive('${d.id}',${d.is_active})">${d.is_active?'중지':'활성'}</button>
-        <button class="btn-sm btn-del" onclick="deleteLicense('${d.id}','${escapeHtml(d.dojang_name)}')">삭제</button>
+          ? `<button class="btn-sm btn-ledger done" ${adminAction("gotoLedger",[d.license_key])}>장부 ✓</button>`
+          : `<button class="btn-sm btn-ledger" ${adminAction("sendToLedger",[d.id])}>장부로</button>`}
+        <button class="btn-sm btn-toggle" ${adminAction("toggleActive",[d.id,d.is_active])}>${d.is_active?'중지':'활성'}</button>
+        <button class="btn-sm btn-del" ${adminAction("deleteLicense",[d.id,d.dojang_name])}>삭제</button>
       </div></td>
     </tr>`;
   }).join('');
@@ -1964,10 +1979,10 @@ function renderOwnedProducts(dojangName, currentKey){
       state = '지금 보고 있는 라이선스';
     } else if (lic) {
       state = memberTypeLabel(lic.license_type) + ' 보유 · ' + escapeHtml(String(lic.license_key||'').slice(0,8)) + '…';
-      btn = `<button type="button" class="btn-sm btn-toggle" onclick="openOwnedLicense('${lic.id}')">열기</button>`;
+      btn = `<button type="button" class="btn-sm btn-toggle" ${adminAction("openOwnedLicense",[lic.id])}>열기</button>`;
     } else {
       state = '없음';
-      btn = `<button type="button" class="btn-sm btn-cross" onclick="issueForDojang('${id}','${escapeHtml(name)}')">발급</button>`;
+      btn = `<button type="button" class="btn-sm btn-cross" ${adminAction("issueForDojang",[id,name])}>발급</button>`;
     }
     return `<div class="${cls}"><span class="owned-name">${escapeHtml(P.name)}</span>`
          + `<span class="owned-state">${state}</span>${btn}</div>`;
@@ -2286,7 +2301,7 @@ function renderLicenseIpSummary() {
   if (!risks.length) { box.innerHTML = ''; return; }
   box.innerHTML = `<div class="license-ip-summary-head"><strong>접속망 확인 ${risks.length}건</strong><span>기기별 접속 IP가 다릅니다. 실제 거리는 알 수 없으니 먼저 확인해 주세요.</span></div>` +
     `<div class="license-ip-summary-list">` + risks.map(d =>
-      `<button type="button" onclick="openIpRiskLicense('${escapeHtml(String(d.id))}')">${escapeHtml(d.dojang_name)} <small>${escapeHtml(productOfKey(d.license_key).short)}</small><em>${licenseIpPrefixes(d).map(escapeHtml).join(' · ')}</em></button>`
+      `<button type="button" ${adminAction("openIpRiskLicense",[String(d.id)])}>${escapeHtml(d.dojang_name)} <small>${escapeHtml(productOfKey(d.license_key).short)}</small><em>${licenseIpPrefixes(d).map(escapeHtml).join(' · ')}</em></button>`
     ).join('') + '</div>';
 }
 function openIpRiskLicense(id) {
@@ -2330,7 +2345,7 @@ function renderDeviceSlotsUI() {
       html += `<div class="admin-slot-card is-used${over?' is-over':''}">
         <div class="admin-slot-status">${over ? '한도 초과' : '사용 중'}</div>
         <div class="admin-slot-sub">등록일 ${dateStr}<br>기기 번호 <span style="overflow-wrap:anywhere">${esc(slot.device_id || '기록 없음')}</span>${slotIpLine(slot)}${over?'<br>한도가 줄기 전에 등록된 기기입니다':''}</div>
-        <button type="button" class="btn-sm btn-del" onclick="removeDeviceSlot(${i})">기기 해제</button>
+        <button type="button" class="btn-sm btn-del" ${adminAction("removeDeviceSlot",[i])}>기기 해제</button>
       </div>`;
     } else {
       html += `<div class="admin-slot-card is-empty">
@@ -2998,7 +3013,7 @@ function renderCustomers() {
   
   if (W.dojang_name) W.dojang_name += 58;
   document.getElementById('cgHead').innerHTML =
-    '<tr>' + cols.map(c => `<th class="${c.name?'cg-name':''}" aria-sort="${custSort.field===c.f?(custSort.direction==='asc'?'ascending':'descending'):'none'}" style="min-width:${W[c.f]}px;width:${W[c.f]}px"><button type="button" class="cg-sort-head" onclick="toggleCustSort('${c.f}')" title="${escapeHtml(c.h || c.t + ' 기준 정렬. 다시 누르면 방향 전환')}">${c.t}</button></th>`).join('')
+    '<tr>' + cols.map(c => `<th class="${c.name?'cg-name':''}" aria-sort="${custSort.field===c.f?(custSort.direction==='asc'?'ascending':'descending'):'none'}" style="min-width:${W[c.f]}px;width:${W[c.f]}px"><button type="button" class="cg-sort-head" ${adminAction("toggleCustSort",[c.f])} title="${escapeHtml(c.h || c.t + ' 기준 정렬. 다시 누르면 방향 전환')}">${c.t}</button></th>`).join('')
     + '<th style="min-width:96px;width:96px">관리</th></tr>';
 
   updateCustStats();
@@ -3020,8 +3035,8 @@ function renderCustomers() {
     let html = `<tr class="${cls.join(' ')}" data-id="${c.id}">`
       + cols.map(col => `<td class="${col.name?'cg-name':''}" data-field="${col.f}" data-label="${escapeHtml(col.t)}">${col.name ? `<div class="cg-namewrap">${custCell(c, col)}${custBadges(c)}<button type="button" class="mobile-expand" onclick="toggleMobileCard(this)" aria-expanded="false">상세 보기</button></div>${customerMobileSummary(c)}` : custCell(c, col)}</td>`).join('')
       + `<td class="cg-actions" data-label="관리"><div style="display:flex;gap:4px;padding:0 5px">
-           <button class="btn-sm ${openNotesFor===c.id?'btn-toggle is-open':'btn-edit'}" onclick="toggleNotes('${c.id}')">${openNotesFor===c.id?'닫기':'이력'}</button>
-           <button class="btn-sm btn-del" onclick="deleteCustomer('${c.id}')">삭제</button>
+           <button class="btn-sm ${openNotesFor===c.id?'btn-toggle is-open':'btn-edit'}" ${adminAction("toggleNotes",[c.id])}>${openNotesFor===c.id?'닫기':'이력'}</button>
+           <button class="btn-sm btn-del" ${adminAction("deleteCustomer",[c.id])}>삭제</button>
          </div></td></tr>`;
     if (openNotesFor === c.id) {
 
@@ -3275,14 +3290,14 @@ async function loadNotes(id) {
     const head = `<div class="cg-note-head">
         <b>${escapeHtml(c ? c.dojang_name : '')}</b> 상담 이력
         <span>${notes.length}건</span>
-        <button class="cg-btn" onclick="toggleNotes('${id}')">닫기</button>
+        <button class="cg-btn" ${adminAction("toggleNotes",[id])}>닫기</button>
       </div>`;
     const list = notes.length
       ? `<div class="cg-note-list">` + notes.map(n => `<div class="cg-note">
            <b>${escapeHtml(n.noted_at||'')}</b>
            ${n.method?`<span class="m">${escapeHtml(n.method)}</span>`:''}
            <p>${escapeHtml(n.body||'')}</p>
-           <button title="지우기" onclick="deleteNote('${n.id}','${id}')">×</button>
+           <button title="지우기" ${adminAction("deleteNote",[n.id,id])}>×</button>
          </div>`).join('') + `</div>`
       : `<div class="cg-note-empty">아직 기록이 없습니다.</div>`;
     box.innerHTML = head + list + `
@@ -3290,7 +3305,7 @@ async function loadNotes(id) {
         <input type="date" id="nd-${id}" value="${todayStr()}">
         <select id="nm-${id}"><option>전화</option><option>카톡</option><option>방문</option><option>기타</option></select>
         <input type="text" id="nb-${id}" placeholder="무슨 얘기를 했나요" onkeydown="if(event.key==='Enter')addNote('${id}')">
-        <button class="cg-btn primary" onclick="addNote('${id}')">기록</button>
+        <button class="cg-btn primary" ${adminAction("addNote",[id])}>기록</button>
       </div>`;
   } catch(err) {
     box.innerHTML = `<div class="cg-note-empty">이력을 불러오지 못했습니다: ${escapeHtml(err.message)}</div>`;
@@ -3382,7 +3397,7 @@ function renderAcademyProjects() {
     <td data-field="started_at" data-label="시작일">${inp(p,'started_at','date')}</td><td data-field="due_at" data-label="공개 예정">${inp(p,'due_at','date')}</td><td data-field="launched_at" data-label="공개일">${inp(p,'launched_at','date')}</td>
     <td data-field="domain" data-label="도메인">${inp(p,'domain','','aw-wide')}</td><td data-field="site_url" data-label="홈페이지 주소">${inp(p,'site_url','url','aw-url')}</td>
     <td data-field="next_action" data-label="다음 할 일">${inp(p,'next_action','','aw-wide')}</td><td data-field="next_action_at" data-label="다음 할 일 날짜">${inp(p,'next_action_at','date')}</td><td data-field="memo" data-label="메모">${inp(p,'memo','','aw-wide')}</td>
-    <td data-field="actions" data-label="관리"><button class="btn-sm btn-del" onclick="deleteAcademyProject('${p.id}')">삭제</button></td></tr>`).join('');
+    <td data-field="actions" data-label="관리"><button class="btn-sm btn-del" ${adminAction("deleteAcademyProject",[p.id])}>삭제</button></td></tr>`).join('');
 }
 
 let academyAddMode = 'new';
@@ -3543,7 +3558,7 @@ function renderCrossHint(q, qd){
   for (const id of PRODUCT_ORDER) {
     if (id === currentLicenseProduct) continue;
     const n = LICENSES.filter(d => productOfKey(d.license_key).key === id && hit(d)).length;
-    if (n) parts.push(`<button type="button" onclick="switchLicenseSubtab('${id}')">${PRODUCTS[id].short} ${n}건 보기</button>`);
+    if (n) parts.push(`<button type="button" ${adminAction("switchLicenseSubtab",[id])}>${PRODUCTS[id].short} ${n}건 보기</button>`);
   }
   box.innerHTML = parts.length ? `<span>다른 제품에도 있습니다</span>${parts.join('')}` : '';
   box.style.display = parts.length ? 'flex' : 'none';
@@ -3684,7 +3699,7 @@ function openMsgPicker(encoded, kind){
 function pickMsgKind(k){ msgPickKind = k; renderMsgPicker(); }
 function renderMsgPicker(){
   document.getElementById('msgKinds').innerHTML = MSG_KINDS.map(([k,t]) =>
-    `<button type="button" class="${k===msgPickKind?'on':''}" onclick="pickMsgKind('${k}')">${t}</button>`).join('');
+    `<button type="button" class="${k===msgPickKind?'on':''}" ${adminAction("pickMsgKind",[k])}>${t}</button>`).join('');
   document.getElementById('msgText').value = buildMsg(msgPickKind, msgPickData);
 }
 function closeMsgPicker(){ document.getElementById('msgModalBg').classList.remove('show'); }
@@ -4342,7 +4357,7 @@ function renderToday(){
   if (!todayOpen) return;
   const totals = {urgent:urgent.length, watch:watch.length, saved:saved.length};
   views.innerHTML = [['urgent','처리 필요'],['watch','계속 확인'],['saved','완료·미룸']].map(([id,label]) =>
-    `<button type="button" class="today-view${todayView===id?' active':''}" aria-pressed="${todayView===id}" onclick="setTodayView('${id}')">${label} <span>${totals[id]}</span></button>`).join('');
+    `<button type="button" class="today-view${todayView===id?' active':''}" aria-pressed="${todayView===id}" ${adminAction("setTodayView",[id])}>${label} <span>${totals[id]}</span></button>`).join('');
   const shown = todayView === 'urgent' ? urgent : todayView === 'watch' ? watch : saved;
   if (!shown.length) {
     body.innerHTML = `<div class="today-empty">${todayView==='saved'?'완료하거나 미룬 항목이 없습니다.':'이 목록에 표시할 곳이 없습니다.'}</div>`;
@@ -4359,16 +4374,16 @@ function renderToday(){
       const state = ADMIN_TASK_STATES.get(x.task_key);
       const savedText = todayView === 'saved' ?
         ` · ${state?.disposition === 'snoozed' ? state.snooze_until + ' 다시 알림' : '완료'}` : '';
-      const primary = isLedger ? `<button type="button" class="btn-sm btn-edit" onclick="gotoCustomer('${entity.id}')">장부 보기</button>` :
-        x.convert ? `<button type="button" class="btn-sm btn-cross" onclick="openConvert('${entity.id}')">정식 전환</button>` :
-        `<button type="button" class="btn-sm btn-copy" onclick="openMsgPicker('${x.enc}','${x.msg}')">카톡 문구</button>`;
+      const primary = isLedger ? `<button type="button" class="btn-sm btn-edit" ${adminAction("gotoCustomer",[entity.id])}>장부 보기</button>` :
+        x.convert ? `<button type="button" class="btn-sm btn-cross" ${adminAction("openConvert",[entity.id])}>정식 전환</button>` :
+        `<button type="button" class="btn-sm btn-copy" ${adminAction("openMsgPicker",[x.enc,x.msg])}>카톡 문구</button>`;
       const more = todayView === 'saved' ?
-        `<button type="button" class="btn-sm btn-edit" onclick="saveAdminTask('${x.task_key}','open')">다시 표시</button>` :
+        `<button type="button" class="btn-sm btn-edit" ${adminAction("saveAdminTask",[x.task_key,'open'])}>다시 표시</button>` :
         `<details class="today-more"><summary>더보기</summary><div class="today-more-menu">`+
-        (isLedger ? '' : (x.convert ? `<button type="button" onclick="openMsgPicker('${x.enc}','${x.msg}')">카톡 문구</button>` : '')+
-          `<button type="button" onclick="openOwnedLicense('${entity.id}')">회원정보</button>`)+
-        `<button type="button" onclick="saveAdminTask('${x.task_key}','done')">처리 완료</button>`+
-        `<button type="button" onclick="saveAdminTask('${x.task_key}','snoozed')">3일 뒤 다시 알림</button></div></details>`;
+        (isLedger ? '' : (x.convert ? `<button type="button" ${adminAction("openMsgPicker",[x.enc,x.msg])}>카톡 문구</button>` : '')+
+          `<button type="button" ${adminAction("openOwnedLicense",[entity.id])}>회원정보</button>`)+
+        `<button type="button" ${adminAction("saveAdminTask",[x.task_key,'done'])}>처리 완료</button>`+
+        `<button type="button" ${adminAction("saveAdminTask",[x.task_key,'snoozed'])}>3일 뒤 다시 알림</button></div></details>`;
       return `<div class="today-row"><div class="today-person"><b>${escapeHtml(entity.dojang_name||'')}</b><em class="${productClass}">${escapeHtml(product)}</em></div>`+
         `<span class="today-why">${escapeHtml(x.why)}${savedText}</span><div class="today-actions">${primary}${more}</div></div>`;
     }).join('');
@@ -4514,7 +4529,7 @@ function renderErrors(){
     const devs = [...new Set(g.rows.map(r => erDevice(r.ua)))];
     const where = g.source ? `${escapeHtml(g.source)}${g.line ? ' : ' + g.line + '줄' : ''}` : (g.line ? g.line + '줄' : '-');
     const open = !!ERROR_OPEN[g.sig];
-    let html = `<tr class="er-row" data-i="${i}" onclick="toggleErrorRow(${i})">`
+    let html = `<tr class="er-row" data-i="${i}" ${adminAction("toggleErrorRow",[i])}>`
       + `<td class="er-time">${erTime(last.created_at)}</td>`
       + `<td class="er-pv"><span class="er-prod ${escapeHtml(g.product)}">${NAME[g.product]||escapeHtml(g.product)}</span><span class="er-ver">${escapeHtml(vers.slice(0,3).join(', ')||'-')}</span></td>`
       + `<td class="er-msg-cell"><div class="er-msg">${escapeHtml(g.message)}${g.kind === 'promise' ? '<span class="er-kind">비동기</span>' : ''}</div></td>`
