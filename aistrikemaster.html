@@ -52,7 +52,7 @@ var PRODUCT = {
   code    : 'S',                    
   name    : 'AI STRIKE MASTER',
   short   : 'STRIKE',
-  version : '0.9.12',   
+  version : '0.9.13',   
   built   : '2026-10-14'
 };
 try{ window.PRODUCT = PRODUCT; }catch(e){}
@@ -6867,8 +6867,8 @@ function drawDrillTrail(){
 function guideFootStyle(){
   const right=selectedFoot()==='right';
   return right
-    ? {label:'R', rgb:'85,223,255', solid:'#55DFFF', pale:'205,248,255'}
-    : {label:'L', rgb:'255,177,74', solid:'#FFB14A', pale:'255,235,205'};
+    ? {label:'R', rgb:'255,82,101', solid:'#FF5265', pale:'255,214,219'}
+    : {label:'L', rgb:'86,180,255', solid:'#56B4FF', pale:'214,236,255'};
 }
 function drawGuideFootLabel(x,y,style){
   ctx.save();
@@ -10255,7 +10255,7 @@ function drawPunchGuide(lm){
   const bez=u=>({x:(1-u)*(1-u)*sx+2*(1-u)*u*cx+u*u*tx,
                 y:(1-u)*(1-u)*sy+2*(1-u)*u*cy+u*u*ty});
   const path=()=>{ctx.beginPath();ctx.moveTo(sx,sy);ctx.quadraticCurveTo(cx,cy,tx,ty);};
-  const rgb=hand==='left'?'255,177,74':'85,223,255';
+  const rgb=hand==='left'?'86,180,255':'255,82,101';   
   ctx.save();ctx.lineCap='round';ctx.lineJoin='round';ctx.setLineDash([]);
   for(const [width,alpha] of [[Math.max(12,SW*.10),.07],[Math.max(6,SW*.045),.17],[3,.55]]){
     path();ctx.lineWidth=width;ctx.strokeStyle=`rgba(${rgb},${alpha})`;ctx.stroke();
