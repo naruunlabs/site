@@ -139,6 +139,9 @@ html.embed.idle #mv, html.embed.idle #call{visibility:hidden}
     if(m.turn!=null) d=m.turn*Math.PI/180; m.yaw=pv.yaw+d; m.kick=kick;
     const tr= kick?TIME.KICK : Math.abs(d)>Math.PI*.75?TIME.TURN_BIG : TIME.TRANS;
     m.t0=t+tr; m.t1=m.t0+(j===mv.length-1?TIME.END_HOLD: j===mv.length-2?TIME.LAST_HOLD: TIME.HOLD); t=m.t1; });
+  
+  const outro={a0:t, a1:t+700, b0:t+800, b1:t+1400, b2:t+1900, b3:t+2500};
+  t=outro.b3+600;
   const dur=t+300;
   
   const B={0:[0,.66,.09],1:[.03,.70,.08],2:[.035,.70,.08],3:[.045,.70,.07],4:[-.03,.70,.08],5:[-.035,.70,.08],6:[-.045,.70,.07],
@@ -174,7 +177,7 @@ html.embed.idle #mv, html.embed.idle #call{visibility:hidden}
     for(let i=0;i<33;i++){ const p=pose[i]; const X=p[0]*c+p[2]*sn, Z=-p[0]*sn+p[2]*c; w.push(+X.toFixed(4), +(-p[1]).toFixed(4), +(-Z).toFixed(4)); }   
     T.push(Math.round(tm)); WL.push(w); }
   window.PSM_SAMPLE={ id:'synth-'+P, title:spec.title, synth:true, dur, t:T, wl:WL, root:T.map(()=>[0,0]),
-    attn:TIME.ATTN, moves:mv.map(m=>({n:m.n,name:m.name,hand:m.hand,dir:m.dir,t0:m.t0,t1:m.t1})) };
+    attn:TIME.ATTN, outro, moves:mv.map(m=>({n:m.n,name:m.name,hand:m.hand,dir:m.dir,t0:m.t0,t1:m.t1})) };
 })();
 
 </script>
@@ -370,6 +373,14 @@ const SH_W=DIM.shHalf+.035, WAIST_W=Math.max(DIM.hipHalf+.06, SH_W*.84);
 const CORR_IN=320, CORR_OUT=180;
 
 const FOOT=(DIM.th+DIM.sh)*.34;                         
+
+const ATT={HALF:.055, BOW:32};    
+const sm3=x=>x<=0?0:x>=1?1:x*x*(3-2*x);
+function attnW(t){
+  if(D.attn!=null && D.moves[0].t0!=null && t<D.moves[0].t0){ return 1-sm3((t-D.attn)/Math.max(1,D.moves[0].t0-D.attn)); }
+  const o=D.outro; if(o && t>o.a0) return sm3((t-o.a0)/Math.max(1,o.a1-o.a0));
+  return 0; }
+function bowW(t){ const o=D.outro; if(!o || t<o.b0) return 0; if(t<o.b1) return sm3((t-o.b0)/(o.b1-o.b0)); if(t<o.b2) return 1; return 1-sm3((t-o.b2)/(o.b3-o.b2)); }
 const AP={LEN_M:3*FOOT, HALF:.10, BACK_TOE:30, STRAIGHT:.995};   
 const SEO={LEN_M:2*FOOT, HALF:.05, BACK_TOE:30};                  
 const PUNCH={H_MID:.78, H_FACE:1.32, REACH:1};          
@@ -479,6 +490,22 @@ function correct(J,f){
       const T=J.hip.clone().addScaledVector(YV,READY_HAND.UP).addScaledVector(fwd,READY_HAND.FWD).addScaledVector(side,fist/2+READY_HAND.GAP/2+fist*.55);
       const r=ik2(Sh,W0.clone().lerp(T,w),DIM.up,DIM.fo,poleOf(Sh,E0,W0).lerp(side.clone().addScaledVector(fwd,-.3).normalize(),w).normalize()); J['el'+s]=r.mid; J['wr'+s]=r.end;
       const H=J['hd'+s]; H.d=H.d.clone().lerp(side.clone().negate(),w).normalize(); H.s=H.s.clone().lerp(YV,w).normalize(); } }   
+  
+  { const aw=attnW(D.t[f]), bw=bowW(D.t[f]);
+    if(aw>0){ const Lg=(DIM.th+DIM.sh)*AP.STRAIGHT;
+      for(const s of ['L','R']){ const H=J['hip'+s], A0=J['an'+s], K0=J['kn'+s];
+        const tgt=J.hip.clone().addScaledVector(left,sgn(s)*ATT.HALF).addScaledVector(YV,-Math.sqrt(Math.max(0,Lg*Lg-Math.pow(DIM.hipHalf-ATT.HALF,2))));
+        const r=ik2(H,A0.clone().lerp(tgt,aw),DIM.th,DIM.sh,poleOf(H,K0,A0).lerp(fwd,aw).normalize()); J['kn'+s]=r.mid; J['an'+s]=r.end;
+        J['ft'+s]=J['ft'+s].clone().lerp(fwd,aw).normalize(); }
+      for(const s of ['L','R']){ const Sh=J['sh'+s], E0=J['el'+s], W0=J['wr'+s], side=left.clone().multiplyScalar(sgn(s));
+        const T=Sh.clone().addScaledVector(YV,-(DIM.up+DIM.fo)*.985).addScaledVector(side,.035);
+        const r=ik2(Sh,W0.clone().lerp(T,aw),DIM.up,DIM.fo,poleOf(Sh,E0,W0).lerp(fwd.clone().negate(),aw).normalize()); J['el'+s]=r.mid; J['wr'+s]=r.end;
+        const Hd=J['hd'+s]; Hd.d=Hd.d.clone().lerp(YV.clone().negate(),aw).normalize(); Hd.s=Hd.s.clone().lerp(fwd,aw).normalize(); } }
+    if(bw>0){ const c=J.hip.clone(), q=new THREE.Quaternion().setFromAxisAngle(left,THREE.MathUtils.degToRad(ATT.BOW)*bw);   
+      for(const k of ['chest','shL','shR','elL','elR','wrL','wrR']) J[k].sub(c).applyQuaternion(q).add(c);
+      for(const k of ['x','y','z']) J.che[k].applyQuaternion(q);
+      for(const k of ['hdL','hdR']) for(const k2 of ['d','s']) J[k][k2].applyQuaternion(q);
+      J.headUp.applyQuaternion(q); J.headF.applyQuaternion(q); } }
   
   if(!mi.ready && w>0){ const R=(DIM.up+DIM.fo)*PUNCH.REACH;
     for(const s of ['L','R']){ const Sh=J['sh'+s], E0=J['el'+s], W0=J['wr'+s]; let T=null, pole=null, hd=null;
@@ -1000,7 +1027,7 @@ const FOOTVIEW={RANGE:1.3, FIT_H:1.15, LIFT:.03, PRINT_L:.95, PRINT_W:.38};
 const fcv=el('foot'), fctx2=fcv.getContext('2d'); let fC=null, footOn=true;
 function sizeFoot(){ const r=fcv.getBoundingClientRect(), d=devicePixelRatio||1; fcv.width=Math.max(1,Math.round(r.width*d)); fcv.height=Math.max(1,Math.round(r.height*d)); }
 addEventListener('resize',sizeFoot); sizeFoot();
-function stanceText(m){ const j=MV.indexOf(m), mi=MINFO[j]||{}, fn=s=>s==='L'?'왼발':'오른발';
+function stanceText(m){ if(attnW(curT)>.5) return ['모아서기','두 발 붙임 · 차렷']; const j=MV.indexOf(m), mi=MINFO[j]||{}, fn=s=>s==='L'?'왼발':'오른발';
   if(mi.ready||!mi.dir) return ['나란히서기','두 발 나란히 · 발끝 앞 · 어깨너비'];
   if(mi.ap) return ['앞굽이',fn(mi.ap)+' 앞 · 앞뒤 발 3개 · 옆 주먹 하나 · 앞무릎 굽힘 · 뒷발 '+AP.BACK_TOE+'°'];
   if(mi.seo) return ['앞서기',fn(mi.seo)+' 앞 · 앞뒤 발 2개 · 두 다리 폄 · 뒷발 '+SEO.BACK_TOE+'°'];
@@ -1036,7 +1063,7 @@ function drawFootPanel(m,dt){
   const st=stanceText(m), key=st.join('|'); if(key!==lastStance){ lastStance=key; el('fiName').textContent=st[0]; el('fiSpec').textContent=st[1]; }
 }
 
-let stopAt=null;
+let stopAt=null, curT=0;
 let t=0, playing=true, rate=1, last=performance.now(), mirrorOn=true;
 const EMBED=document.documentElement.classList.contains('embed'); if(EMBED) playing=false;   
 const tgt=new THREE.Vector3(0,.95,0);
@@ -1046,7 +1073,7 @@ function tick(now){
   if(playing){ t+=dt*1000*rate; if(t>D.dur+1500){
     if(EMBED){ playing=false; t=D.dur; document.documentElement.classList.add('idle'); try{ parent.__psmGroupDone && parent.__psmGroupDone(); }catch(e){} }   
     else t=0; } }
-  const tt=Math.min(t,D.dur);
+  const tt=Math.min(t,D.dur); curT=tt;
   const J=pose(tt); const m=ui(tt); glow(m,J,dt);
   const want=new THREE.Vector3(robot.position.x, .95, robot.position.z); tgt.lerp(want,Math.min(1,dt*2));
   if(view==='free'){ cam1.position.add(tgt.clone().sub(orbit.target)); orbit.target.copy(tgt); orbit.update(); }   
