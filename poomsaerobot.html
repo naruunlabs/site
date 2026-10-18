@@ -130,11 +130,11 @@ html.embed.idle #mv, html.embed.idle #call{visibility:hidden}
     tg3:{ title:'태극 3장', moves:[
       {n:0,  name:'나란히서기 기본준비', hand:'', dir:'F'},
       {n:1,  name:'왼앞서기 아래막기', hand:'왼팔', dir:'L'},
-      {n:2,  name:'오른발 앞차기 → 오른앞굽이 몸통두번지르기', hand:'왼주먹', dir:'L'},
-      {n:2,  name:'오른앞굽이 몸통두번지르기', hand:'오른주먹', dir:'L'},
+      {n:2,  name:'오른발 앞차기 → 오른앞굽이 몸통두번지르기', hand:'오른주먹', dir:'L'},
+      {n:2,  name:'오른앞굽이 몸통두번지르기', hand:'왼주먹', dir:'L'},
       {n:3,  name:'오른앞서기 아래막기', hand:'오른팔', dir:'R', turn:-180},
-      {n:4,  name:'왼발 앞차기 → 왼앞굽이 몸통두번지르기', hand:'오른주먹', dir:'R'},
-      {n:4,  name:'왼앞굽이 몸통두번지르기', hand:'왼주먹', dir:'R'},
+      {n:4,  name:'왼발 앞차기 → 왼앞굽이 몸통두번지르기', hand:'왼주먹', dir:'R'},
+      {n:4,  name:'왼앞굽이 몸통두번지르기', hand:'오른주먹', dir:'R'},
       {n:5,  name:'왼앞서기 한손날목치기', hand:'오른손날', dir:'F'},
       {n:6,  name:'오른앞서기 한손날목치기', hand:'왼손날', dir:'F'},
       {n:7,  name:'오른뒷굽이 한손날바깥막기', hand:'왼손날', dir:'L'},
@@ -144,11 +144,11 @@ html.embed.idle #mv, html.embed.idle #call{visibility:hidden}
       {n:11, name:'왼앞서기 몸통안막기', hand:'오른팔', dir:'F'},
       {n:12, name:'오른앞서기 몸통안막기', hand:'왼팔', dir:'F'},
       {n:13, name:'왼앞서기 아래막기', hand:'왼팔', dir:'R', turn:270},
-      {n:14, name:'오른발 앞차기 → 오른앞굽이 몸통두번지르기', hand:'왼주먹', dir:'R'},
-      {n:14, name:'오른앞굽이 몸통두번지르기', hand:'오른주먹', dir:'R'},
+      {n:14, name:'오른발 앞차기 → 오른앞굽이 몸통두번지르기', hand:'오른주먹', dir:'R'},
+      {n:14, name:'오른앞굽이 몸통두번지르기', hand:'왼주먹', dir:'R'},
       {n:15, name:'오른앞서기 아래막기', hand:'오른팔', dir:'L', turn:-180},
-      {n:16, name:'왼발 앞차기 → 왼앞굽이 몸통두번지르기', hand:'오른주먹', dir:'L'},
-      {n:16, name:'왼앞굽이 몸통두번지르기', hand:'왼주먹', dir:'L'},
+      {n:16, name:'왼발 앞차기 → 왼앞굽이 몸통두번지르기', hand:'왼주먹', dir:'L'},
+      {n:16, name:'왼앞굽이 몸통두번지르기', hand:'오른주먹', dir:'L'},
       {n:17, name:'왼앞서기 아래막기', label:'왼앞서기 아래막기 → 몸통바로지르기', hand:'왼팔', dir:'B'},
       {n:17, name:'왼앞서기 몸통바로지르기', hand:'오른주먹', dir:'B'},
       {n:18, name:'오른앞서기 아래막기', label:'오른앞서기 아래막기 → 몸통바로지르기', hand:'오른팔', dir:'B'},
@@ -416,7 +416,7 @@ function attnW(t){
 function bowW(t){ const o=D.outro; if(!o || t<o.b0) return 0; if(t<o.b1) return sm3((t-o.b0)/(o.b1-o.b0)); if(t<o.b2) return 1; return 1-sm3((t-o.b2)/(o.b3-o.b2)); }
 const AP={LEN_M:3*FOOT, HALF:.10, BACK_TOE:30, STRAIGHT:.995};   
 const SEO={LEN_M:2*FOOT, HALF:.05, BACK_TOE:30};
-const DWI={LEN_M:2.2*FOOT, BACKW:.65, HALF:.03, BACK_TOE:90, SINK:.10};   
+const DWI={LEN_M:2.2*FOOT, BACKW:.40, HALF:.03, BACK_TOE:90, SINK:.10};   
 const PUNCH={H_MID:.78, H_FACE:1.32, REACH:1};          
 
 const BLOCK={
@@ -625,13 +625,16 @@ const PREP={
          pull:sd=>[sd*.03, DIM.torso*.80, .48],  pullPole:sd=>[sd*.3,-1,0]},  
   face: {main:'waist',                                                         
          pull:sd=>[ sd*.02, DIM.torso*1.0, .42], pullPole:sd=>[sd*.3,-1,0]},  
-  kout: {main:sd=>[-sd*.12, DIM.torso*1.0, .10], mainPole:sd=>[sd*.5,-1,0],   
+  kout: {main:sd=>[-sd*.14, DIM.torso*.32, .12], mainPole:sd=>[sd*.5,-1,0],   
          pull:sd=>[sd*.06, DIM.torso*.85, .40], pullPole:sd=>[sd*.3,-1,0]},   
-  kneck:{main:sd=>[ sd*.30, DIM.torso*1.15, -.10], mainPole:sd=>[sd*.3,-1,-.2], 
+  kneck:{main:sd=>[ sd*.40, DIM.torso*1.12, -.18], mainPole:sd=>[sd*.4,-1,-.3], 
          pull:sd=>[sd*.02, DIM.torso*.90, .45], pullPole:sd=>[sd*.3,-1,0]},   
   punch:{main:'waist',                                                         
          pull:sd=>[ sd*.02, DIM.torso*.78, .48], pullPole:sd=>[sd*.3,-1,0]} };
 const WAIST_L=sd=>[sd*(WAIST_W+CHAMBER.OUT), CHAMBER.UP, -CHAMBER.BACK], WAIST_POLE=sd=>[sd*.35,0,-1];
+const KOUT_VIA=sd=>[sd*.02, DIM.torso*.78, .30];   
+
+const KICK_GUARD={AT:.18, HOLD:.50, PREP_AT:.40, POS:sd=>[sd*.075, DIM.torso*.80, .24], POLE:sd=>[sd*.6,-1,-.2]};
 function yawOf(J){ const v=J.pel.z.clone().add(J.che.z); return Math.atan2(v.x,v.z); }
 function straightenArms(FR,rawRel){
   const V=a=>new THREE.Vector3(a[0],a[1],a[2]);
@@ -661,18 +664,60 @@ function straightenArms(FR,rawRel){
       
       const gA=(D.t[fA]-D.t[fa])/Math.max(1,D.t[fb]-D.t[fa]), Vt=B.clone().sub(S0).multiplyScalar(PATH.SYN_TAN);
       const herm=(p0,p1,m0,m1,s)=>{ const s2=s*s, s3=s2*s; return p0.clone().multiplyScalar(2*s3-3*s2+1).add(m0.clone().multiplyScalar(s3-2*s2+s)).add(p1.clone().multiplyScalar(-2*s3+3*s2)).add(m1.clone().multiplyScalar(s3-s2)); };
+      
+      const XV=new THREE.Vector3(1,0,0), ZV=new THREE.Vector3(0,0,1);
+      let hA= spec==='waist' ? {d:ZV.clone(), s:XV.clone().multiplyScalar(sd)} : {d:h0.d.clone().lerp(hB.d,.4).normalize(), s:h0.s.clone().lerp(hB.s,.4).normalize()};
+      let arc=null, via=null;
+      if(isMain && tech==='kneck'){   
+        const C=new THREE.Vector3(0,(Aw.y+B.y)/2,0), a0=Math.atan2(Aw.x,Aw.z), a1=Math.atan2(B.x,B.z);
+        let da=a1-a0; da=Math.atan2(Math.sin(da),Math.cos(da));
+        arc={a0,da,r0:Math.hypot(Aw.x,Aw.z),r1:Math.hypot(B.x,B.z),y0:Aw.y,y1:B.y,C};
+        hA={d:hB.d.clone().applyAxisAngle(YV,-da), s:hB.s.clone().applyAxisAngle(YV,-da)}; }
+      if(isMain && tech==='kout'){    
+        via=V(KOUT_VIA(sd));
+        hA={d:new THREE.Vector3(-sd*.89,0,.45), s:new THREE.Vector3(sd*.45,0,.89)}; }
+      
+      const twistSign= isMain && tech==='punch' ? sd : 0;
+      const kickArm= D.synth && mi.kick;
+      const GV=V(KICK_GUARD.POS(sd)), GP=V(KICK_GUARD.POLE(sd)).normalize(), GH={d:new THREE.Vector3(0,.3,1).normalize(), s:YV.clone()};
       for(let f=fa+1;f<fb;f++){
-        let P3, pole, k;                                   
-        if(D.synth){ const g=smooth3((D.t[f]-D.t[fa])/Math.max(1,D.t[fb]-D.t[fa])), Z=new THREE.Vector3();
-          if(g<=gA){ const s=g/Math.max(1e-3,gA); P3=herm(S0,Aw,Z,Vt.clone().multiplyScalar(gA),s); P3.z+=PATH.ARC*Math.sin(Math.PI*s); pole=p0.clone().lerp(Ap,s); k=s*.4; }
-          else { const s=(g-gA)/Math.max(1e-3,1-gA); P3=herm(Aw,B,Vt.clone().multiplyScalar(1-gA),Z,s); pole=Ap.clone().lerp(pB,s); k=.4+.6*s; } }
+        let P3, pole, hd;
+        if(D.synth){ let g=smooth3((D.t[f]-D.t[fa])/Math.max(1,D.t[fb]-D.t[fa])), Z=new THREE.Vector3();
+          let S1=S0, p1=p0, h1=h0, gAx=gA;
+          if(kickArm){ const KG=KICK_GUARD;   
+            if(g<KG.HOLD){ const s=Math.min(1,g/KG.AT);
+              P3=S0.clone().lerp(GV,smooth3(s)); P3.z+=PATH.ARC*Math.sin(Math.PI*Math.min(1,s)); pole=p0.clone().lerp(GP,s); hd=blendHand(h0,GH,smooth3(s)); }
+            else { g=(g-KG.HOLD)/(1-KG.HOLD); S1=GV; p1=GP; h1=GH; gAx=KG.PREP_AT; } }
+          if(!P3){
+            const Vt2=B.clone().sub(S1).multiplyScalar(PATH.SYN_TAN);
+            if(g<=gAx){ const s=g/Math.max(1e-3,gAx); P3=herm(S1,Aw,Z,Vt2.clone().multiplyScalar(gAx),s); P3.z+=PATH.ARC*Math.sin(Math.PI*s); pole=p1.clone().lerp(Ap,s); hd=blendHand(h1,hA,s); }
+            else { const s=(g-gAx)/Math.max(1e-3,1-gAx);
+              if(arc){ const ss=smooth3(s), a=arc.a0+arc.da*ss, r=arc.r0+(arc.r1-arc.r0)*ss;
+                P3=new THREE.Vector3(r*Math.sin(a), arc.y0+(arc.y1-arc.y0)*ss, r*Math.cos(a)); pole=Ap.clone().lerp(pB,s);
+                hd={d:hB.d.clone().applyAxisAngle(YV,arc.da*(ss-1)), s:hB.s.clone().applyAxisAngle(YV,arc.da*(ss-1))}; }
+              else if(via){ const ss=smooth3(s), v=1-ss, Q=via.clone().multiplyScalar(2).sub(Aw.clone().add(B).multiplyScalar(.5));
+                P3=Aw.clone().multiplyScalar(v*v).add(Q.multiplyScalar(2*v*ss)).add(B.clone().multiplyScalar(ss*ss)); pole=Ap.clone().lerp(pB,s); hd=blendHand(hA,hB,ss); }
+              else { P3=herm(Aw,B,Vt2.clone().multiplyScalar(1-gAx),Z,s); pole=Ap.clone().lerp(pB,s);
+                hd=blendHand(hA,hB,s, twistSign? sm3((s-.45)/.55) : s, twistSign); } } } }
         else if(f<=fA){ const u=smooth3((D.t[f]-D.t[fa])/Math.max(1,D.t[fA]-D.t[fa]));
-          P3=S0.clone().lerp(Aw,u); P3.z+=PATH.ARC*Math.sin(Math.PI*u); pole=p0.clone().lerp(Ap,u); k=u*.4; }
+          P3=S0.clone().lerp(Aw,u); P3.z+=PATH.ARC*Math.sin(Math.PI*u); pole=p0.clone().lerp(Ap,u); hd=blendHand(h0,hA,u); }
         else { const u= byTime ? smooth3((D.t[f]-D.t[fA])/Math.max(1,D.t[fb]-D.t[fA])) : Math.min(1,us[f-fA]/top);
-          P3=Aw.clone().lerp(B,u); pole=Ap.clone().lerp(pB,u); k=.4+.6*u; }
+          P3=Aw.clone().lerp(B,u); pole=Ap.clone().lerp(pB,u); hd=blendHand(hA,hB,u, twistSign? sm3((u-.45)/.55) : u, twistSign); }
         const J=FR[f], y=yawOf(J), T=P3.applyAxisAngle(YV,y).add(J.hip); pole.normalize().applyAxisAngle(YV,y);
         const r=ik2(J['sh'+s],T,DIM.up,DIM.fo,pole); J['el'+s]=r.mid; J['wr'+s]=r.end;
-        J['hd'+s].d=h0.d.clone().lerp(hB.d,k).normalize().applyAxisAngle(YV,y); J['hd'+s].s=h0.s.clone().lerp(hB.s,k).normalize().applyAxisAngle(YV,y); } } } }
+        J['hd'+s].d=hd.d.clone().normalize().applyAxisAngle(YV,y); J['hd'+s].s=hd.s.clone().normalize().applyAxisAngle(YV,y); } } } }
+
+function blendHand(a,b,k,tk,sign){
+  const ad=a.d.clone().normalize(), bd=b.d.clone().normalize();
+  const d=ad.clone().applyQuaternion(new THREE.Quaternion().slerpQuaternions(new THREE.Quaternion(), new THREE.Quaternion().setFromUnitVectors(ad,bd), k)).normalize();
+  const sa=a.s.clone().applyQuaternion(new THREE.Quaternion().setFromUnitVectors(ad,d)), sb=b.s.clone().applyQuaternion(new THREE.Quaternion().setFromUnitVectors(bd,d));
+  sa.addScaledVector(d,-sa.dot(d)); sb.addScaledVector(d,-sb.dot(d));
+  if(sa.lengthSq()<1e-8||sb.lengthSq()<1e-8) return {d, s:a.s.clone().lerp(b.s,k)};
+  sa.normalize(); sb.normalize();
+  let th=Math.atan2(new THREE.Vector3().crossVectors(sa,sb).dot(d), sa.dot(sb));
+  if(sign && Math.abs(th)>2.1 && th*sign<0) th+=sign*2*Math.PI;
+  const q=Math.min(1,Math.max(0,tk==null?k:tk));
+  return {d, s:sa.applyAxisAngle(d,th*q)}; }
 
 const STEP={LIFT:.07, KICK_FROM:.5, LAND_FROM:.6, LIFT_LEAD:.15, AIR_MOVE:[.40,.62]};
 
@@ -707,7 +752,11 @@ function plantFeet(FR){
   for(let f=0;f<NF;f++){ const t=D.t[f];
     let j=D.moves.findIndex(m=>t<=m.t1); if(j<0) j=M-1;
     if(t>=D.moves[j].t0 || j===0){ out[f]=root[j]; const J=FR[f];          
-      for(const k of ['L','R']) legTo(J,k,foot[j][k].clone().sub(root[j]),-hipH[j]); J.floor=Math.min(J.anL.y,J.anR.y); continue; }
+
+      const aw=attnW(t);
+      for(const k of ['L','R']){ const own=J['an'+k].clone().sub(J.hip), w2=foot[j][k].clone().sub(root[j]).lerp(new THREE.Vector2(own.x,own.z),aw), gy=-hipH[j]+(own.y+hipH[j])*aw;
+        const ft=J['ft'+k].clone(); ft.y=0; legTo(J,k,w2,gy, ft.lengthSq()>1e-6 ? ft.normalize() : null); }
+      J.floor=Math.min(J.anL.y,J.anR.y); continue; }
     
     const pv=D.moves[j-1], nm=D.moves[j], frac=Math.min(1,Math.max(0,(t-pv.t1)/(nm.t0-pv.t1)));
     const kick=MINFO[j].kick, u= kick ? smooth3(Math.min(1,Math.max(0,(frac-STEP.KICK_FROM)/(1-STEP.KICK_FROM)))) : smooth3(frac);
