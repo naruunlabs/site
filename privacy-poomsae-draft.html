@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex,nofollow">
+
+<script>
+(function () {
+  var KEY = 'naruunlabs_ga_optout';
+  try {
+    var q = new URLSearchParams(location.search);
+    if (q.get('me') === '1') { localStorage.setItem(KEY, '1'); }
+    if (q.get('me') === '0') { localStorage.removeItem(KEY); }
+    if (localStorage.getItem(KEY) === '1') { return; }
+  } catch (e) {}
+  var h = location.hostname;
+  if (h === 'localhost' || h === '127.0.0.1' || h === '' || h.endsWith('.local')) { return; }
+  var s = document.createElement('script');
+  s.async = true;
+  s.src = 'https://www.googletagmanager.com/gtag/js?id=G-8SN72HTTK4';
+  document.head.appendChild(s);
+  window.dataLayer = window.dataLayer || [];
+  function gtag() { dataLayer.push(arguments); }
+  window.gtag = gtag;
+  gtag('js', new Date());
+  gtag('config', 'G-8SN72HTTK4');
+})();
+</script>
+
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>품새마스터 개정안 · 개인정보처리방침 | 나른랩스 NARUUN LABS</title>
+
+<link rel="canonical" href="https://naruunlabs.kr/privacy-poomsae-draft">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="NARUUN LABS">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:url" content="https://naruunlabs.kr/privacy">
+<meta property="og:title" content="개인정보처리방침 | NARUUN LABS">
+<meta property="og:description" content="나른랩스(NARUUN LABS) 개인정보처리방침입니다. AI 킥마스터·점프마스터·스트라이크마스터·품새마스터와 아카데미웹에 적용됩니다.">
+<meta property="og:image" content="https://naruunlabs.kr/og-naruunlabs.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="개인정보처리방침 | NARUUN LABS">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="개인정보처리방침 | NARUUN LABS">
+<meta name="twitter:description" content="나른랩스(NARUUN LABS) 개인정보처리방침입니다. AI 킥마스터·점프마스터·스트라이크마스터·품새마스터와 아카데미웹에 적용됩니다.">
+<meta name="twitter:image" content="https://naruunlabs.kr/og-naruunlabs.jpg">
+<meta name="description" content="나른랩스(NARUUN LABS) 개인정보처리방침입니다. AI 킥마스터·점프마스터·스트라이크마스터·품새마스터와 아카데미웹에 적용됩니다.">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css">
+<style>
+:root{
+  --primary:#E3172E;
+  --secondary:#FF6A1A;
+  --deep:#071C49;
+  --text:#1D2939;
+  --muted:#667085;
+  --line:#D9E2EC;
+  --soft:#F7F9FC;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  font-family:'Pretendard','Noto Sans KR',system-ui,-apple-system,sans-serif;
+  color:var(--text);
+  background:#fff;
+  line-height:1.75;
+  letter-spacing:-.02em;
+}
+a{color:inherit;text-decoration:none}
+.wrap{width:min(1040px,calc(100% - 40px));margin:0 auto}
+header{
+  position:sticky;top:0;z-index:30;
+  background:rgba(255,255,255,.94);
+  backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--line);
+}
+.nav{
+  min-height:74px;
+  display:flex;align-items:center;justify-content:space-between;gap:24px;
+}
+.logo{font-weight:950;color:var(--deep);letter-spacing:.04em}
+.logo span{color:var(--primary)}
+.nav-links{display:flex;gap:22px;align-items:center;font-size:13px;font-weight:800}
+.nav-links a:hover{color:var(--primary)}
+.hero{
+  padding:74px 0 44px;
+  border-bottom:1px solid var(--line);
+  background:
+    radial-gradient(circle at 88% 14%,rgba(227,23,46,.08),transparent 31%),
+    linear-gradient(180deg,#fff,#FAFBFD);
+}
+.eyebrow{
+  color:var(--primary);
+  font-size:12px;font-weight:900;letter-spacing:.15em;text-transform:uppercase;
+}
+h1{
+  margin-top:12px;
+  color:var(--deep);
+  font-size:clamp(38px,6vw,66px);
+  line-height:1.05;
+  letter-spacing:-.06em;
+}
+.updated{margin-top:18px;color:var(--muted);font-size:13px}
+.policy{padding:58px 0 84px}
+.policy-inner{display:grid;grid-template-columns:210px minmax(0,1fr);gap:54px}
+.toc{
+  position:sticky;top:104px;align-self:start;
+  padding:20px 0;border-top:1px solid var(--line);
+}
+.toc strong{display:block;color:var(--deep);font-size:13px;margin-bottom:12px}
+.toc a{display:block;padding:6px 0;color:var(--muted);font-size:13px}
+.toc a:hover{color:var(--primary)}
+.content section{
+  padding:0 0 34px;margin-bottom:34px;border-bottom:1px solid var(--line);
+}
+.content section:last-child{margin-bottom:0}
+.content h2{
+  color:var(--deep);font-size:24px;line-height:1.35;letter-spacing:-.04em;
+  margin-bottom:13px;
+}
+.content h3{
+  color:var(--deep);font-size:17px;margin:20px 0 8px;
+}
+.content p{color:#465467;margin-top:8px;word-break:keep-all}
+.content ul{margin:10px 0 0 20px;color:#465467}
+.content li{margin:5px 0}
+.note{
+  margin-top:16px;padding:16px 18px;
+  background:var(--soft);border-left:3px solid var(--primary);
+  color:#526174;font-size:13.5px;
+}
+footer{
+  padding:30px 0;
+  background:#071426;color:rgba(255,255,255,.58);font-size:12.5px;
+}
+.footer-row{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.footer-links{display:flex;gap:16px;flex-wrap:wrap}
+.footer-links a:hover{color:#fff}
+@media(max-width:760px){
+  .nav{min-height:68px}
+  .nav-links{gap:12px;font-size:12px}
+  .policy-inner{grid-template-columns:1fr;gap:22px}
+  .toc{position:static;padding-bottom:6px}
+  .toc a{display:inline-block;margin-right:14px}
+  .hero{padding:56px 0 34px}
+}
+
+.policy-header-logo{
+  display:block;
+  width:300px;
+  height:64px;
+  object-fit:contain;
+  object-position:left center;
+}
+.logo{
+  display:flex;
+  align-items:center;
+  min-width:248px;
+}
+@media(max-width:760px){
+  .policy-header-logo{
+    width:210px;
+    height:50px;
+  }
+  .logo{
+    min-width:0;
+  }
+}
+@media(max-width:520px){
+  .policy-header-logo{
+    width:168px;
+    height:44px;
+  }
+  .nav-links{
+    gap:9px;
+    font-size:11px;
+  }
+}
+
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap nav">
+    <a class="logo" href="/" aria-label="NARUUN LABS 홈"><img class="policy-header-logo" src="NARUUN_LABS_logo2.svg" alt="NARUUN LABS"></a>
+    <nav class="nav-links" aria-label="정책 페이지 메뉴">
+      <a href="/">전체 제품</a>
+    </nav>
+  </div>
+</header>
+<main>
+  <section class="hero">
+    <div class="wrap">
+      <div class="eyebrow">Privacy Policy</div>
+      <h1>개인정보처리방침</h1>
+      <p class="updated">품새마스터 반영 개정안 · 공고·시행일 확정 전</p>
+    </div>
+  </section>
+  <div class="policy">
+    <div class="wrap policy-inner">
+      <aside class="toc" aria-label="목차">
+        <strong>목차</strong>
+        <a href="#s1">개요</a>
+<a href="#s2">1. 수집하는 개인정보</a>
+<a href="#s3">2. 카메라 영상 및 학생 정보</a>
+<a href="#s3c">품새 기록 처리</a>
+<a href="#s3b">3. 자동으로 수집되는 정보</a>
+<a href="#s4">4. 개인정보 이용 목적</a>
+<a href="#s5">5. 개인정보 보유 및 이용 기간</a>
+<a href="#s6">6. 개인정보의 제3자 제공</a>
+<a href="#s6b">7. 개인정보 처리의 위탁</a>
+<a href="#s6c">8. 개인정보의 국외 이전</a>
+<a href="#s7">9. 개인정보의 안전성 확보</a>
+<a href="#s8">10. 이용자의 권리</a>
+<a href="#s9">11. 개인정보 파기</a>
+<a href="#s10">12. 개인정보 보호책임자</a>
+<a href="#s11">13. 개인정보처리방침 변경</a>
+      </aside>
+      <article class="content">
+<div class="note"><b>품새마스터 출시 준비 개정안 · 시행 전</b><br>품새마스터의 적용 범위와 기록 처리 방식을 반영한 검토용 문서입니다. <a href="/privacy">현재 시행 중인 정책 보기</a>. 공고일과 시행일은 별도로 확정하며, 품새마스터의 일반 판매·체험은 아직 시작되지 않았습니다.</div>
+        <section id="s1"><h2>개요</h2>
+<div class="note">기존 방침의 시행일은 2026년 10월 5일이며, 인증 환경 정보 관련 변경은 10월 13일 시행 항목입니다. 이 문서의 품새마스터 추가 내용은 공고·시행일 확정 전 개정안입니다. 이전 방침은 naruunlabs@gmail.com 으로 요청할 수 있습니다.</div>
+<p>NARUUN LABS(이하 “회사”)는 이용자의 개인정보를 소중하게 생각하며 관련 법령을 준수합니다.</p>
+<p>이 방침은 회사의 AI 프로그램(AI KICK MASTER · AI JUMP MASTER · AI STRIKE MASTER · AI POOMSAE MASTER)과 아카데미웹(태권도장 홈페이지 제작·관리), 그리고 홈페이지(naruunlabs.kr) 이용에 모두 적용됩니다.</p>
+</section><section id="s2"><h2>1. 수집하는 개인정보</h2>
+<p>회사는 고객 문의, 무료체험 신청, 라이선스 발급·판매 또는 홈페이지 제작 과정에서 이용자가 제공한 정보 중 서비스 운영에 필요한 최소한의 개인정보를 처리합니다.</p>
+<h3>가. 상담 및 라이선스 발급</h3>
+<ul><li>도장명</li><li>대표자 또는 담당자 이름</li><li>연락처(휴대전화번호)</li><li>이메일 주소, 카카오톡 ID</li><li>도장 소재지(시/도 · 시군구)</li><li>관원 수, 사용 기기 종류</li><li>유입 경로 및 소개자</li><li>라이선스 키 및 등록 기기 정보</li><li>문의 내용</li></ul>
+<h3>나. 상담 이력</h3>
+<p>도입 상담과 사후 지원을 이어서 응대하기 위해, 통화·카카오톡 등으로 나눈 <b>상담 일자와 상담 내용을 기록</b>합니다.</p>
+<h3>다. 판매 및 세금계산서 발행</h3>
+<ul><li>결제 금액, 할인 내역, 결제 수단, 판매일</li><li>세금계산서를 요청하신 경우: 사업자등록번호, 상호</li></ul>
+<h3>라. 아카데미웹 (홈페이지 제작·관리)</h3>
+<ul><li>도장명, 대표자 또는 담당자 이름, 연락처, 이메일 주소</li><li>도장 주소, 운영 시간, 수업·차량 안내 등 홈페이지에 싣는 운영 정보</li><li>홈페이지에 싣기 위해 도장에서 제공한 사진과 글(지도진 소개 등)</li><li>도메인 주소, 제작 진행 일정(착수일·공개일), 결제 금액</li></ul>
+<p>도장에서 제공한 사진과 글은 해당 도장 홈페이지의 제작·게시 목적으로만 사용합니다. 사진에 수련생 등 다른 사람이 나오는 경우, 게시에 필요한 동의는 도장에서 받아 주셔야 합니다.</p>
+<div class="note">회사는 <b>주민등록번호를 비롯한 고유식별정보와 민감정보를 수집하지 않습니다.</b> 위 정보는 도장(사업자)과의 거래를 위한 것이며, 카메라 영상과 학생 이름은 동작 인식을 위해 서버로 수집하지 않습니다. 품새마스터의 관절 좌표·판정 기록은 아래 품새 기록 처리 항목에 따라 처리됩니다. 아카데미웹은 도장에서 게시를 위해 직접 제공한 사진에 한해 위 ‘라’항과 같이 처리합니다.</div>
+</section><section id="s3"><h2>2. 카메라 영상 및 학생 정보</h2>
+<p>카메라는 AI 동작을 실시간으로 인식하기 위해 사용됩니다.</p>
+<p><b>카메라 영상은 이용자의 기기 안에서만 처리되며, 회사의 서버나 외부로 전송되지 않습니다.</b> 화면에 표시되는 영상은 기기의 메모리에서 실시간으로 처리된 뒤 즉시 사라지며, 사진이나 동영상 파일로 저장되지 않습니다.</p>
+<p>프로그램은 학생 이름 입력을 요구하지 않으며 얼굴 사진·영상을 저장하지 않습니다. 다만 품새마스터는 관절 좌표와 판정·점수 등 측정 기록을 기기 내에 저장합니다. 마스터 시험에서 전송되는 연구 기록과 별도 동의에 따른 기록 처리는 아래 항목을 확인해 주세요. 관절 좌표를 다른 정보와 결합하면 개인을 알아볼 가능성이 있으므로 식별 가능한 정보로 관리될 수 있습니다.</p>
+<div class="note">만 14세 미만 아동이 이용하는 경우, 프로그램을 도입한 도장(체육시설)에서 보호자에게 카메라 사용 사실을 안내하고 필요한 동의를 받아 주시기 바랍니다. 회사는 이를 위한 보호자 안내문 양식을 요청 시 제공합니다.</div>
+</section><section id="s3c"><h2>품새마스터의 측정 기록</h2>
+<h3>가. 기기 안에 저장하는 기록</h3>
+<p>관절 33곳의 화면·3차원 좌표, 동작 방향·기술 분류, 점수·2인 타이밍 비교 결과, 측정 시각·시간, 사용 모드·품새·판정 설정·프로그램 버전을 브라우저 저장소(IndexedDB)에 저장합니다. 학생 이름은 필수 입력하지 않으며, 메모에 학생 이름·연락처 등 식별 정보를 넣지 않아야 합니다. 시범 로봇을 보는 단체 모드는 카메라 측정 기록을 만들지 않습니다.</p>
+<p>기기 내 기록은 이용자가 저장 기록 화면에서 삭제하거나 브라우저 사이트 데이터를 지울 때까지 보관됩니다. JSON 파일로 내려받은 기록은 브라우저에서 삭제해도 남을 수 있으므로 이용자가 따로 삭제해야 합니다. 공용 기기에서는 기록 접근과 파일 공유에 주의해 주세요.</p>
+<h3>나. 회사 서버로 전송하는 연구 기록</h3>
+<p>현재 품새마스터는 마스터 시험 라이선스 전용으로, 판정 오류 분석·개선을 위해 측정 기록을 자동 전송합니다. 전송 항목은 위 측정 기록과 도장·라이선스 키, 등록 기기 식별값, 전송 시각 및 기록 크기입니다. 영상·사진은 전송하지 않습니다. 일반 고객용 품새 기록 전송은 공개 전에 적용 범위와 안내·동의 절차를 별도로 확정합니다.</p>
+<p>연구 기록은 Supabase 서울 리전의 비공개 저장소에서 기본 10일 보관하며, 저장 용량 한도로 더 일찍 삭제될 수 있습니다. 별도로 보관 지정한 연구 기록은 자동 삭제 대상에서 제외되며, 연구 목적 달성 또는 삭제 요청에 따라 삭제합니다. 접근은 권한이 있는 운영자에게 제한됩니다.</p>
+<h3>다. 별도 데이터측정 동의</h3>
+<p>일반 도장에서 선택적 연구 기록 전송을 제공하는 경우, 관리자가 동의 항목을 연 뒤 도장 운영자가 안내를 확인하고 동의한 경우에만 전송합니다. 동의 여부·시각·기기 식별값을 함께 기록하며, 동의를 철회하면 이후 전송을 중단합니다. 동의하지 않아도 기본 프로그램을 이용할 수 있습니다. 아동의 기록을 포함하는 경우에는 정보주체와 법정대리인에 대한 안내·동의 등 필요한 절차를 도입 전에 갖춰야 합니다.</p>
+<p>기록 열람·삭제·전송 중단 문의는 개인정보 보호책임자에게 요청할 수 있습니다. 동의 철회와 기존 서버 기록 삭제는 별도이며, 기존 기록 삭제도 함께 요청할 수 있습니다.</p>
+</section><section id="s3b"><h2>3. 자동으로 수집되는 정보</h2>
+<h3>가. 홈페이지 이용 시</h3>
+<p>회사는 홈페이지 이용 현황을 파악하고 서비스를 개선하기 위해 <b>구글 애널리틱스(Google Analytics)</b>를 사용합니다. 이 과정에서 아래 정보가 자동으로 수집됩니다.</p>
+<ul><li>쿠키(Cookie)</li><li>접속 IP 주소</li><li>브라우저 및 운영체제 종류, 기기 유형</li><li>방문 일시, 방문한 페이지, 체류 시간, 유입 경로</li></ul>
+<p>또한 홈페이지와 제품 소개 페이지에서는 광고 성과를 확인하기 위해 <b>메타 픽셀(Meta Pixel)</b>을 사용합니다. 이 과정에서 쿠키, 접속 IP 주소, 브라우저·기기 정보, 방문한 페이지 정보가 Meta Platforms, Inc.로 전송될 수 있습니다. 프로그램 실행 화면에서는 메타 픽셀을 사용하지 않습니다.</p>
+<p>이 정보는 개인을 식별하기 위한 것이 아니며, 통계 분석과 광고 성과 확인 목적으로만 이용됩니다.</p>
+<h3>수집을 거부하려면</h3>
+<ul><li>브라우저 설정에서 쿠키 저장을 차단하거나 삭제할 수 있습니다.</li><li>구글이 제공하는 <a href="https://tools.google.com/dlpage/gaoptout" target="_blank" rel="noopener">애널리틱스 차단 브라우저 부가기능</a>을 설치할 수 있습니다.</li></ul>
+<p>쿠키 저장을 거부하더라도 홈페이지 이용에는 제한이 없습니다.</p>
+<h3>나. 프로그램 라이선스 인증 시</h3>
+<div class="note"><b>변경 사전 안내 · 2026년 10월 6일 공고 / 10월 13일 시행</b><br>10월 13일부터 성공한 라이선스 인증 기록에 브라우저 종류와 운영체제 종류를 추가합니다. 기기별 사용 환경 확인 및 기술 지원에 이용하며, 상세 인증 이력은 인증일로부터 최대 90일 보관합니다. 브라우저 정보의 원문, 정확한 기종명, 위치 정보는 저장하지 않습니다. 그전에는 아래 기존 항목만 기록합니다.</div>
+<p>프로그램은 정상적인 라이선스인지 확인하기 위해 실행 시와 사용 중 일정 간격으로 회사 서버에 인증을 요청합니다. 이때 아래 정보가 자동으로 기록됩니다.</p>
+<ul><li>기기 식별값(브라우저에 저장되는 임의의 문자열)</li><li>접속 IP 주소</li><li>인증 일시 및 결과</li><li>라이선스 키</li><li>브라우저 종류 및 운영체제 종류(2026년 10월 13일부터)</li></ul>
+<p>이 정보는 <b>라이선스의 유효 여부 확인, 등록 기기 수 관리, 하나의 라이선스를 계약하지 않은 다른 장소에서 함께 사용하는 등 부정 사용 여부 확인, 오류 대응</b>을 위해서만 이용합니다.</p>
+<div class="note">부정 사용이 의심되는 경우에도 <b>자동으로 이용이 차단되지 않습니다.</b> 회사가 내용을 확인한 뒤 이용자에게 먼저 연락드립니다.<br>반복되는 인증 시도를 막기 위한 기록에는 <b>라이선스 키의 앞 8글자만</b> 저장되며 <b>하루 뒤 자동으로 삭제</b>됩니다.</div>
+<h3>다. 프로그램 오류 발생 시</h3>
+<p>프로그램이 실행 중 오류를 내면, 원인을 찾아 고치기 위해 아래 정보가 회사 서버에 자동으로 기록됩니다.</p>
+<ul><li>오류 내용과 오류가 난 자리(프로그램 코드의 줄 번호)</li><li>프로그램 종류와 버전</li><li>라이선스 키</li><li>브라우저·기기 종류, 화면 크기</li><li>발생 일시</li></ul>
+<p>이 기록에는 <b>카메라 영상, 사진, 동작 정보, 학생 정보가 포함되지 않으며</b>, 오류 수정과 기술 지원을 위해서만 이용합니다.</p>
+</section><section id="s4"><h2>4. 개인정보 이용 목적</h2>
+<ul><li>고객 문의 응대 및 도입 상담 이력 관리</li><li>라이선스 발급, 인증 및 사용 기기 관리</li><li><b>라이선스 부정 사용 확인 및 방지</b></li><li>판매 대금 정산 및 세금계산서 발행 등 법령상 의무 이행</li><li>서비스 제공 및 기술 지원</li><li>공지사항 및 업데이트 안내</li><li>아카데미웹 홈페이지 제작·공개 및 관리</li><li>홈페이지 이용 통계 분석 및 광고 성과 확인</li></ul>
+</section><section id="s5"><h2>5. 개인정보 보유 및 이용 기간</h2>
+<p>회사는 개인정보 수집 목적이 달성되면 관련 법령에 따라 보관이 필요한 경우를 제외하고 지체 없이 파기합니다.</p>
+<p>다만 「전자상거래 등에서의 소비자보호에 관한 법률」에 따라 아래 정보는 정해진 기간 동안 보관합니다.</p>
+<ul><li>계약 또는 청약철회 등에 관한 기록: 5년</li><li>대금 결제 및 재화 등의 공급에 관한 기록: 5년</li><li>소비자의 불만 또는 분쟁 처리에 관한 기록: 3년</li><li>세금계산서 등 거래 증빙(사업자등록번호·상호 포함): 「국세기본법」에 따라 5년</li></ul>
+<p>그 밖의 정보는 아래 기간 동안 보관한 뒤 파기합니다.</p>
+<ul><li>상담 이력 및 고객 정보: 라이선스 이용 종료 또는 아카데미웹 관리 계약 종료 후 <b>3년</b>(상담만 하고 계약하지 않은 경우 마지막 상담일로부터 <b>1년</b>)</li><li>라이선스 인증 기록(기기 식별값·IP·인증 일시): 마지막 인증일로부터 <b>1년</b></li><li>기기별 상세 인증 이력: 각 인증일로부터 <b>90일</b>(등록된 기기 정보와 별도로 관리)</li><li>반복 인증 시도 차단용 기록: <b>1일</b></li><li>프로그램 오류 기록: <b>30일</b></li><li>품새마스터 기기 내 측정 기록: 이용자 삭제 또는 브라우저 사이트 데이터 삭제 시까지</li><li>서버 연구 기록: 기본 10일, 별도 보관 지정 기록은 위 품새 기록 처리 항목 참조</li><li>아카데미웹 제작 자료(도장에서 제공한 사진·글): 관리 계약 종료 후 <b>1년</b></li></ul>
+<p>이용자가 삭제를 요청하시면 법령상 보관 의무가 있는 정보를 제외하고 지체 없이 파기합니다.</p>
+</section><section id="s6"><h2>6. 개인정보의 제3자 제공</h2>
+<p>회사는 이용자의 동의 없이 개인정보를 외부에 제공하지 않습니다. 다만 법령에 따라 제공이 필요한 경우는 예외로 합니다.</p>
+</section><section id="s6b"><h2>7. 개인정보 처리의 위탁</h2>
+<p>회사는 원활한 서비스 제공을 위해 아래와 같이 개인정보 처리 업무를 위탁하고 있습니다.</p>
+<ul>
+<li><b>Supabase Inc.</b> — 라이선스 발급·인증, 프로그램 오류 기록 및 데이터 보관 (데이터 저장 위치: 대한민국 서울 리전)</li>
+<li><b>GitHub, Inc.</b> — 홈페이지 호스팅</li>
+<li><b>Google LLC</b> — 홈페이지 이용 통계 분석(구글 애널리틱스)</li>
+<li><b>Meta Platforms, Inc.</b> — 홈페이지 광고 성과 측정(메타 픽셀)</li>
+</ul>
+<p>회사는 위탁계약을 체결할 때 위탁업무 수행 목적 외 개인정보 처리 금지, 기술적·관리적 보호조치, 재위탁 제한, 수탁자에 대한 관리·감독 및 손해배상 책임에 관한 사항을 문서에 명시하고, 수탁자가 개인정보를 안전하게 처리하는지 감독합니다.</p>
+<p>위탁 업무의 내용이나 수탁자가 변경될 경우 본 방침을 통해 지체 없이 공개합니다.</p>
+</section><section id="s6c"><h2>8. 개인정보의 국외 이전</h2>
+<p>회사는 아래와 같이 개인정보를 국외로 이전하고 있습니다.</p>
+<ul>
+<li><b>GitHub, Inc.</b><br>
+이전되는 항목: 접속 IP 주소, 브라우저 정보 등 홈페이지 접속 기록<br>
+이전되는 국가: 미국<br>
+이전 일시 및 방법: 홈페이지 접속 시 정보통신망을 통해 수시 전송<br>
+이전 목적: 홈페이지 호스팅<br>
+보유·이용 기간: 호스팅 서비스 이용 계약 종료 시까지<br>
+연락처: <a href="https://support.github.com" target="_blank" rel="noopener">support.github.com</a></li>
+<li><b>Google LLC</b><br>
+이전되는 항목: 쿠키, 접속 IP 주소, 기기·브라우저 정보, 방문 기록<br>
+이전되는 국가: 미국<br>
+이전 일시 및 방법: 홈페이지 접속 시 정보통신망을 통해 수시 전송<br>
+이전 목적: 홈페이지 이용 통계 분석<br>
+보유·이용 기간: 구글 애널리틱스 보관 정책에 따름(최대 14개월)<br>
+연락처: <a href="https://support.google.com/analytics" target="_blank" rel="noopener">support.google.com/analytics</a></li>
+<li><b>Meta Platforms, Inc.</b><br>
+이전되는 항목: 쿠키, 접속 IP 주소, 기기·브라우저 정보, 방문한 페이지 정보<br>
+이전되는 국가: 미국<br>
+이전 일시 및 방법: 홈페이지 접속 시 정보통신망을 통해 수시 전송<br>
+이전 목적: 홈페이지 광고 성과 측정<br>
+보유·이용 기간: Meta의 데이터 보관 정책에 따름<br>
+연락처: <a href="https://www.facebook.com/privacy/policy" target="_blank" rel="noopener">facebook.com/privacy/policy</a></li>
+</ul>
+<div class="note">라이선스 발급·인증에 사용하는 Supabase는 데이터가 <b>대한민국 서울 리전</b>에 저장되므로 국외 이전에 해당하지 않습니다.</div>
+<p>이용자는 개인정보의 국외 이전을 거부할 수 있습니다. 다만 거부하시는 경우 홈페이지 이용 통계와 광고 성과 측정을 위한 수집은 위 3항의 방법으로 차단할 수 있으며, 호스팅 관련 이전은 서비스 제공에 필수적이어서 거부 시 홈페이지 이용이 제한될 수 있습니다.</p>
+</section><section id="s7"><h2>9. 개인정보의 안전성 확보</h2>
+<ul><li>개인정보 취급자를 최소한으로 두고 접근 권한을 제한</li><li>개인정보가 저장된 시스템에 대한 접근 통제 및 접속 기록 관리</li><li>전송 구간 암호화(HTTPS) 적용</li><li>개인정보 보호를 위한 관리적·기술적 조치 시행</li></ul>
+</section><section id="s8"><h2>10. 이용자의 권리</h2>
+<p>이용자는 언제든지 자신의 개인정보에 대해 열람, 정정, 삭제 또는 처리 정지를 요청할 수 있으며, 회사는 관련 법령에 따라 처리합니다.</p>
+<p>요청은 아래 개인정보 보호책임자에게 이메일, 전화 또는 공식 카카오톡 상담을 통해 하실 수 있으며, 회사는 지체 없이 조치합니다.</p>
+</section><section id="s9"><h2>11. 개인정보 파기</h2>
+<p>개인정보 보유 목적이 종료되면 지체 없이 안전한 방법으로 파기합니다. 전자적 파일은 복구할 수 없는 방법으로 삭제하고, 종이 문서는 분쇄하거나 소각합니다.</p>
+</section><section id="s10"><h2>12. 개인정보 보호책임자</h2>
+<ul><li>상호: 나른랩스 (NARUUN LABS)</li><li>대표자: 이완수</li><li>개인정보 보호책임자: 이완수 (대표)</li><li>이메일: naruunlabs@gmail.com</li><li>전화: 010-7657-3579</li><li>문의 채널: NARUUN LABS 공식 카카오톡 또는 홈페이지</li></ul>
+<p>개인정보 침해에 대한 신고나 상담이 필요한 경우 개인정보침해신고센터(privacy.kisa.or.kr, 국번 없이 118), 개인정보 분쟁조정위원회(kopico.go.kr, 1833-6972), 대검찰청 사이버수사과(1301), 경찰청 사이버수사국(cyberbureau.police.go.kr, 182)에 문의하실 수 있습니다.</p>
+
+</section><section id="s11"><h2>13. 개인정보처리방침 변경</h2>
+<p>본 방침은 관련 법령 또는 서비스 변경에 따라 수정될 수 있습니다. 내용을 추가·삭제하거나 수정할 경우 변경 사항을 시행 7일 전부터 홈페이지를 통해 안내하며, 이용자의 권리에 중대한 영향을 미치는 변경은 30일 전부터 안내합니다.</p>
+<h3>변경 이력</h3>
+<p><b>품새마스터 출시 준비 개정안(미시행)</b> — 적용 제품에 품새마스터를 추가하고, 기기 내 관절 좌표·결과 저장과 마스터 시험 연구 기록 전송을 구분했습니다. 공고·시행일은 공개 전에 확정합니다.</p>
+<p>2026년 10월 13일 시행 예정(10월 6일 공고) — 성공한 라이선스 인증 시 브라우저·운영체제 종류를 기록하며, 기기별 상세 인증 이력을 최대 90일 보관합니다.</p>
+<ul><li><b>2026년 10월 5일 시행</b>(같은 날 공고) — 적용 대상에 AI STRIKE MASTER와 아카데미웹을 추가하고, 아카데미웹 제작 과정에서 받는 정보와 보유 기간, 홈페이지의 메타 픽셀 사용(처리 위탁·국외 이전 포함), 프로그램 오류 발생 시 자동으로 기록되는 정보를 명시했습니다.</li><li><b>2026년 9월 1일 시행</b>(2026년 8월 25일 공고) — 도입 상담·판매 과정에서 받는 정보(도장 소재지, 사업자등록번호·상호, 결제 기록, 상담 이력)와 라이선스 인증 시 자동으로 기록되는 정보(기기 식별값, 접속 IP, 인증 일시)를 명시하고, 부정 사용 확인 목적과 항목별 보유 기간을 추가했습니다.</li><li>2026년 7월 31일 시행 — 최초 공고</li></ul>
+<div class="note"><b>기존 방침 공고일자: 2026년 10월 5일</b><br><b>기존 방침 시행일자: 2026년 10월 5일</b><br>이전 버전의 개인정보처리방침이 필요하신 경우 naruunlabs@gmail.com 으로 요청해 주시면 보내드립니다.</div>
+</section>
+      </article>
+    </div>
+  </div>
+</main>
+<footer>
+  <div class="wrap footer-row">
+    <span>© 2026 NARUUN LABS</span>
+    <nav class="footer-links">
+      <a href="/terms-poomsae-draft">이용약관</a>
+      <a href="/privacy-poomsae-draft">개인정보처리방침</a>
+      <a href="/license-poomsae-draft">라이선스 정책</a>
+      <a href="/refund-policy-poomsae-draft">환불 정책</a>
+    </nav>
+  </div>
+<div class="wrap naruun-biz" aria-label="사업자 정보">
+<style>.naruun-biz{margin-top:26px;padding-top:18px;border-top:1px solid rgba(128,128,128,.2);font-size:11.5px;line-height:1.95;color:#8A97A8;letter-spacing:-.01em;word-break:keep-all;font-weight:400;text-align:left}.naruun-biz p{margin:0;padding:0}.naruun-biz b{font-weight:700;color:inherit}.naruun-biz a{color:inherit;text-decoration:none;border-bottom:1px solid rgba(128,128,128,.32)}.naruun-biz a:hover{color:inherit;opacity:.72}.naruun-biz span+span::before{content:"·";opacity:.4;margin:0 7px}@media(max-width:680px){.naruun-biz{font-size:11px;line-height:1.9}}</style>
+<p><span><b>나른랩스</b></span><span>대표 이완수</span><span>사업자등록번호 554-65-00786</span><span>통신판매업신고 제2025-경북구미-0614호</span><span><a href="https://www.ftc.go.kr/bizCommPop.do?wrkr_no=5546500786" target="_blank" rel="noopener">사업자정보 확인</a></span></p>
+<p><span>경상북도 구미시 산동읍 신당3로 43</span><span><a href="mailto:naruunlabs@gmail.com">naruunlabs@gmail.com</a></span><span><a href="tel:01076573579">010-7657-3579</a></span><span>호스팅 GitHub, Inc.</span></p>
+</div>
+</footer>
+</body>
+</html>

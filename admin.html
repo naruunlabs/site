@@ -274,6 +274,10 @@ tr.row-expired td{background:#fdecec}
 
 .customer-branch{display:inline-block;font-size:11px;font-weight:700;color:#42526b;background:#eef2f7;border-radius:5px;padding:2px 6px;white-space:nowrap}
 #mBranch{cursor:pointer}
+.product-notice{margin:0 0 14px;padding:12px 14px;border:1px solid #EAD49A;border-radius:9px;background:#FFF9E8;color:#785314;font-size:12px;line-height:1.6}
+.product-notice[hidden]{display:none}
+#license-subtab-strike-btn,#license-subtab-poomsae-btn{background:#f3f4f6;color:var(--muted)}
+#license-subtab-strike-btn.active,#license-subtab-poomsae-btn.active{background:var(--ink);color:#fff}
 </style>
 
 <style id="naruun-admin-v2-final">
@@ -643,7 +647,7 @@ table.cg tfoot td.num{text-align:right}
     <div class="today-box" id="todayBox">
       <div class="today-head">
         <b>관리할 항목</b><span class="today-count" id="todayCount">-</span>
-        <span class="today-sub">세 제품과 고객 장부</span>
+        <span class="today-sub">네 제품과 고객 장부</span>
         <button type="button" class="today-arrow" id="todayArrow" onclick="toggleToday()" aria-controls="todayBody" aria-expanded="true">접기</button>
       </div>
       <div class="today-views" id="todayViews" role="group" aria-label="할 일 보기"></div>
@@ -653,11 +657,13 @@ table.cg tfoot td.num{text-align:right}
       <button class="home-subtab-btn active" id="license-subtab-kick-btn" onclick="switchLicenseSubtab('kick')">킥마스터 라이선스</button>
       <button class="home-subtab-btn" id="license-subtab-jump-btn" onclick="switchLicenseSubtab('jump')">점프마스터 라이선스</button>
       <button class="home-subtab-btn" id="license-subtab-strike-btn" onclick="switchLicenseSubtab('strike')">스트라이크 라이선스</button>
+      <button class="home-subtab-btn" id="license-subtab-poomsae-btn" onclick="switchLicenseSubtab('poomsae')">품새마스터 라이선스</button>
       <div style="flex:1"></div>
       <button class="btn-add btn-ghost" onclick="loadLicenses()">↻ 새로고침</button>
       <button class="btn-add" id="licenseAddBtn" onclick="openAddModal()">+ 라이선스 발급</button>
     </div>
 
+    <p id="licenseProductNotice" class="product-notice" hidden>품새마스터는 출시 준비 중입니다. 현재 프로그램은 마스터 시험 라이선스만 실행할 수 있습니다. 일반 고객용 인증·체험은 공개 전 별도로 점검해야 합니다.</p>
     <div id="licenseIpSummary" class="license-ip-summary" hidden></div>
 
     <div class="stats-row six">
@@ -805,7 +811,7 @@ table.cg tfoot td.num{text-align:right}
       <div class="cg-top">
         <div class="cg-title">프로그램 오류 기록</div><div class="cg-sub" id="erSub">불러오는 중…</div>
         <select class="cg-search er-sel" id="erProduct" onchange="renderErrors()" aria-label="제품 고르기">
-          <option value="">전체 제품</option><option value="K">킥마스터</option><option value="J">점프마스터</option><option value="S">스트라이크마스터</option>
+          <option value="">전체 제품</option><option value="K">킥마스터</option><option value="J">점프마스터</option><option value="S">스트라이크마스터</option><option value="P">품새마스터</option>
         </select>
         <input class="cg-search" id="erSearch" placeholder="도장·오류 내용 검색" oninput="renderErrors()">
         <div class="cg-spacer"></div>
@@ -943,6 +949,7 @@ table.cg tfoot td.num{text-align:right}
   <div class="modal">
     <h3 id="modalTitle">라이선스 <span>발급</span></h3>
     <input type="hidden" id="editId" />
+    <p class="product-notice" id="issueProductNotice" hidden>품새마스터 출시 준비용 관리입니다. 키를 발급해도 현재 마스터 권한이 없는 키는 프로그램을 실행할 수 없습니다. 일반 판매 가격과 체험 기간은 아직 확정하지 않았습니다.</p>
 
     <div class="mem-pick" id="memPickBox">
       <label>기존 회원에서 불러오기 <span style="font-weight:700;opacity:.75">— 도장명을 치면 목록이 뜹니다</span></label>
@@ -1160,6 +1167,7 @@ table.cg tfoot td.num{text-align:right}
 const ADMIN_EDGE_URL = 'https://ebgoolsymyzkftvavpyj.supabase.co/functions/v1/clever-worker';
 const KICK_LOGIN_URL = 'https://naruunlabs.kr/kickmaster';
 const JUMP_LOGIN_URL = 'https://naruunlabs.kr/jumpmaster';
+const POOMSAE_LOGIN_URL = 'https://naruunlabs.kr/poomsaemaster';
 const STRIKE_LOGIN_URL = 'https://naruunlabs.kr/strikemaster';  
 
 const PRODUCTS = {
@@ -1168,9 +1176,11 @@ const PRODUCTS = {
   jump:   { key:'jump',   prefix:'JMP-', gen:'JMP', name:'AI JUMP MASTER',
             short:'점프마스터',      url:JUMP_LOGIN_URL },
   strike: { key:'strike', prefix:'STR-', gen:'STR', name:'AI STRIKE MASTER',
-            short:'스트라이크마스터', url:STRIKE_LOGIN_URL }
+            short:'스트라이크마스터', url:STRIKE_LOGIN_URL },
+  poomsae:{ key:'poomsae', prefix:'PMS-', gen:'PMS', name:'AI POOMSAE MASTER',
+            short:'품새마스터', url:POOMSAE_LOGIN_URL }
 };
-const PRODUCT_ORDER = ['kick','jump','strike'];
+const PRODUCT_ORDER = ['kick','jump','strike','poomsae'];
 
 function productOfKey(licenseKey){
   const k = String(licenseKey||'');
@@ -1416,6 +1426,7 @@ function switchLicenseSubtab(p){
     const btn = document.getElementById('license-subtab-' + id + '-btn');
     if (btn) btn.classList.toggle('active', id === currentLicenseProduct);
   }
+  document.getElementById('licenseProductNotice').hidden = currentLicenseProduct !== 'poomsae';
   document.getElementById('licenseAddBtn').textContent = '+ ' + curProduct().short + ' 라이선스 발급';
   updateStats(); renderTable();
 }
@@ -1667,6 +1678,9 @@ function renderTable() {
 
 function onTypeChange(fromUser) {
   const type = document.getElementById('mLicenseType').value;
+  const product = productOfKey(document.getElementById('mKey').value);
+  document.getElementById('issueProductNotice').hidden = product.key !== 'poomsae';
+  const price = product.key === 'poomsae' ? null : DEFAULT_PRICE;
   document.getElementById('expireSection').style.display = type === 'package' ? 'block' : 'none';
   document.getElementById('trialSection').style.display = type === 'trial' ? 'block' : 'none';
 
@@ -1678,7 +1692,7 @@ function onTypeChange(fromUser) {
 
   if (!currentEditLicenseId) {
     const pay = document.getElementById('mPayAmount');
-    if (type === 'lifetime' && !pay.value) pay.value = DEFAULT_PRICE;
+    if (type === 'lifetime' && !pay.value && price != null) pay.value = price;
     else if (type !== 'lifetime' && Number(pay.value) === DEFAULT_PRICE) pay.value = '';
   }
   
@@ -2065,6 +2079,7 @@ function useDayText(key, row, pre) {
 async function showUsage(licenseKey) {
   const sec = document.getElementById('usageSection');
   const box = document.getElementById('usageBox');
+  if (productOfKey(licenseKey).key === 'poomsae') { sec.style.display='block'; box.textContent='품새마스터 시험판은 일별 인증 횟수를 기록하지 않습니다. 최근 인증과 등록 기기는 회원정보에서 확인해 주세요.'; return; }
   if (!sec || !box) return;
   sec.style.display = 'block';
   box.className = 'use-note';
@@ -2565,6 +2580,7 @@ function licenseIssueMsg(d) {
   const prod = productOfKey(d.license_key);
   const productName = prod.name;
   const loginUrl = prod.url;
+  if (prod.key === 'poomsae') return `[${productName} 시험 이용 안내]\n\n안녕하세요, ${d.dojang_name} 관장님!\n품새마스터는 현재 출시 준비 중이며 마스터 시험 권한이 확인된 키로만 실행됩니다. 일반 판매·체험은 아직 시작하지 않았습니다.\n\n• 라이선스 키: ${d.license_key}\n• 안내: ${loginUrl}\n\n마스터 시험 권한과 이용 조건을 나른랩스에 확인한 뒤 실행해 주세요.`;
   const actionLabel = '프로그램 실행';
   const isTrial = d.license_type === 'trial';
   const trialDays = Number(d.trial_days) || 3;
@@ -2599,7 +2615,7 @@ const HOME_TARGET_DEFAULTS = {
     hero_eyebrow: "AI SPORTS EDUCATION PLATFORM",
     hero_title: "Learn with Joy.<br><em>Grow with AI.</em>",
     hero_desc: "NARUUN LABS는 AI 기술로 스포츠 교육을 더 즐겁고, 더 정확하고, 더 성장하는 경험으로 만듭니다.",
-    contact_desc: "AI KICK MASTER와 태권도장 홈페이지 제작을 안내해드립니다."
+    contact_desc: "AI KICK MASTER · AI JUMP MASTER · AI STRIKE MASTER · AI POOMSAE MASTER 도입과 태권도장 홈페이지 제작을 안내해드립니다."
   },
   kick: {
     badge: "AI 자세 인식 · 발차기 훈련 프로그램",
@@ -3601,7 +3617,8 @@ function convertToLifetime(){
   t.value = 'lifetime';
   onTypeChange(true);
   const pay = document.getElementById('mPayAmount'), date = document.getElementById('mPayDate');
-  if (!pay.value) pay.value = DEFAULT_PRICE;
+  const price = productOfKey(document.getElementById('mKey').value).key === 'poomsae' ? null : DEFAULT_PRICE;
+  if (!pay.value && price != null) pay.value = price;
   if (!date.value) date.value = todayStr();
   if (document.getElementById('deviceSlotSection').style.display === 'block') renderDeviceSlotsUI();
   const note = document.getElementById('convertNote');
@@ -3630,6 +3647,7 @@ let msgPickData = null, msgPickKind = 'issue';
 function buildMsg(kind, d){
   const P = productOfKey(d.license_key), name = d.dojang_name || '';
   const days = Number(d.trial_days) || 3;
+  if (P.key === 'poomsae' && ['nudge','trial_end','trial_extend'].includes(kind)) return `[${P.name} 출시 준비 안내]\n\n안녕하세요, ${name} 관장님!\n현재 마스터 시험을 진행 중이며 일반 고객용 체험 기간과 판매 가격은 확정 후 안내합니다.\n\n자세히 보기: ${P.url}`;
   if (kind === 'issue') return licenseIssueMsg(d);
   if (kind === 'nudge') return `안녕하세요, ${name} 관장님! 나른랩스입니다.\n보내 드린 ${P.name} 체험판 키가 아직 사용 전이라 연락드렸습니다.\n\n체험 기간은 키를 받은 날이 아니라 처음 여신 날부터 ${days}일이라, 편하실 때 시작하셔도 됩니다.\n\n• 체험 키: ${d.license_key}\n• 접속: ${P.url} → [프로그램 실행] → 키 입력\n\n기기 준비나 사용 방법이 어려우시면 편하게 말씀해 주세요.`;
   if (kind === 'trial_end') return `[${P.name} 체험 종료 안내]\n\n안녕하세요, ${name} 관장님!\n${P.name}를 체험해 주셔서 감사합니다.\n\n아이들 반응은 어떠셨나요? 불편하셨던 점이나 궁금한 점이 있으면 편하게 말씀해 주세요.\n\n■ 정식 구매 안내\n• 가격: ${DEFAULT_PRICE.toLocaleString('ko-KR')}원 (부가세 포함 · 1회 구매)\n• 월 구독료 없음 · 최대 2대 기기\n• 업데이트는 추가 비용 없이 자동 적용\n\n구매가 확인되면 바로 정식으로 전환해 드립니다.\n자세히 보기: ${P.url}`;
@@ -3686,7 +3704,7 @@ function custBadges(c){
       if (!own.has(id) || kind === 'regular') own.set(id, kind);
     }
   }
-  const tag = { kick:'K', jump:'J', strike:'S' };
+  const tag = { kick:'K', jump:'J', strike:'S', poomsae:'P' };
   let h = PRODUCT_ORDER.filter(id => own.has(id))
     .map(id => `<i class="pb p-${id}${own.get(id)==='trial'?' trial':''}" title="${PRODUCTS[id].short} ${own.get(id)==='trial'?'체험':'정식'}">${tag[id]||'?'}</i>`).join('');
   return h ? `<span class="cg-badges">${h}</span>` : '';
@@ -3917,7 +3935,7 @@ tr.cg-row.flash td{background:#FFF3CC !important;transition:background .5s}
 .today-row:first-of-type{border-top:0}
 .today-row b{font-weight:900;white-space:nowrap}
 .today-row em{font-style:normal;font-size:10.5px;font-weight:900;padding:2px 6px;border-radius:6px;background:#EDF0F4;color:#475467;white-space:nowrap}
-.today-row em.p-kick{background:#FDEAEC;color:#E3172E}.today-row em.p-jump{background:#E0F7F4;color:#0F9384}.today-row em.p-strike{background:#F3E8FF;color:#9333EA}
+.today-row em.p-kick{background:#FDEAEC;color:#E3172E}.today-row em.p-jump{background:#E0F7F4;color:#0F9384}.today-row em.p-strike{background:#F3E8FF;color:#9333EA}.today-row em.p-poomsae{background:#FFF3CB;color:#805400}
 .today-why{flex:1;min-width:0;color:#667085;font-weight:700;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .today-row .btn-sm{flex:none;white-space:nowrap}
 @media(max-width:700px){.today-body{grid-template-columns:1fr}.today-sub{display:none}.today-row{flex-wrap:wrap}.today-why{flex-basis:100%;order:5;white-space:normal}}
@@ -3954,7 +3972,7 @@ tr.cg-row.flash td{background:#FFF3CC !important;transition:background .5s}
 .cg-namewrap .cg-in{flex:1}
 .cg-badges{display:flex;gap:3px;padding-right:6px;flex:none}
 .pb{font-style:normal;width:17px;height:17px;border-radius:5px;display:grid;place-items:center;font-size:10px;font-weight:900;color:#fff;font-family:ui-monospace,monospace}
-.pb.p-kick{background:#E3172E}.pb.p-jump{background:#14B8A6}.pb.p-strike{background:#A855F7}
+.pb.p-kick{background:#E3172E}.pb.p-jump{background:#14B8A6}.pb.p-strike{background:#A855F7}.pb.p-poomsae{background:#F5B829;color:#332300}
 .pb.trial{opacity:.5}
 #cgArchiveBtn.on{background:#eef0f4;color:#475467;border-color:#cbd5e1}
 .due-chip{font-style:normal;font-size:10px;font-weight:900;color:#fff;background:#DC2626;border-radius:5px;padding:2px 5px;margin-right:2px}
@@ -4384,7 +4402,7 @@ document.querySelectorAll('.stat-card[onclick]').forEach(card => {
 #tab-errors .er-cnt{font-weight:800;text-align:right;white-space:nowrap}
 #tab-errors .er-cnt.hot{color:#D92D20}
 #tab-errors .er-prod{display:inline-block;padding:2px 8px;border-radius:7px;font-size:11.5px;font-weight:800;color:#fff}
-#tab-errors .er-prod.K{background:#E3172E}#tab-errors .er-prod.J{background:#14B8A6}#tab-errors .er-prod.S{background:#A855F7}
+#tab-errors .er-prod.K{background:#E3172E}#tab-errors .er-prod.J{background:#14B8A6}#tab-errors .er-prod.S{background:#A855F7}#tab-errors .er-prod.P{background:#F5B829;color:#332300}
 #tab-errors .er-ver{margin-left:6px;color:#475467;font-size:11.5px}
 #tab-errors tr.er-detail td{background:#FAFBFD;white-space:normal;padding:12px}
 #tab-errors .er-stack{margin:0 0 10px;padding:10px 12px;border-radius:9px;background:#0F172A;color:#E2E8F0;font:11.5px/1.55 ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap;word-break:break-all;max-height:220px;overflow:auto}
@@ -4488,7 +4506,7 @@ function renderErrors(){
     body.innerHTML = `<tr><td colspan="${ER_COLS}" class="cg-empty">${ERROR_LOGS.length ? '조건에 맞는 오류가 없습니다.' : '기록된 오류가 없습니다. 좋은 소식입니다.'}</td></tr>`;
     return;
   }
-  const NAME = { K:'킥', J:'점프', S:'스트' };
+  const NAME = { K:'킥', J:'점프', S:'스트', P:'품새' };
   body.innerHTML = groups.map((g, i) => {
     const last = g.rows[0];
     const vers = [...new Set(g.rows.map(r => r.version).filter(Boolean))];
