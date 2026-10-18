@@ -579,8 +579,9 @@ function correct(J,f){
           T=J.hip.clone().addScaledVector(YV,DIM.torso*B.H).addScaledVector(fwd,B.FWD).addScaledVector(side,B.OUT);
           pole=YV.clone().negate().addScaledVector(side,.4).addScaledVector(fwd,.3).normalize(); hd={d:YV.clone().addScaledVector(fwd,.15).normalize(), s:side.clone()}; }
         else if(mi.block==='kout'){   
-          T=J.hip.clone().addScaledVector(YV,DIM.torso*.98).addScaledVector(side,SH_W+.07).addScaledVector(fwd,.16);
-          pole=YV.clone().negate().addScaledVector(side,.5).normalize();
+          
+          T=J.hip.clone().addScaledVector(YV,DIM.torso*KOUT_END.H).addScaledVector(side,SH_W+KOUT_END.OUT).addScaledVector(fwd,KOUT_END.FWD);
+          pole=YV.clone().negate().addScaledVector(side,.25).addScaledVector(fwd,KOUT_END.ELBOW_FWD).normalize();
           
           hd={d:YV.clone().multiplyScalar(.85).addScaledVector(fwd,.45).normalize(), s:side.clone().multiplyScalar(-.82).addScaledVector(fwd,-.57)}; }
         else if(mi.block==='kneck'){  
@@ -601,6 +602,7 @@ function correct(J,f){
       if(!T) continue;
       const Tw=W0.clone().lerp(T,w), pw=poleOf(Sh,E0,W0).lerp(pole,w).normalize();
       const r=ik2(Sh,Tw,DIM.up,DIM.fo,pw); J['el'+s]=r.mid; J['wr'+s]=r.end;
+      if(s===mi.arm && mi.block==='kout') hd.d=dirTo(r.mid,r.end);   
       const H=J['hd'+s]; H.d=H.d.clone().lerp(hd.d,w).normalize(); H.s=H.s.clone().lerp(hd.s,w).normalize(); } }
 
   { const t=D.t[f], nx=D.moves.findIndex(q=>q.t0!=null && t<q.t0);
@@ -634,6 +636,7 @@ const PREP={
   punch:{main:'waist',                                                         
          pull:sd=>[ sd*.02, DIM.torso*.78, .48], pullPole:sd=>[sd*.3,-1,0]} };
 const WAIST_L=sd=>[sd*(WAIST_W+CHAMBER.OUT), CHAMBER.UP, -CHAMBER.BACK], WAIST_POLE=sd=>[sd*.35,0,-1];
+const KOUT_END={H:.98, OUT:0, FWD:.40, ELBOW_FWD:1.6};   
 const KOUT_VIA=sd=>[sd*.02, DIM.torso*.78, .30];   
 
 const KICK_GUARD={AT:.18, HOLD:.50, PREP_AT:.40, POS:sd=>[sd*.075, DIM.torso*.80, .24], POLE:sd=>[sd*.6,-1,-.2]};
