@@ -58,6 +58,10 @@ html.embed #prog .k{display:none}
 html.embed #mv{bottom:200px}   
 html.embed #call{bottom:96px}
 html.embed.idle #mv, html.embed.idle #call{visibility:hidden}
+
+html.embed #mirrorBox{display:none!important}
+html.embed #footBox{right:28px;top:24px}
+@media (max-width:700px){html.embed #footBox{right:12px;top:12px}}
 </style>
 <style>
 #gate{position:fixed;inset:0;z-index:50;background:#08111F;display:flex;align-items:center;justify-content:center;padding:16px}
@@ -407,7 +411,7 @@ const CORR_IN=320, CORR_OUT=180;
 
 const FOOT=(DIM.th+DIM.sh)*.34;                         
 
-const ATT={HALF:.055, BOW:32};    
+const ATT={HALF:.055, BOW:32, STEP:.45};    
 const sm3=x=>x<=0?0:x>=1?1:x*x*(3-2*x);
 function attnW(t){
   if(D.attn!=null && D.moves[0].t0!=null && t<D.moves[0].t0){ return 1-sm3((t-D.attn)/Math.max(1,D.moves[0].t0-D.attn)); }
@@ -697,7 +701,7 @@ function straightenArms(FR,rawRel){
         hA={d:new THREE.Vector3(-sd*.89,0,.45), s:new THREE.Vector3(sd*.45,0,.89)}; }
 
       if(isMain && tech==='in') hA={d:YV.clone().addScaledVector(XV,sd*.2).normalize(), s:XV.clone().multiplyScalar(-sd)};
-      const twistSign= isMain && (tech==='punch'||tech==='in') ? sd : 0, twistFrom= tech==='in' ? .05 : .45;
+      const twistSign= isMain && tech==='punch' ? sd : isMain && tech==='in' ? -sd : 0, twistFrom= tech==='in' ? .05 : .45;
       const kickArm= D.synth && mi.kick;
       const GV=V(KICK_GUARD.POS(sd)), GP=V(KICK_GUARD.POLE(sd)).normalize(), GH={d:new THREE.Vector3(0,.3,1).normalize(), s:YV.clone()};
       for(let f=fa+1;f<fb;f++){
@@ -751,6 +755,7 @@ function blendHand(a,b,k,tk,sign){
   const q=Math.min(1,Math.max(0,tk==null?k:tk));
   return {d, s:sa.applyAxisAngle(d,th*q)}; }
 
+const KICK_SHIFT={OVER:.8, FWD:.08, IN:.35};   
 const STEP={LIFT:.07, KICK_FROM:.5, LAND_FROM:.6, LIFT_LEAD:.15, AIR_MOVE:[.40,.62]};
 
 const KICK_LAND={AT:.85, CHAMBER_H:.42, CHAMBER_FWD:.12, REACH_H:.12, REACH_BACK:.10, KNEE_UP:.6};   
@@ -786,13 +791,27 @@ function plantFeet(FR){
     if(t>=D.moves[j].t0 || j===0){ out[f]=root[j]; const J=FR[f];          
 
       const aw=attnW(t);
+      
+      if(aw>0){ const FR_=foot[j].R, side=foot[j].L.clone().sub(FR_); const dw=side.length(); side.multiplyScalar(1/Math.max(1e-6,dw));
+        
+        const m0=D.moves[0], sw= (j===0 && D.attn!=null && t>D.attn && t<m0.t0) ? 1-sm3((t-D.attn)/(ATT.STEP*(m0.t0-D.attn))) : aw;
+        const H=root[j].clone().lerp(FR_.clone().addScaledVector(side,ATT.HALF),sw); out[f]=H;
+        const FL=foot[j].L.clone().lerp(FR_.clone().addScaledVector(side,2*ATT.HALF),sw), lift=STEP.LIFT*Math.sin(Math.PI*sw);
+        for(const k of ['L','R']){ const own=J['an'+k].clone().sub(J.hip), w2=(k==='L'?FL:FR_).clone().sub(H), gy=-hipH[j]+(own.y+hipH[j])*aw+(k==='L'?lift:0);
+          const ft=J['ft'+k].clone(); ft.y=0; legTo(J,k,w2,gy, ft.lengthSq()>1e-6 ? ft.normalize() : null); }
+        J.floor=Math.min(J.anL.y,J.anR.y); continue; }
       for(const k of ['L','R']){ const own=J['an'+k].clone().sub(J.hip), w2=foot[j][k].clone().sub(root[j]).lerp(new THREE.Vector2(own.x,own.z),aw), gy=-hipH[j]+(own.y+hipH[j])*aw;
         const ft=J['ft'+k].clone(); ft.y=0; legTo(J,k,w2,gy, ft.lengthSq()>1e-6 ? ft.normalize() : null); }
       J.floor=Math.min(J.anL.y,J.anR.y); continue; }
     
     const pv=D.moves[j-1], nm=D.moves[j], frac=Math.min(1,Math.max(0,(t-pv.t1)/(nm.t0-pv.t1)));
     const kick=MINFO[j].kick, u= kick ? smooth3(Math.min(1,Math.max(0,(frac-STEP.KICK_FROM)/(1-STEP.KICK_FROM)))) : smooth3(frac);
-    const R=root[j-1].clone().lerp(root[j],u); out[f]=R; const J=FR[f];
+    
+    let R=root[j-1].clone();
+    if(kick){ const sup=(stepS[j]||kick)==='L'?'R':'L', fv=new THREE.Vector2(DIRV[MINFO[j].dir].x,DIRV[MINFO[j].dir].z);
+      const C=root[j-1].clone().lerp(foot[j-1][sup],KICK_SHIFT.OVER).addScaledVector(fv,KICK_SHIFT.FWD);
+      R.lerp(C,smooth3(Math.min(1,frac/KICK_SHIFT.IN))); }
+    R.lerp(root[j],u); out[f]=R; const J=FR[f];
     const gy=-(hipH[j-1]+(hipH[j]-hipH[j-1])*u), s=stepS[j];
     for(const k of ['L','R']){
       if(k===s && kick){                                              
@@ -1220,7 +1239,7 @@ function drawFootPanel(m,dt){
 let stopAt=null, curT=0, scrubDir=0;   
 const SCRUB_RATE=.4;                       
 let t=0, playing=true, rate=1, last=performance.now(), mirrorOn=true;
-const EMBED=document.documentElement.classList.contains('embed'); if(EMBED) playing=false;   
+const EMBED=document.documentElement.classList.contains('embed'); if(EMBED){ playing=false; mirrorOn=false; }   
 const tgt=new THREE.Vector3(0,.95,0);
 function tick(now){
   const dt=Math.min(.1,(now-last)/1000); last=now;
@@ -1293,7 +1312,7 @@ window.__robot={
   sound(b){ soundOn=!!b; if(!soundOn){ try{ speechSynthesis.cancel(); }catch(e){} } },
   rate(r){ rate=r; el('speed').value=String(r); },
   view(v){ if(v==='free'){ if(view!=='free'){ aim(cam1,view==='front'||view==='side'?view:'back',tgt); view='free'; orbit.target.copy(tgt); orbit.update(); } } else view=v; el('view').value=view; },   
-  mirror(b){ if(mirrorOn!==b) el('mirrorBtn').click(); },
+  mirror(b){ if(EMBED) return; if(mirrorOn!==b) el('mirrorBtn').click(); },   
   foot(b){ if(footOn!==b) el('footBtn').click(); }
 };
 window.__sample={DIM,HEAD_BASE,NF,moves:MV,SET,t:D.t,CAM_TILT,noPath:()=>computeSet(smClean,true,true,false),P};

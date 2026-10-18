@@ -297,12 +297,8 @@ table.t input{width:100%}
       <button type="button" data-v="on">켜기<small>차렷·준비·시작…바로·쉬어</small></button>
       <button type="button" data-v="off">끄기</button>
     </div>
-    <div class="lb-label">거울 · 발 위치</div>
-    <div class="seg c2" id="segGMirror">
-      <button type="button" data-v="on">거울 켜기</button>
-      <button type="button" data-v="off">거울 끄기</button>
-    </div>
-    <div class="seg c2" id="segGFoot" style="margin-top:3px">
+    <div class="lb-label">발 위치</div>
+    <div class="seg c2" id="segGFoot">
       <button type="button" data-v="on">발 위치 켜기</button>
       <button type="button" data-v="off">발 위치 끄기</button>
     </div>
@@ -345,7 +341,7 @@ table.t input{width:100%}
 <script id="psm-core">
 
 var PSM = (function(){
-  var VERSION = '0.8.2';   
+  var VERSION = '0.8.3';   
 
   var DEFAULT_CFG = {
     SMOOTH: 0.5,        
@@ -740,7 +736,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   function fmtT(ms){ var s=Math.max(0,Math.floor(ms/1000)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
 
   var pref=Object.assign({role:'master', wait:'10', cam:'user', model:'full', feedback:'off', poomsae:'tg1',
-    gSpeed:'1', gView:'free', gMirror:'on', gFoot:'on', gSound:'on'}, lsGet(LS_PREF,{}));
+    gSpeed:'1', gView:'free', gFoot:'on', gSound:'on'}, lsGet(LS_PREF,{}));
   pref.gView='free';   
   if(!PSM.KEYS[pref.poomsae]) pref.poomsae='tg1';
   
@@ -898,7 +894,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   }
   function applyRobot(){
     var r=robot(); if(!r) return;
-    r.rate(parseFloat(pref.gSpeed)||1); r.view('free'); r.mirror(pref.gMirror==='on'); r.foot(pref.gFoot==='on'); if(r.sound) r.sound(pref.gSound==='on');
+    r.rate(parseFloat(pref.gSpeed)||1); r.view('free'); r.foot(pref.gFoot==='on'); if(r.sound) r.sound(pref.gSound==='on');
   }
   function startGroup(){
     groupRunning=true; groupWantPlay=true; setGroupPaused(false);
@@ -931,7 +927,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   function boot(){
     if(booted) return; booted=true;
     segInit('segFeedback','feedback'); segInit('segRole','role'); segInit('segWait','wait'); segInit('segCam','cam'); segInit('segModel','model');
-    segInit('segGSpeed','gSpeed'); segInit('segGMirror','gMirror'); segInit('segGFoot','gFoot'); segInit('segGSound','gSound');
+    segInit('segGSpeed','gSpeed'); segInit('segGFoot','gFoot'); segInit('segGSound','gSound');
     
     var sel=$('selPoomsae');
     Object.keys(PSM.POOMSAE_NAME).forEach(function(k){ var o=document.createElement('option'); o.value=k; o.textContent=PSM.POOMSAE_NAME[k]+' · '+lastMove(PSM.KEYS[k])+'동작'; sel.appendChild(o); });
