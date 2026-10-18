@@ -128,11 +128,12 @@ html.embed.idle #mv, html.embed.idle #call{visibility:hidden}
       {n:19, name:'바로 (나란히서기)', hand:'', dir:'F', turn:180} ] }
   };
   const spec=SPECS[P]; if(!spec) return;
-  const TIME={READY:1500, TRANS:950, TURN_BIG:1150, KICK:1800, HOLD:800, LAST_HOLD:1100, END_HOLD:1500, FPS:30};
+  const TIME={ATTN:1800, ATTN_TO_READY:900, READY:2600, TRANS:950, TURN_BIG:1150, KICK:1800, HOLD:800, LAST_HOLD:1100, END_HOLD:1500, FPS:30};
   const YAW={F:0, L:Math.PI/2, B:Math.PI, R:-Math.PI/2};
   
   const mv=spec.moves.map(m=>Object.assign({},m)); let t=0, yaw=0;
-  mv.forEach((m,j)=>{ if(j===0){ m.t0=0; m.t1=TIME.READY; m.yaw=0; t=m.t1; return; }
+  
+  mv.forEach((m,j)=>{ if(j===0){ m.t0=TIME.ATTN+TIME.ATTN_TO_READY; m.t1=m.t0+TIME.READY; m.yaw=0; t=m.t1; return; }
     const pv=mv[j-1], kick=/앞차기/.test(m.name);
     let d=YAW[m.dir]-pv.yaw%(2*Math.PI); d=Math.atan2(Math.sin(d),Math.cos(d));
     if(m.turn!=null) d=m.turn*Math.PI/180; m.yaw=pv.yaw+d; m.kick=kick;
@@ -147,6 +148,11 @@ html.embed.idle #mv, html.embed.idle #call{visibility:hidden}
     23:[.10,0,0],24:[-.10,0,0],25:[.10,-.42,.02],26:[-.10,-.42,.02],27:[.10,-.80,0],28:[-.10,-.80,0],
     29:[.10,-.85,-.05],30:[-.10,-.85,-.05],31:[.11,-.86,.13],32:[-.11,-.86,.13]};
   const sm=x=>x<=0?0:x>=1?1:x*x*(3-2*x), lerp=(a,b,u)=>a.map((v,i)=>v+(b[i]-v)*u);
+  
+  const ATT=JSON.parse(JSON.stringify(B));
+  [[25,.06,-.42,.01],[26,-.06,-.42,.01],[27,.045,-.80,0],[28,-.045,-.80,0],[29,.045,-.85,-.05],[30,-.045,-.85,-.05],[31,.05,-.86,.13],[32,-.05,-.86,.13],
+   [13,.19,.25,0],[14,-.19,.25,0],[15,.19,.0,.0],[16,-.19,.0,.0],[17,.19,-.07,0],[18,-.19,-.07,0],[19,.19,-.07,.04],[20,-.19,-.07,.04],[21,.17,-.03,.03],[22,-.17,-.03,.03]]
+   .forEach(([i,x,y,z])=>{ ATT[i]=[x,y,z]; });
 
   function kickLeg(side,s){ const x=side*.10;
     const K0=[x,-.42,.02], A0=[x,-.80,0], K1=[x*.9,.04,.40], A1=[x*.9,-.30,.22], K2=[x*.8,.24,.34], A2=[x*.5,.56,.56];
@@ -158,6 +164,7 @@ html.embed.idle #mv, html.embed.idle #call{visibility:hidden}
   for(let tm=0; tm<=dur; tm+=1000/TIME.FPS){
     let j=mv.findIndex(m=>tm<=m.t1); if(j<0) j=mv.length-1;
     const m=mv[j], hold= tm>=m.t0 || j===0; let yw=m.yaw, pose=JSON.parse(JSON.stringify(B));
+    if(j===0 && tm<m.t0){ const u=sm((tm-TIME.ATTN)/TIME.ATTN_TO_READY); for(let i=0;i<33;i++) pose[i]=lerp(ATT[i],B[i],u); }
     if(!hold){ const pv=mv[j-1], fr=(tm-pv.t1)/(m.t0-pv.t1);
       yw=pv.yaw+(m.yaw-pv.yaw)*sm(Math.min(1,fr/.7));                     
       if(m.kick){ const side=/^오른발/.test(m.name)?-1:1, s=fr/.45*1;      
@@ -167,7 +174,7 @@ html.embed.idle #mv, html.embed.idle #call{visibility:hidden}
     for(let i=0;i<33;i++){ const p=pose[i]; const X=p[0]*c+p[2]*sn, Z=-p[0]*sn+p[2]*c; w.push(+X.toFixed(4), +(-p[1]).toFixed(4), +(-Z).toFixed(4)); }   
     T.push(Math.round(tm)); WL.push(w); }
   window.PSM_SAMPLE={ id:'synth-'+P, title:spec.title, synth:true, dur, t:T, wl:WL, root:T.map(()=>[0,0]),
-    moves:mv.map(m=>({n:m.n,name:m.name,hand:m.hand,dir:m.dir,t0:m.t0,t1:m.t1})) };
+    attn:TIME.ATTN, moves:mv.map(m=>({n:m.n,name:m.name,hand:m.hand,dir:m.dir,t0:m.t0,t1:m.t1})) };
 })();
 
 </script>
@@ -942,10 +949,27 @@ function fitCall(){ const c=el('call'); c.style.fontSize=''; let fs=parseFloat(g
   const room=Math.min(innerWidth*.5, innerWidth-el('mv').getBoundingClientRect().right-48-16);   
   while(c.scrollWidth>room && fs>24){ fs-=2; c.style.fontSize=fs+'px'; } }
 addEventListener('resize',()=>{ fitMoveName(); fitCall(); });
-let lastN=-1;
+let lastN=-1, lastCall='';
+
+function callAt(t,m){
+  const first=MV[0], last=MV[MV.length-1];
+  if(D.attn && t<first.t0-350) return '차렷';
+  if(m===first) return t>=first.t1-900 ? '시작' : '준비';
+  if(m===last && t>=last.t1-450) return '쉬어';
+  return COUNT[m.n]+(m.n===18?'! 기합!':(m.n>0&&m.n<19?'!':''));
+}
+let soundOn=true, voiceKo=null;
+function pickVoice(){ try{ const vs=speechSynthesis.getVoices(); voiceKo=vs.find(v=>/^ko/i.test(v.lang))||null; }catch(e){} }
+try{ pickVoice(); speechSynthesis.onvoiceschanged=pickVoice; }catch(e){}
+function say(txt){
+  if(!soundOn || !window.speechSynthesis) return;
+  try{ speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(txt.replace(/!/g,'').replace('기합','')); u.lang='ko-KR'; if(voiceKo) u.voice=voiceKo; u.rate=1.05; u.volume=1; speechSynthesis.speak(u); }catch(e){}
+}
 function ui(t){
   const m=moveAt(t);
-  if(m.n!==lastN){ lastN=m.n; const c=el('call'); c.textContent=COUNT[m.n]+(m.n===18?'! 기합!':(m.n>0&&m.n<19?'!':'')); fitCall(); c.classList.add('pop'); setTimeout(()=>c.classList.remove('pop'),140);
+  const ct=callAt(t,m);
+  if(ct!==lastCall){ lastCall=ct; const c=el('call'); c.textContent=ct; fitCall(); c.classList.add('pop'); setTimeout(()=>c.classList.remove('pop'),140); if(playing) say(ct); }
+  if(m.n!==lastN){ lastN=m.n;
     el('mvN').textContent= m.n===0?'준비': m.n===19?'바로':m.n+'번'; setMoveName(m.name);
     const done=Math.min(18,Math.max(0,m.n===19?18:m.n-1)); el('pn').textContent=(m.n===19?18:Math.max(0,m.n))+' / 18'; el('pb').style.width=(done/18*100)+'%'; }
   
@@ -1012,11 +1036,13 @@ function drawFootPanel(m,dt){
   const st=stanceText(m), key=st.join('|'); if(key!==lastStance){ lastStance=key; el('fiName').textContent=st[0]; el('fiSpec').textContent=st[1]; }
 }
 
+let stopAt=null;
 let t=0, playing=true, rate=1, last=performance.now(), mirrorOn=true;
 const EMBED=document.documentElement.classList.contains('embed'); if(EMBED) playing=false;   
 const tgt=new THREE.Vector3(0,.95,0);
 function tick(now){
   const dt=Math.min(.1,(now-last)/1000); last=now;
+  if(playing && stopAt!=null && t+dt*1000*rate>=stopAt){ t=stopAt; stopAt=null; playing=false; }   
   if(playing){ t+=dt*1000*rate; if(t>D.dur+1500){
     if(EMBED){ playing=false; t=D.dur; document.documentElement.classList.add('idle'); try{ parent.__psmGroupDone && parent.__psmGroupDone(); }catch(e){} }   
     else t=0; } }
@@ -1056,11 +1082,24 @@ el('hand').oninput=e=>handScale=+e.target.value;
 el('belt').onchange=e=>beltMat.color.set(e.target.value);
 addEventListener('keydown',e=>{ if(e.code==='Space'){ e.preventDefault(); el('play').click(); } });
 
+function moveIndexAt(tt){ for(let i=0;i<MV.length;i++){ if(tt<=MV[i].t1) return i; } return MV.length-1; }
 window.__robot={
-  play(){ t=0; playing=true; document.documentElement.classList.remove('idle'); },
-  stop(){ playing=false; t=0; document.documentElement.classList.add('idle'); },
+  play(){ t=0; stopAt=null; lastCall=''; playing=true; document.documentElement.classList.remove('idle'); },
+  stop(){ playing=false; stopAt=null; t=0; lastCall=''; try{ speechSynthesis.cancel(); }catch(e){} document.documentElement.classList.add('idle'); },
+  
+  pause(){ playing=false; stopAt=null; try{ speechSynthesis.cancel(); }catch(e){} },
+  resume(){ stopAt=null; playing=true; document.documentElement.classList.remove('idle'); },
+  paused(){ return !playing; },
+  
+  step(d){
+    let k=moveIndexAt(t); k=Math.max(1,Math.min(MV.length-1,k+d));
+    const prev=MV[k-1]; t=Math.max(0,prev.t1-150); stopAt=MV[k].t0+250; lastCall=''; playing=true;
+    document.documentElement.classList.remove('idle');
+    return MV[k].n;
+  },
+  sound(b){ soundOn=!!b; if(!soundOn){ try{ speechSynthesis.cancel(); }catch(e){} } },
   rate(r){ rate=r; el('speed').value=String(r); },
-  view(v){ view=v; el('view').value=v; if(v==='free') orbit.target.copy(tgt); },
+  view(v){ if(v==='free'){ if(view!=='free'){ aim(cam1,view==='front'||view==='side'?view:'back',tgt); view='free'; orbit.target.copy(tgt); orbit.update(); } } else view=v; el('view').value=view; },   
   mirror(b){ if(mirrorOn!==b) el('mirrorBtn').click(); },
   foot(b){ if(footOn!==b) el('footBtn').click(); }
 };

@@ -128,6 +128,14 @@ body.recording #status, body.recording .title-block .tb-meta, body.recording .ti
 #meter .m-bar.k1 b{background:var(--lime)}
 #meter .m-st{font-size:12px;font-weight:900}
 
+.gctl{display:none;flex-wrap:wrap;gap:6px 16px;margin-bottom:4px;max-width:min(560px,80vw)}
+body.group-running .gctl{display:flex}
+.gctl button{padding:6px 0;font-size:clamp(14px,1.15vw,19px);font-weight:900;color:rgba(255,255,255,.82);text-shadow:0 2px 8px rgba(0,0,0,.95);border-bottom:2px solid transparent}
+.gctl button:hover{color:#fff}
+.gctl button.on{color:var(--teal-lit);border-bottom-color:var(--teal)}
+.lb-select{width:100%;padding:8px 9px;border:0;border-bottom:2px solid rgba(255,255,255,.25);background:rgba(3,15,27,.4);color:#fff;font-size:15px;font-weight:800}
+.lb-select option{background:#0d1c30;color:#fff}
+
 #groupFrame{position:absolute;inset:0;width:100%;height:100%;border:0;display:block;background:#08111F}
 body.group-mode #video, body.group-mode #canvas{visibility:hidden}
 body.group-mode .side, body.group-mode #status, body.group-mode .mode-badge{display:none}
@@ -227,10 +235,8 @@ table.t input{width:100%}
   </div>
 
   <div class="lb-label">품새</div>
-  <div class="seg c2" id="segPoomsae">
-    <button type="button" data-v="tg1">태극 1장<small>18동작</small></button>
-    <button type="button" data-v="tg2">태극 2장<small>18동작</small></button>
-  </div>
+  
+  <select class="lb-select" id="selPoomsae" aria-label="품새"></select>
 
   <div id="optCam">
     <div class="lb-label">메모 (실명 대신 별칭)</div>
@@ -272,12 +278,12 @@ table.t input{width:100%}
       <button type="button" data-v="0.75">0.75배</button>
       <button type="button" data-v="1">1배</button>
     </div>
-    <div class="lb-label">보는 쪽</div>
-    <div class="seg c2" id="segGView">
-      <button type="button" data-v="back">뒷모습<small>따라 하기</small></button>
-      <button type="button" data-v="front">앞모습</button>
-      <button type="button" data-v="side">옆모습</button>
-      <button type="button" data-v="free">자유 시점<small>끌어서 돌리기</small></button>
+    <div class="lb-label">시점</div>
+    <div class="lb-tip" style="margin-top:0">자유 시점 · 화면을 끌면 돌아가고, 휠·두 손가락으로 크게·작게. 진행 중 <b>↺ 뒷모습</b>을 누르면 로봇 뒤에서 따라 보는 시점으로 바로 갑니다.</div>
+    <div class="lb-label">구령 소리</div>
+    <div class="seg c2" id="segGSound">
+      <button type="button" data-v="on">켜기<small>차렷·준비·시작…바로·쉬어</small></button>
+      <button type="button" data-v="off">끄기</button>
     </div>
     <div class="lb-label">거울 · 발 위치</div>
     <div class="seg c2" id="segGMirror">
@@ -304,6 +310,13 @@ table.t input{width:100%}
 </div>
 <div class="ctrl" id="ctrl">
   <button class="ctrl-link" id="btnCancel" type="button" hidden>취소</button>
+  
+  <div class="gctl" id="groupCtl">
+    <button type="button" id="gPause">⏸ 일시정지</button>
+    <button type="button" id="gPrev">◀ 이전 동작</button>
+    <button type="button" id="gNext">다음 동작 ▶</button>
+    <button type="button" id="gBack">↺ 뒷모습</button>
+  </div>
   <button class="bigbtn playbtn" id="btnStart" type="button" disabled>시작!</button>
   <button class="bigbtn stopbtn" id="btnEnd" type="button" hidden>끝내기</button>
 </div>
@@ -688,7 +701,8 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   function fmtT(ms){ var s=Math.max(0,Math.floor(ms/1000)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
 
   var pref=Object.assign({role:'master', wait:'10', cam:'user', model:'full', feedback:'off', poomsae:'tg1',
-    gSpeed:'1', gView:'back', gMirror:'on', gFoot:'on'}, lsGet(LS_PREF,{}));
+    gSpeed:'1', gView:'free', gMirror:'on', gFoot:'on', gSound:'on'}, lsGet(LS_PREF,{}));
+  pref.gView='free';   
   if(!PSM.KEYS[pref.poomsae]) pref.poomsae='tg1';
   
   function lsKey(){ return 'psm_lab_key_'+pref.poomsae; }
@@ -803,7 +817,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   var ROLE_NAME={master:'관장 시범', student:'학생 시험', pair:'2인 동시', group:'단체 모드'};
   function updateModeUi(){
     var pName=PSM.POOMSAE_NAME[pref.poomsae]||'', moves=lastMove(baseKey());
-    $('mbTitle').textContent=ROLE_NAME[pref.role]||'';
+    $('mbTitle').textContent=ROLE_NAME[pref.role]||''; if($('selPoomsae').value!==pref.poomsae) $('selPoomsae').value=pref.poomsae;
     $('mbSub').textContent=pName+' · '+moves+'동작';
     $('lsPoomsae').textContent=pName; $('lsMoves').textContent=moves+'동작';
     $('optCam').hidden= pref.role==='group';
@@ -811,7 +825,9 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     document.body.classList.toggle('group-mode', pref.role==='group');
   }
 
-  var groupRunning=false, groupWantPlay=false;
+  var groupRunning=false, groupWantPlay=false, groupPaused=false;
+  
+  function setGroupPaused(b){ groupPaused=b; $('gPause').textContent= b ? '▶ 계속' : '⏸ 일시정지'; $('gPause').classList.toggle('on', b); }
   function robot(){ var f=$('groupFrame'); try{ return f && f.contentWindow && f.contentWindow.__robot; }catch(e){ return null; } }
   function enterGroup(){
     if(stream){ stream.getTracks().forEach(function(t){ t.stop(); }); stream=null; }
@@ -842,10 +858,10 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   }
   function applyRobot(){
     var r=robot(); if(!r) return;
-    r.rate(parseFloat(pref.gSpeed)||1); r.view(pref.gView); r.mirror(pref.gMirror==='on'); r.foot(pref.gFoot==='on');
+    r.rate(parseFloat(pref.gSpeed)||1); r.view('free'); r.mirror(pref.gMirror==='on'); r.foot(pref.gFoot==='on'); if(r.sound) r.sound(pref.gSound==='on');
   }
   function startGroup(){
-    groupRunning=true; groupWantPlay=true;
+    groupRunning=true; groupWantPlay=true; setGroupPaused(false);
     document.body.classList.add('group-running');
     $('btnStart').hidden=true; $('btnEnd').hidden=false; $('btnEnd').textContent='중지';
     try{ navigator.wakeLock && navigator.wakeLock.request('screen').then(function(w){ wakeLock=w; }).catch(function(){}); }catch(e){}
@@ -853,7 +869,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   }
   function stopGroup(quiet){
     if(!groupRunning && !quiet) return;
-    groupRunning=false; groupWantPlay=false;
+    groupRunning=false; groupWantPlay=false; setGroupPaused(false);
     var r=robot(); if(r) r.stop();
     document.body.classList.remove('group-running');
     $('btnStart').hidden=false; $('btnEnd').hidden=true; $('btnEnd').textContent='끝내기';
@@ -872,8 +888,23 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
 
   function boot(){
     if(booted) return; booted=true;
-    segInit('segPoomsae','poomsae'); segInit('segFeedback','feedback'); segInit('segRole','role'); segInit('segWait','wait'); segInit('segCam','cam'); segInit('segModel','model');
-    segInit('segGSpeed','gSpeed'); segInit('segGView','gView'); segInit('segGMirror','gMirror'); segInit('segGFoot','gFoot');
+    segInit('segFeedback','feedback'); segInit('segRole','role'); segInit('segWait','wait'); segInit('segCam','cam'); segInit('segModel','model');
+    segInit('segGSpeed','gSpeed'); segInit('segGMirror','gMirror'); segInit('segGFoot','gFoot'); segInit('segGSound','gSound');
+    
+    var sel=$('selPoomsae');
+    Object.keys(PSM.POOMSAE_NAME).forEach(function(k){ var o=document.createElement('option'); o.value=k; o.textContent=PSM.POOMSAE_NAME[k]+' · '+lastMove(PSM.KEYS[k])+'동작'; sel.appendChild(o); });
+    sel.value=pref.poomsae;
+    sel.addEventListener('change', function(){
+      var old=pref.poomsae; pref.poomsae=sel.value; lsSet(LS_PREF,pref);
+      KEY=getKey(); if(pref.role==='group' && old!==pref.poomsae) loadGroupFrame();
+      updateModeUi();
+    });
+    
+    $('gPause').addEventListener('click', function(){ var r=robot(); if(!r) return;
+      if(groupPaused){ r.resume(); setGroupPaused(false); } else { r.pause(); setGroupPaused(true); } });
+    $('gPrev').addEventListener('click', function(){ var r=robot(); if(r){ r.step(-1); setGroupPaused(true); } });
+    $('gNext').addEventListener('click', function(){ var r=robot(); if(r){ r.step(1); setGroupPaused(true); } });
+    $('gBack').addEventListener('click', function(){ var r=robot(); if(r) r.view('back'); });
     updateModeUi();
     $('lobby').hidden=false;
     $('btnStart').addEventListener('click', function(){ if(pref.role==='group') startGroup(); else startSession(); });
