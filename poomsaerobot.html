@@ -76,7 +76,7 @@ html.embed.idle #mv, html.embed.idle #call{visibility:hidden}
 </script>
 
 <script>(function(){ const q=new URLSearchParams(location.search), p=q.get('p');
-  if(p!=='tg1' && p!=='tg2') history.replaceState(null,'','?p=tg1'); })();</script>
+  if(!/^tg[0-9]$/.test(p||'')) history.replaceState(null,'','?p=tg1'); })();</script>
 <script>
 
 (function(){
@@ -125,10 +125,42 @@ html.embed.idle #mv, html.embed.idle #call{visibility:hidden}
       {n:16, name:'오른발 앞차기 → 오른앞서기 몸통반대지르기', hand:'오른주먹', dir:'B'},
       {n:17, name:'왼발 앞차기 → 왼앞서기 몸통반대지르기', hand:'왼주먹', dir:'B'},
       {n:18, name:'오른발 앞차기 → 오른앞서기 몸통반대지르기 (기합)', hand:'오른주먹', dir:'B'},
-      {n:19, name:'바로 (나란히서기)', hand:'', dir:'F', turn:180} ] }
+      {n:19, name:'바로 (나란히서기)', hand:'', dir:'F', turn:180} ] },
+
+    tg3:{ title:'태극 3장', moves:[
+      {n:0,  name:'나란히서기 기본준비', hand:'', dir:'F'},
+      {n:1,  name:'왼앞서기 아래막기', hand:'왼팔', dir:'L'},
+      {n:2,  name:'오른발 앞차기 → 오른앞굽이 몸통두번지르기', hand:'왼주먹', dir:'L'},
+      {n:2,  name:'오른앞굽이 몸통두번지르기', hand:'오른주먹', dir:'L'},
+      {n:3,  name:'오른앞서기 아래막기', hand:'오른팔', dir:'R', turn:-180},
+      {n:4,  name:'왼발 앞차기 → 왼앞굽이 몸통두번지르기', hand:'오른주먹', dir:'R'},
+      {n:4,  name:'왼앞굽이 몸통두번지르기', hand:'왼주먹', dir:'R'},
+      {n:5,  name:'왼앞서기 한손날목치기', hand:'오른손날', dir:'F'},
+      {n:6,  name:'오른앞서기 한손날목치기', hand:'왼손날', dir:'F'},
+      {n:7,  name:'오른뒷굽이 한손날바깥막기', hand:'왼손날', dir:'L'},
+      {n:8,  name:'왼앞굽이 몸통바로지르기', hand:'오른주먹', dir:'L'},
+      {n:9,  name:'왼뒷굽이 한손날바깥막기', hand:'오른손날', dir:'R', turn:-180},
+      {n:10, name:'오른앞굽이 몸통바로지르기', hand:'왼주먹', dir:'R'},
+      {n:11, name:'왼앞서기 몸통안막기', hand:'오른팔', dir:'F'},
+      {n:12, name:'오른앞서기 몸통안막기', hand:'왼팔', dir:'F'},
+      {n:13, name:'왼앞서기 아래막기', hand:'왼팔', dir:'R', turn:270},
+      {n:14, name:'오른발 앞차기 → 오른앞굽이 몸통두번지르기', hand:'왼주먹', dir:'R'},
+      {n:14, name:'오른앞굽이 몸통두번지르기', hand:'오른주먹', dir:'R'},
+      {n:15, name:'오른앞서기 아래막기', hand:'오른팔', dir:'L', turn:-180},
+      {n:16, name:'왼발 앞차기 → 왼앞굽이 몸통두번지르기', hand:'오른주먹', dir:'L'},
+      {n:16, name:'왼앞굽이 몸통두번지르기', hand:'왼주먹', dir:'L'},
+      {n:17, name:'왼앞서기 아래막기', label:'왼앞서기 아래막기 → 몸통바로지르기', hand:'왼팔', dir:'B'},
+      {n:17, name:'왼앞서기 몸통바로지르기', hand:'오른주먹', dir:'B'},
+      {n:18, name:'오른앞서기 아래막기', label:'오른앞서기 아래막기 → 몸통바로지르기', hand:'오른팔', dir:'B'},
+      {n:18, name:'오른앞서기 몸통바로지르기', hand:'왼주먹', dir:'B'},
+      {n:19, name:'왼발 앞차기 → 왼앞서기 아래막기', label:'왼발 앞차기 → 왼앞서기 아래막기 → 몸통바로지르기', hand:'왼팔', dir:'B'},
+      {n:19, name:'왼앞서기 몸통바로지르기', hand:'오른주먹', dir:'B'},
+      {n:20, name:'오른발 앞차기 → 오른앞서기 아래막기', label:'오른발 앞차기 → 오른앞서기 아래막기 → 몸통바로지르기 (기합)', hand:'오른팔', dir:'B'},
+      {n:20, name:'오른앞서기 몸통바로지르기 (기합)', hand:'왼주먹', dir:'B'},
+      {n:21, name:'바로 (나란히서기)', hand:'', dir:'F', turn:180} ] }
   };
   const spec=SPECS[P]; if(!spec) return;
-  const TIME={ATTN:1800, ATTN_TO_READY:900, READY:2600, TRANS:950, TURN_BIG:1150, KICK:1800, HOLD:800, LAST_HOLD:1100, END_HOLD:1500, FPS:30};
+  const TIME={SUB:620, SUB_HOLD:320, ATTN:1800, ATTN_TO_READY:1800, READY:2600, TRANS:950, TURN_BIG:1150, KICK:1800, HOLD:800, LAST_HOLD:1100, END_HOLD:1500, FPS:30};
   const YAW={F:0, L:Math.PI/2, B:Math.PI, R:-Math.PI/2};
   
   const mv=spec.moves.map(m=>Object.assign({},m)); let t=0, yaw=0;
@@ -137,8 +169,9 @@ html.embed.idle #mv, html.embed.idle #call{visibility:hidden}
     const pv=mv[j-1], kick=/앞차기/.test(m.name);
     let d=YAW[m.dir]-pv.yaw%(2*Math.PI); d=Math.atan2(Math.sin(d),Math.cos(d));
     if(m.turn!=null) d=m.turn*Math.PI/180; m.yaw=pv.yaw+d; m.kick=kick;
-    const tr= kick?TIME.KICK : Math.abs(d)>Math.PI*.75?TIME.TURN_BIG : TIME.TRANS;
-    m.t0=t+tr; m.t1=m.t0+(j===mv.length-1?TIME.END_HOLD: j===mv.length-2?TIME.LAST_HOLD: TIME.HOLD); t=m.t1; });
+    const sub= pv.n===m.n, nextSub= j+1<mv.length && mv[j+1].n===m.n;   
+    const tr= sub?TIME.SUB : kick?TIME.KICK : Math.abs(d)>Math.PI*.75?TIME.TURN_BIG : TIME.TRANS;
+    m.t0=t+tr; m.t1=m.t0+(nextSub?TIME.SUB_HOLD: j===mv.length-1?TIME.END_HOLD: j===mv.length-2?TIME.LAST_HOLD: TIME.HOLD); t=m.t1; });
   
   const outro={a0:t, a1:t+700, b0:t+800, b1:t+1400, b2:t+1900, b3:t+2500};
   t=outro.b3+600;
@@ -177,7 +210,7 @@ html.embed.idle #mv, html.embed.idle #call{visibility:hidden}
     for(let i=0;i<33;i++){ const p=pose[i]; const X=p[0]*c+p[2]*sn, Z=-p[0]*sn+p[2]*c; w.push(+X.toFixed(4), +(-p[1]).toFixed(4), +(-Z).toFixed(4)); }   
     T.push(Math.round(tm)); WL.push(w); }
   window.PSM_SAMPLE={ id:'synth-'+P, title:spec.title, synth:true, dur, t:T, wl:WL, root:T.map(()=>[0,0]),
-    attn:TIME.ATTN, outro, moves:mv.map(m=>({n:m.n,name:m.name,hand:m.hand,dir:m.dir,t0:m.t0,t1:m.t1})) };
+    attn:TIME.ATTN, outro, moves:mv.map(m=>({n:m.n,name:m.name,label:m.label,hand:m.hand,dir:m.dir,t0:m.t0,t1:m.t1})) };
 })();
 
 </script>
@@ -250,8 +283,8 @@ html.embed.idle #mv, html.embed.idle #call{visibility:hidden}
 <div id="ctl">
   <button id="play">⏸ 멈춤</button>
   <input id="seek" type="range" min="0" max="1000" value="0">
-  <select id="pick" aria-label="품새"><option value="tg1">태극 1장</option><option value="tg2">태극 2장</option></select>
-  <select id="speed"><option value="0.5">0.5배</option><option value="0.75">0.75배</option><option value="1" selected>1배</option></select>
+  <select id="pick" aria-label="품새"><option value="tg1">태극 1장</option><option value="tg2">태극 2장</option><option value="tg3">태극 3장</option></select>
+  <select id="speed"><option value="0.5">0.5배</option><option value="0.75">0.75배</option><option value="1" selected>1배</option><option value="1.2">1.2배</option><option value="1.5">1.5배</option><option value="2">2배</option></select>
   <select id="view"><option value="back" selected>뒷모습</option><option value="front">앞모습</option><option value="side">옆모습</option><option value="free">자유 시점 (끌어서 돌리기)</option></select>
   <button id="fix" class="on">자세 보정 켬</button>
   <button id="stab" class="on">흔들림 잡기 켬</button>
@@ -275,7 +308,7 @@ const D = window.PSM_SAMPLE;
 if(D.title){ document.querySelector('#prog .t').textContent=D.title; document.title='품새마스터 로봇 · '+D.title; }
 if(D.synth) document.querySelector('#prog .k').textContent='구령 따라하기 · 기록 없이 정답지로 만든 움직임';
 const GLOW = new THREE.Color('#3D8BFF');
-const COUNT = ['준비','하나','둘','셋','넷','다섯','여섯','일곱','여덟','아홉','열','열하나','열둘','열셋','열넷','열다섯','열여섯','열일곱','열여덟','바로'];
+const COUNT = ['준비','하나','둘','셋','넷','다섯','여섯','일곱','여덟','아홉','열','열하나','열둘','열셋','열넷','열다섯','열여섯','열일곱','열여덟','열아홉','스물','스물하나','스물둘'];   
 
 const NF = D.t.length;
 const raw = D.wl.map(w => { const a=[]; for(let i=0;i<33;i++) a.push(new THREE.Vector3(w[i*3], -w[i*3+1], -w[i*3+2])); return a; });
@@ -382,7 +415,8 @@ function attnW(t){
   return 0; }
 function bowW(t){ const o=D.outro; if(!o || t<o.b0) return 0; if(t<o.b1) return sm3((t-o.b0)/(o.b1-o.b0)); if(t<o.b2) return 1; return 1-sm3((t-o.b2)/(o.b3-o.b2)); }
 const AP={LEN_M:3*FOOT, HALF:.10, BACK_TOE:30, STRAIGHT:.995};   
-const SEO={LEN_M:2*FOOT, HALF:.05, BACK_TOE:30};                  
+const SEO={LEN_M:2*FOOT, HALF:.05, BACK_TOE:30};
+const DWI={LEN_M:2.2*FOOT, BACKW:.65, HALF:.03, BACK_TOE:90, SINK:.10};   
 const PUNCH={H_MID:.78, H_FACE:1.32, REACH:1};          
 
 const BLOCK={
@@ -391,7 +425,7 @@ const BLOCK={
   FACE:{UP_Y:.90, UP_OUT:.34, UP_FWD:1.2, FO_IN:.70, FO_Y:.75, FO_FWD:.55} };   
 const SUPPORT_EDGE=120;                                 
 let KREF={};
-const KICK_LEAN_KEEP=.33;                               
+const KICK_LEAN_KEEP=.12;                                  
 const READY={HALF:DIM.shHalf*.95};                      
 const READY_HAND={UP:TORSO_Y0+.02, FWD:.20, GAP:.10};    
 const UPRIGHT=1;                                        
@@ -399,12 +433,15 @@ const CHAMBER={UP:TORSO_Y0+.035, OUT:.045, BACK:.03};
 const KEYDIR=['F','L','L','R','R','F','F','R','R','L','L','F','F','L','L','R','R','B','B','F'];   
 const DIRV={F:new THREE.Vector3(0,0,1),B:new THREE.Vector3(0,0,-1),L:new THREE.Vector3(1,0,0),R:new THREE.Vector3(-1,0,0)};
 const YV=new THREE.Vector3(0,1,0);
-const MINFO=D.moves.map(m=>({ dir:m.dir||KEYDIR[m.n]||'F', ap: m.name.includes('왼앞굽이')?'L': m.name.includes('오른앞굽이')?'R':null,
+const MINFO=D.moves.map((m,j)=>({ dir:m.dir||KEYDIR[m.n]||'F', ap: m.name.includes('왼앞굽이')?'L': m.name.includes('오른앞굽이')?'R':null,
+  dwi: m.name.includes('왼뒷굽이')?'L': m.name.includes('오른뒷굽이')?'R':null,   
   seo: m.name.includes('왼앞서기')?'L': m.name.includes('오른앞서기')?'R':null,
   punch: m.name.includes('지르기'), face: /얼굴[가-힣]*지르기/.test(m.name),   
-  block: m.name.includes('아래막기')?'down': m.name.includes('안막기')?'in': m.name.includes('얼굴막기')?'face':null,
+  block: m.name.includes('아래막기')?'down': m.name.includes('손날바깥막기')?'kout': m.name.includes('손날목치기')?'kneck': m.name.includes('안막기')?'in': m.name.includes('얼굴막기')?'face':null,
   arm: m.hand.startsWith('왼')?'L': m.hand.startsWith('오른')?'R':null,
-  kick: m.name.startsWith('오른발 앞차기')?'R': m.name.startsWith('왼발 앞차기')?'L':null, ready: m.n===0||m.n===19 }));
+  kick: m.name.startsWith('오른발 앞차기')?'R': m.name.startsWith('왼발 앞차기')?'L':null, ready: m.n===0||j===D.moves.length-1 }));
+MINFO.forEach(mi=>{ mi.front= mi.ap||mi.seo||(mi.dwi?(mi.dwi==='L'?'R':'L'):null); });   
+const NLAST=D.moves[D.moves.length-1].n, NCNT=NLAST-1;   
 function corrW(f){ const t=D.t[f]; let best=0, idx=-1;
   D.moves.forEach((m,j)=>{ if(m.t0==null) return; let w=0;
     if(t>=m.t0&&t<=m.t1) w=1; else if(t<m.t0&&t>m.t0-CORR_IN) w=smooth3(1-(m.t0-t)/CORR_IN); else if(t>m.t1&&t<m.t1+CORR_OUT) w=smooth3(1-(t-m.t1)/CORR_OUT);
@@ -484,6 +521,15 @@ function correct(J,f){
     const tb=fwd.clone().applyAxisAngle(YV, sgn(back)*THREE.MathUtils.degToRad(SEO.BACK_TOE));
     J['ft'+front]=J['ft'+front].clone().lerp(fwd,w).normalize(); J['ft'+back]=J['ft'+back].clone().lerp(tb,w).normalize(); }
   
+  if(mi.dwi && w>0){ const back=mi.dwi, front=back==='L'?'R':'L', L=DWI.LEN_M;
+    const Lg=(DIM.th+DIM.sh)*AP.STRAIGHT, yh=Math.sqrt(Math.max(0,Lg*Lg-Math.pow(L*DWI.BACKW,2)))-DWI.SINK;
+    const tgt={}; tgt[front]=J.hip.clone().addScaledVector(fwd,L*(1-DWI.BACKW)).addScaledVector(YV,-yh).addScaledVector(left,sgn(front)*DWI.HALF);
+    tgt[back]=J.hip.clone().addScaledVector(fwd,-L*DWI.BACKW).addScaledVector(YV,-yh).addScaledVector(left,sgn(back)*DWI.HALF);
+    const tb=fwd.clone().applyAxisAngle(YV, sgn(back)*THREE.MathUtils.degToRad(DWI.BACK_TOE));
+    for(const s of ['L','R']){ const H=J['hip'+s], A0=J['an'+s], K0=J['kn'+s], pl= s===front?fwd:tb;
+      const r=ik2(H,A0.clone().lerp(tgt[s],w),DIM.th,DIM.sh,poleOf(H,K0,A0).lerp(pl,w).normalize()); J['kn'+s]=r.mid; J['an'+s]=r.end; }
+    J['ft'+front]=J['ft'+front].clone().lerp(fwd,w).normalize(); J['ft'+back]=J['ft'+back].clone().lerp(tb,w).normalize(); }
+  
   if(mi.ready && j>=0 && w>0){ const fist=.085*1.2;                 
     for(const s of ['L','R']){ const Sh=J['sh'+s], E0=J['el'+s], W0=J['wr'+s], side=left.clone().multiplyScalar(sgn(s));
       
@@ -501,6 +547,16 @@ function correct(J,f){
         const T=Sh.clone().addScaledVector(YV,-(DIM.up+DIM.fo)*.985).addScaledVector(side,.035);
         const r=ik2(Sh,W0.clone().lerp(T,aw),DIM.up,DIM.fo,poleOf(Sh,E0,W0).lerp(fwd.clone().negate(),aw).normalize()); J['el'+s]=r.mid; J['wr'+s]=r.end;
         const Hd=J['hd'+s]; Hd.d=Hd.d.clone().lerp(YV.clone().negate(),aw).normalize(); Hd.s=Hd.s.clone().lerp(fwd,aw).normalize(); } }
+    const m0=D.moves[0], tt=D.t[f];
+    if(D.attn!=null && tt>D.attn && tt<m0.t0){ const u=(tt-D.attn)/(m0.t0-D.attn), fist=.085*1.2;
+      
+      for(const s of ['L','R']){ const Sh=J['sh'+s], E0=J['el'+s], W0=J['wr'+s], side=left.clone().multiplyScalar(sgn(s));
+        const P0=Sh.clone().addScaledVector(YV,-(DIM.up+DIM.fo)*.985).addScaledVector(side,.035);
+        const P1=J.hip.clone().addScaledVector(YV,DIM.torso*.80).addScaledVector(fwd,.24).addScaledVector(side,fist/2+.03+fist*.55);
+        const P2=J.hip.clone().addScaledVector(YV,READY_HAND.UP).addScaledVector(fwd,READY_HAND.FWD).addScaledVector(side,fist/2+READY_HAND.GAP/2+fist*.55);
+        const T= u<.55 ? P0.clone().lerp(P1,sm3(u/.55)) : P1.clone().lerp(P2,sm3((u-.55)/.45));
+        const pl=side.clone().addScaledVector(fwd,-.3).normalize(), r=ik2(Sh,T,DIM.up,DIM.fo,pl); J['el'+s]=r.mid; J['wr'+s]=r.end;
+        const Hd=J['hd'+s], k=sm3(u/.55); Hd.d=YV.clone().negate().lerp(side.clone().negate(),k).normalize(); Hd.s=fwd.clone().lerp(YV,k).normalize(); } }
     if(bw>0){ const c=J.hip.clone(), q=new THREE.Quaternion().setFromAxisAngle(left,THREE.MathUtils.degToRad(ATT.BOW)*bw);   
       for(const k of ['chest','shL','shR','elL','elR','wrL','wrR']) J[k].sub(c).applyQuaternion(q).add(c);
       for(const k of ['x','y','z']) J.che[k].applyQuaternion(q);
@@ -522,6 +578,13 @@ function correct(J,f){
         else if(mi.block==='in'){ const B=BLOCK.IN;
           T=J.hip.clone().addScaledVector(YV,DIM.torso*B.H).addScaledVector(fwd,B.FWD).addScaledVector(side,B.OUT);
           pole=YV.clone().negate().addScaledVector(side,.4).addScaledVector(fwd,.3).normalize(); hd={d:YV.clone().addScaledVector(fwd,.15).normalize(), s:side.clone()}; }
+        else if(mi.block==='kout'){   
+          T=J.hip.clone().addScaledVector(YV,DIM.torso*.98).addScaledVector(side,SH_W+.07).addScaledVector(fwd,.16);
+          pole=YV.clone().negate().addScaledVector(side,.5).normalize(); hd={d:YV.clone().addScaledVector(fwd,.2).normalize(), s:side.clone().negate()}; }
+        else if(mi.block==='kneck'){  
+          const R2=(DIM.up+DIM.fo)*.96, C=J.hip.clone().addScaledVector(YV,DIM.torso*1.10).addScaledVector(side,.04), D0=C.clone().sub(Sh);
+          const b=D0.dot(fwd), d=-b+Math.sqrt(Math.max(0,b*b-(D0.lengthSq()-R2*R2))); T=C.addScaledVector(fwd,d);
+          pole=YV.clone().negate().addScaledVector(side,.4).normalize(); hd={d:fwd.clone().addScaledVector(side,-.8).normalize(), s:side.clone()}; }
         else { 
           
           const B=BLOCK.FACE, uDir=YV.clone().multiplyScalar(B.UP_Y).addScaledVector(side,B.UP_OUT).addScaledVector(fwd,B.UP_FWD).normalize();
@@ -562,6 +625,10 @@ const PREP={
          pull:sd=>[sd*.03, DIM.torso*.80, .48],  pullPole:sd=>[sd*.3,-1,0]},  
   face: {main:'waist',                                                         
          pull:sd=>[ sd*.02, DIM.torso*1.0, .42], pullPole:sd=>[sd*.3,-1,0]},  
+  kout: {main:sd=>[-sd*.12, DIM.torso*1.0, .10], mainPole:sd=>[sd*.5,-1,0],   
+         pull:sd=>[sd*.06, DIM.torso*.85, .40], pullPole:sd=>[sd*.3,-1,0]},   
+  kneck:{main:sd=>[ sd*.30, DIM.torso*1.15, -.10], mainPole:sd=>[sd*.3,-1,-.2], 
+         pull:sd=>[sd*.02, DIM.torso*.90, .45], pullPole:sd=>[sd*.3,-1,0]},   
   punch:{main:'waist',                                                         
          pull:sd=>[ sd*.02, DIM.torso*.78, .48], pullPole:sd=>[sd*.3,-1,0]} };
 const WAIST_L=sd=>[sd*(WAIST_W+CHAMBER.OUT), CHAMBER.UP, -CHAMBER.BACK], WAIST_POLE=sd=>[sd*.35,0,-1];
@@ -612,8 +679,8 @@ const STEP={LIFT:.07, KICK_FROM:.5, LAND_FROM:.6, LIFT_LEAD:.15, AIR_MOVE:[.40,.
 const KICK_LAND={AT:.85, CHAMBER_H:.42, CHAMBER_FWD:.12, REACH_H:.12, REACH_BACK:.10, KNEE_UP:.6};   
 function stepFoot(j){ const mi=MINFO[j], pv=MINFO[j-1];
   if(mi.ready) return j===D.moves.length-1 ? 'L' : null;          
-  const fr=mi.ap||mi.seo, pf=pv.ap||pv.seo;
-  if(fr===pf && mi.dir===pv.dir && !!mi.ap===!!pv.ap) return null;  
+  const fr=mi.front, pf=pv.front;
+  if(fr===pf && mi.dir===pv.dir && !!mi.ap===!!pv.ap && !!mi.dwi===!!pv.dwi) return null;  
   return fr; }
 function plantFeet(FR){
   const M=D.moves.length, mid=[], rel=[], hipH=[];
@@ -942,10 +1009,11 @@ function pose(t){
   for(const s of ['L','R']){ placeSegX(P['ua'+s],J['sh'+s],J['el'+s],J['ao'+s]); placeSegX(P['fa'+s],J['el'+s],J['wr'+s],J['ao'+s]); }
   placeHinge(P.elL,J.elL,dirTo(J.shL,J.elL),dirTo(J.elL,J.wrL),J.che.x); placeHinge(P.elR,J.elR,dirTo(J.shR,J.elR),dirTo(J.elR,J.wrR),J.che.x);
   placeBasis(P.soL,J.shL,J.che.y,J.che.x.clone().negate(),J.che.z); placeBasis(P.soR,J.shR,J.che.y,J.che.x.clone().negate(),J.che.z);
-  const knifeNow=/손날/.test(moveAt(t).name);              
+  const mk=moveAt(t), knifeArm=/손날/.test(mk.name)?MINFO[MV.indexOf(mk)].arm:null;   
   for(const [s,wr,hd] of [['L',J.wrL,J.hdL],['R',J.wrR,J.hdR]]){
     const y=hd.d; let x=hd.s.clone().addScaledVector(y,-hd.s.dot(y)).normalize(); const z=new THREE.Vector3().crossVectors(x,y);
     const sz=.085*handScale;
+    const knifeNow= s===knifeArm;
     for(const [k,on] of [['fs',!knifeNow],['ks',knifeNow]]){ const f=P[k+s]; f.visible=on; if(!on) continue;
       f.scale.set(sz*1.05,sz*1.05,sz*.85); placeBasis(f,wr.clone().addScaledVector(y,sz*.55),x,y,z); } }
   
@@ -983,13 +1051,16 @@ function callAt(t,m){
   if(D.attn && t<first.t0-350) return '차렷';
   if(m===first) return t>=first.t1-900 ? '시작' : '준비';
   if(m===last && t>=last.t1-450) return '쉬어';
-  return COUNT[m.n]+(m.n===18?'! 기합!':(m.n>0&&m.n<19?'!':''));
+  if(m===last) return '바로';
+  return COUNT[m.n]+(m.n===NCNT?'! 기합!':(m.n>0?'!':''));
 }
 let soundOn=true, voiceKo=null;
 function pickVoice(){ try{ const vs=speechSynthesis.getVoices(); voiceKo=vs.find(v=>/^ko/i.test(v.lang))||null; }catch(e){} }
 try{ pickVoice(); speechSynthesis.onvoiceschanged=pickVoice; }catch(e){}
+const RITUAL=['차렷','준비','시작','바로','쉬어'];
 function say(txt){
   if(!soundOn || !window.speechSynthesis) return;
+  if(rate>=1.5 && RITUAL.indexOf(txt)<0) return;   
   try{ speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(txt.replace(/!/g,'').replace('기합','')); u.lang='ko-KR'; if(voiceKo) u.voice=voiceKo; u.rate=1.05; u.volume=1; speechSynthesis.speak(u); }catch(e){}
 }
 function ui(t){
@@ -997,10 +1068,10 @@ function ui(t){
   const ct=callAt(t,m);
   if(ct!==lastCall){ lastCall=ct; const c=el('call'); c.textContent=ct; fitCall(); c.classList.add('pop'); setTimeout(()=>c.classList.remove('pop'),140); if(playing) say(ct); }
   if(m.n!==lastN){ lastN=m.n;
-    el('mvN').textContent= m.n===0?'준비': m.n===19?'바로':m.n+'번'; setMoveName(m.name);
-    const done=Math.min(18,Math.max(0,m.n===19?18:m.n-1)); el('pn').textContent=(m.n===19?18:Math.max(0,m.n))+' / 18'; el('pb').style.width=(done/18*100)+'%'; }
+    el('mvN').textContent= m.n===0?'준비': m.n===NLAST?'바로':m.n+'번'; setMoveName(m.label||m.name);
+    const done=Math.min(NCNT,Math.max(0,m.n===NLAST?NCNT:m.n-1)); el('pn').textContent=(m.n===NLAST?NCNT:Math.max(0,m.n))+' / '+NCNT; el('pb').style.width=(done/NCNT*100)+'%'; }
   
-  const m18=MV.find(x=>x.n===18), m19=MV.find(x=>x.n===19);
+  const m18=MV.filter(x=>x.n===NCNT).pop(), m19=MV[MV.length-1];
   drawFace(t>=m18.t0-150&&t<=m18.t1+300?'kiai': (m19&&t>=m19.t0)?'smile':'serious');
   return m;
 }
@@ -1069,8 +1140,9 @@ const EMBED=document.documentElement.classList.contains('embed'); if(EMBED) play
 const tgt=new THREE.Vector3(0,.95,0);
 function tick(now){
   const dt=Math.min(.1,(now-last)/1000); last=now;
-  if(playing && stopAt!=null && t+dt*1000*rate>=stopAt){ t=stopAt; stopAt=null; playing=false; }   
-  if(playing){ t+=dt*1000*rate; if(t>D.dur+1500){
+  const er= rate>1 && (t<MV[0].t1 || t>=MV[MV.length-1].t0) ? 1 : rate;   
+  if(playing && stopAt!=null && t+dt*1000*er>=stopAt){ t=stopAt; stopAt=null; playing=false; }   
+  if(playing){ t+=dt*1000*er; if(t>D.dur+1500){
     if(EMBED){ playing=false; t=D.dur; document.documentElement.classList.add('idle'); try{ parent.__psmGroupDone && parent.__psmGroupDone(); }catch(e){} }   
     else t=0; } }
   const tt=Math.min(t,D.dur); curT=tt;
