@@ -96,10 +96,6 @@ body.recording #status, body.recording .title-block .tb-meta, body.recording .ti
 .stopbtn{color:#FF6578}
 .stopbtn::before{content:'■ ';font-size:.86em}
 
-.pausebtn{color:#fff}
-.pausebtn::before{content:'⏸ ';font-size:.86em}
-.resumebtn{color:var(--start);text-shadow:0 3px 12px rgba(0,0,0,.86),0 0 18px rgba(74,222,128,.4)}
-.resumebtn::before{content:'▶ ';font-size:.86em}
 .fs-btn{position:fixed;z-index:22;right:16px;bottom:calc(var(--sab) + 18px);padding:3px;font-size:clamp(13px,1vw,17px);font-weight:900;color:rgba(255,255,255,.42);text-shadow:0 2px 10px rgba(0,0,0,.95)}
 .fs-btn:hover{color:#fff}
 
@@ -139,11 +135,9 @@ body.group-running .gctl{display:flex}
 .gctl button:hover{color:#fff}
 .gctl button.on{color:var(--teal-lit);border-bottom-color:var(--teal)}
 
-.gscrub{display:none;align-items:center;gap:10px;margin-bottom:6px;max-width:min(560px,80vw)}
-body.group-running .gscrub{display:flex}
-.gscrub button{flex:0 0 auto;min-width:44px;min-height:44px;padding:0 10px;font-size:clamp(14px,1.1vw,18px);font-weight:900;color:rgba(255,255,255,.85);text-shadow:0 2px 8px rgba(0,0,0,.95);border:1px solid rgba(255,255,255,.28);border-radius:10px;touch-action:none;user-select:none;-webkit-user-select:none}
-.gscrub button.hold{color:var(--teal-lit);border-color:var(--teal)}
-.gscrub .gs-track{position:relative;flex:1 1 auto;height:44px;display:flex;align-items:center}
+.gscrub{display:none;position:fixed;left:50%;transform:translateX(-50%);bottom:max(14px,env(safe-area-inset-bottom));width:min(52vw,900px);z-index:30}
+body.group-running .gscrub{display:block}
+.gscrub .gs-track{position:relative;width:100%;height:44px;display:flex;align-items:center}
 .gscrub .gs-marks{position:absolute;left:0;right:0;top:50%;height:12px;transform:translateY(-50%);pointer-events:none}
 .gscrub .gs-marks i{position:absolute;top:0;width:2px;height:12px;background:rgba(255,255,255,.35)}
 .gscrub input[type=range]{position:relative;width:100%;margin:0;accent-color:var(--teal);height:44px;background:transparent}
@@ -329,19 +323,16 @@ table.t input{width:100%}
   <button class="ctrl-link" id="btnCancel" type="button" hidden>취소</button>
   
   <div class="gctl" id="groupCtl">
-    <button type="button" id="gStop">■ 중지</button>
+    <button type="button" id="gPause">⏸ 일시정지</button>
     <button type="button" id="gPrev">◀ 이전 동작</button>
     <button type="button" id="gNext">다음 동작 ▶</button>
     <button type="button" id="gBack">↺ 뒷모습</button>
   </div>
-  <div class="gscrub" id="groupScrub">
-    <button type="button" id="gRew" aria-label="누르고 있으면 천천히 뒤로">◀◀</button>
-    <div class="gs-track"><div class="gs-marks" id="gMarks"></div><input type="range" id="gSeek" min="0" max="1000" value="0" aria-label="동작 위치"></div>
-    <button type="button" id="gFwd" aria-label="누르고 있으면 천천히 앞으로">▶▶</button>
-  </div>
   <button class="bigbtn playbtn" id="btnStart" type="button" disabled>시작!</button>
   <button class="bigbtn stopbtn" id="btnEnd" type="button" hidden>끝내기</button>
 </div>
+
+<div class="gscrub" id="groupScrub"><div class="gs-track"><div class="gs-marks" id="gMarks"></div><input type="range" id="gSeek" min="0" max="2000" value="0" aria-label="동작 위치"></div></div>
 <button class="fs-btn" id="fsBtn" type="button">전체화면</button>
 <div id="countdown" hidden><div class="cd-n" id="cdN">5</div><div class="cd-t" id="cdT">준비 자세로 서 주세요</div></div>
 
@@ -874,8 +865,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
 
   var groupRunning=false, groupWantPlay=false, groupPaused=false;
   
-  function setGroupPaused(b){ groupPaused=b; var e=$('btnEnd'); if(!groupRunning) return;
-    e.classList.remove('stopbtn'); e.classList.toggle('pausebtn',!b); e.classList.toggle('resumebtn',b); e.textContent= b ? '계속' : '일시정지'; }
+  function setGroupPaused(b){ groupPaused=b; $('gPause').textContent= b ? '▶ 다시 시작' : '⏸ 일시정지'; $('gPause').classList.toggle('on', b); }
   function robot(){ var f=$('groupFrame'); try{ return f && f.contentWindow && f.contentWindow.__robot; }catch(e){ return null; } }
   function enterGroup(){
     if(stream){ stream.getTracks().forEach(function(t){ t.stop(); }); stream=null; }
@@ -911,7 +901,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   function startGroup(){
     groupRunning=true; groupWantPlay=true; setGroupPaused(false);
     document.body.classList.add('group-running');
-    $('btnStart').hidden=true; $('btnEnd').hidden=false;
+    $('btnStart').hidden=true; $('btnEnd').hidden=false; $('btnEnd').textContent='중지';
     try{ navigator.wakeLock && navigator.wakeLock.request('screen').then(function(w){ wakeLock=w; }).catch(function(){}); }catch(e){}
     var r=robot(); if(r){ applyRobot(); r.play(); } else if(!robotWait) loadGroupFrame();
   }
@@ -921,7 +911,6 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     var r=robot(); if(r) r.stop();
     document.body.classList.remove('group-running');
     $('btnStart').hidden=false; $('btnEnd').hidden=true; $('btnEnd').textContent='끝내기';
-    $('btnEnd').classList.remove('pausebtn','resumebtn'); $('btnEnd').classList.add('stopbtn');
     try{ wakeLock && wakeLock.release(); }catch(e){} wakeLock=null;
   }
   function toggleGroupPause(){ var r=robot(); if(!r) return; if(groupPaused){ r.resume(); setGroupPaused(false); } else { r.pause(); setGroupPaused(true); } }
@@ -950,28 +939,22 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
       updateModeUi();
     });
     
-    $('gStop').addEventListener('click', function(){ stopGroup(); });
+    $('gPause').addEventListener('click', toggleGroupPause);
     $('gPrev').addEventListener('click', function(){ var r=robot(); if(r){ r.step(-1); setGroupPaused(true); } });
     $('gNext').addEventListener('click', function(){ var r=robot(); if(r){ r.step(1); setGroupPaused(true); } });
     $('gBack').addEventListener('click', function(){ var r=robot(); if(r) r.view('back'); });
     
     var seekDrag=false, marksFor=null;
-    $('gSeek').addEventListener('input', function(){ var r=robot(); if(!r||!r.info) return; seekDrag=true; var i=r.info(); r.seek(this.value/1000*i.dur); setGroupPaused(true); });
+    $('gSeek').addEventListener('input', function(){ var r=robot(); if(!r||!r.info) return; seekDrag=true; var i=r.info(); r.seek(this.value/2000*i.dur); setGroupPaused(true); });
     $('gSeek').addEventListener('change', function(){ seekDrag=false; });
-    function holdBtn(id,d){ var b=$(id), on=false;
-      function start(e){ var r=robot(); if(!r||!r.scrub) return; e.preventDefault(); on=true; b.classList.add('hold'); r.scrub(d); setGroupPaused(true); try{ b.setPointerCapture(e.pointerId); }catch(_){} }
-      function end(){ if(!on) return; on=false; b.classList.remove('hold'); var r=robot(); if(r&&r.scrub) r.scrub(0); }
-      b.addEventListener('pointerdown',start); b.addEventListener('pointerup',end); b.addEventListener('pointercancel',end); b.addEventListener('lostpointercapture',end);
-      b.addEventListener('contextmenu',function(e){ e.preventDefault(); }); }
-    holdBtn('gRew',-1); holdBtn('gFwd',1);
     (function syncSeek(){ requestAnimationFrame(syncSeek); if(!groupRunning) return; var r=robot(); if(!r||!r.info) return; var i=r.info();
       if(marksFor!==i.dur){ marksFor=i.dur; $('gMarks').innerHTML=i.marks.filter(function(x){return x!=null;}).map(function(x){ return '<i style="left:'+(x/i.dur*100).toFixed(2)+'%"></i>'; }).join(''); }
-      if(!seekDrag) $('gSeek').value=Math.round(i.t/i.dur*1000); })();
+      if(!seekDrag) $('gSeek').value=Math.round(i.t/i.dur*2000); })();
     updateModeUi();
     $('lobby').hidden=false;
     $('btnStart').addEventListener('click', function(){ if(pref.role==='group') startGroup(); else startSession(); });
     $('fsBtn').addEventListener('click', toggleFullscreen);
-    $('btnEnd').addEventListener('click', function(){ if(groupRunning) toggleGroupPause(); else finishSession('수동'); });
+    $('btnEnd').addEventListener('click', function(){ if(groupRunning) stopGroup(); else finishSession('수동'); });
     $('btnCancel').addEventListener('click', cancelSession);
     $('btnKey').addEventListener('click', openKey);
     $('btnRecs').addEventListener('click', openRecs);
