@@ -74,25 +74,25 @@ p{margin:0}
 .hd-logo img{height:46px;width:auto}
 .hd-logo.brand img{height:48px}
 .switch{display:flex;gap:6px;margin:0 auto;padding:4px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08)}
-.switch a{display:flex;align-items:center;gap:7px;height:34px;padding:0 14px;border-radius:999px;color:#AEB8CC;font-size:13.5px;font-weight:800;letter-spacing:-.01em;transition:background .2s,color .2s}
-.switch a i{font-style:normal;display:grid;place-items:center;width:20px;height:20px;border-radius:6px;font-family:var(--mono);font-size:11px;font-weight:700;color:#fff;background:var(--sc)}
-.switch a:hover{color:#fff}
-.switch a{white-space:nowrap}
-.switch a[aria-current="page"]{background:#fff;color:#0B1220}
-.switch a.web i{background:#2B3A55}
+.switch :is(a,.switch-pending){display:flex;align-items:center;gap:7px;height:34px;padding:0 14px;border-radius:999px;color:#AEB8CC;font-size:13.5px;font-weight:800;letter-spacing:-.01em;transition:background .2s,color .2s}
+.switch :is(a,.switch-pending) i{font-style:normal;display:grid;place-items:center;width:20px;height:20px;border-radius:6px;font-family:var(--mono);font-size:11px;font-weight:700;color:#fff;background:var(--sc)}
+.switch :is(a,.switch-pending):hover{color:#fff}
+.switch :is(a,.switch-pending){white-space:nowrap}
+.switch :is(a,.switch-pending)[aria-current="page"]{background:#fff;color:#0B1220}
+.switch :is(a,.switch-pending).web i{background:#2B3A55}
 .hd-act{display:flex;gap:8px;align-items:center}
 .hd-act .btn{min-height:40px;padding:0 16px;font-size:13.5px}
 .hd-run{color:#fff;border-color:rgba(255,255,255,.28)}
 @media (max-width:1180px){ .hd-logo img{height:38px} .hd-logo.brand img{height:42px} }
-@media (max-width:960px){ .switch a span{display:none} .switch a{padding:0 10px} }
+@media (max-width:960px){ .switch :is(a,.switch-pending) span{display:none} .switch :is(a,.switch-pending){padding:0 10px} }
 @media (max-width:680px){
   .hd-in{height:58px;gap:10px}
   .hd-logo img{height:28px}
   .hd-logo.brand img{height:32px}
   .hd-act .hd-talk{display:none}
   .switch{padding:3px;gap:3px}
-  .switch a{height:30px;padding:0 8px}
-  .switch a.web{display:none}
+  .switch :is(a,.switch-pending){height:30px;padding:0 8px}
+  .switch :is(a,.switch-pending).web{display:none}
 }
 
 /* 2026-09-25 아주 좁은 폰: 로고를 키운 대신 K·J·S 전환 알약은 숨김 (밝은 페이지는 520px 부터 이미 숨김) */
@@ -372,10 +372,10 @@ p{margin:0}
    ===================================================================== */
 .hd.light{background:rgba(255,255,255,.86);border-bottom-color:var(--line)}
 .hd.light .switch{background:var(--soft);border-color:var(--line)}
-.hd.light .switch a{color:var(--text)}
-.hd.light .switch a:hover{color:var(--ink)}
-.hd.light .switch a[aria-current="page"]{background:var(--ink);color:#fff}
-.hd.light .switch a.web i{background:var(--brand2)}
+.hd.light .switch :is(a,.switch-pending){color:var(--text)}
+.hd.light .switch :is(a,.switch-pending):hover{color:var(--ink)}
+.hd.light .switch :is(a,.switch-pending)[aria-current="page"]{background:var(--ink);color:#fff}
+.hd.light .switch :is(a,.switch-pending).web i{background:var(--brand2)}
 .hd.light .hd-run{color:var(--ink);border-color:var(--line);background:#fff}
 
 /* index hero */
@@ -539,3 +539,7 @@ p{margin:0}
 @media (max-width:680px){ .holo{right:50%;transform:translateX(50%);top:4%} .holo .ring{width:110px;height:110px} .holo .ring svg{transform:scale(.74);transform-origin:0 0;width:148px;height:148px} .holo .pct{font-size:26px} }
 @media (max-width:900px){ .w-in{grid-template-columns:1fr;gap:36px} .w-hero{padding:40px 0 64px} }
 @media (max-width:520px){ .hd.light .switch{display:none} .hd.light .hd-logo{margin-right:auto} }
+
+/* Upcoming product: shown in navigation, with no navigation action. */
+.switch .switch-pending{border:0;background:transparent;font-family:inherit;cursor:default;opacity:1}
+.switch .switch-pending i{color:#2A1C00}
