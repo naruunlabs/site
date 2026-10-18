@@ -47,17 +47,17 @@ button{cursor:pointer;border:0;background:none;padding:0}
 #video.mirror{transform:scaleX(-1)}
 #canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 body.recording #video{filter:brightness(.82)}
-body.recording #status, body.recording .title-block .tb-meta, body.recording .title-block .tb-tag, body.recording .tb-btns, body.recording #lobbyStats{display:none}
+body.recording #status, body.recording .tb-btns, body.recording #lobbyStats{display:none}
 
 :root{--start:#4ADE80; --sat:env(safe-area-inset-top,0px); --sab:env(safe-area-inset-bottom,0px); --sh:0 2px 3px rgba(0,0,0,.95),0 0 14px rgba(0,0,0,.78)}
 
-.title-block{position:fixed;left:16px;top:calc(14px + var(--sat));z-index:20;max-width:46vw;filter:drop-shadow(0 3px 10px rgba(0,0,0,.78))}
-.tb-dojang{font-weight:900;font-size:16px;line-height:1.15;letter-spacing:-.04em;max-width:40vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.tb-auth{margin-top:3px;font-size:11px;font-weight:700;color:var(--lime-lit)}
-.tb-meta{margin-top:2px;font-size:9.5px;line-height:1.25;font-weight:700;color:rgba(234,244,241,.55)}
+.title-block{position:fixed;left:16px;top:calc(14px + var(--sat));z-index:20;display:flex;flex-direction:column;align-items:flex-start;max-width:46vw;filter:drop-shadow(0 3px 10px rgba(0,0,0,.78))}
+.tb-dojang{font-weight:900;font-size:16px;line-height:1.15;letter-spacing:-.04em;max-width:min(300px,40vw);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#fff;user-select:none}
+.tb-auth{margin-top:3px;font-size:10px;line-height:1.2;font-weight:900;color:#2ecc71}
+.tb-meta{margin-top:2px;font-size:9.5px;line-height:1.25;font-weight:700;color:rgba(234,244,241,.48)}
 .tb-tag{display:inline-block;margin-top:5px;padding:1px 7px;border-radius:999px;font-size:10.5px;font-weight:900;color:var(--amber);border:1px solid rgba(251,191,36,.5)}
-.tb-btns{display:flex;gap:14px;margin-top:6px}
-.tb-btn{padding:3px 0;font-size:11.5px;font-weight:900;color:rgba(226,244,255,.86);text-shadow:0 2px 8px rgba(0,0,0,.95)}
+.tb-btns{display:flex;gap:14px;margin-top:5px}
+.tb-btn{padding:3px 0;font-size:11px;font-weight:900;color:rgba(226,244,255,.86);text-shadow:0 2px 8px rgba(0,0,0,.95)}
 .tb-btn:hover,.tb-btn:focus-visible{color:#fff;text-shadow:0 0 12px rgba(255,209,102,.72),0 2px 8px rgba(0,0,0,.95)}
 
 .mode-badge{position:fixed;top:calc(14px + var(--sat));left:50%;transform:translateX(-50%);z-index:14;text-align:center;pointer-events:none;max-width:44vw;text-shadow:0 2px 10px rgba(0,0,0,.9)}
@@ -149,7 +149,7 @@ body.group-running .gscrub{display:block}
 #groupFrame{position:absolute;inset:0;width:100%;height:100%;border:0;display:block;background:#08111F}
 body.group-mode #video, body.group-mode #canvas{visibility:hidden}
 body.group-mode .side, body.group-mode #status, body.group-mode .mode-badge{display:none}
-body.group-running #lobby, body.group-running .tb-btns, body.group-running .tb-meta, body.group-running .tb-tag{display:none}
+body.group-running #lobby, body.group-running .tb-btns{display:none}
 #countdown{position:fixed;inset:0;z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;text-shadow:0 4px 24px rgba(0,0,0,.8)}
 #countdown .cd-n{font-family:var(--num);font-weight:900;font-size:min(34vw,240px);line-height:1;color:var(--lime-lit)}
 #countdown .cd-t{font-size:clamp(18px,3vw,30px);font-weight:900;margin-top:8px}
@@ -222,11 +222,10 @@ table.t input{width:100%}
 </div>
 
 <div class="title-block">
-  <div class="tb-dojang" id="tbDojang">POOMSAE MASTER</div>
-  <div class="tb-auth" id="tbAuth">● 마스터 라이선스</div>
+  <div class="tb-dojang" id="tbDojang">AI POOMSAE MASTER</div>
+  <div class="tb-auth" id="tbAuth">● 정품 인증됨</div>
   <div class="tb-meta" id="tbVer">품새마스터</div>
   <div class="tb-meta">Powered by Google MediaPipe</div>
-  <div class="tb-tag">시험용 · 비공개</div>
   <div class="tb-btns">
     <button class="tb-btn" type="button" id="btnKey">정답지</button>
     <button class="tb-btn" type="button" id="btnRecs">저장 기록</button>
@@ -346,7 +345,7 @@ table.t input{width:100%}
 <script id="psm-core">
 
 var PSM = (function(){
-  var VERSION = '0.8.0';   
+  var VERSION = '0.8.2';   
 
   var DEFAULT_CFG = {
     SMOOTH: 0.5,        
@@ -733,7 +732,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   var CONN=[[11,12],[11,13],[13,15],[12,14],[14,16],[11,23],[12,24],[23,24],[23,25],[25,27],[24,26],[26,28],[27,31],[28,32],[27,29],[28,30]];
   var TRACK_COL=['#FFD166','#FFF1B8'];
 
-  $('tbVer').textContent='품새마스터 v'+PSM.VERSION;
+  $('tbVer').textContent='v'+PSM.VERSION;
 
   function lsGet(k,d){ try{ var v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch(e){ return d; } }
   function lsSet(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
@@ -787,8 +786,8 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   function grant(auth){
     authKey=auth.key;
     $('gate').hidden=true;
-    $('tbDojang').textContent=auth.dojang||'POOMSAE MASTER';
-    $('tbAuth').textContent='● 품새 마스터 라이선스';
+    $('tbDojang').textContent=auth.dojang||'AI POOMSAE MASTER';
+    $('tbAuth').textContent='● 정품 인증됨';
     boot();
   }
   function lock(msg){
@@ -884,7 +883,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     var f=$('groupFrame');
     if(!f){ f=document.createElement('iframe'); f.id='groupFrame'; f.title='품새 시범 로봇'; f.allow='fullscreen'; $('stage').appendChild(f); }
     
-    f.src='poomsaerobot.html?p='+encodeURIComponent(pref.poomsae)+'&embed=1&v='+encodeURIComponent(VERSION)+(TEST?'&fake=1':'');
+    f.src='poomsaerobot.html?p='+encodeURIComponent(pref.poomsae)+'&embed=1&v='+encodeURIComponent(PSM.VERSION)+(TEST?'&fake=1':'');
     waitRobot();
   }
   var robotWait=null;
