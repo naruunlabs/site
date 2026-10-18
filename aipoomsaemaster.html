@@ -133,6 +133,15 @@ body.group-running .gctl{display:flex}
 .gctl button{padding:6px 0;font-size:clamp(14px,1.15vw,19px);font-weight:900;color:rgba(255,255,255,.82);text-shadow:0 2px 8px rgba(0,0,0,.95);border-bottom:2px solid transparent}
 .gctl button:hover{color:#fff}
 .gctl button.on{color:var(--teal-lit);border-bottom-color:var(--teal)}
+
+.gscrub{display:none;align-items:center;gap:10px;margin-bottom:6px;max-width:min(560px,80vw)}
+body.group-running .gscrub{display:flex}
+.gscrub button{flex:0 0 auto;min-width:44px;min-height:44px;padding:0 10px;font-size:clamp(14px,1.1vw,18px);font-weight:900;color:rgba(255,255,255,.85);text-shadow:0 2px 8px rgba(0,0,0,.95);border:1px solid rgba(255,255,255,.28);border-radius:10px;touch-action:none;user-select:none;-webkit-user-select:none}
+.gscrub button.hold{color:var(--teal-lit);border-color:var(--teal)}
+.gscrub .gs-track{position:relative;flex:1 1 auto;height:44px;display:flex;align-items:center}
+.gscrub .gs-marks{position:absolute;left:0;right:0;top:50%;height:12px;transform:translateY(-50%);pointer-events:none}
+.gscrub .gs-marks i{position:absolute;top:0;width:2px;height:12px;background:rgba(255,255,255,.35)}
+.gscrub input[type=range]{position:relative;width:100%;margin:0;accent-color:var(--teal);height:44px;background:transparent}
 .lb-select{width:100%;padding:8px 9px;border:0;border-bottom:2px solid rgba(255,255,255,.25);background:rgba(3,15,27,.4);color:#fff;font-size:15px;font-weight:800}
 .lb-select option{background:#0d1c30;color:#fff}
 
@@ -319,6 +328,11 @@ table.t input{width:100%}
     <button type="button" id="gPrev">◀ 이전 동작</button>
     <button type="button" id="gNext">다음 동작 ▶</button>
     <button type="button" id="gBack">↺ 뒷모습</button>
+  </div>
+  <div class="gscrub" id="groupScrub">
+    <button type="button" id="gRew" aria-label="누르고 있으면 천천히 뒤로">◀◀</button>
+    <div class="gs-track"><div class="gs-marks" id="gMarks"></div><input type="range" id="gSeek" min="0" max="1000" value="0" aria-label="동작 위치"></div>
+    <button type="button" id="gFwd" aria-label="누르고 있으면 천천히 앞으로">▶▶</button>
   </div>
   <button class="bigbtn playbtn" id="btnStart" type="button" disabled>시작!</button>
   <button class="bigbtn stopbtn" id="btnEnd" type="button" hidden>끝내기</button>
@@ -933,6 +947,19 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     $('gPrev').addEventListener('click', function(){ var r=robot(); if(r){ r.step(-1); setGroupPaused(true); } });
     $('gNext').addEventListener('click', function(){ var r=robot(); if(r){ r.step(1); setGroupPaused(true); } });
     $('gBack').addEventListener('click', function(){ var r=robot(); if(r) r.view('back'); });
+    
+    var seekDrag=false, marksFor=null;
+    $('gSeek').addEventListener('input', function(){ var r=robot(); if(!r||!r.info) return; seekDrag=true; var i=r.info(); r.seek(this.value/1000*i.dur); setGroupPaused(true); });
+    $('gSeek').addEventListener('change', function(){ seekDrag=false; });
+    function holdBtn(id,d){ var b=$(id), on=false;
+      function start(e){ var r=robot(); if(!r||!r.scrub) return; e.preventDefault(); on=true; b.classList.add('hold'); r.scrub(d); setGroupPaused(true); try{ b.setPointerCapture(e.pointerId); }catch(_){} }
+      function end(){ if(!on) return; on=false; b.classList.remove('hold'); var r=robot(); if(r&&r.scrub) r.scrub(0); }
+      b.addEventListener('pointerdown',start); b.addEventListener('pointerup',end); b.addEventListener('pointercancel',end); b.addEventListener('lostpointercapture',end);
+      b.addEventListener('contextmenu',function(e){ e.preventDefault(); }); }
+    holdBtn('gRew',-1); holdBtn('gFwd',1);
+    (function syncSeek(){ requestAnimationFrame(syncSeek); if(!groupRunning) return; var r=robot(); if(!r||!r.info) return; var i=r.info();
+      if(marksFor!==i.dur){ marksFor=i.dur; $('gMarks').innerHTML=i.marks.filter(function(x){return x!=null;}).map(function(x){ return '<i style="left:'+(x/i.dur*100).toFixed(2)+'%"></i>'; }).join(''); }
+      if(!seekDrag) $('gSeek').value=Math.round(i.t/i.dur*1000); })();
     updateModeUi();
     $('lobby').hidden=false;
     $('btnStart').addEventListener('click', function(){ if(pref.role==='group') startGroup(); else startSession(); });

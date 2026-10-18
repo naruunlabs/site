@@ -55,7 +55,7 @@ html.embed #ctl{display:none}
 html.embed #prog{left:50%;transform:translateX(-50%);top:16px;text-align:center}
 html.embed #prog .bar{justify-content:center}
 html.embed #prog .k{display:none}
-html.embed #mv{bottom:110px}
+html.embed #mv{bottom:200px}   
 html.embed #call{bottom:96px}
 html.embed.idle #mv, html.embed.idle #call{visibility:hidden}
 </style>
@@ -1193,7 +1193,8 @@ function drawFootPanel(m,dt){
   const st=stanceText(m), key=st.join('|'); if(key!==lastStance){ lastStance=key; el('fiName').textContent=st[0]; el('fiSpec').textContent=st[1]; }
 }
 
-let stopAt=null, curT=0;
+let stopAt=null, curT=0, scrubDir=0;   
+const SCRUB_RATE=.4;                       
 let t=0, playing=true, rate=1, last=performance.now(), mirrorOn=true;
 const EMBED=document.documentElement.classList.contains('embed'); if(EMBED) playing=false;   
 const tgt=new THREE.Vector3(0,.95,0);
@@ -1201,6 +1202,7 @@ function tick(now){
   const dt=Math.min(.1,(now-last)/1000); last=now;
   const er= rate>1 && (t<MV[0].t1 || t>=MV[MV.length-1].t0) ? 1 : rate;   
   if(playing && stopAt!=null && t+dt*1000*er>=stopAt){ t=stopAt; stopAt=null; playing=false; }   
+  if(!playing && scrubDir){ t=Math.min(D.dur,Math.max(0,t+dt*1000*SCRUB_RATE*scrubDir)); }
   if(playing){ t+=dt*1000*er; if(t>D.dur+1500){
     if(EMBED){ playing=false; t=D.dur; document.documentElement.classList.add('idle'); try{ parent.__psmGroupDone && parent.__psmGroupDone(); }catch(e){} }   
     else t=0; } }
@@ -1248,6 +1250,10 @@ window.__robot={
   pause(){ playing=false; stopAt=null; try{ speechSynthesis.cancel(); }catch(e){} },
   resume(){ stopAt=null; playing=true; document.documentElement.classList.remove('idle'); },
   paused(){ return !playing; },
+  
+  seek(ms){ playing=false; stopAt=null; scrubDir=0; t=Math.min(D.dur,Math.max(0,ms)); try{ speechSynthesis.cancel(); }catch(e){} document.documentElement.classList.remove('idle'); },
+  scrub(d){ if(d){ playing=false; stopAt=null; try{ speechSynthesis.cancel(); }catch(e){} document.documentElement.classList.remove('idle'); } scrubDir=d||0; },
+  info(){ return {t:curT, dur:D.dur, marks:MV.map(m=>m.t0)}; },
   
   step(d){
     let k=moveIndexAt(t); k=Math.max(1,Math.min(MV.length-1,k+d));
