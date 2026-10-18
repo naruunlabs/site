@@ -52,7 +52,7 @@ var PRODUCT = {
   code    : 'S',                    
   name    : 'AI STRIKE MASTER',
   short   : 'STRIKE',
-  version : '0.9.13',   
+  version : '0.9.14',   
   built   : '2026-10-14'
 };
 try{ window.PRODUCT = PRODUCT; }catch(e){}
@@ -4219,7 +4219,7 @@ body.akm-group-open.akm-group-running .stage>.panel>.mode-row *{visibility:hidde
 
       <div class="settings-section" id="nlConsentBox" style="display:none;">
         <hr class="settings-divider">
-        <div class="settings-label">데이터측정 동의 <span id="nlConsentState">-</span></div>
+        <div class="settings-label">측정 데이터 수집 <span id="nlConsentState">-</span></div>
         <button class="settings-home-btn" type="button" id="nlConsentBtn" style="margin-top:0;">동의하기</button>
         <div class="settings-hint">동작 측정값(관절 숫자)을 나른랩스 서버로 보내 판정 개선에 씁니다. 영상·사진·이름은 보내지 않으며 10일 뒤 자동 삭제됩니다. 동의하지 않아도 프로그램은 똑같이 쓸 수 있습니다.</div>
         <div class="settings-hint" id="nlConsentNote"></div>
@@ -4240,9 +4240,9 @@ body.akm-group-open.akm-group-running .stage>.panel>.mode-row *{visibility:hidde
 
     <div class="settings-section">
       <div class="settings-label">기록 <span id="labRecState">꺼짐</span></div>
-      <button class="settings-home-btn" type="button" id="labRecBtn" onclick="toggleLabRecording()" style="margin-top:0;">기록 시작</button>
+      <button class="settings-home-btn" type="button" id="labRecBtn" disabled style="margin-top:0;">마스터 자동 기록</button>
       <div class="settings-hint">
-        켜 두면 수행한 타격의 특징값이 쌓입니다. 이름·영상은 저장하지 않습니다.
+        마스터 인증 후 측정 기록이 자동으로 쌓이고 서버에 전송됩니다. 이름·영상은 저장하지 않습니다.
       </div>
     </div>
 
@@ -7862,6 +7862,7 @@ function setStartBtn(disabled,text){
   if(punchStartBtn){ punchStartBtn.disabled=disabled; punchStartBtn.textContent=text; }
 }
 function setPlayingUi(on){
+  if(!on) setTimeout(function(){ try{ window.__nlLabSync && window.__nlLabSync(); }catch(e){} },0);
   try{ document.body.classList.toggle('playing-ui', !!on); }catch(e){}
   hfSync();   
 }
@@ -8089,9 +8090,7 @@ window.logoutLicense=()=>{
 const DIAG_LS_KEY='asm_diag_log_v1';   
 const DIAG_LOG_MAX=2000;
 
-let diagMode=(function(){
-  try{ return localStorage.getItem(DIAG_MODE_LS_KEY)==='1'; }catch(e){ return false; }
-})();
+let diagMode=false; 
 let diagLog=[];
 
 function diagLogLoad(){
@@ -8372,13 +8371,17 @@ const DIAG_MODE_LS_KEY='asm_diag_on_v1';
 function updateLabRecUi(){
   const st=document.getElementById('labRecState');
   const btn=document.getElementById('labRecBtn');
-  if(st) st.textContent=diagMode?'켜짐 · 쌓는 중':'꺼짐';
-  if(btn) btn.textContent=diagMode?'■ 기록 멈추기':'● 기록 시작';
+  if(st) st.textContent=diagMode?'자동 기록 중':'마스터 인증 대기';
+  if(btn){ btn.textContent='마스터 자동 기록'; btn.disabled=true; }
 }
 
+window.__nlApplyCollectionState=function(){
+  diagMode=!!(window.akmIsBeta && window.akmIsBeta()) || window.__nlDataCollectionAllowed===true;
+  updateLabRecUi();
+};
 window.toggleLabRecording=function(){
-  diagMode=!diagMode;
-  try{ localStorage.setItem(DIAG_MODE_LS_KEY, diagMode?'1':'0'); }catch(e){}
+  
+  window.__nlApplyCollectionState();
   updateLabRecUi();
   updateDiagCount();
 };
@@ -8694,7 +8697,8 @@ window.applyBetaVisibility=function(){
   }catch(e){}
   document.body.classList.toggle('akm-pilot-hud',pilot);
 
-  if(!on) diagMode=false;               
+  diagMode=on || window.__nlDataCollectionAllowed===true;
+  updateLabRecUi();
 };
 
 window.toggleFullscreen=()=>{
@@ -14194,15 +14198,16 @@ html body #handNextPrompt .h-frame::before,html body #handNextPrompt .h-frame::a
   var EP=P+'_labsync_epoch', SENT=P+'_labsync_sent', CNT=P+'_labsync_count';
   var URL='https://ebgoolsymyzkftvavpyj.supabase.co/functions/v1/lab-records?action=upload';
   var live=/(^|\.)naruunlabs\.kr$/.test(location.hostname);
-  var busy=false;
+  var busy=false, again=false;
   function ls(k,v){ try{ if(v===undefined) return localStorage.getItem(k); if(v===null) localStorage.removeItem(k); else localStorage.setItem(k,v); }catch(e){} return null; }
   function b64(s){ var b=new TextEncoder().encode(s), x=''; for(var i=0;i<b.length;i++) x+=String.fromCharCode(b[i]); return btoa(x); }
   function day(){ return new Date(Date.now()+9*3600000).toISOString().slice(2,10).split('-').join(''); }
   function sync(){
-    if(!live || busy || typeof CompressionStream==='undefined') return;
+    if(!live || typeof CompressionStream==='undefined') return;
+    if(busy){ again=true; return; }
     var c=null; try{ c=JSON.parse(ls(LS)||'null'); }catch(e){}
     if(!c || !c.license_key) return;
-    if(!c.is_beta && ls(P+'_data_consent')!=='1') return;   
+    if(!c.is_beta && !(window.__nlDataCollectionAllowed===true && window.__nlDataCollectionLicense===c.license_key)) return;   
     var get=window.__nlLabPayload; if(typeof get!=='function') return;
     var pl=null; try{ pl=get(); }catch(e){ return; }
     var n=pl ? (pl.count|0) : 0;
@@ -14212,7 +14217,10 @@ html body #handNextPrompt .h-frame::before,html body #handNextPrompt .h-frame::a
     var ep=ls(EP); if(!ep){ ep=Date.now().toString(36); ls(EP,ep); }
     var text=JSON.stringify(pl.data);
     var id=P+'-'+day()+'-'+ep;
-    var sig=id+'|'+n+'|'+text.length;
+    
+    var stable=JSON.stringify(pl.data,function(k,v){ return k==='exported_at'||k==='exportedAt'?undefined:v; });
+    var hash=2166136261; for(var h=0;h<stable.length;h++){ hash=Math.imul(hash^stable.charCodeAt(h),16777619); }
+    var sig=id+'|'+n+'|'+stable.length+'|'+(hash>>>0);
     ls(CNT,String(n));
     if(ls(SENT)===sig) return;
     busy=true;
@@ -14222,16 +14230,26 @@ html body #handNextPrompt .h-frame::before,html body #handNextPrompt .h-frame::a
       .then(function(r){ return r.json(); })
       .then(function(j){ if(j && j.ok) ls(SENT,sig); })
       .catch(function(){})
-      .then(function(){ busy=false; });
+      .then(function(){ busy=false; if(again){ again=false; setTimeout(sync,250); } });
   }
   setInterval(sync, 60000);
   setTimeout(sync, 15000);
   document.addEventListener('visibilitychange', function(){ if(document.visibilityState==='hidden') sync(); });
+  window.addEventListener('online',sync);
   window.__nlLabSync=sync;
 
   var CONS=P+'_data_consent', NOTE=P+'_consent_notice';
   var CURL='https://ebgoolsymyzkftvavpyj.supabase.co/functions/v1/lab-records';
-  var cstate=null;
+  var cstate=null, refreshBusy=false, consentEpoch=0;
+  window.__nlDataCollectionAllowed=false;
+  function applyConsent(j,key){
+    var active=!!(j && j.enabled && j.consent);
+    window.__nlDataCollectionAllowed=active; window.__nlDataCollectionLicense=key||'';
+    ls(CONS,active?'1':'0');
+    try{ window.__nlApplyCollectionState && window.__nlApplyCollectionState(); }catch(e){}
+    var epoch=++consentEpoch;
+    if(active) setTimeout(function(){ if(epoch===consentEpoch) applyConsent(null,key); },90000);
+  }
   function lic(){ try{ return JSON.parse(ls(LS)||'null'); }catch(e){ return null; } }
   function cpost(body){ return fetch(CURL,{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)}).then(function(r){ return r.json(); }); }
   function ymd(at){ try{ var d=new Date(at); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }catch(e){ return ''; } }
@@ -14240,8 +14258,8 @@ html body #handNextPrompt .h-frame::before,html body #handNextPrompt .h-frame::a
     if(!cstate || !cstate.enabled){ box.style.display='none'; return; }
     box.style.display='';
     var st=document.getElementById('nlConsentState'), btn=document.getElementById('nlConsentBtn'), nt=document.getElementById('nlConsentNote');
-    if(st) st.textContent= cstate.consent ? ('동의함 · '+ymd(cstate.at)) : '동의 안 함';
-    if(btn){ btn.textContent= cstate.consent ? '동의 철회' : '동의하기'; btn.disabled=false; }
+    if(st) st.textContent= cstate.consent ? ('측정 데이터 수집 중 · '+ymd(cstate.at)) : '측정 데이터 수집 꺼짐';
+    if(btn){ btn.textContent= cstate.consent ? '수집 중지 (동의 철회)' : '동의하고 수집 시작'; btn.disabled=false; }
     if(nt) nt.textContent= cstate.master ? '마스터 라이선스는 동의와 관계없이 연구 기록이 보관됩니다.' : '';
   }
   function notice(){
@@ -14253,20 +14271,23 @@ html body #handNextPrompt .h-frame::before,html body #handNextPrompt .h-frame::a
     }catch(e){}
   }
   function refresh(){
-    if(!live) return;
-    var c=lic(); if(!c || !c.license_key) return;
+    if(!live || refreshBusy) return;
+    var c=lic(); if(!c || !c.license_key){ applyConsent(null,''); return; }
+    refreshBusy=true;
     cpost({action:'consent-status', license_key:c.license_key, device_id:ls(DEV)||''}).then(function(j){
-      if(!j || !j.ok) return;
-      cstate=j; ls(CONS, (j.enabled && j.consent) ? '1' : '0'); render();
+      var current=lic(); if(!current || current.license_key!==c.license_key) return;
+      if(!j || !j.ok){ applyConsent(null,c.license_key); return; }
+      cstate=j; applyConsent(j,c.license_key); render();
       if(j.enabled && !j.consent && !j.master && !ls(NOTE)){ ls(NOTE,'1'); notice(); }
-    }).catch(function(){});
+      if(j.enabled && j.consent) sync();
+    }).catch(function(){ applyConsent(null,c.license_key); }).then(function(){ refreshBusy=false; });
   }
   function toggle(){
     if(!cstate || !cstate.enabled) return;
     var c=lic(); if(!c || !c.license_key) return;
     var btn=document.getElementById('nlConsentBtn'); if(btn) btn.disabled=true;
     cpost({action:'consent-set', license_key:c.license_key, device_id:ls(DEV)||'', consent:!cstate.consent}).then(function(j){
-      if(j && j.ok){ cstate=j; ls(CONS, (j.enabled && j.consent) ? '1' : '0'); }
+      if(j && j.ok){ cstate=j; applyConsent(j,c.license_key); }
       render();
     }).catch(function(){ render(); });
   }
@@ -14275,7 +14296,11 @@ html body #handNextPrompt .h-frame::before,html body #handNextPrompt .h-frame::a
     if(t.closest('#nlConsentBtn')){ toggle(); return; }
     if(t.closest('#settingsBtn, #setTabBtn_dev, [onclick*="toggleHudSettings"]')) setTimeout(refresh, 80);
   });
+  window.__nlConsentRefresh=refresh;
   setTimeout(refresh, 6000);
+  setInterval(refresh, 60000);
+  window.addEventListener('online',refresh);
+  document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible') refresh(); });
 })();
 </script>
 </body>

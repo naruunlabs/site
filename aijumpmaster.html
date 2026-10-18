@@ -1056,7 +1056,7 @@ body.jmp-racing .jt-duo{display:none!important}
 
     <div id="nlConsentBox" style="display:none;">
       <hr class="m-div">
-      <div class="m-label"><span>데이터측정 동의</span><output id="nlConsentState">-</output></div>
+      <div class="m-label"><span>측정 데이터 수집</span><output id="nlConsentState">-</output></div>
       <button class="m-act" id="nlConsentBtn" type="button">동의하기</button>
       <div class="m-help">동작 측정값(관절 숫자)을 나른랩스 서버로 보내 판정 개선에 씁니다. 영상·사진·이름은 보내지 않으며 10일 뒤 자동 삭제됩니다. 동의하지 않아도 프로그램은 똑같이 쓸 수 있습니다.</div>
       <div class="m-help" id="nlConsentNote"></div>
@@ -1112,11 +1112,11 @@ body.jmp-racing .jt-duo{display:none!important}
     <div class="lab-sec" style="margin-top:0">
       <h4>측정 기록</h4>
       <div class="lab-grid">
-        <div class="lab-cell"><i>기록 스위치</i><b id="labRecState">꺼짐</b></div>
+        <div class="lab-cell"><i>자동 기록</i><b id="labRecState">꺼짐</b></div>
         <div class="lab-cell"><i>쌓인 점프</i><b id="labRecCount">0</b></div>
       </div>
       <div class="lab-rec">
-        <button class="m-act full" id="labRecBtn" type="button">● 기록 시작</button>
+        <button class="m-act full" id="labRecBtn" type="button" disabled>마스터 자동 기록</button>
         <button class="m-act" id="labDlJson" type="button">JSON 내려받기</button>
         <button class="m-act" id="labDlCsv" type="button">CSV 내려받기</button>
         <button class="m-act logout full" id="labClear" type="button">기록 비우기</button>
@@ -1131,7 +1131,7 @@ body.jmp-racing .jt-duo{display:none!important}
 
 <script type="module">
 
-const APP_VERSION = '3.9.8';   
+const APP_VERSION = '3.9.9';   
 try{ window.__NL_VER = APP_VERSION; }catch(e){}   
 
 const MP_VERSION  = '1.0.1';
@@ -2518,7 +2518,7 @@ function updatePlayer(p,f,t){
   if(f){
     p.seen=true; p.lostSince=null; p.lastSeen=t; p.lm=f.lm;
 
-    if(jmpIsLab()){
+    if(jmpCanRecord()){
       p.poseHist.push({t, pose:labPoseMetrics(f.lm)});
       while(p.poseHist.length && t-p.poseHist[0].t>4000) p.poseHist.shift();
     }else if(p.poseHist.length) p.poseHist.length=0;
@@ -2530,7 +2530,7 @@ function updatePlayer(p,f,t){
     p.engine.feed(f.sigY,f.torso,t,ev=>onEngineEvent(p,ev));   
     if(running && !stepRound) try{ const k=srcAfter(p); if(k>0) onSrcAdd(p,k); }catch(e){}
     if(stepRound) stepFrame(p,f,t);   
-    if(running && labRecording && jmpIsLab() && p.rawAI.length<8000)
+    if(running && labRecording && jmpCanRecord() && p.rawAI.length<8000)
       p.rawAI.push([+t.toFixed(1),+f.y4.toFixed(5),+f.hipY.toFixed(5),+f.shY.toFixed(5),+f.torso.toFixed(5),+f.vmin.toFixed(2),
 
         ...[15,16].flatMap(i=>{ const q=f.lm[i]; return q?[+q.x.toFixed(4),+q.y.toFixed(4),+(q.visibility??0).toFixed(2)]:[null,null,0]; }),
@@ -4629,6 +4629,7 @@ function stepResultHtml(){
       raw_cols:['t_ms','body_y','hip_x','l_ankle_x','l_ankle_y','r_ankle_x','r_ankle_y','l_vis','r_vis','shoulder_w','torso'],
       raw:stp.raw });
     stepRoundsSave();
+    setTimeout(function(){ try{ window.__nlLabSync && window.__nlLabSync(); }catch(e){} },0);
   }
   if(total>0){ snd.finish(); if(full && pct>=90) confetti(true); }
   const tb=rows.map(r=>`<span>${STEP_NAME[r.t]}</span><b>${r.ok} / ${r.n}</b><i>${Math.round(r.ok/r.n*100)}%</i><span class="${r.w?'bad':''}">${r.w?'→ '+esc(r.w):''}</span>`).join('');
@@ -5342,20 +5343,25 @@ let labOpen=false, labRecording=false, labLog=[], labRecent=[], lastLabT=0;
 function jmpIsLab(){
   return !!(_jmpAuth && _jmpAuth.ok && _jmpAuth.beta);
 }
+function jmpCanRecord(){
+  return jmpIsLab() || !!(_jmpAuth && _jmpAuth.ok && window.__nlDataCollectionAllowed===true);
+}
+window.__nlApplyCollectionState=function(){ labRecording=jmpCanRecord(); labRenderCount(); };
 
 function applyJmpLabVisibility(){
   const on=jmpIsLab();
   document.body.classList.toggle('jmp-beta-on', on);
   document.body.classList.toggle('jmp-pilot-hud', on);
+  labRecording=jmpCanRecord(); 
+  labRenderCount();
   if(!on){
-    labRecording=false;                 
     labOpen=false;
     const m=$('jumpLabModal'); if(m) m.hidden=true;
   }
 }
 
 function labLoad(){
-  try{ labRecording = store.get(JMP_LAB_ON_KEY,'0')==='1'; }catch(e){ labRecording=false; }
+  labRecording=jmpCanRecord(); 
   try{ const v=store.json(JMP_LAB_LOG_KEY); labLog=Array.isArray(v)?v:[]; }catch(e){ labLog=[]; }
 }
 
@@ -5429,7 +5435,7 @@ function labPoseAt(p,t){
 }
 
 function labRecordJump(p,ev){
-  if(!jmpIsLab()) return;
+  if(!jmpCanRecord()) return;
   const e=p.engine, now=performance.now();
   
   const snap=ev.type==='jump'?labPoseAt(p,ev.t):{pose:null,delay:null}, pose=snap.pose||{};
@@ -5583,8 +5589,8 @@ function labRenderRecent(){
 }
 function labRenderCount(){
   setText($('labRecCount'), fmt(labLog.length));
-  setText($('labRecState'), labRecording?'켜짐 · 쌓는 중':'꺼짐');
-  const b=$('labRecBtn'); if(b) b.textContent = labRecording?'■ 기록 멈추기':'● 기록 시작';
+  setText($('labRecState'), labRecording?'자동 기록 중':'마스터 인증 대기');
+  const b=$('labRecBtn'); if(b){ b.textContent='마스터 자동 기록'; b.disabled=true; }
 }
 
 function openJumpLab(){
@@ -5665,7 +5671,7 @@ function labRoundsSave(){
             try{ localStorage.setItem(JMP_LAB_ROUNDS_KEY, JSON.stringify(labRounds)); }catch(_){} }
 }
 function labRoundFinished(m){
-  if(!jmpIsLab() || !(m==='solo'||m==='duo')) return;
+  if(!jmpCanRecord() || !(m==='solo'||m==='duo')) return;
   labPending={
     ts:new Date().toISOString(), mode:m, solo_mode:m==='solo'?soloMode:null,
     solo_jump_type:m==='solo'?soloJumpType:null,
@@ -5683,14 +5689,22 @@ function labRoundFinished(m){
       raw_ai:labRecording?p.rawAI.slice():null
     }))
   };
+  labPersistPending();
   labRenderTruth();
+}
+function labPersistPending(){
+  if(!labPending) return;
+  const i=labRounds.findIndex(r=>r.ts===labPending.ts);
+  if(i<0) labRounds.push(labPending); else labRounds[i]=labPending;
+  if(labRounds.length>LAB_ROUNDS_MAX) labRounds.splice(0,labRounds.length-LAB_ROUNDS_MAX);
+  labRoundsSave();
+  setTimeout(function(){ try{ window.__nlLabSync && window.__nlLabSync(); }catch(e){} },0);
 }
 /* 2026-09-23 · 정답을 안 적은 판도 버리지 않는다(개수·속도 기록은 쓸모 있다). */
 function labKeepPendingNoTruth(){
   if(!labPending) return;
-  labRounds.push(labPending);
-  if(labRounds.length>LAB_ROUNDS_MAX) labRounds.splice(0,labRounds.length-LAB_ROUNDS_MAX);
-  labPending=null; labRoundsSave(); labRenderTruth();
+  labPersistPending();
+  labPending=null; labRenderTruth();
 }
 function labRenderTruth(){
   const box=$('labTruthBox'); if(!box) return;
@@ -5699,7 +5713,7 @@ function labRenderTruth(){
   else{
     const ins=labPending.players.map(q=>`<span>${labPending.players.length>1?(q.pid===0?'청':'홍')+' ':''}지금 ${q.main}${q.wrist!=null?' · 손목확인 '+q.wrist:''} → 실제</span>
       <input type="number" min="0" inputmode="numeric" data-pid="${q.pid}" placeholder="개수">`).join('');
-    box.innerHTML=`<div class="lab-truth"><span>방금 판</span>${ins}<button class="m-act" id="labTruthSave" type="button">정답 저장</button><button class="m-act home" id="labTruthSkip" type="button">버리기</button></div>`+note;
+    box.innerHTML=`<div class="lab-truth"><span>방금 판</span>${ins}<button class="m-act" id="labTruthSave" type="button">정답 저장</button><button class="m-act home" id="labTruthSkip" type="button">정답 없이 보관</button></div>`+note;
   }
   labRenderRounds();
 }
@@ -5720,7 +5734,7 @@ function labRenderRounds(){
 }
 $('labTruthBox')?.addEventListener('click',e=>{
   if(!jmpIsLab()||!labPending) return;
-  if(e.target.id==='labTruthSkip'){ labPending=null; labRenderTruth(); return; }
+  if(e.target.id==='labTruthSkip'){ labKeepPendingNoTruth(); return; }
   if(e.target.id!=='labTruthSave') return;
   let any=false;
   $('labTruthBox').querySelectorAll('input[data-pid]').forEach(inp=>{
@@ -5728,8 +5742,8 @@ $('labTruthBox')?.addEventListener('click',e=>{
     if(q && Number.isFinite(v) && v>=0){ q.truth=v; any=true; }
   });
   if(!any){ alert('실제 개수를 넣어 주세요.'); return; }
-  labRounds.push(labPending); if(labRounds.length>LAB_ROUNDS_MAX) labRounds.splice(0,labRounds.length-LAB_ROUNDS_MAX);
-  labPending=null; labRoundsSave(); labRenderTruth();
+  labPersistPending();
+  labPending=null; labRenderTruth();
 });
 /* ── 버튼 연결 ────────────────────────────────────────────── */
 labLoad();
@@ -5743,9 +5757,7 @@ $('labClose')?.addEventListener('click',closeJumpLab);
 $('jumpLabModal')?.addEventListener('click',e=>{ if(e.target===$('jumpLabModal')) closeJumpLab(); });
 $('labRecBtn')?.addEventListener('click',()=>{
   if(!jmpIsLab()) return;
-  labRecording=!labRecording;
-  store.set(JMP_LAB_ON_KEY, labRecording?'1':'0');
-  if(!labRecording) labFlush();
+  labRecording=jmpIsLab(); // 이전 이벤트로도 자동 기록을 끌 수 없다
   labRenderCount();
 });
 $('labDlJson')?.addEventListener('click',()=>{
@@ -6281,15 +6293,16 @@ if('serviceWorker' in navigator){
   var EP=P+'_labsync_epoch', SENT=P+'_labsync_sent', CNT=P+'_labsync_count';
   var URL='https://ebgoolsymyzkftvavpyj.supabase.co/functions/v1/lab-records?action=upload';
   var live=/(^|\.)naruunlabs\.kr$/.test(location.hostname);
-  var busy=false;
+  var busy=false, again=false;
   function ls(k,v){ try{ if(v===undefined) return localStorage.getItem(k); if(v===null) localStorage.removeItem(k); else localStorage.setItem(k,v); }catch(e){} return null; }
   function b64(s){ var b=new TextEncoder().encode(s), x=''; for(var i=0;i<b.length;i++) x+=String.fromCharCode(b[i]); return btoa(x); }
   function day(){ return new Date(Date.now()+9*3600000).toISOString().slice(2,10).split('-').join(''); }
   function sync(){
-    if(!live || busy || typeof CompressionStream==='undefined') return;
+    if(!live || typeof CompressionStream==='undefined') return;
+    if(busy){ again=true; return; }
     var c=null; try{ c=JSON.parse(ls(LS)||'null'); }catch(e){}
     if(!c || !c.license_key) return;
-    if(!c.is_beta && ls(P+'_data_consent')!=='1') return;   
+    if(!c.is_beta && !(window.__nlDataCollectionAllowed===true && window.__nlDataCollectionLicense===c.license_key)) return;   
     var get=window.__nlLabPayload; if(typeof get!=='function') return;
     var pl=null; try{ pl=get(); }catch(e){ return; }
     var n=pl ? (pl.count|0) : 0;
@@ -6299,7 +6312,10 @@ if('serviceWorker' in navigator){
     var ep=ls(EP); if(!ep){ ep=Date.now().toString(36); ls(EP,ep); }
     var text=JSON.stringify(pl.data);
     var id=P+'-'+day()+'-'+ep;
-    var sig=id+'|'+n+'|'+text.length;
+    
+    var stable=JSON.stringify(pl.data,function(k,v){ return k==='exported_at'||k==='exportedAt'?undefined:v; });
+    var hash=2166136261; for(var h=0;h<stable.length;h++){ hash=Math.imul(hash^stable.charCodeAt(h),16777619); }
+    var sig=id+'|'+n+'|'+stable.length+'|'+(hash>>>0);
     ls(CNT,String(n));
     if(ls(SENT)===sig) return;
     busy=true;
@@ -6309,16 +6325,26 @@ if('serviceWorker' in navigator){
       .then(function(r){ return r.json(); })
       .then(function(j){ if(j && j.ok) ls(SENT,sig); })
       .catch(function(){})
-      .then(function(){ busy=false; });
+      .then(function(){ busy=false; if(again){ again=false; setTimeout(sync,250); } });
   }
   setInterval(sync, 60000);
   setTimeout(sync, 15000);
   document.addEventListener('visibilitychange', function(){ if(document.visibilityState==='hidden') sync(); });
+  window.addEventListener('online',sync);
   window.__nlLabSync=sync;
 
   var CONS=P+'_data_consent', NOTE=P+'_consent_notice';
   var CURL='https://ebgoolsymyzkftvavpyj.supabase.co/functions/v1/lab-records';
-  var cstate=null;
+  var cstate=null, refreshBusy=false, consentEpoch=0;
+  window.__nlDataCollectionAllowed=false;
+  function applyConsent(j,key){
+    var active=!!(j && j.enabled && j.consent);
+    window.__nlDataCollectionAllowed=active; window.__nlDataCollectionLicense=key||'';
+    ls(CONS,active?'1':'0');
+    try{ window.__nlApplyCollectionState && window.__nlApplyCollectionState(); }catch(e){}
+    var epoch=++consentEpoch;
+    if(active) setTimeout(function(){ if(epoch===consentEpoch) applyConsent(null,key); },90000);
+  }
   function lic(){ try{ return JSON.parse(ls(LS)||'null'); }catch(e){ return null; } }
   function cpost(body){ return fetch(CURL,{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)}).then(function(r){ return r.json(); }); }
   function ymd(at){ try{ var d=new Date(at); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }catch(e){ return ''; } }
@@ -6327,8 +6353,8 @@ if('serviceWorker' in navigator){
     if(!cstate || !cstate.enabled){ box.style.display='none'; return; }
     box.style.display='';
     var st=document.getElementById('nlConsentState'), btn=document.getElementById('nlConsentBtn'), nt=document.getElementById('nlConsentNote');
-    if(st) st.textContent= cstate.consent ? ('동의함 · '+ymd(cstate.at)) : '동의 안 함';
-    if(btn){ btn.textContent= cstate.consent ? '동의 철회' : '동의하기'; btn.disabled=false; }
+    if(st) st.textContent= cstate.consent ? ('측정 데이터 수집 중 · '+ymd(cstate.at)) : '측정 데이터 수집 꺼짐';
+    if(btn){ btn.textContent= cstate.consent ? '수집 중지 (동의 철회)' : '동의하고 수집 시작'; btn.disabled=false; }
     if(nt) nt.textContent= cstate.master ? '마스터 라이선스는 동의와 관계없이 연구 기록이 보관됩니다.' : '';
   }
   function notice(){
@@ -6340,20 +6366,23 @@ if('serviceWorker' in navigator){
     }catch(e){}
   }
   function refresh(){
-    if(!live) return;
-    var c=lic(); if(!c || !c.license_key) return;
+    if(!live || refreshBusy) return;
+    var c=lic(); if(!c || !c.license_key){ applyConsent(null,''); return; }
+    refreshBusy=true;
     cpost({action:'consent-status', license_key:c.license_key, device_id:ls(DEV)||''}).then(function(j){
-      if(!j || !j.ok) return;
-      cstate=j; ls(CONS, (j.enabled && j.consent) ? '1' : '0'); render();
+      var current=lic(); if(!current || current.license_key!==c.license_key) return;
+      if(!j || !j.ok){ applyConsent(null,c.license_key); return; }
+      cstate=j; applyConsent(j,c.license_key); render();
       if(j.enabled && !j.consent && !j.master && !ls(NOTE)){ ls(NOTE,'1'); notice(); }
-    }).catch(function(){});
+      if(j.enabled && j.consent) sync();
+    }).catch(function(){ applyConsent(null,c.license_key); }).then(function(){ refreshBusy=false; });
   }
   function toggle(){
     if(!cstate || !cstate.enabled) return;
     var c=lic(); if(!c || !c.license_key) return;
     var btn=document.getElementById('nlConsentBtn'); if(btn) btn.disabled=true;
     cpost({action:'consent-set', license_key:c.license_key, device_id:ls(DEV)||'', consent:!cstate.consent}).then(function(j){
-      if(j && j.ok){ cstate=j; ls(CONS, (j.enabled && j.consent) ? '1' : '0'); }
+      if(j && j.ok){ cstate=j; applyConsent(j,c.license_key); }
       render();
     }).catch(function(){ render(); });
   }
@@ -6362,7 +6391,11 @@ if('serviceWorker' in navigator){
     if(t.closest('#nlConsentBtn')){ toggle(); return; }
     if(t.closest('#settingsBtn, #setTabBtn_dev, [onclick*="toggleHudSettings"]')) setTimeout(refresh, 80);
   });
+  window.__nlConsentRefresh=refresh;
   setTimeout(refresh, 6000);
+  setInterval(refresh, 60000);
+  window.addEventListener('online',refresh);
+  document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible') refresh(); });
 })();
 </script>
 </body>
