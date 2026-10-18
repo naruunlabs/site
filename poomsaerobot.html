@@ -1251,6 +1251,11 @@ el('speed').onchange=e=>rate=+e.target.value;
 el('view').onchange=e=>{ view=e.target.value; if(view==='free') orbit.target.copy(tgt); };
 
 const orbit=new OrbitControls(cam1,cvs); orbit.enableDamping=true; orbit.dampingFactor=.12; orbit.enablePan=false;
+
+if(EMBED){ let pd=null;
+  cvs.addEventListener('pointerdown',e=>{ pd={x:e.clientX,y:e.clientY,t:performance.now()}; });
+  cvs.addEventListener('pointerup',e=>{ if(!pd) return; const moved=Math.hypot(e.clientX-pd.x,e.clientY-pd.y), dt=performance.now()-pd.t; pd=null;
+    if(moved<10 && dt<400){ try{ parent.__psmGroupTap && parent.__psmGroupTap(); }catch(_){} } }); }
 orbit.minDistance=1.2; orbit.maxDistance=8; orbit.maxPolarAngle=Math.PI*.49; orbit.target.copy(tgt);
 orbit.addEventListener('start',()=>{ if(view!=='free'){ view='free'; el('view').value='free'; orbit.target.copy(tgt); } });
 el('move').onclick=e=>{ useMove=!useMove; e.target.classList.toggle('on',useMove); e.target.textContent=useMove?'이동':'제자리'; };

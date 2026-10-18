@@ -135,6 +135,8 @@ body.group-running .gctl{display:flex}
 .gctl button:hover{color:#fff}
 .gctl button.on{color:var(--teal-lit);border-bottom-color:var(--teal)}
 
+#gPausedTag{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(max(14px,env(safe-area-inset-bottom)) + 52px);z-index:30;font-size:clamp(15px,1.3vw,22px);font-weight:900;color:var(--teal-lit);text-shadow:0 2px 10px rgba(0,0,0,.95);pointer-events:none}
+#gPausedTag[hidden]{display:none}
 .gscrub{display:none;position:fixed;left:50%;transform:translateX(-50%);bottom:max(14px,env(safe-area-inset-bottom));width:min(52vw,900px);z-index:30}
 body.group-running .gscrub{display:block}
 .gscrub .gs-track{position:relative;width:100%;height:44px;display:flex;align-items:center}
@@ -323,7 +325,6 @@ table.t input{width:100%}
   <button class="ctrl-link" id="btnCancel" type="button" hidden>취소</button>
   
   <div class="gctl" id="groupCtl">
-    <button type="button" id="gPause">⏸ 일시정지</button>
     <button type="button" id="gPrev">◀ 이전 동작</button>
     <button type="button" id="gNext">다음 동작 ▶</button>
     <button type="button" id="gBack">↺ 뒷모습</button>
@@ -331,6 +332,7 @@ table.t input{width:100%}
   <button class="bigbtn playbtn" id="btnStart" type="button" disabled>시작!</button>
   <button class="bigbtn stopbtn" id="btnEnd" type="button" hidden>끝내기</button>
 </div>
+<div id="gPausedTag" hidden>⏸ 일시정지 · 화면을 누르면 다시 시작</div>
 
 <div class="gscrub" id="groupScrub"><div class="gs-track"><div class="gs-marks" id="gMarks"></div><input type="range" id="gSeek" min="0" max="2000" value="0" aria-label="동작 위치"></div></div>
 <button class="fs-btn" id="fsBtn" type="button">전체화면</button>
@@ -865,7 +867,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
 
   var groupRunning=false, groupWantPlay=false, groupPaused=false;
   
-  function setGroupPaused(b){ groupPaused=b; $('gPause').textContent= b ? '▶ 다시 시작' : '⏸ 일시정지'; $('gPause').classList.toggle('on', b); }
+  function setGroupPaused(b){ groupPaused=b; $('gPausedTag').hidden=!(b && groupRunning); }
   function robot(){ var f=$('groupFrame'); try{ return f && f.contentWindow && f.contentWindow.__robot; }catch(e){ return null; } }
   function enterGroup(){
     if(stream){ stream.getTracks().forEach(function(t){ t.stop(); }); stream=null; }
@@ -913,6 +915,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     $('btnStart').hidden=false; $('btnEnd').hidden=true; $('btnEnd').textContent='끝내기';
     try{ wakeLock && wakeLock.release(); }catch(e){} wakeLock=null;
   }
+  window.__psmGroupTap=function(){ if(groupRunning) toggleGroupPause(); };   
   function toggleGroupPause(){ var r=robot(); if(!r) return; if(groupPaused){ r.resume(); setGroupPaused(false); } else { r.pause(); setGroupPaused(true); } }
   
   window.__psmGroupDone=function(){ if(groupRunning) stopGroup(); };
@@ -939,7 +942,6 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
       updateModeUi();
     });
     
-    $('gPause').addEventListener('click', toggleGroupPause);
     $('gPrev').addEventListener('click', function(){ var r=robot(); if(r){ r.step(-1); setGroupPaused(true); } });
     $('gNext').addEventListener('click', function(){ var r=robot(); if(r){ r.step(1); setGroupPaused(true); } });
     $('gBack').addEventListener('click', function(){ var r=robot(); if(r) r.view('back'); });
