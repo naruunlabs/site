@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
 <meta name="theme-color" content="#0A1628">
-<title>품새 측정기 · 나른랩스</title>
+<title>품새마스터 · 나른랩스</title>
 <link rel="icon" href="favicon.ico">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -165,7 +165,7 @@ table.t input{width:100%}
 <div id="gate">
   <div class="gate-box">
     <div class="gate-brand">NARUUN LABS · POOMSAE</div>
-    <div class="gate-title">품새 측정기</div>
+    <div class="gate-title">품새마스터</div>
     <p class="gate-sub">품새마스터 개발용 시험 도구입니다.<br>품새 라이선스(PMS-)로만 열립니다.</p>
     <input id="gateKey" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="PMS-0000-XXXX-0000" aria-label="라이선스 키">
     <button class="gate-btn" id="gateBtn" type="button">인증하기</button>
@@ -181,14 +181,14 @@ table.t input{width:100%}
 <div class="title-block">
   <div class="tb-dojang" id="tbDojang">POOMSAE MASTER</div>
   <div class="tb-auth" id="tbAuth">● 마스터 라이선스</div>
-  <div class="tb-meta" id="tbVer">품새 측정기</div>
+  <div class="tb-meta" id="tbVer">품새마스터</div>
   <div class="tb-meta">Powered by Google MediaPipe</div>
   <div class="tb-tag">시험용 · 비공개</div>
 </div>
 <div id="status">카메라 준비 중…</div>
 
 <section id="lobby" hidden>
-  <div class="lb-top"><h2 class="lb-h">품새 측정기</h2><button type="button" class="lb-fold" id="btnFold">접기 ▾</button></div>
+  <div class="lb-top"><h2 class="lb-h">품새마스터</h2><button type="button" class="lb-fold" id="btnFold">접기 ▾</button></div>
   <p class="lb-sub">멈춘 순간마다 AI 가 <b>방향 · 서기 · 기술</b>을 보고 정답지와 비교합니다. 영상은 저장하지 않고 관절 좌표만 이 기기와 나른랩스 서버(10일 보관)에 자동 저장됩니다.</p>
 
   <div class="lb-label">누가 하나요</div>
@@ -203,8 +203,8 @@ table.t input{width:100%}
 
   <div class="lb-label">품새</div>
   <div class="seg c2" id="segPoomsae">
-    <button type="button" data-v="tg1" class="on">태극 1장<small>18동작</small></button>
-    <button type="button" data-v="soon" disabled>2장부터<small>시험 후 추가</small></button>
+    <button type="button" data-v="tg1">태극 1장<small>18동작</small></button>
+    <button type="button" data-v="tg2">태극 2장<small>18동작</small></button>
   </div>
 
   <div class="lb-label">시작 전 대기</div>
@@ -239,7 +239,7 @@ table.t input{width:100%}
 
   <div class="lb-tip">
     <b>카메라 놓는 법</b> · 태블릿을 학생 <b>정면 4~5m</b>, 허리 높이에 가로로 둡니다. 카메라를 보고 차렷으로 기다리다가, “준비” 구령에 준비 자세를 합니다.<br>
-    태극 1장은 좌우로 한 걸음씩, 앞으로 두 번 나왔다 돌아옵니다. <b>양옆과 앞쪽 끝이 다 화면에 들어오는지</b> 먼저 확인하세요.<br>
+    태극 1·2장은 좌우로 한 걸음씩, 앞으로 나왔다 돌아옵니다. <b>양옆과 앞쪽 끝이 다 화면에 들어오는지</b> 먼저 확인하세요.<br>
     <b>준비 자세가 확인되면 “시작”</b>을 안내합니다. 동작마다 잠깐 멈추며 평소 속도로 하세요.<br>마지막에는 <b>“바로” → 준비 자세 확인 → “쉬어”</b>까지 진행합니다. 구령이 안 들리면 화면 안내를 보세요.
   </div>
 </section>
@@ -261,7 +261,7 @@ table.t input{width:100%}
 <script id="psm-core">
 
 var PSM = (function(){
-  var VERSION = '0.4.3';
+  var VERSION = '0.5.0';
 
   var DEFAULT_CFG = {
     SMOOTH: 0.5,        
@@ -316,6 +316,31 @@ var PSM = (function(){
     {n:18, dir:'B', stance:'앞굽이', tech:'몸통지르기', name:'오른앞굽이 몸통반대지르기 (기합)', hand:'오른주먹'},
     {n:19, dir:'F', stance:'준비',  tech:'준비',      name:'바로 (나란히서기)', hand:'', opt:true}
   ];
+
+  var KEY_TG2 = [
+    {n:0,  dir:'F', stance:'준비',  tech:'준비',      name:'나란히서기 기본준비', hand:''},
+    {n:1,  dir:'L', stance:'앞서기', tech:'아래막기',   name:'왼앞서기 아래막기', hand:'왼팔'},
+    {n:2,  dir:'L', stance:'앞굽이', tech:'몸통지르기', name:'오른앞굽이 몸통반대지르기', hand:'오른주먹'},
+    {n:3,  dir:'R', stance:'앞서기', tech:'아래막기',   name:'오른앞서기 아래막기', hand:'오른팔'},
+    {n:4,  dir:'R', stance:'앞굽이', tech:'몸통지르기', name:'왼앞굽이 몸통반대지르기', hand:'왼주먹'},
+    {n:5,  dir:'F', stance:'앞서기', tech:'몸통안막기', name:'왼앞서기 몸통안막기', hand:'오른팔'},
+    {n:6,  dir:'F', stance:'앞서기', tech:'몸통안막기', name:'오른앞서기 몸통안막기', hand:'왼팔'},
+    {n:7,  dir:'L', stance:'앞서기', tech:'아래막기',   name:'왼앞서기 아래막기', hand:'왼팔'},
+    {n:8,  dir:'L', stance:'앞굽이', tech:'몸통지르기', name:'오른발 앞차기 → 오른앞굽이 얼굴반대지르기', hand:'오른주먹', chk:true},
+    {n:9,  dir:'R', stance:'앞서기', tech:'아래막기',   name:'오른앞서기 아래막기', hand:'오른팔'},
+    {n:10, dir:'R', stance:'앞굽이', tech:'몸통지르기', name:'왼발 앞차기 → 왼앞굽이 얼굴반대지르기', hand:'왼주먹', chk:true},
+    {n:11, dir:'F', stance:'앞서기', tech:'얼굴막기',   name:'왼앞서기 얼굴막기', hand:'왼팔'},
+    {n:12, dir:'F', stance:'앞서기', tech:'얼굴막기',   name:'오른앞서기 얼굴막기', hand:'오른팔'},
+    {n:13, dir:'R', stance:'앞서기', tech:'몸통안막기', name:'왼앞서기 몸통안막기', hand:'오른팔', chk:true},
+    {n:14, dir:'L', stance:'앞서기', tech:'몸통안막기', name:'오른앞서기 몸통안막기', hand:'왼팔', chk:true},
+    {n:15, dir:'B', stance:'앞서기', tech:'아래막기',   name:'왼앞서기 아래막기', hand:'왼팔'},
+    {n:16, dir:'B', stance:'앞서기', tech:'몸통지르기', name:'오른발 앞차기 → 오른앞서기 몸통반대지르기', hand:'오른주먹'},
+    {n:17, dir:'B', stance:'앞서기', tech:'몸통지르기', name:'왼발 앞차기 → 왼앞서기 몸통반대지르기', hand:'왼주먹'},
+    {n:18, dir:'B', stance:'앞서기', tech:'몸통지르기', name:'오른발 앞차기 → 오른앞서기 몸통반대지르기 (기합)', hand:'오른주먹'},
+    {n:19, dir:'F', stance:'준비',  tech:'준비',      name:'바로 (나란히서기)', hand:'', opt:true}
+  ];
+  var KEYS = {tg1:KEY_TG1, tg2:KEY_TG2};
+  var POOMSAE_NAME = {tg1:'태극 1장', tg2:'태극 2장'};
 
   var KP = [11,12,13,14,15,16,23,24,25,26,27,28];
   var G_CORE = [0,1,6,7], G_ARM = [2,3,4,5], G_LEG = [8,9,10,11];
@@ -573,7 +598,7 @@ var PSM = (function(){
   }
 
   return {VERSION:VERSION, DEFAULT_CFG:DEFAULT_CFG, CFG_INFO:CFG_INFO, DIR_NAME:DIR_NAME, TECHS:TECHS, STANCES:STANCES,
-    KEY_TG1:KEY_TG1, noTech:noTech, feat:feat, aggregate:aggregate, classify:classify, judge:judge, makeDetector:makeDetector,
+    KEY_TG1:KEY_TG1, KEY_TG2:KEY_TG2, KEYS:KEYS, POOMSAE_NAME:POOMSAE_NAME, noTech:noTech, feat:feat, aggregate:aggregate, classify:classify, judge:judge, makeDetector:makeDetector,
     replay:replay, align:align, summarize:summarize, syncPairs:syncPairs, stopLite:stopLite, round:r};
 })();
 if(typeof module!=='undefined' && module.exports) module.exports=PSM;
@@ -588,7 +613,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   var VERIFY_URL='https://ebgoolsymyzkftvavpyj.supabase.co/functions/v1/verify-pms';
   var LAB_URL='https://ebgoolsymyzkftvavpyj.supabase.co/functions/v1/lab-records';
   var authKey='';
-  var LS_AUTH='psm_lab_auth_v1', LS_PREF='psm_lab_pref_v1', LS_KEY='psm_lab_key_tg1', LS_CFG='psm_lab_cfg_v1';
+  var LS_AUTH='psm_lab_auth_v1', LS_PREF='psm_lab_pref_v1', LS_CFG='psm_lab_cfg_v1';
   var PUBKEY={"kty":"EC","crv":"P-256","x":"TRVuOcoZYEagtQgi5GRgUOSIkAjiW_aUS4O9U6cfK0I","y":"IknjHnofBQw-5FhVBgeI2hx9WFT4OIs90G4aPYBNbuc"};
   var MODELS={
     full:'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task',
@@ -598,19 +623,23 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   var CONN=[[11,12],[11,13],[13,15],[12,14],[14,16],[11,23],[12,24],[23,24],[23,25],[25,27],[24,26],[26,28],[27,31],[28,32],[27,29],[28,30]];
   var TRACK_COL=['#5EEAD4','#BEF264'];
 
-  $('tbVer').textContent='품새 측정기 v'+PSM.VERSION;
+  $('tbVer').textContent='품새마스터 v'+PSM.VERSION;
 
   function lsGet(k,d){ try{ var v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch(e){ return d; } }
   function lsSet(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
   function fmtT(ms){ var s=Math.max(0,Math.floor(ms/1000)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
 
-  var pref=Object.assign({role:'master', wait:'10', cam:'user', model:'full', feedback:'off'}, lsGet(LS_PREF,{}));
+  var pref=Object.assign({role:'master', wait:'10', cam:'user', model:'full', feedback:'off', poomsae:'tg1'}, lsGet(LS_PREF,{}));
+  if(!PSM.KEYS[pref.poomsae]) pref.poomsae='tg1';
+  
+  function lsKey(){ return 'psm_lab_key_'+pref.poomsae; }
+  function baseKey(p){ return PSM.KEYS[p||pref.poomsae]||PSM.KEY_TG1; }
   var cfg=Object.assign({}, PSM.DEFAULT_CFG, lsGet(LS_CFG,{}));
   function getKey(){
-    var saved=lsGet(LS_KEY,null);
-    if(saved && saved.length===PSM.KEY_TG1.length) return saved;
-    return JSON.parse(JSON.stringify(PSM.KEY_TG1));
+    var saved=lsGet(lsKey(),null), base=baseKey();
+    if(saved && saved.length===base.length) return saved;
+    return JSON.parse(JSON.stringify(base));
   }
   var KEY=getKey();
 
@@ -706,13 +735,14 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
       if(key==='cam' && old!==pref.cam) startCamera();
       if(key==='model' && old!==pref.model) loadModel();
       if(key==='role') ensurePoses();
+      if(key==='poomsae') KEY=getKey();
     });
     paint();
   }
 
   function boot(){
     if(booted) return; booted=true;
-    segInit('segFeedback','feedback'); segInit('segRole','role'); segInit('segWait','wait'); segInit('segCam','cam'); segInit('segModel','model');
+    segInit('segPoomsae','poomsae'); segInit('segFeedback','feedback'); segInit('segRole','role'); segInit('segWait','wait'); segInit('segCam','cam'); segInit('segModel','model');
     $('lobby').hidden=false;
     $('btnStart').addEventListener('click', startSession);
     $('btnFold').addEventListener('click', function(){
@@ -947,7 +977,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     ensurePoses();
     tracks=[null,null];
     rec={id:'psm-'+Date.now().toString(36), app:'psm-lab', ver:PSM.VERSION, created:new Date().toISOString(),
-      role:pref.role, label:($('inLabel').value||'').trim(), poomsae:'tg1', mode:mode, cam:pref.cam, model:pref.model,
+      role:pref.role, label:($('inLabel').value||'').trim(), poomsae:pref.poomsae, mode:mode, cam:pref.cam, model:pref.model,
       W:srcW, H:srcH, ua:navigator.userAgent, screen:innerWidth+'x'+innerHeight, cfg:Object.assign({},cfg), key:KEY, frames:[], running:false};
     live={det:[], ptr:[0,0], marks:[[],[]], last:['',''], seen:[0,0], miss:[0,0], both:0, frames:0, lastMove:0, lastStop:0, events:[], phase:'countdown', readySince:[null,null]};
     for(var k=0;k<mode;k++) live.det.push(PSM.makeDetector(cfg));
@@ -1069,7 +1099,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
 
   function analyze(r, c){
     var out={tracks:[]}, key=(r.key||KEY).slice();
-    if(!key.some(function(k){ return k.opt; })) key.push(PSM.KEY_TG1[PSM.KEY_TG1.length-1]);   
+    if(!key.some(function(k){ return k.opt; })) { var bk=baseKey(r.poomsae||'tg1'); key.push(bk[bk.length-1]); }   
     for(var k=0;k<r.mode;k++){
       var rp=PSM.replay(r, k, c);
       var sm=PSM.summarize(rp.stops, key);
@@ -1259,8 +1289,8 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   function openKey(){ renderKey(); $('mKey').hidden=false; }
   function opt(list, v, names){ return list.map(function(x){ return '<option value="'+x+'"'+(x===v?' selected':'')+'>'+(names?names[x]:x)+'</option>'; }).join(''); }
   function renderKey(){
-    var h='<div class="m-head"><h3>정답지 · 태극 1장</h3><button class="m-x" data-act="close">닫기</button></div>';
-    h+='<p class="m-note">국기원 기준으로 넣었습니다. <b>방향은 학생 기준</b>입니다 (정면 = 카메라, 왼쪽 = 학생의 왼쪽). AI 는 방향 · 서기 · 기술만 비교합니다. 손(팔)은 아직 판정하지 않고 참고로만 둡니다.<br><span style="color:var(--amber)">노란 칸(7~10번 안막기·지르기 손)</span>은 도장에서 가르치는 방식과 같은지 확인해 주세요.</p>';
+    var h='<div class="m-head"><h3>정답지 · '+PSM.POOMSAE_NAME[pref.poomsae]+'</h3><button class="m-x" data-act="close">닫기</button></div>';
+    h+='<p class="m-note">국기원 기준으로 넣었습니다. <b>방향은 학생 기준</b>입니다 (정면 = 카메라, 왼쪽 = 학생의 왼쪽). AI 는 방향 · 서기 · 기술만 비교합니다. 손(팔)은 아직 판정하지 않고 참고로만 둡니다.<br><span style="color:var(--amber)">노란 칸</span>은 도장에서 가르치는 방식과 같은지 확인해 주세요.</p>';
     h+='<table class="t"><thead><tr><th>#</th><th>방향</th><th>서기</th><th>기술 분류</th><th>동작 이름</th><th>손</th></tr></thead><tbody>';
     KEY.forEach(function(k,i){
       h+='<tr'+(k.chk?' style="background:rgba(251,191,36,.08)"':'')+'><td class="n">'+k.n+'</td>';
@@ -1275,12 +1305,12 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   }
   $('keyBox').addEventListener('change', function(e){
     var el=e.target; if(el.dataset.i==null) return;
-    KEY[+el.dataset.i][el.dataset.f]=el.value; lsSet(LS_KEY,KEY);
+    KEY[+el.dataset.i][el.dataset.f]=el.value; lsSet(lsKey(),KEY);
   });
   $('keyBox').addEventListener('click', function(e){
     var b=e.target.closest('button'); if(!b) return;
     if(b.dataset.act==='close'){ $('mKey').hidden=true; }
-    if(b.dataset.act==='reset'){ KEY=JSON.parse(JSON.stringify(PSM.KEY_TG1)); lsSet(LS_KEY,null); renderKey(); }
+    if(b.dataset.act==='reset'){ KEY=JSON.parse(JSON.stringify(baseKey())); lsSet(lsKey(),null); renderKey(); }
   });
 
   function openCfg(){ renderCfg(); $('mCfg').hidden=false; }
