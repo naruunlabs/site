@@ -307,7 +307,7 @@
         '<div class="tr-card" data-s="load" hidden><div class="in"><div class="tr-spin"></div><p>AI 모델을 불러오는 중입니다…</p></div></div>'+
         '<div class="tr-card" data-s="done" hidden><div class="in">'+
           '<span class="kicker">READY</span><h3>인식 완료! 여기서부터가 진짜 수업입니다</h3><p>'+next+'</p>'+
-          '<div class="row"><a class="btn btn-main js-kakao" href="#contact" data-a="talk">도입 상담하기</a><button class="btn btn-line" data-a="modes" type="button">수업 화면 보기</button><button class="btn btn-line" data-a="again" type="button">다시 해보기</button></div>'+
+          '<div class="row"><a class="btn btn-kakao js-kakao" href="#contact" data-a="talk">카톡으로 도입 상담</a><button class="btn btn-line" data-a="modes" type="button">수업 화면 보기</button><button class="btn btn-line" data-a="again" type="button">다시 해보기</button></div>'+
         '</div></div>'+
         '<div class="tr-card" data-s="fail" hidden><div class="in">'+
           '<h3>이 기기에서는 체험이 어려워요</h3><p class="why"></p>'+
