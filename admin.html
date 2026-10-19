@@ -513,6 +513,7 @@ table.cg tfoot td.num{text-align:right}
   .cg-top{gap:6px}
 }
 
+.ledger-hint-inline{margin-left:7px;font-size:11px;font-weight:700;color:var(--muted2)}
 .ledger-tag{margin-left:7px;padding:2px 8px;border-radius:999px;background:#EAF4FF;
   color:#0757D8;font-size:10.5px;font-weight:800;vertical-align:1px}
 
@@ -1131,7 +1132,7 @@ table.cg tfoot td.num{text-align:right}
       <input id="mPayMemo" class="f-input" type="text" placeholder="예) 카드결제, 계좌이체 등" />
     </div>
     <div class="modal-section">
-      <div class="modal-section-title">메모</div>
+      <div class="modal-section-title">도장 메모 <span class="ledger-hint-inline">고객 관리 장부의 메모와 같은 칸</span></div>
       <textarea id="mMemo" class="f-textarea" placeholder="특이사항, 계약 조건 등"></textarea>
     </div>
 
@@ -1560,6 +1561,12 @@ function customerOfLicense(d){
   return d.license_key ? (CUSTOMERS||[]).find(c => c.license_key === d.license_key) || null : null;
 }
 function branchCustomerForLicense(d){ return customerOfLicense(d); }
+
+function licenseMemo(d){ const c = customerOfLicense(d); return c ? (c.memo || '') : (d.memo || ''); }
+function mirrorCustomerToLicenses(c){
+  if (!c) return;
+  for (const l of licensesOfCustomer(c)) { if (c.dojang_name) l.dojang_name = c.dojang_name; if (c.phone) l.phone = c.phone; }
+}
 function customerForLicense(key) {
   if (!key) return null;
   return customerOfLicense((LICENSES||[]).find(l => l.license_key === key));
@@ -1637,7 +1644,7 @@ function renderTable() {
 
   const qd = /^[0-9]{3,}$/.test(q) ? q : '';
   let rows = licensesForCurrentProduct().filter(d => {
-    const hay = [d.dojang_name, d.license_key, d.phone||'', d.memo||''].join(' ').toLowerCase();
+    const hay = [d.dojang_name, d.license_key, d.phone||'', licenseMemo(d)].join(' ').toLowerCase();
     const qHit = !q || hay.includes(q)
       || (qd && String(d.phone||'').replace(/[^0-9]/g,'').includes(qd));
     const statusMatch = filter === 'cold' ? isColdLicense(d)
@@ -1698,7 +1705,7 @@ function renderTable() {
         <button class="key-btn" title="${escapeHtml(d.license_key)}" ${adminAction("copyKeyOnly",[d.license_key])}>키 복사</button>
         <button type="button" class="mobile-expand" onclick="toggleMobileCard(this)" aria-expanded="false">상세 보기</button>
         <span class="dojang-line">${line2}</span>
-        ${d.memo?`<span class="dojang-memo" title="${escapeHtml(d.memo)}">${escapeHtml(d.memo)}</span>`:''}
+        ${licenseMemo(d)?`<span class="dojang-memo" title="${escapeHtml(licenseMemo(d))}">${escapeHtml(licenseMemo(d))}</span>`:''}
       </td>
       <td class="cell-who" data-label="관장님 · 지역">${whoCell}</td>
       <td data-label="종류">${typeLabel}</td>
@@ -1907,6 +1914,7 @@ function fillFromMember(m){
   pickedCustomerId = m.id || null;
   
   const real = m.id ? (CUSTOMERS||[]).find(c => c.id === m.id) || null : null;
+  if (real) { document.getElementById('mMemo').value = real.memo || ''; modalMemoFor = real.id; }
   fillLedgerFields(real || { owner_name:m.owner_name, sido:m.sido, sigungu:m.sigungu, source:m.source, branch_code:m.branch_code });
 
   const wantId  = curProduct().key;
@@ -1949,7 +1957,7 @@ function openAddModal() {
   currentEditTrialStartedAt = null;
   currentEditDeviceSlots = [];
   currentEditLicenseId = null;
-  pickedCustomerId = null;
+  pickedCustomerId = null; modalMemoFor = null;
   const cn0 = document.getElementById('convertNote'); if (cn0) cn0.textContent = '';
   document.getElementById('deviceSlotSection').style.display = 'none';
   document.getElementById('usageSection').style.display = 'none';
@@ -2066,7 +2074,7 @@ function openEditModal(encoded) {
   document.getElementById('mPayDate').value = d.pay_date || '';
   document.getElementById('mPayMemo').value = d.pay_memo || '';
   document.getElementById('mPhone').value = d.phone || '';
-  document.getElementById('mMemo').value = d.memo || '';
+  document.getElementById('mMemo').value = licenseMemo(d);   
   document.getElementById('mMaxDevices').value = d.max_devices || 2;
   document.getElementById('mTrialDays').value = Number(d.trial_days) || 3;
   document.getElementById('trialStatusBox').textContent = trialStatusText(d);
@@ -2085,6 +2093,7 @@ function openEditModal(encoded) {
   document.getElementById('saveCopyBtn').textContent = '저장하고 카톡 복사';
   const owner = customerOfLicense(d);
   pickedCustomerId = owner ? owner.id : null;
+  modalMemoFor = owner ? owner.id : null;
   fillLedgerFields(owner);
   renderOwnedProducts(owner, d.license_key, d.dojang_name);   
   document.getElementById('modalErr').textContent = '';
@@ -2265,6 +2274,8 @@ let currentEditDeviceSlots = [];
 let currentEditLicenseId = null;
 
 let pickedCustomerId = null;
+
+let modalMemoFor = null;
 
 let currentEditTrialStartedAt = null;
 
@@ -2538,7 +2549,8 @@ async function saveLicense(alsoCopy) {
   if (!license_key) { errEl.textContent = '라이선스 키는 필수입니다.'; return; }
   saveBtn.disabled = true; copyBtn.disabled = true; errEl.textContent = '';
   try {
-    const payload = { dojang_name, license_key, license_type, version, expire_date, pay_amount, pay_date, pay_memo, phone, memo, max_devices, trial_days };
+    
+    const payload = { dojang_name, license_key, license_type, version, expire_date, pay_amount, pay_date, pay_memo, phone, max_devices, trial_days };
     
     const savedRows = id ? await edgeCall('UPDATE_LICENSE', { id, ...payload })
                          : await edgeCall('INSERT_LICENSE', { ...payload, is_active: true });
@@ -2547,7 +2559,7 @@ async function saveLicense(alsoCopy) {
 
     let ledgerNote = '';
     let ledgerInfo = null;
-    try { ledgerInfo = await syncLedgerFromLicense(payload, savedLic); }
+    try { ledgerInfo = await syncLedgerFromLicense({ ...payload, memo }, savedLic); }
     catch(e) { ledgerNote = ' (회원 장부 반영 실패: ' + e.message + ' — 목록에서 \'장부로\' 를 눌러주세요)'; }
 
     if (alsoCopy) {
@@ -2588,13 +2600,18 @@ async function syncLedgerFromLicense(p, lic) {
   if (source)  row.source      = source;
 
   const before = found ? custStatus(found) : 'lead';
-  if (found) row.id = found.id;
-  else { row.status = 'lead'; row.memo = p.memo || null; }
+  if (found) {
+    row.id = found.id;
+
+    if (modalMemoFor === found.id) row.memo = p.memo || null;
+    else if (p.memo) row.memo = p.memo;
+  } else { row.status = 'lead'; row.memo = p.memo || null; }
 
   const saved = await edgeCall('SAVE_CUSTOMER', row);
   if(!saved || !Object.hasOwn(saved,'branch_code') || (saved.branch_code||null)!==branch_code) throw new Error('고객 소속 저장을 확인하지 못했습니다. 서버 적용 상태를 확인하고 회원정보에서 다시 저장해주세요.');
   const i = CUSTOMERS.findIndex(c => c.id === saved.id);
   if (i >= 0) CUSTOMERS[i] = saved; else CUSTOMERS.unshift(saved);
+  mirrorCustomerToLicenses(saved);
 
   if (lic && lic.id) {
     if (lic.customer_id !== saved.id) await edgeCall('UPDATE_LICENSE', { id: lic.id, customer_id: saved.id });
@@ -3298,6 +3315,8 @@ async function onCustCell(el){
   if(f==='status')v=(v==='churned')?'churned':custStatus(c,true);
   if(f==='branch_code')customerSaveState(id).branchRefresh=true;
   const before={...c};c[f]=v;const moneyChanged=recalcMoney(c,f),st=customerSaveState(id);
+  
+  if(f==='dojang_name'||f==='phone'||f==='memo'){mirrorCustomerToLicenses(c);renderTable();}
   for(const key of new Set([f,...Object.keys(c).filter(k=>c[k]!==before[k])])){
     st.draft[key]=c[key];st.revisions[key]=++st.seq;
   }
@@ -3460,6 +3479,8 @@ async function moveLicenseToCustomer(lid){
     }
     await edgeCall('UPDATE_LICENSE', { id:l.id, customer_id:to.id });
     l.customer_id = to.id;
+    
+    if (to.dojang_name) l.dojang_name = to.dojang_name; if (to.phone) l.phone = to.phone;
     await syncCustomerStatus(to); if (cur) await syncCustomerStatus(cur);
     openLicsFor.add(to.id);
     renderCustomers(); renderTable();
@@ -3751,7 +3772,7 @@ function renderCrossHint(q, qd){
   const box = document.getElementById('crossHint'); if (!box) return;
   if (!q) { box.innerHTML = ''; box.style.display = 'none'; return; }
   const hit = d => {
-    const hay = [d.dojang_name, d.license_key, d.phone||'', d.memo||''].join(' ').toLowerCase();
+    const hay = [d.dojang_name, d.license_key, d.phone||'', licenseMemo(d)].join(' ').toLowerCase();
     return hay.includes(q) || (qd && String(d.phone||'').replace(/[^0-9]/g,'').includes(qd));
   };
   const parts = [];
@@ -3963,7 +3984,7 @@ function exportLicensesCsv(){
     productOfKey(d.license_key).short, d.dojang_name, branchLabel(branchCustomerForLicense(d)?.branch_code), d.phone, d.license_key, typeName(d.license_type),
     stName[licenseState(d)] || '', d.license_type==='trial' ? (Number(d.trial_days)||3) : '',
     isoToYmd(d.trial_started_at), d.expire_date, isoToYmd(d.created_at), isoToYmd(d.last_verified_at),
-    `${(d.device_slots||[]).length}/${d.max_devices||2}`, d.pay_amount, d.pay_date, d.pay_memo, d.memo
+    `${(d.device_slots||[]).length}/${d.max_devices||2}`, d.pay_amount, d.pay_date, d.pay_memo, licenseMemo(d)
   ].map(q).join(','));
   downloadFile(`라이선스목록_${todayStr()}.csv`, '﻿' + head.map(q).join(',') + '\n' + body.join('\n'), 'text/csv;charset=utf-8');
   showToast('라이선스 목록을 엑셀 파일로 받았습니다');
