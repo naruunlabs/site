@@ -341,7 +341,7 @@ table.t input{width:100%}
 <script id="psm-core">
 
 var PSM = (function(){
-  var VERSION = '0.9.1';   
+  var VERSION = '0.9.2';   
 
   var DEFAULT_CFG = {
     SMOOTH: 0.5,        
@@ -361,6 +361,7 @@ var PSM = (function(){
     FACE_UP: 0.0,       
     PUNCH_ELBOW: 138,   
     READY_SYM: 0.1,     
+    FACE_PUNCH_FWD: 0.25, 
     PUNCH_FWD: 0.55     
   };
   var CFG_INFO = {
@@ -368,7 +369,7 @@ var PSM = (function(){
     STILL_MS:['멈춤 유지 시간','ms'], SPEED_WIN:['속도 재는 폭','ms'], MIN_PATH:['새 동작 최소 이동','몸통'], AGG_MS:['자세 평균 시간','ms'],
     YAW_FRONT:['정면 판단 각도','도'], YAW_BACK:['뒤 판단 각도','도'],
     NARROW_T:['(참고) 준비 발 간격','몸통'], LONG_T:['(참고) 앞굽이 발 간격','몸통'], MID_T:['(참고) 굽힘 앞굽이 간격','몸통'], KNEE_BENT:['(참고) 굽힌 무릎','도'],
-    RAISE_H:['든 팔 높이','비율'], FACE_UP:['얼굴막기 높이','몸통'], PUNCH_ELBOW:['지르기 팔꿈치','도'], READY_SYM:['준비 두 손 높이 차','비율'], PUNCH_FWD:['낮은 지르기 앞으로 뻗음','몸통']
+    RAISE_H:['든 팔 높이','비율'], FACE_UP:['얼굴막기 높이','몸통'], PUNCH_ELBOW:['지르기 팔꿈치','도'], READY_SYM:['준비 두 손 높이 차','비율'], PUNCH_FWD:['낮은 지르기 앞으로 뻗음','몸통'], FACE_PUNCH_FWD:['얼굴지르기 앞으로 뻗음','몸통']
   };
 
   var DIR_NAME = {F:'정면', L:'왼쪽', R:'오른쪽', B:'뒤'};
@@ -542,13 +543,13 @@ var PSM = (function(){
 
     var act = a.hL <= a.hR ? 'L' : 'R';
     var e = act==='L'?a.eL:a.eR, h = act==='L'?a.hL:a.hR, nn = act==='L'?a.nL:a.nR;
-    var tech;
+    var tech, fw = act==='L'?a.fL:a.fR;
     if(h < cfg.RAISE_H){
-      if(nn > cfg.FACE_UP) tech='얼굴막기';
+      
+      if(nn > cfg.FACE_UP) tech = (e >= cfg.PUNCH_ELBOW && fw!=null && fw >= cfg.FACE_PUNCH_FWD) ? '몸통지르기' : '얼굴막기';
       else if(e >= cfg.PUNCH_ELBOW) tech='몸통지르기';
       else tech='몸통안막기';
     } else {
-      var fw = act==='L'?a.fL:a.fR;
       tech = (dir==='F' && Math.abs(a.hL-a.hR) < cfg.READY_SYM) ? '준비'
            : (dir!=='B' && fw!=null && fw >= cfg.PUNCH_FWD) ? '몸통지르기' : '아래막기';
       if(tech==='준비') stance='준비';
