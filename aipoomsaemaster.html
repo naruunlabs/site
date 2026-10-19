@@ -240,11 +240,29 @@ table.t input{width:100%}
 <div id="status">카메라 준비 중…</div>
 
 <section id="lobby" hidden aria-label="모드 선택">
-  <div class="modelist" id="segRole">
-    <button type="button" class="choice" data-v="master">관장 시범<small>기준 기록</small></button>
-    <button type="button" class="choice" data-v="student">학생 시험<small>판정 확인</small></button>
-    <button type="button" class="choice" data-v="pair">2인 동시<small>두 사람 함께</small></button>
-    <button type="button" class="choice" data-v="group">단체 모드<small>로봇 구령 따라하기 · 카메라 안 씀</small></button>
+  
+  <div class="modelist" id="segMode">
+    <button type="button" class="choice" data-m="solo">1인 모드<small>품새 점수 · 동작마다 판정</small></button>
+    <button type="button" class="choice" data-m="pair">2인 모드<small>두 사람 점수 + 싱크율</small></button>
+    <button type="button" class="choice" data-m="game">게임 모드<small>준비 중</small></button>
+    <button type="button" class="choice" data-m="group">단체 모드<small>로봇 구령 따라하기 · 카메라 안 씀</small></button>
+  </div>
+
+  <div id="optSolo">
+    <div class="lb-label">누가 하나요</div>
+    <div class="seg c2" id="segSoloWho">
+      <button type="button" data-v="student">학생<small>시험 · 점수</small></button>
+      <button type="button" data-v="master">관장 시범<small>기준 기록 · 판정음 끔</small></button>
+    </div>
+  </div>
+
+  <div id="optGame" hidden>
+    <div class="lb-tip" style="margin-top:12px">
+      <b>게임 모드는 준비 중입니다.</b> 넣을 후보(2026-10-17 모드 계획 · 보류)<br>
+      · <b>품새 순발력</b> — 화면에 나온 자세를 누가 먼저 정확히 하나<br>
+      · <b>품새 이어달리기</b> — 품새를 무작위 구간으로 끊어 이어 하기(2인 이어달리기 포함)<br>
+      재미 요소 후보: 스테이지 별 · 게임 속 띠 승급 · 콤보·효과음 · 신기록 알림
+    </div>
   </div>
 
   <div class="lb-label">품새</div>
@@ -345,7 +363,7 @@ table.t input{width:100%}
 <script id="psm-core">
 
 var PSM = (function(){
-  var VERSION = '0.9.4';   
+  var VERSION = '0.9.5';   
 
   var DEFAULT_CFG = {
     SMOOTH: 0.5,        
@@ -758,9 +776,12 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
   function fmtT(ms){ var s=Math.max(0,Math.floor(ms/1000)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
 
-  var pref=Object.assign({role:'master', wait:'10', cam:'user', model:'full', feedback:'off', poomsae:'tg1',
+  var pref=Object.assign({role:'student', soloWho:'student', wait:'10', cam:'user', model:'full', feedback:'off', poomsae:'tg1',
     gSpeed:'1', gView:'free', gFoot:'on', gSound:'on'}, lsGet(LS_PREF,{}));
   pref.gView='free';   
+  
+  if(pref.role==='master'||pref.role==='student') pref.soloWho=pref.role;
+  if(pref.soloWho!=='master') pref.soloWho='student';
   if(!PSM.KEYS[pref.poomsae]) pref.poomsae='tg1';
   
   function lsKey(){ return 'psm_lab_key_'+pref.poomsae; }
@@ -880,14 +901,42 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     paint();
   }
 
-  var ROLE_NAME={master:'관장 시범', student:'학생 시험', pair:'2인 동시', group:'단체 모드'};
+  function modeOf(role){ return (role==='master'||role==='student') ? 'solo' : role; }
+  function setRole(role){
+    var old=pref.role; if(old===role) return;
+    pref.role=role; lsSet(LS_PREF,pref);
+    if(role==='group') enterGroup(); else { if(old==='group') leaveGroup(); if(role!=='game') ensurePoses(); }
+    paintMode(); updateModeUi(); readyCheck();
+  }
+  function paintMode(){
+    var m=modeOf(pref.role);
+    Array.prototype.forEach.call($('segMode').querySelectorAll('button'), function(b){ b.classList.toggle('on', b.dataset.m===m); });
+    Array.prototype.forEach.call($('segSoloWho').querySelectorAll('button'), function(b){ b.classList.toggle('on', b.dataset.v===pref.soloWho); });
+  }
+  function modeInit(){
+    $('segMode').addEventListener('click', function(e){
+      var b=e.target.closest('button'); if(!b) return;
+      var m=b.dataset.m; setRole(m==='solo' ? pref.soloWho : m);
+    });
+    $('segSoloWho').addEventListener('click', function(e){
+      var b=e.target.closest('button'); if(!b) return;
+      pref.soloWho=b.dataset.v; lsSet(LS_PREF,pref);
+      if(modeOf(pref.role)==='solo') setRole(pref.soloWho); else paintMode();
+      paintMode(); updateModeUi();
+    });
+    paintMode();
+  }
+
+  var ROLE_NAME={master:'1인 · 관장 시범', student:'1인 · 학생 시험', pair:'2인 모드', group:'단체 모드', game:'게임 모드'};
   function updateModeUi(){
     var pName=PSM.POOMSAE_NAME[pref.poomsae]||'', moves=lastMove(baseKey());
     $('mbTitle').textContent=ROLE_NAME[pref.role]||''; if($('selPoomsae').value!==pref.poomsae) $('selPoomsae').value=pref.poomsae;
     $('mbSub').textContent=pName+' · '+moves+'동작';
     $('lsPoomsae').textContent=pName; $('lsMoves').textContent=moves+'동작';
-    $('optCam').hidden= pref.role==='group';
+    $('optCam').hidden= pref.role==='group' || pref.role==='game';
     $('optGroup').hidden= pref.role!=='group';
+    $('optSolo').hidden= modeOf(pref.role)!=='solo';
+    $('optGame').hidden= pref.role!=='game';
     document.body.classList.toggle('group-mode', pref.role==='group');
   }
 
@@ -957,7 +1006,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
 
   function boot(){
     if(booted) return; booted=true;
-    segInit('segFeedback','feedback'); segInit('segRole','role'); segInit('segWait','wait'); segInit('segCam','cam'); segInit('segModel','model');
+    segInit('segFeedback','feedback'); modeInit(); segInit('segWait','wait'); segInit('segCam','cam'); segInit('segModel','model');
     segInit('segGSpeed','gSpeed'); segInit('segGFoot','gFoot'); segInit('segGSound','gSound');
     
     var sel=$('selPoomsae');
@@ -981,7 +1030,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
       if(!seekDrag) $('gSeek').value=Math.round(i.t/i.dur*2000); })();
     updateModeUi();
     $('lobby').hidden=false;
-    $('btnStart').addEventListener('click', function(){ if(pref.role==='group') startGroup(); else startSession(); });
+    $('btnStart').addEventListener('click', function(){ if(pref.role==='game') return; if(pref.role==='group') startGroup(); else startSession(); });
     $('fsBtn').addEventListener('click', toggleFullscreen);
     $('btnEnd').addEventListener('click', function(){ if(groupRunning) stopGroup(); else finishSession('수동'); });
     $('btnCancel').addEventListener('click', cancelSession);
@@ -1037,6 +1086,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   }
   function readyCheck(){
     if(pref.role==='group'){ $('btnStart').disabled=false; return; }
+    if(pref.role==='game'){ $('btnStart').disabled=true; setStatus('게임 모드는 준비 중입니다'); return; }
     var ok = !!fake || (!!landmarker && !!stream);
     $('btnStart').disabled=!ok;
     if(ok) setStatus('준비됨 · 카메라 앞에 서면 뼈대가 보입니다');
