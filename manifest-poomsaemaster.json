@@ -1,0 +1,44 @@
+{
+  "id": "/poomsaemaster",
+  "name": "AI POOMSAE MASTER",
+  "short_name": "POOMSAE MASTER",
+  "description": "AI 품새 훈련 시스템 소개",
+  "start_url": "/aipoomsaemaster",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0A1628",
+  "theme_color": "#F5B829",
+  "icons": [
+    {
+      "src": "./icon-poomsaemaster-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-poomsaemaster-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-poomsaemaster-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "./icon-poomsaemaster-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "./icon-poomsaemaster.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

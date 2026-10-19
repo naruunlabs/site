@@ -7,7 +7,11 @@
 <meta name="theme-color" content="#0A1628">
 <title>AI 품새마스터 · 나른랩스</title>
 <link rel="canonical" href="https://naruunlabs.kr/aipoomsaemaster">
-<link rel="icon" href="favicon.ico">
+
+<link rel="manifest" href="manifest-poomsaemaster.json">
+<link rel="icon" href="icon-poomsaemaster.svg" type="image/svg+xml">
+<link rel="icon" href="icon-poomsaemaster-192.png" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon-poomsaemaster.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Noto+Sans+KR:wght@400;700;900&display=swap">
@@ -341,7 +345,7 @@ table.t input{width:100%}
 <script id="psm-core">
 
 var PSM = (function(){
-  var VERSION = '0.9.3';   
+  var VERSION = '0.9.4';   
 
   var DEFAULT_CFG = {
     SMOOTH: 0.5,        
@@ -1594,6 +1598,9 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   window.__psm={analyze:analyze, get rec(){ return rec; }, get live(){ return live; }, finish:finishSession, KEY:function(){ return KEY; }};
   startAuth();
 })();
+</script>
+<script>
+if('serviceWorker' in navigator){ window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); }); }
 </script>
 </body>
 </html>
