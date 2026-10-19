@@ -107,6 +107,14 @@
 </style>
 <style id="jmUiFix">
 
+#resultBody .coach{max-width:560px;margin:max(10px,calc(var(--u)*1)) auto 0;padding:max(10px,calc(var(--u)*1)) max(14px,calc(var(--u)*1.4));border-radius:max(10px,calc(var(--u)*1));background:rgba(190,242,100,.10);border:1px solid rgba(190,242,100,.45);text-align:left;text-shadow:none}
+#resultBody .coach.good{background:rgba(94,234,212,.10);border-color:rgba(94,234,212,.45)}
+#resultBody .coach .ct{font-size:max(18px,calc(var(--u)*2));font-weight:900;color:#ecfccb}
+#resultBody .coach .cw{margin-top:4px;font-size:max(12px,calc(var(--u)*1.1));font-weight:700;color:rgba(255,255,255,.82);line-height:1.5}
+#resultBody .coach .cbars{display:flex;flex-wrap:wrap;gap:6px 12px;margin-top:8px}
+#resultBody .coach .cb{position:relative;font-size:max(11px,calc(var(--u)*.95));font-weight:800;color:#cfe0f2;padding-bottom:5px;min-width:86px}
+#resultBody .coach .cb i{position:absolute;left:0;bottom:0;height:3px;width:var(--v);background:#5eead4;border-radius:2px}
+
 #paceTarget{width:100%;box-sizing:border-box;background:#12231f;color:#f1faf6;border:1px solid #456052;border-radius:10px;padding:14px 16px;font-size:24px;font-weight:800;font-family:inherit;color-scheme:dark;}
 #paceTime,#paceTime option{background:#12231f;color:#f1faf6;color-scheme:dark;}
 #paceTarget:focus{outline:2px solid #a3e635;outline-offset:2px;}
@@ -1172,7 +1180,7 @@ body.jmp-racing .jt-duo{display:none!important}
 
 <script type="module">
 
-const APP_VERSION = '3.9.12';   
+const APP_VERSION = '3.9.13';   
 try{ window.__NL_VER = APP_VERSION; }catch(e){}   
 
 const MP_VERSION  = '1.0.1';
@@ -2491,7 +2499,7 @@ function hfJump(p,J){
       else hint='일정한 박자로!';
     }
     const hts=(jmpPilotHistory||[]).slice(-(gaps.length+1)).map(v=>Math.max(0,Math.min(1,v.height/130)));
-    HoloFX.wave(gaps.slice(-9), hts.slice(-10), {bpm:J.bpm||null, stable, hint});
+    if(!coachRadar(p)) HoloFX.wave(gaps.slice(-9), hts.slice(-10), {bpm:J.bpm||null, stable, hint});   
     HoloFX.streak(hfStreakN,{bump:hfStreakN%10===0, best:hfBestH||null});
   }catch(e){}
 }
@@ -2648,6 +2656,81 @@ function updateRig(p,lm){
   if(floorNow>r.floor) r.floor=floorNow; else r.floor+=(floorNow-r.floor)*.015;
 }
 
+const COACH={
+  H_GOOD:.11, H_BAD:.24,       
+  E_GOOD:146, E_BAD:166,       
+  CV_BAD:.50,                  
+  PACE_BAD:.60,                
+  CATCH_BAD:4,                 
+  MIN_JUMPS:8,                 
+  TIP:{ H:.55, E:.45, PACE:.78, CV:.35, CATCH:2 },   
+  RADAR_MS:900                 
+};
+const COACH_HINT={'낮게 뛰기':'줄이 지나갈 만큼만 낮게!','팔꿈치':'팔꿈치 붙이고 손목으로 돌려요!',
+  '리듬':'하나, 하나, 일정한 박자로!','속도 유지':'끝까지 같은 속도로!','안 걸림':'걸려도 바로 다시 리듬!'};
+function coachOn(){ return jmpIsLab() && mode==='solo' && soloJumpType==='together' && !stepRound; }
+function coachReset(p){ if(p) p.coach={h:[],e:[],t:[],drawn:0,tip:null}; }
+function coachMed(a){ const s=a.filter(v=>v!=null&&isFinite(v)).sort((x,y)=>x-y); return s.length?s[s.length>>1]:null; }
+function coachLin(v,good,bad){ return v==null?null:clamp((bad-v)/(bad-good),0,1); }
+function coachPush(p,ev){
+  if(!coachOn() || ev.type!=='jump') return;
+  if(!p.coach) coachReset(p);
+  const C=p.coach, e=p.engine;
+  C.h.push(e.runMax); C.t.push(ev.t||performance.now());
+  let el=null; try{ el=labPoseAt(p,ev.t).pose?.elbow_angle_deg??null; }catch(x){}
+  C.e.push(el);
+}
+
+function coachAxes(p,last){
+  const C=p&&p.coach; if(!C || C.t.length<COACH.MIN_JUMPS) return null;
+  const W=last?C.t.length:12, hs=C.h.slice(-W), es=C.e.slice(-W);
+  const gaps=[]; for(let i=1;i<C.t.length;i++){ const g=C.t[i]-C.t[i-1]; if(g>0&&g<1500) gaps.push(g); }
+  const rg=gaps.slice(-10), avg=rg.length?rg.reduce((a,b)=>a+b,0)/rg.length:0;
+  const cv=rg.length>2&&avg?Math.sqrt(rg.reduce((s,v)=>s+(v-avg)*(v-avg),0)/rg.length)/avg:null;
+  let pace=null;   
+  if(gaps.length>=16){ const seg=[]; for(let i=0;i+8<=gaps.length;i+=4) seg.push(coachMed(gaps.slice(i,i+8)));
+    pace=Math.min(...seg)/seg[seg.length-1]; }
+  const catches=p.jcr?p.jcr.skip:0;
+  return [
+    {name:'낮게 뛰기', v:coachLin(coachMed(hs),COACH.H_GOOD,COACH.H_BAD), raw:coachMed(hs)},
+    {name:'팔꿈치',   v:coachLin(coachMed(es),COACH.E_GOOD,COACH.E_BAD), raw:coachMed(es)},
+    {name:'리듬',     v:cv==null?null:clamp(1-cv/COACH.CV_BAD,0,1), raw:cv},
+    {name:'속도 유지', v:pace==null?null:clamp((pace-COACH.PACE_BAD)/(1-COACH.PACE_BAD),0,1), raw:pace},
+    {name:'안 걸림',   v:clamp(1-catches/COACH.CATCH_BAD,0,1), raw:catches}
+  ];
+}
+
+function coachRadar(p){
+  if(!coachOn() || !window.HoloFX || !HoloFX.enabled || !HoloFX.playing) return false;
+  const C=p.coach, now=performance.now(); if(!C) return false;
+  const ax=coachAxes(p,false); if(!ax) return true;   
+  if(now-C.drawn<COACH.RADAR_MS) return true;
+  C.drawn=now;
+  const shown=ax.filter(a=>a.v!=null); if(shown.length<3) return true;
+  HoloFX.radar(shown,{tag:'JUMP ANALYSIS', hint:i=>COACH_HINT[shown[i].name]||''});
+  return true;
+}
+
+function coachVerdict(p){
+  const ax=coachAxes(p,true); if(!ax) return null;
+  const A=Object.fromEntries(ax.map(a=>[a.name,a])), T=COACH.TIP;
+  let tip;
+  if(A['낮게 뛰기'].v!=null && A['낮게 뛰기'].v<T.H) tip={k:'height', t:'조금만 낮게 뛰어요', w:'줄이 지나갈 만큼만 뛰면 더 빨라져요. 빠른 친구들은 지금보다 낮게 뛰어요.'};
+  else if(A['팔꿈치'].v!=null && A['팔꿈치'].v<T.E) tip={k:'elbow', t:'팔꿈치를 옆구리에 붙여요', w:'팔을 펴서 크게 돌리지 말고 손목으로 작게 돌려요.'};
+  else if(A['속도 유지'].raw!=null && A['속도 유지'].raw<T.PACE) tip={k:'pace', t:'끝까지 같은 속도로', w:'뒤로 갈수록 느려졌어요. 처음부터 너무 세게 말고 끝까지 같은 빠르기로!'};
+  else if(A['안 걸림'].raw>=T.CATCH) tip={k:'catch', t:'걸려도 바로 다시', w:'걸렸을 때 멈춰 있지 말고 바로 리듬을 다시 타요.'};
+  else if(A['리듬'].raw!=null && A['리듬'].raw>T.CV) tip={k:'rhythm', t:'일정한 박자로', w:'빨라졌다 느려졌다 해요. 하나, 하나 같은 박자로!'};
+  else tip={k:'good', t:'자세 좋아요!', w:'지금 자세 그대로 조금씩 더 빠르게 해 봐요.'};
+  tip.ax=ax.map(a=>({n:a.name, v:a.v==null?null:Math.round(a.v*100), raw:a.raw==null?null:+(+a.raw).toFixed(3)}));
+  p.coach.tip=tip;
+  return tip;
+}
+function coachHtml(tip){
+  if(!tip) return '';
+  const bars=tip.ax.filter(a=>a.v!=null).map(a=>`<span class="cb"><i style="--v:${a.v}%"></i>${esc(a.n)} ${a.v}</span>`).join('');
+  return `<div class="coach ${tip.k==='good'?'good':''}"><div class="ct">💡 ${esc(tip.t)}</div><div class="cw">${esc(tip.w)}</div><div class="cbars">${bars}</div></div>`;
+}
+
 const jmpPilotHistory=[];
 function jmpPilotPush(p,ev){
   if(!jmpIsLab() || !['solo','duo'].includes(mode) || ev.type!=='jump') return;
@@ -2666,6 +2749,7 @@ function jmpPilotPush(p,ev){
   bars('jpgRhythmBars',rhythm); bars('jpgHeightBars',hp);
   const duoScore=mode==='duo'&&team.lastDiff!=null?clamp(1-team.lastDiff/SYNC.NORMAL_S,0,1):rhythm;
   $('jpgDuoRail')?.style.setProperty('--p',Math.round(duoScore*100)+'%'); setText($('jpgDuoVal'),Math.round(duoScore*100));
+  coachPush(p,ev);   
   hfJump(p,{height,gaps,gapCv,bpm:avg?bpmNow:null});   
 }
 
@@ -3133,7 +3217,7 @@ function startRound(){
   hfSync();   
   if(mode==='solo'){
     if(!stepRound) gameStartPerf=now;   
-    const p=players[0]; p.dbl=null; p.engine.resetCount(); p.engine.markStart(now); p.engine.recoverGaps=soloJumpType==='together'; resetAlternateJump(p); p.engine.counting=soloJumpType!=='alternate';
+    const p=players[0]; p.dbl=null; coachReset(p); p.engine.resetCount(); p.engine.markStart(now); p.engine.recoverGaps=soloJumpType==='together'; resetAlternateJump(p); p.engine.counting=soloJumpType!=='alternate';
     gameEndPerf = soloMode==='timed' ? now+durationSec*1000 : Infinity;
     if(stepRound) stepStart(now);   
   }else if(mode==='duo'){
@@ -3216,12 +3300,13 @@ function finish(cancelled){
   if(m!=='group'){
     let last='';
     try{
-      if(m==='solo') last= stepRound ? stepLastText() : '방금 기록 '+players[0].count+'개';
+      if(m==='solo') last= stepRound ? stepLastText() : '방금 기록 '+players[0].count+'개'+(players[0].coach&&players[0].coach.tip?' · 💡 '+players[0].coach.tip.t:'');
       else if(m==='duo') last='방금 기록 · 청 '+players[0].count+' · 홍 '+players[1].count;
     }catch(e){}
     $('resultLast').textContent=last;
     
-    if(!(m==='solo'&&stepRound)) resultCompactTimer=setTimeout(()=>{ if(appState==='result') $('result').classList.add('compact'); },3000);
+    const hasTip=m==='solo'&&players[0].coach&&players[0].coach.tip;   
+    if(!(m==='solo'&&stepRound)) resultCompactTimer=setTimeout(()=>{ if(appState==='result') $('result').classList.add('compact'); },hasTip?6000:3000);
   }
   if(!(m==='solo'&&stepRound)) labRoundFinished(m);   
 }
@@ -3258,7 +3343,7 @@ function resultHtml(m){
     return `<div class="solo-result"><div class="res-label">${label}</div>
       <div class="res-title">${esc(soloResultTitle||'측정 완료')}</div>
       <div class="rbox big ${targetMode&&!targetClear?'':'win'}"><span>${targetMode?'연속 성공':'줄넘기 개수'}</span><strong>${fmt(cnt)}</strong></div>
-      <div class="rline">${targetMode&&!targetClear?`목표까지 ${fmt(Math.max(0,target-cnt))}회 남음 · `:''}${isBest&&cnt>0?'<b>오늘 최고 기록 갱신!</b> · ':''}오늘 최고 ${fmt(best)}개</div></div>`;
+      <div class="rline">${targetMode&&!targetClear?`목표까지 ${fmt(Math.max(0,target-cnt))}회 남음 · `:''}${isBest&&cnt>0?'<b>오늘 최고 기록 갱신!</b> · ':''}오늘 최고 ${fmt(best)}개</div>${coachOn()?coachHtml(coachVerdict(players[0])):''}</div>`;
   }
   if(m==='duo'){
     if(duoType==='battle'){
@@ -5766,6 +5851,7 @@ function labRoundFinished(m){
       pid:p.id??0, main:p.count, truth:null,
       guard:p.cg?p.cg.count:null, catches:p.cg?p.cg.catches:null, guard_cut:p.cg?p.cg.filtered:null,   // 2026-09-24 걸림 보정
       wrist:p.wc?p.wc.count:null, wrist_cut:p.wc?p.wc.cut:null,   // 2026-10-12 손목 확인
+      coach:p.coach&&p.coach.tip?{k:p.coach.tip.k, ax:p.coach.tip.ax}:null,   // 2026-10-19 · 띄운 코칭(다음 판 개수로 효과 확인용)
       pre:p.jcr?p.jcr.raw:null, jcr_skip:p.jcr?p.jcr.skip:null, jcr_fill:p.jcr?p.jcr.fill:null, jcr_cut:p.jcr?p.jcr.cut:null,   // 2026-09-28 JCR 전 개수·걸림·채움
       src_add:p.jcr&&p.jcr.src?p.jcr.src.add:null,   // 2026-10-12 시작 6초 다시 세기로 더한 개수
       period_ms:labRound(p.engine.periodMs,1),
