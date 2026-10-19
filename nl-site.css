@@ -555,3 +555,10 @@ p{margin:0}
   .switch :is(a,.switch-pending) i{width:18px;height:18px;font-size:10px;border-radius:5px}
   .hd-logo{margin-right:auto}
 }
+
+/* 2026-10-19 · 품새(P) 칸이 이제 링크 — 금색 위 흰 글자는 안 보여서 진한 글자 (품새 소개 페이지 안 규칙과 같게) */
+.switch a[href="/poomsaemaster"] i{color:#2A1C00}
+/* 2026-10-19 · 메인 제품 카드 4장(킥·점프·스트·품새): 넓은 화면 4칸 · 중간 2칸 · 폰 1칸 */
+.doors{grid-template-columns:repeat(4,1fr)}
+@media (max-width:1180px){ .doors{grid-template-columns:repeat(2,1fr)} }
+@media (max-width:900px){ .doors{grid-template-columns:1fr} }
