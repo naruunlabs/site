@@ -742,12 +742,34 @@ body.jmp-racing .jt-duo{display:none!important}
 @media(prefers-reduced-motion:reduce){.race-car{transition:none}.race-car.boost svg{animation:none}}
 </style>
 <style id="jmCompetition">
-#competitionDialog{position:fixed;inset:0;width:100%;height:100%;max-width:none;max-height:none;box-sizing:border-box;border:0;margin:0;padding:clamp(18px,4vw,56px);background:radial-gradient(ellipse at 50% 35%,#1b382d,#0d1918 55%,#070e13);color:#edf6ef;font-family:inherit;overflow:auto}
-#competitionDialog::backdrop{background:#070e13}
-#competitionDialog .comp-wrap{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:space-between;gap:16px;max-width:1400px;margin:auto}
-.comp-top{width:100%;display:flex;justify-content:space-between;align-items:center;gap:20px}.comp-kicker{color:#b9ed80;font-size:12px;letter-spacing:.18em;font-weight:800}.comp-top h2{font-size:24px;margin:6px 0}.comp-btn{font:inherit;font-weight:800;border:1px solid #465c50;border-radius:12px;padding:12px 22px;background:#192c24;color:#edf6ef;cursor:pointer}.comp-btn:focus-visible{outline:3px solid #b9ed80;outline-offset:4px}.comp-times{display:flex;gap:10px}.comp-times button[aria-pressed="true"]{background:#b9ed80;color:#101912;border-color:#b9ed80}.comp-btn:disabled{opacity:.4;cursor:default}.comp-clock{text-align:center;width:100%}.comp-status{font-size:clamp(16px,2vw,26px);color:#bdd0c2;letter-spacing:.12em}.comp-number{font-size:clamp(110px,min(30vw,42vh),410px);font-weight:900;font-variant-numeric:tabular-nums;line-height:1.05;letter-spacing:-.065em;color:#b9ed80}.comp-clock[data-urgent="true"] .comp-number{color:#ffd085}.comp-track{height:6px;border-radius:9px;background:#30463a;overflow:hidden;width:min(700px,90%);margin:12px auto}.comp-track span{display:block;height:100%;width:100%;background:#b9ed80;transform-origin:left}.comp-hint{color:#a7bcae;font-size:14px;text-align:center;line-height:1.6}.comp-controls{display:flex;gap:12px;justify-content:center}.comp-primary{background:#b9ed80;color:#101912;min-width:180px;font-size:20px;border:0}.comp-bottom{display:grid;gap:14px;width:100%}
-@media(max-height:550px){#competitionDialog{padding:16px}.comp-number{font-size:clamp(90px,37vh,230px)}.comp-top h2{font-size:18px}.comp-wrap{gap:8px!important}.comp-hint{margin:0}.comp-btn{padding:8px 18px}}
-@media(max-width:500px){.comp-number{font-size:32vw}.comp-top h2{font-size:20px}.comp-times{gap:6px}.comp-times button{padding:10px 18px}}
+
+#competitionDialog{position:fixed;inset:0;width:100%;height:100%;height:100dvh;max-width:none;max-height:none;box-sizing:border-box;border:0;margin:0;padding:16px 24px 58px;background:radial-gradient(ellipse at 34% 30%,rgba(20,184,166,.16),rgba(2,11,10,0) 70%),linear-gradient(180deg,#06201c 0%,#041714 55%,#020b0a 100%);color:var(--ink);font-family:var(--kr);overflow:auto}
+#competitionDialog::backdrop{background:#020b0a}
+#competitionDialog .comp-wrap{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:space-between;gap:14px;max-width:1400px;margin:auto}
+#competitionDialog .title-block{max-width:45%;text-shadow:0 2px 4px rgba(0,0,0,.95),0 0 16px rgba(0,0,0,.68)}
+#competitionDialog .comp-top{width:100%;min-height:88px;display:flex;justify-content:center;align-items:flex-start;padding-top:10px;gap:20px}
+#competitionDialog .comp-top h2{font-size:clamp(18px,2vw,26px);margin:0;font-weight:900;letter-spacing:-.04em;text-shadow:0 2px 8px #000}
+#competitionDialog .comp-kicker{font-size:12px;color:var(--muted);text-align:center;margin:5px 0 0}
+#competitionDialog .comp-close{position:absolute;right:24px;top:20px}
+#competitionDialog .comp-btn{font:inherit;font-weight:900;border:1px solid rgba(234,244,241,.3);border-radius:10px;padding:11px 24px;background:rgba(234,244,241,.05);color:var(--ink);cursor:pointer}
+#competitionDialog .comp-btn:hover:not(:disabled){background:rgba(94,234,212,.12);border-color:var(--teal-lit)}
+#competitionDialog .comp-btn:focus-visible{outline:3px solid var(--lime);outline-offset:4px}
+#competitionDialog .comp-times{display:flex;gap:8px}
+#competitionDialog .comp-times button[aria-pressed="true"]{background:rgba(20,184,166,.22);color:var(--lime-lit);border-color:var(--lime)}
+#competitionDialog .comp-btn:disabled{opacity:.4;cursor:default}
+#competitionDialog .comp-clock{text-align:center;width:100%}
+#competitionDialog .comp-status{font-size:clamp(16px,1.6vw,24px);font-weight:900;color:var(--ink);text-shadow:0 2px 8px #000}
+#competitionDialog .comp-number{font-family:var(--num);font-size:clamp(100px,min(28vw,38vh),410px);font-variation-settings:'wdth' 118,'wght' 900;font-weight:900;font-variant-numeric:tabular-nums;line-height:1.08;letter-spacing:-.04em;color:var(--lime-lit);text-shadow:0 4px 16px rgba(0,0,0,.7)}
+#competitionDialog .comp-clock[data-urgent="true"] .comp-number{color:#ffd085}
+#competitionDialog .comp-track{height:5px;border-radius:9px;background:rgba(234,244,241,.12);overflow:hidden;width:min(700px,90%);margin:10px auto}
+#competitionDialog .comp-track span{display:block;height:100%;width:100%;background:linear-gradient(90deg,var(--teal),var(--lime));transform-origin:left}
+#competitionDialog .comp-hint{color:var(--muted);font-size:12px;text-align:center;line-height:1.6;margin:10px 0 0}
+#competitionDialog .comp-controls{display:flex;gap:12px;justify-content:center}
+#competitionDialog .comp-primary{background:linear-gradient(110deg,var(--lime),var(--teal));color:#052b27;min-width:180px;font-size:20px;border:0}
+#competitionDialog .comp-primary:hover:not(:disabled){background:linear-gradient(110deg,var(--lime-lit),var(--teal-lit))}
+#competitionDialog .comp-bottom{width:100%}
+@media(max-width:600px){#competitionDialog{padding:14px 16px 56px}#competitionDialog .comp-top{min-height:132px;align-items:flex-end;padding:0 0 8px}#competitionDialog .comp-close{right:16px;top:14px;padding:8px 14px}#competitionDialog .title-block{max-width:65%}#competitionDialog .tb-dojang{max-width:60vw;font-size:14px}#competitionDialog .comp-number{font-size:30vw}#competitionDialog .comp-btn{padding:10px 20px}#competitionDialog .comp-primary{min-width:150px}}
+@media(max-height:550px) and (min-width:601px){#competitionDialog{padding:12px 20px 40px}#competitionDialog .comp-wrap{gap:6px}#competitionDialog .comp-top{min-height:74px;padding-top:3px}#competitionDialog .comp-number{font-size:clamp(72px,24vh,132px)}#competitionDialog .comp-status{font-size:14px}#competitionDialog .comp-btn{padding:7px 20px}#competitionDialog .comp-hint{display:none}#competitionDialog .comp-track{margin:5px auto}#competitionDialog .comp-close{top:14px;right:20px}#competitionDialog .comp-top h2{font-size:20px}}
 </style>
 </head>
 <body>
@@ -1141,7 +1163,7 @@ body.jmp-racing .jt-duo{display:none!important}
 
 <dialog id="competitionDialog" aria-labelledby="competitionTitle">
  <div class="comp-wrap">
-  <header class="comp-top"><div><div class="comp-kicker">COMPETITION · AI JUMP MASTER</div><h2 id="competitionTitle">대회준비</h2></div><button type="button" class="comp-btn" id="competitionClose">닫기 ✕</button></header>
+  <header class="comp-top"><div><h2 id="competitionTitle">대회준비</h2><div class="comp-kicker">단체 · 대회 사운드 훈련</div></div><button type="button" class="comp-btn comp-close" id="competitionClose">닫기 ✕</button></header>
   <div class="comp-times" role="group" aria-label="경기 시간"><button class="comp-btn" type="button" data-comp-seconds="30" aria-pressed="true">30초</button><button class="comp-btn" type="button" data-comp-seconds="60" aria-pressed="false">1분</button><button class="comp-btn" type="button" data-comp-seconds="120" aria-pressed="false">2분</button></div>
   <div class="comp-clock" id="competitionClock"><div class="comp-status" id="competitionStatus" role="status">시작을 준비하세요</div><div class="comp-number" id="competitionNumber" role="timer" aria-label="남은 시간">30</div><div class="comp-track"><span id="competitionProgress"></span></div></div>
   <div class="comp-bottom"><div class="comp-controls"><button class="comp-btn comp-primary" id="competitionStart" type="button">시작 ▶</button><button class="comp-btn" id="competitionReset" type="button">처음으로</button></div><p class="comp-hint" id="competitionHint">대회 사운드의 시작 신호에 맞춰 시간이 줄어듭니다.<br>스피커 음량을 확인하고 시작하세요.</p></div>
@@ -1150,7 +1172,7 @@ body.jmp-racing .jt-duo{display:none!important}
 
 <script type="module">
 
-const APP_VERSION = '3.9.10';   
+const APP_VERSION = '3.9.11';   
 try{ window.__NL_VER = APP_VERSION; }catch(e){}   
 
 const MP_VERSION  = '1.0.1';
@@ -4872,8 +4894,17 @@ function compPaint(){
 function compRelease(){if(compWake){compWake.release().catch(()=>{});compWake=null;}}
 function compStop(){compToken++;compActive=false;cancelAnimationFrame(compFrame);compAudio.pause();compRelease();$('competitionStart').disabled=false;document.querySelectorAll('[data-comp-seconds]').forEach(b=>b.disabled=false);}
 function compReset(){compStop();compAudio.currentTime=0;compPaint();$('competitionStatus').textContent='시작을 준비하세요';$('competitionStart').textContent='시작 ▶';}
-function compClose(){compReset();compDialog.close();}
-$('competitionOpen').addEventListener('click',()=>{if(appState!=='lobby'||mode!=='group')return;stopCamera();stopGroupMusic();compReset();compDialog.showModal();});
+
+const compIdentity=document.querySelector('#hud .title-block'),compFullscreen=$('fsBtn');
+const compIdentityHome=document.createComment('identity home'),compFullscreenHome=document.createComment('fullscreen home');
+compIdentity.before(compIdentityHome);compFullscreen.before(compFullscreenHome);
+let compFsHidden=false;
+function compMountCommon(){compFsHidden=compFullscreen.hidden;compDialog.append(compIdentity,compFullscreen);compFullscreen.hidden=false;syncFsBtn();}
+function compRestoreCommon(){if(compIdentity.parentNode!==compDialog)return;compIdentityHome.after(compIdentity);compFullscreenHome.after(compFullscreen);compFullscreen.hidden=compFsHidden;}
+function compClose(){compReset();compRestoreCommon();compDialog.close();}
+compDialog.addEventListener('close',()=>{if(!compDialog.open){compReset();compRestoreCommon();}});
+compIdentity.addEventListener('click',e=>{if(compDialog.open&&e.target.closest('button'))compClose();},true);
+$('competitionOpen').addEventListener('click',()=>{if(appState!=='lobby'||mode!=='group')return;stopCamera();stopGroupMusic();compReset();compMountCommon();compDialog.showModal();});
 $('competitionClose').addEventListener('click',compClose);
 compDialog.addEventListener('cancel',e=>{e.preventDefault();compClose();});
 $('competitionReset').addEventListener('click',compReset);
