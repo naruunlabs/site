@@ -745,9 +745,9 @@ table.cg tfoot td.num{text-align:right}
           <option value="created_at:desc">장부 등록일 · 최신순</option><option value="created_at:asc">장부 등록일 · 오래된순</option>
           <option value="dojang_name:asc">도장명 · 가나다순</option><option value="dojang_name:desc">도장명 · 역순</option>
           <option value="status:asc">상태 · 순서대로</option><option value="status:desc">상태 · 역순</option>
-          <option value="license_key:asc">라이선스 · 오름차순</option><option value="license_key:desc">라이선스 · 내림차순</option>
+          <option value="_paid:desc">결제 합계 · 많은순</option><option value="_expire:asc">가까운 만료 · 빠른순</option>
           <option value="next_action_at:asc">다음 할 일 날짜 · 빠른순</option><option value="next_action_at:desc">다음 할 일 날짜 · 늦은순</option>
-          <option value="sold_at:desc">판매일 · 최신순</option><option value="sold_at:asc">판매일 · 오래된순</option>
+          <option value="_lastSold:desc">최근 판매일 · 최신순</option><option value="_lastSold:asc">최근 판매일 · 오래된순</option>
         </select></label>
 
         <div class="cg-spacer"></div>
@@ -1207,7 +1207,7 @@ function adminAction(action,args){
 document.addEventListener('click',function(event){
   const button=event.target.closest('[data-admin-action]');
   if(!button || button.disabled)return;
-  const allowed={copyKeyOnly:copyKeyOnly,openEditModal:openEditModal,openMsgPicker:openMsgPicker,gotoLedger:gotoLedger,sendToLedger:sendToLedger,toggleActive:toggleActive,deleteLicense:deleteLicense,openOwnedLicense:openOwnedLicense,issueForDojang:issueForDojang,openIpRiskLicense:openIpRiskLicense,removeDeviceSlot:removeDeviceSlot,toggleCustSort:toggleCustSort,toggleNotes:toggleNotes,deleteCustomer:deleteCustomer,deleteNote:deleteNote,addNote:addNote,deleteAcademyProject:deleteAcademyProject,switchLicenseSubtab:switchLicenseSubtab,pickMsgKind:pickMsgKind,setTodayView:setTodayView,gotoCustomer:gotoCustomer,openConvert:openConvert,saveAdminTask:saveAdminTask,toggleErrorRow:toggleErrorRow};
+  const allowed={copyKeyOnly:copyKeyOnly,openEditModal:openEditModal,openMsgPicker:openMsgPicker,gotoLedger:gotoLedger,sendToLedger:sendToLedger,toggleActive:toggleActive,deleteLicense:deleteLicense,openOwnedLicense:openOwnedLicense,issueForDojang:issueForDojang,openIpRiskLicense:openIpRiskLicense,removeDeviceSlot:removeDeviceSlot,toggleCustSort:toggleCustSort,toggleNotes:toggleNotes,deleteCustomer:deleteCustomer,deleteNote:deleteNote,addNote:addNote,deleteAcademyProject:deleteAcademyProject,switchLicenseSubtab:switchLicenseSubtab,pickMsgKind:pickMsgKind,setTodayView:setTodayView,gotoCustomer:gotoCustomer,openConvert:openConvert,saveAdminTask:saveAdminTask,toggleErrorRow:toggleErrorRow,issueForCustomer:issueForCustomer,toggleCustLicenses:toggleCustLicenses,moveLicenseToCustomer:moveLicenseToCustomer};
   const fn=allowed[button.dataset.adminAction];
   if(typeof fn!=='function')return;
   let args;try{args=JSON.parse(button.dataset.adminArgs||'[]');}catch(_){return;}
@@ -1547,41 +1547,66 @@ function fillBranchSelect(el,code,all=false){
   el.innerHTML=opts.map(([v,t])=>`<option value="${escapeHtml(v)}">${escapeHtml(t)}</option>`).join('');
   el.value=code ?? (all?'*':'');
 }
-function branchCustomerForLicense(d){
-  const direct=customerForLicense(d.license_key);if(direct)return direct;
-  const phone=String(d.phone||'').replace(/[^0-9]/g,'');
-  const matches=CUSTOMERS.filter(c=>c.dojang_name===d.dojang_name && phone && String(c.phone||'').replace(/[^0-9]/g,'')===phone);
-  return matches.length && new Set(matches.map(c=>c.branch_code||'')).size===1 ? matches[0] : null;
+
+const PHONE_DIGITS = v => String(v||'').replace(/[^0-9]/g,'');
+function licensesOfCustomer(c){
+  if (!c) return [];
+  return (LICENSES||[]).filter(l => l.customer_id === c.id ||
+    (!l.customer_id && c.license_key && l.license_key === c.license_key));
 }
+function customerOfLicense(d){
+  if (!d) return null;
+  if (d.customer_id) return (CUSTOMERS||[]).find(c => c.id === d.customer_id) || null;
+  return d.license_key ? (CUSTOMERS||[]).find(c => c.license_key === d.license_key) || null : null;
+}
+function branchCustomerForLicense(d){ return customerOfLicense(d); }
 function customerForLicense(key) {
   if (!key) return null;
-  return CUSTOMERS.find(c => c.license_key === key) || null;
+  return customerOfLicense((LICENSES||[]).find(l => l.license_key === key));
+}
+
+function customerByNamePhone(name, phone){
+  const n = String(name||'').trim(), p = PHONE_DIGITS(phone);
+  if (!n || !p) return null;
+  const hits = (CUSTOMERS||[]).filter(c => String(c.dojang_name||'').trim() === n && PHONE_DIGITS(c.phone) === p);
+  return hits.length === 1 ? hits[0] : null;
+}
+
+function custStatus(c, ignoreChurn){
+  if (!c) return 'lead';
+  if (c.status === 'churned' && !ignoreChurn) return 'churned';
+  const ls = licensesOfCustomer(c);
+  if (ls.some(l => l.license_type === 'lifetime' || l.license_type === 'package')) return 'customer';
+  if (ls.some(l => l.license_type === 'trial')) return 'trial';
+  return 'lead';
+}
+
+async function syncCustomerStatus(c){
+  if (!c || c.status === 'churned') return;
+  const s = custStatus(c);
+  if (s === c.status) return;
+  try { const saved = await edgeCall('SAVE_CUSTOMER', { id:c.id, status:s }); c.status = (saved && saved.status) || s; }
+  catch(e) {  }
 }
 
 async function sendToLedger(id) {
   const d = LICENSES.find(x => String(x.id) === String(id));
   if (!d) return;
-  if (customerForLicense(d.license_key)) { gotoLedger(d.license_key); return; }
-
-  const isTrial = d.license_type === 'trial';
-  const row = {
-    dojang_name : d.dojang_name,
-    phone       : d.phone || null,
-    license_key : d.license_key,
-    memo        : d.memo || null,
-    branch_code : branchCustomerForLicense(d)?.branch_code || null,
-    
-    status      : isTrial ? 'trial' : 'customer',
-    paid_amount : d.pay_amount || null,
-    
-    sold_at     : d.pay_date || (isTrial ? null : todayStr())
-  };
+  if (customerOfLicense(d)) { gotoLedger(d.license_key); return; }
   try {
-    const made = await edgeCall('SAVE_CUSTOMER', row);
-    if (made) CUSTOMERS.unshift(made);
+    
+    let c = customerByNamePhone(d.dojang_name, d.phone);
+    if (!c) {
+      c = await edgeCall('SAVE_CUSTOMER', { dojang_name:d.dojang_name, phone:d.phone || null, memo:d.memo || null, branch_code:null, status:'lead' });
+      if (!c || !c.id) throw new Error('고객을 만들지 못했습니다');
+      CUSTOMERS.unshift(c);
+    }
+    await edgeCall('UPDATE_LICENSE', { id:d.id, customer_id:c.id });
+    d.customer_id = c.id;
+    await syncCustomerStatus(c);
     renderTable();                 
     gotoLedger(d.license_key);
-    showToast(`'${d.dojang_name}' 을(를) 장부로 보냈습니다`);
+    showToast(`'${d.dojang_name}' 을(를) 장부에 연결했습니다`);
   } catch(err) { showToast('보내기 실패: ' + err.message); }
 }
 
@@ -1589,7 +1614,8 @@ function gotoLedger(key) {
   const c = customerForLicense(key);
   switchTab('customer');
   if (!c) return;
-  custFilter = 'all';
+  custFilter = c.status === 'churned' ? 'churned' : 'all';
+  openLicsFor.add(c.id);   
   document.getElementById('cgSearch').value = c.dojang_name;
   renderCustomers();
   setTimeout(() => {
@@ -1808,27 +1834,33 @@ async function restartTrial() {
 }
 
 function memberDirectory(){
-  const map = new Map();
   const norm = v => String(v||'').trim();
-  const put = (name, patch) => {
-    const k = norm(name); if(!k) return;
+  const out = [];
+  for (const c of (CUSTOMERS||[])) {
+    const by = {};
+    for (const l of licensesOfCustomer(c)) by[productOfKey(l.license_key).key] = l;
+    out.push({ id:c.id, dojang_name:norm(c.dojang_name), phone:norm(c.phone), owner_name:norm(c.owner_name),
+      sido:norm(c.sido), sigungu:norm(c.sigungu), source:norm(c.source), branch_code:norm(c.branch_code),
+      by, kick:by.kick || null, jump:by.jump || null });
+  }
+  
+  const loose = new Map();
+  for (const l of (LICENSES||[])) {
+    if (customerOfLicense(l)) continue;
+    const k = norm(l.dojang_name); if (!k) continue;
+    const m = loose.get(k) || { id:null, dojang_name:k, phone:norm(l.phone), owner_name:'', sido:'', sigungu:'', source:'', branch_code:'', by:{}, kick:null, jump:null };
+    const pid = productOfKey(l.license_key).key;
+    m.by[pid] = l; if (pid === 'kick') m.kick = l; if (pid === 'jump') m.jump = l;
+    loose.set(k, m);
+  }
+  return [...out, ...loose.values()].filter(m => m.dojang_name).sort((a,b)=>a.dojang_name.localeCompare(b.dojang_name,'ko'));
+}
 
-    const cur = map.get(k) || { dojang_name:k, phone:'', owner_name:'', sido:'', sigungu:'', source:'', by:{}, kick:null, jump:null };
-    if (!cur.by) cur.by = {};
-    for (const f of ['phone','owner_name','sido','sigungu','source','branch_code'])
-      if (!cur[f] && norm(patch[f])) cur[f] = norm(patch[f]);
-    if (patch.lic) {
-      const pid = productOfKey(patch.lic.license_key).key;
-      cur.by[pid] = patch.lic;
-      if (pid === 'kick') cur.kick = patch.lic;
-      if (pid === 'jump') cur.jump = patch.lic;
-    }
-    map.set(k, cur);
-  };
-  for (const d of (LICENSES||[])) put(d.dojang_name, { phone:d.phone, lic:d });
-  for (const c of (CUSTOMERS||[]))
-    put(c.dojang_name, { phone:c.phone, owner_name:c.owner_name, sido:c.sido, sigungu:c.sigungu, source:c.source, branch_code:c.branch_code });
-  return [...map.values()].sort((a,b)=>a.dojang_name.localeCompare(b.dojang_name,'ko'));
+function memberPickValue(m, dir){
+  const same = (dir||[]).filter(x => x.dojang_name === m.dojang_name).length > 1;
+  if (!same) return m.dojang_name;
+  const tail = PHONE_DIGITS(m.phone).slice(-4);
+  return `${m.dojang_name} · ${tail || m.sido || '전화 없음'}`;
 }
 
 function memberTypeLabel(t){
@@ -1838,14 +1870,16 @@ function memberTypeLabel(t){
 function refreshMemberPickList(){
   const dl = document.getElementById('memPickList'); if(!dl) return;
   const wantId = curProduct().key;
-  dl.innerHTML = memberDirectory().map(m => {
+  const dir = memberDirectory();
+  dl.innerHTML = dir.map(m => {
     const by   = m.by || {};
     const have = by[wantId];
 
     const others = PRODUCT_ORDER.filter(id => id !== wantId && by[id]).map(id => PRODUCTS[id].short);
     const tag  = have ? ' (이 제품 이미 보유)'
                       : (others.length ? ' · ' + others.join('·') + ' 회원' : '');
-    return `<option value="${escapeHtml(m.dojang_name)}">${escapeHtml(m.dojang_name + tag)}</option>`;
+    const v = memberPickValue(m, dir);
+    return `<option value="${escapeHtml(v)}">${escapeHtml(v + tag)}</option>`;
   }).join('');
 }
 
@@ -1854,9 +1888,11 @@ function applyMemberPick(){
   const q = String(document.getElementById('memPick').value||'').trim();
   if(!q){ if(hint) hint.textContent=''; return; }
   const dir = memberDirectory();
-  let m = dir.find(x => x.dojang_name === q);
+  
+  let m = dir.find(x => memberPickValue(x, dir) === q);
   if(!m){
-    const hits = dir.filter(x => x.dojang_name.includes(q));
+    const exact = dir.filter(x => x.dojang_name === q);
+    const hits = exact.length ? exact : dir.filter(x => x.dojang_name.includes(q));
     if(hits.length === 1) m = hits[0];
     else { if(hint) hint.textContent = hits.length ? `'${q}' 에 맞는 도장이 ${hits.length}곳입니다. 목록에서 골라주세요.` : `'${q}' 라는 도장을 찾지 못했습니다.`; return; }
   }
@@ -1868,7 +1904,9 @@ function fillFromMember(m){
   set('mDojang', m.dojang_name);
   set('mPhone',  m.phone);
   
-  const real = (CUSTOMERS||[]).find(c => String(c.dojang_name||'').trim() === m.dojang_name) || null;
+  pickedCustomerId = m.id || null;
+  
+  const real = m.id ? (CUSTOMERS||[]).find(c => c.id === m.id) || null : null;
   fillLedgerFields(real || { owner_name:m.owner_name, sido:m.sido, sigungu:m.sigungu, source:m.source, branch_code:m.branch_code });
 
   const wantId  = curProduct().key;
@@ -1886,7 +1924,7 @@ function fillFromMember(m){
   if (hint) hint.innerHTML = `<b>${escapeHtml(m.dojang_name)}</b> 정보를 넣었습니다`
     + (parts.length ? ' · ' + parts.join(' · ') : '')
     + '<br>키 · 결제 · 만료일은 이번 구매 기준으로 새로 넣어주세요.';
-  document.getElementById('memPick').value = m.dojang_name;
+  document.getElementById('memPick').value = memberPickValue(m, memberDirectory());
 }
 
 function openAddModal() {
@@ -1911,6 +1949,7 @@ function openAddModal() {
   currentEditTrialStartedAt = null;
   currentEditDeviceSlots = [];
   currentEditLicenseId = null;
+  pickedCustomerId = null;
   const cn0 = document.getElementById('convertNote'); if (cn0) cn0.textContent = '';
   document.getElementById('deviceSlotSection').style.display = 'none';
   document.getElementById('usageSection').style.display = 'none';
@@ -1957,19 +1996,19 @@ function fillLedgerFields(c) {
     : '저장하면 회원 장부에도 한 줄이 만들어집니다.';
 }
 
-function renderOwnedProducts(dojangName, currentKey){
+function renderOwnedProducts(customer, currentKey, fallbackName){
   const box = document.getElementById('ownedBox');
   const sec = document.getElementById('ownedSection');
   if(!box || !sec) return;
-  const name = String(dojangName||'').trim();
-  if(!name){ sec.style.display='none'; return; }
+  
+  const name = String((customer && customer.dojang_name) || fallbackName || '').trim();
+  if(!customer && !name){ sec.style.display='none'; return; }
+  const list = customer ? licensesOfCustomer(customer)
+    : (LICENSES||[]).filter(x => !customerOfLicense(x) && String(x.dojang_name||'').trim() === name);
 
   const mine = productOfKey(currentKey).key;
   const owned = {};
-  for (const x of (LICENSES||[])) {
-    if (String(x.dojang_name||'').trim() !== name) continue;
-    owned[productOfKey(x.license_key).key] = x;
-  }
+  for (const x of list) owned[productOfKey(x.license_key).key] = x;
 
   box.innerHTML = PRODUCT_ORDER.map(id => {
     const P = PRODUCTS[id], lic = owned[id];
@@ -1984,7 +2023,7 @@ function renderOwnedProducts(dojangName, currentKey){
       btn = `<button type="button" class="btn-sm btn-toggle" ${adminAction("openOwnedLicense",[lic.id])}>열기</button>`;
     } else {
       state = '없음';
-      btn = `<button type="button" class="btn-sm btn-cross" ${adminAction("issueForDojang",[id,name])}>발급</button>`;
+      btn = `<button type="button" class="btn-sm btn-cross" ${adminAction("issueForCustomer",[id, customer ? customer.id : null, name])}>발급</button>`;
     }
     return `<div class="${cls}"><span class="owned-name">${escapeHtml(P.name)}</span>`
          + `<span class="owned-state">${state}</span>${btn}</div>`;
@@ -1992,13 +2031,17 @@ function renderOwnedProducts(dojangName, currentKey){
   sec.style.display = 'block';
 }
 
-function issueForDojang(productId, dojangName){
+function issueForCustomer(productId, customerId, dojangName){
   switchLicenseSubtab(PRODUCTS[productId] ? productId : 'kick');
   openAddModal();
-  const m = memberDirectory().find(x => x.dojang_name === String(dojangName||'').trim());
+  const dir = memberDirectory();
+  const m = (customerId && dir.find(x => x.id === customerId))
+         || dir.find(x => !x.id && x.dojang_name === String(dojangName||'').trim());
   if (m) fillFromMember(m);
   else document.getElementById('mDojang').value = dojangName || '';
 }
+
+function issueForDojang(productId, dojangName){ issueForCustomer(productId, null, dojangName); }
 
 function openOwnedLicense(id){
   const d = (LICENSES||[]).find(x => String(x.id) === String(id));
@@ -2040,8 +2083,10 @@ function openEditModal(encoded) {
   showDeviceHistory(d.license_key);
   document.getElementById('saveBtn').textContent = '저장';
   document.getElementById('saveCopyBtn').textContent = '저장하고 카톡 복사';
-  fillLedgerFields(branchCustomerForLicense(d));
-  renderOwnedProducts(d.dojang_name, d.license_key);   
+  const owner = customerOfLicense(d);
+  pickedCustomerId = owner ? owner.id : null;
+  fillLedgerFields(owner);
+  renderOwnedProducts(owner, d.license_key, d.dojang_name);   
   document.getElementById('modalErr').textContent = '';
   onTypeChange();
   document.getElementById('modalBg').classList.add('show');
@@ -2218,6 +2263,8 @@ async function showUsage(licenseKey) {
 
 let currentEditDeviceSlots = [];
 let currentEditLicenseId = null;
+
+let pickedCustomerId = null;
 
 let currentEditTrialStartedAt = null;
 
@@ -2492,12 +2539,15 @@ async function saveLicense(alsoCopy) {
   saveBtn.disabled = true; copyBtn.disabled = true; errEl.textContent = '';
   try {
     const payload = { dojang_name, license_key, license_type, version, expire_date, pay_amount, pay_date, pay_memo, phone, memo, max_devices, trial_days };
-    if (id) { await edgeCall('UPDATE_LICENSE', { id, ...payload }); }
-    else { await edgeCall('INSERT_LICENSE', { ...payload, is_active: true }); }
+    
+    const savedRows = id ? await edgeCall('UPDATE_LICENSE', { id, ...payload })
+                         : await edgeCall('INSERT_LICENSE', { ...payload, is_active: true });
+    const savedLic = (Array.isArray(savedRows) && savedRows[0])
+      || (LICENSES||[]).find(x => String(x.id) === String(id)) || null;
 
     let ledgerNote = '';
     let ledgerInfo = null;
-    try { ledgerInfo = await syncLedgerFromLicense(payload); }
+    try { ledgerInfo = await syncLedgerFromLicense(payload, savedLic); }
     catch(e) { ledgerNote = ' (회원 장부 반영 실패: ' + e.message + ' — 목록에서 \'장부로\' 를 눌러주세요)'; }
 
     if (alsoCopy) {
@@ -2515,7 +2565,7 @@ async function saveLicense(alsoCopy) {
   finally { saveBtn.disabled = false; copyBtn.disabled = false; }
 }
 
-async function syncLedgerFromLicense(p) {
+async function syncLedgerFromLicense(p, lic) {
   const val = id => { const el = document.getElementById(id); return el ? String(el.value || '').trim() : ''; };
   const owner   = val('mOwner');
   const sido    = val('mSido');
@@ -2523,54 +2573,46 @@ async function syncLedgerFromLicense(p) {
   const source  = val('mSource');
   const branch_code = val('mBranch') || null;
 
-  const found = customerForLicense(p.license_key)
-             || CUSTOMERS.find(c => !c.license_key && c.dojang_name === p.dojang_name)
+  const byId = id => id ? (CUSTOMERS||[]).find(c => c.id === id) || null : null;
+  const picked = byId(pickedCustomerId);
+  const found = byId(lic && lic.customer_id)
+             || (picked && String(picked.dojang_name||'').trim() === String(p.dojang_name||'').trim() ? picked : null)
+             || customerByNamePhone(p.dojang_name, p.phone)
              || null;
 
-  const row = { dojang_name: p.dojang_name, license_key: p.license_key, branch_code };
+  const row = { dojang_name: p.dojang_name, branch_code };
   if (p.phone) row.phone       = p.phone;
   if (owner)   row.owner_name  = owner;
   if (sido)    row.sido        = sido;
   if (sigungu) row.sigungu     = sigungu;
   if (source)  row.source      = source;
 
-  const isTrial = p.license_type === 'trial';
-  let becameCustomer = false;
-
-  if (found) {
-    row.id = found.id;
-    const cur = found.status || 'lead';
-
-    if (!isTrial && cur !== 'customer') {
-      row.status = 'customer';
-      becameCustomer = true;
-    }
-
-    if (!found.paid_amount && p.pay_amount) row.paid_amount = p.pay_amount;
-    if (!found.sold_at) {
-      
-      if (p.pay_date)          row.sold_at = p.pay_date;
-      else if (becameCustomer) row.sold_at = todayStr();
-    }
-  } else {
-    row.status      = isTrial ? 'trial' : 'customer';
-    row.paid_amount = p.pay_amount || null;
-    row.sold_at     = p.pay_date || (isTrial ? null : todayStr());
-    row.memo        = p.memo || null;
-    becameCustomer  = !isTrial;
-  }
+  const before = found ? custStatus(found) : 'lead';
+  if (found) row.id = found.id;
+  else { row.status = 'lead'; row.memo = p.memo || null; }
 
   const saved = await edgeCall('SAVE_CUSTOMER', row);
   if(!saved || !Object.hasOwn(saved,'branch_code') || (saved.branch_code||null)!==branch_code) throw new Error('고객 소속 저장을 확인하지 못했습니다. 서버 적용 상태를 확인하고 회원정보에서 다시 저장해주세요.');
-  if (saved && saved.id) {
-    const i = CUSTOMERS.findIndex(c => c.id === saved.id);
-    if (i >= 0) CUSTOMERS[i] = saved; else CUSTOMERS.unshift(saved);
+  const i = CUSTOMERS.findIndex(c => c.id === saved.id);
+  if (i >= 0) CUSTOMERS[i] = saved; else CUSTOMERS.unshift(saved);
+
+  if (lic && lic.id) {
+    if (lic.customer_id !== saved.id) await edgeCall('UPDATE_LICENSE', { id: lic.id, customer_id: saved.id });
+    lic.customer_id = saved.id;
+    const li = (LICENSES||[]).findIndex(x => String(x.id) === String(lic.id));
+    if (li >= 0) LICENSES[li] = { ...LICENSES[li], ...lic, customer_id: saved.id };
+    else if (Array.isArray(LICENSES)) LICENSES.push({ ...lic, customer_id: saved.id });
   }
-  return {
-    becameCustomer,
-    name   : p.dojang_name,
-    soldAt : (saved && saved.sold_at) || row.sold_at || null
-  };
+
+  const isTrial = p.license_type === 'trial';
+  const becameCustomer = !isTrial && before !== 'customer';
+  let soldAt = p.pay_date || null;
+  if (becameCustomer && !soldAt && lic && lic.id) {
+    soldAt = todayStr();
+    try { await edgeCall('UPDATE_LICENSE', { id: lic.id, pay_date: soldAt }); } catch(e) { soldAt = null; }
+  }
+  await syncCustomerStatus(saved);
+  return { becameCustomer, name: p.dojang_name, soldAt };
 }
 
 function regenerateKey(){
@@ -2594,9 +2636,10 @@ async function deleteLicense(id, name) {
   
   const d = LICENSES.find(x => String(x.id) === String(id));
   const inLedger = d && customerForLicense(d.license_key);
-  const note = inLedger
-    ? `\n\n※ 회원 장부의 '${inLedger.dojang_name}' 줄은 남습니다.\n  판매 기록이므로 일부러 지우지 않습니다.`
-    : '';
+  
+  const hasSale = d && (d.pay_amount || d.list_price || d.extra_amount);
+  const note = (inLedger ? `\n\n※ 회원 장부의 '${inLedger.dojang_name}' 도장은 남습니다.` : '')
+    + (hasSale ? `\n※ 이 라이선스의 판매 기록(실수령 ${formatMoney(d.pay_amount)})도 함께 지워집니다.\n  기록을 남기려면 삭제 대신 '중지'를 누르세요.` : '');
   const input = prompt(`정말 삭제하려면 도장명을 그대로 입력하세요.\n삭제 대상: ${name}${note}`);
   if (input !== name) { alert('도장명이 일치하지 않아 삭제하지 않았습니다.'); return; }
   try { await edgeCall('DELETE_LICENSE', { id }); await loadLicenses(); }
@@ -2751,6 +2794,7 @@ let custFilter = 'all';
 let custSort = { field:'created_at', direction:'desc' };
 let custZoomLevel = 0;       
 let openNotesFor = null;     
+const openLicsFor = new Set(); 
 
 const CUST_STATUS = [
   ['lead','잠재'], ['trial','체험'], ['customer','정식'], ['churned','이탈']
@@ -2768,27 +2812,15 @@ const CUST_COLS = [
   { f:'phone',           t:'전화',       v:['sales','all'] },
   { f:'sido',            t:'시/도',      v:['sales','all'], sel:CUST_SIDO },
   { f:'sigungu',         t:'시군구',     v:['sales','all'] },
-  { f:'status',          t:'상태',       v:['sales','money','all'], sel:CUST_STATUS },
+  { f:'status',          t:'상태',       v:['sales','money','all'], st:true,
+    h:'라이선스로 자동 계산합니다. 정식이 하나라도 있으면 고객, 체험만 있으면 체험. 이탈만 직접 고릅니다' },
+  { f:'_products',       t:'제품',       v:['sales','money','all'], ro:true, h:"이 도장의 라이선스. 줄 오른쪽 '라이선스' 를 누르면 펼쳐집니다" },
   { f:'source',          t:'유입경로',   v:['sales','all'], sel:CUST_SOURCE },
   { f:'referrer',        t:'소개해준 곳', v:['sales','all'], wide:true },
-  { f:'license_key',     t:'라이선스',   v:['sales','money','all'], lic:true },
-
-  { f:'_licIssued',      t:'발급일',     v:['money','all'], ro:true },
-  { f:'_licExpire',      t:'라이선스 만료', v:['money','all'], ro:true },
-  
-  { f:'list_price',      t:'정가',       v:['money','all'], num:true,
-    h:'할인 전 원래 가격' },
-  { f:'discount',        t:'할인 (−)',   v:['money','all'], num:true,
-    h:'깎아준 금액. 정가에서 이만큼 빼면 실수령이 됩니다' },
-  { f:'discount_reason', t:'할인 사유',  v:['money','all'], wide:true },
-  { f:'paid_amount',     t:'실수령 (=)', v:['money','all'], num:true, calc:true,
-    h:'실제로 받은 돈. 정가와 할인을 적으면 저절로 계산됩니다' },
-  { f:'sold_at',         t:'판매일',     v:['money','all'], date:true },
-  { f:'pay_method',      t:'결제수단',   v:['money','all'], sel:CUST_PAY },
-  { f:'tax_invoice',     t:'계산서',     v:['money','all'], chk:true },
+  { f:'_expire',         t:'가까운 만료', v:['money','all'], ro:true, h:'라이선스 가운데 가장 먼저 끝나는 날' },
+  { f:'_paid',           t:'결제 합계',  v:['money','all'], ro:true, sum:true, h:'라이선스마다 받은 돈(실수령 + 추가판매)의 합' },
+  { f:'_lastSold',       t:'최근 판매일', v:['money','all'], ro:true },
   { f:'biz_no',          t:'사업자번호', v:['money','all'] },
-  { f:'extra_amount',    t:'추가판매',   v:['money','all'], num:true },
-  { f:'extra_at',        t:'추가일',     v:['money','all'], date:true },
   { f:'students',        t:'관원수',     v:['all'], num:true },
   { f:'device',          t:'기기',       v:['all'] },
   { f:'next_action',     t:'후속 연락·확인', v:['sales','all'], wide:true, h:'예: 체험 종료 후 전화, 설치 확인. 필요할 때만 입력' },
@@ -2820,6 +2852,7 @@ function textWidth(s, weight, size) {
 
 function custCellText(c, col) {
   if (col.chk) return '';
+  if (col.st)  return '자동 · ' + custStatusLabel(custStatus(c, true));
   if (col.ro)  return derivedCust(c, col.f);
   if (col.sel) {
     const opts = col.sel.map(o => Array.isArray(o) ? o : [o, o || '—']);
@@ -2840,8 +2873,8 @@ function computeCustWidths(rows, cols) {
       const t = custCellText(c, col);
       if (t) w = Math.max(w, textWidth(t, 700, fs));
     });
-    if (col.num) {                                            
-      const sum = rows.reduce((a, c) => a + (Number(c[col.f]) || 0), 0);
+    if (col.num || col.sum) {                                 
+      const sum = rows.reduce((a, c) => a + (Number(col.sum ? custLicenseNumber(c, col.f) : c[col.f]) || 0), 0);
       w = Math.max(w, textWidth(sum.toLocaleString('ko-KR'), 900, fs));
     }
 
@@ -2850,7 +2883,9 @@ function computeCustWidths(rows, cols) {
     if (col.name)      { min = 132; max = 230; }
     else if (col.date) { extra = 48; min = 122; max = 150; }  
     else if (col.num)  { min = 74;  max = 132; }
+    else if (col.f === '_products') { extra = 16; min = 96; max = 240; }
     else if (col.ro)   { min = 78;  max = 132; }
+    else if (col.st)   { extra = 30; min = 118; max = 170; }
     else if (col.sel || col.lic) { extra = 24; min = 72; max = 190; }
     else if (col.wide) { min = 130; max = 250; }              
 
@@ -2909,40 +2944,52 @@ function customerRegisteredAt(c) {
   const d = new Date(c.created_at);
   return Number.isNaN(d.getTime()) ? String(c.created_at).slice(0,10) : new Date(d.getTime() + 9 * 3600000).toISOString().slice(0,10);
 }
+const CUST_STATUS_LABEL = { lead:'잠재', trial:'체험', customer:'정식', churned:'이탈' };
+function custStatusLabel(st){ return CUST_STATUS_LABEL[st] || st || '잠재'; }
+const LIC_STATE_ORDER = ['live','soon','trial','expired','off'];
+
+function custLicenseNumber(c, f){
+  if (f === '_paid') return licensesOfCustomer(c).reduce((a, l) => a + (Number(l.pay_amount)||0) + (Number(l.extra_amount)||0), 0);
+  return 0;
+}
 function derivedCust(c, f) {
   if (f === 'created_at') return customerRegisteredAt(c);
-  const l = LICENSES.find(x => x.license_key === c.license_key);
-  if (!l) return '';
-  if (f === '_licIssued') return (l.created_at || '').slice(0,10);
-  if (f === '_licExpire') {
-    if (l.license_type === 'lifetime') return '정식';
-    if (l.license_type === 'trial' && !l.trial_started_at) return '시작 전';
-    return l.expire_date || '';
+  const ls = licensesOfCustomer(c);
+  if (f === '_products') {
+    return PRODUCT_ORDER.flatMap(id => ls.filter(l => productOfKey(l.license_key).key === id))
+      .map(l => `${productOfKey(l.license_key).short.replace('마스터','')} ${memberTypeLabel(l.license_type)}`).join(' · ');
   }
+  if (f === '_expire') {
+    const dated = ls.map(l => l.license_type === 'lifetime' ? '' : (l.expire_date || '')).filter(Boolean).sort();
+    if (dated.length) return dated[0];
+    if (ls.some(l => l.license_type === 'trial' && !l.trial_started_at)) return '시작 전';
+    return ls.length ? '정식' : '';
+  }
+  if (f === '_paid') { const n = custLicenseNumber(c, f); return n ? n.toLocaleString('ko-KR') : ''; }
+  if (f === '_lastSold') return ls.filter(l => l.license_type !== 'trial').map(l => l.pay_date || '').filter(Boolean).sort().at(-1) || '';
   return '';
 }
 
 function customerLicenseState(c) {
-  const l = LICENSES.find(x => x.license_key === c.license_key);
-  if (l) return licenseState(l);
-  if (c.status === 'trial') return 'trial';
-  if (c.status === 'customer') return 'live';
+  const ls = licensesOfCustomer(c);
+  if (ls.length) { const st = ls.map(licenseState); return LIC_STATE_ORDER.find(x => st.includes(x)) || 'off'; }
+  const st = custStatus(c);
+  if (st === 'trial') return 'trial';
+  if (st === 'customer') return 'live';
   return 'off';
 }
 
 function customerSortValue(c, field) {
   if (field === 'created_at') return customerRegisteredAt(c);
-  if (field === '_licIssued') return derivedCust(c, field);
-  if (field === '_licExpire') {
-    const l = LICENSES.find(x => x.license_key === c.license_key);
-    return l ? (l.license_type === 'lifetime' ? '9999-12-31' : l.expire_date || '') : '';
-  }
-  if (field === 'status') return Math.max(0, CUST_STATUS.findIndex(([key]) => key === (c.status || 'lead')));
+  if (field === '_paid') return custLicenseNumber(c, field) || null;
+  if (field === '_expire') { const v = derivedCust(c, field); return v === '정식' ? '9999-12-31' : v; }
+  if (field.startsWith('_')) return derivedCust(c, field);
+  if (field === 'status') return Math.max(0, CUST_STATUS.findIndex(([key]) => key === custStatus(c)));
   return c[field];
 }
 function sortCustomerRows(rows) {
   const {field,direction} = custSort;
-  const numeric = CUST_COLS.some(col => col.f === field && col.num) || field === 'status';
+  const numeric = CUST_COLS.some(col => col.f === field && (col.num || col.sum)) || field === 'status';
   return rows.slice().sort((a,b) => {
     const av = customerSortValue(a,field), bv = customerSortValue(b,field);
     const ae = av === null || av === undefined || av === '';
@@ -2971,27 +3018,22 @@ function customerRowsNow() {
   
   const qd = /^[0-9]{3,}$/.test(q) ? q : '';
   const rows = CUSTOMERS.filter(c => {
-    const hay = [c.dojang_name, c.owner_name, c.phone, c.sigungu, c.license_key, c.memo, c.next_action]
-      .filter(Boolean).join(' ').toLowerCase();
+    const hay = [c.dojang_name, c.owner_name, c.phone, c.sigungu, c.memo, c.next_action,
+      ...licensesOfCustomer(c).map(l => l.license_key)].filter(Boolean).join(' ').toLowerCase();
     const qHit = !q || hay.includes(q)
       || (qd && String(c.phone||'').replace(/[^0-9]/g,'').includes(qd));
     let m = true;
     if (custFilter === 'due') m = isDueOpen(c);
-    else if (custFilter === 'all') m = c.status !== 'churned';
-    else m = (c.status || 'lead') === custFilter;
+    else if (custFilter === 'all') m = custStatus(c) !== 'churned';
+    else m = custStatus(c) === custFilter;
     return qHit && m && (branch==='*' || String(c.branch_code||'')===branch);
   });
   return sortCustomerRows(rows);
 }
 
-function customerLicenses(c) {
-  const name = String(c.dojang_name || '').trim();
-  return LICENSES.filter(l => (c.license_key && l.license_key === c.license_key) ||
-    (name && String(l.dojang_name || '').trim() === name));
-}
 function customerMobileSummary(c) {
-  const linked = customerLicenses(c);
-  const status = (CUST_STATUS.find(([key]) => key === (c.status || 'lead')) || CUST_STATUS[0])[1];
+  const linked = licensesOfCustomer(c);
+  const status = custStatusLabel(custStatus(c));
   const verified = linked.map(l => l.last_verified_at).filter(Boolean).sort().at(-1);
   const ago = verified ? daysAgo(isoToYmd(verified)) : null;
   const activity = !linked.length ? '라이선스 없음' : ago === null ? '인증 전' : `인증 ${agoText(Math.max(0,ago))}`;
@@ -3006,14 +3048,16 @@ function renderCustomers() {
   if(branchFilter.options.length===1)fillBranchSelect(branchFilter,'*',true);
   const act = document.activeElement;
   const keep = (act && act.classList && act.classList.contains('cg-in'))
-    ? { id: act.dataset.id, f: act.dataset.f, pos: act.selectionStart } : null;
+    ? { id: act.dataset.id, f: act.dataset.f, pos: act.selectionStart }
+    : (act && act.classList && act.classList.contains('cl-in'))
+    ? { lid: act.dataset.lid, f: act.dataset.f, pos: act.selectionStart } : null;
 
   document.querySelectorAll('#cgStatus button').forEach(b => b.classList.toggle('on', b.dataset.s === custFilter));
   document.querySelectorAll('#tab-customer .stat-card').forEach(c =>
     c.classList.toggle('is-on', c.dataset.cfilter === custFilter && custFilter !== 'all'));
   const archiveBtn = document.getElementById('cgArchiveBtn');
   const archived = custFilter === 'churned';
-  archiveBtn.textContent = archived ? '← 회원 장부' : `이탈 보관 (${CUSTOMERS.filter(c => c.status === 'churned').length})`;
+  archiveBtn.textContent = archived ? '← 회원 장부' : `이탈 보관 (${CUSTOMERS.filter(c => custStatus(c) === 'churned').length})`;
   archiveBtn.setAttribute('aria-pressed', String(archived));
   archiveBtn.classList.toggle('on', archived);
 
@@ -3026,8 +3070,8 @@ function renderCustomers() {
   
   if (W.dojang_name) W.dojang_name += 58;
   document.getElementById('cgHead').innerHTML =
-    '<tr>' + cols.map(c => `<th class="${c.name?'cg-name':''}" aria-sort="${custSort.field===c.f?(custSort.direction==='asc'?'ascending':'descending'):'none'}" style="min-width:${W[c.f]}px;width:${W[c.f]}px"><button type="button" class="cg-sort-head" ${adminAction("toggleCustSort",[c.f])} title="${escapeHtml(c.h || c.t + ' 기준 정렬. 다시 누르면 방향 전환')}">${c.t}</button></th>`).join('')
-    + '<th style="min-width:96px;width:96px">관리</th></tr>';
+    '<tr>' + cols.map(c => `<th class="${c.name?'cg-name':''}${c.sum?' num':''}" aria-sort="${custSort.field===c.f?(custSort.direction==='asc'?'ascending':'descending'):'none'}" style="min-width:${W[c.f]}px;width:${W[c.f]}px"><button type="button" class="cg-sort-head" ${adminAction("toggleCustSort",[c.f])} title="${escapeHtml(c.h || c.t + ' 기준 정렬. 다시 누르면 방향 전환')}">${c.t}</button></th>`).join('')
+    + '<th style="min-width:178px;width:178px">관리</th></tr>';
 
   updateCustStats();
 
@@ -3038,19 +3082,24 @@ function renderCustomers() {
     document.getElementById('cgBody').innerHTML =
       `<tr><td class="cg-empty" colspan="${cols.length+1}">${msg}</td></tr>`;
     document.getElementById('cgFoot').innerHTML = '';
-    document.getElementById('cgSub').textContent = archived ? '이탈 보관 · 0명' : `현재 ${CUSTOMERS.filter(c => c.status !== 'churned').length}명`;
+    document.getElementById('cgSub').textContent = archived ? '이탈 보관 · 0곳' : custSubText(0);
     return;
   }
 
   document.getElementById('cgBody').innerHTML = rows.map(c => {
-    const cls = ['cg-row', 's-' + (c.status || 'lead'), 'lic-' + customerLicenseState(c)];
+    const cls = ['cg-row', 's-' + custStatus(c), 'lic-' + customerLicenseState(c)];
+    const nLic = licensesOfCustomer(c).length, licOpen = openLicsFor.has(c.id);
     if (isDueOpen(c)) cls.push('due');
     let html = `<tr class="${cls.join(' ')}" data-id="${c.id}">`
       + cols.map(col => `<td class="${col.name?'cg-name':''}" data-field="${col.f}" data-label="${escapeHtml(col.t)}">${col.name ? `<div class="cg-namewrap">${custCell(c, col)}${custBadges(c)}<button type="button" class="mobile-expand" onclick="toggleMobileCard(this)" aria-expanded="false">상세 보기</button></div>${customerMobileSummary(c)}` : custCell(c, col)}</td>`).join('')
       + `<td class="cg-actions" data-label="관리"><div style="display:flex;gap:4px;padding:0 5px">
+           <button class="btn-sm ${licOpen?'btn-toggle is-open':'btn-edit'}" aria-expanded="${licOpen}" ${adminAction("toggleCustLicenses",[c.id])}>라이선스 ${nLic} ${licOpen?'▴':'▾'}</button>
            <button class="btn-sm ${openNotesFor===c.id?'btn-toggle is-open':'btn-edit'}" ${adminAction("toggleNotes",[c.id])}>${openNotesFor===c.id?'닫기':'이력'}</button>
            <button class="btn-sm btn-del" ${adminAction("deleteCustomer",[c.id])}>삭제</button>
          </div></td></tr>`;
+    if (licOpen) {
+      html += `<tr class="cg-notes cg-lics"><td colspan="${cols.length+1}"><div class="cg-note-box cg-lic-box">${custLicensesHtml(c)}</div></td></tr>`;
+    }
     if (openNotesFor === c.id) {
 
       html += `<tr class="cg-notes"><td colspan="${cols.length+1}">
@@ -3062,13 +3111,15 @@ function renderCustomers() {
   rows.forEach(c=>{if(customerSaves.has(c.id))paintCustomerSave(c.id);});
   renderCustFoot(rows, cols);
   document.getElementById('cgSub').textContent = archived
-    ? `이탈 보관 · ${rows.length}명 표시`
-    : `${rows.length}명 표시 · 현재 ${CUSTOMERS.filter(c => c.status !== 'churned').length}명`;
+    ? `이탈 보관 · ${rows.length}곳 표시`
+    : custSubText(rows.length);
 
   if (openNotesFor) loadNotes(openNotesFor);
 
   if (keep) {
-    const back = document.querySelector(`.cg-in[data-id="${keep.id}"][data-f="${keep.f}"]`);
+    const back = keep.lid
+      ? document.querySelector(`.cl-in[data-lid="${keep.lid}"][data-f="${keep.f}"]`)
+      : document.querySelector(`.cg-in[data-id="${keep.id}"][data-f="${keep.f}"]`);
     if (back) { back.focus(); try { back.setSelectionRange(keep.pos, keep.pos); } catch(e) {} }
   }
 }
@@ -3078,9 +3129,24 @@ function custCell(c, col) {
   const raw = c[f];
   const at = `data-id="${id}" data-f="${f}" onchange="onCustCell(this)"`;
 
+  if (col.st) {
+
+    const auto = custStatusLabel(custStatus(c, true));
+    const churned = c.status === 'churned';
+    return `<select class="cg-in cg-status" ${at}><option value="auto"${churned?'':' selected'}>자동 · ${escapeHtml(auto)}</option>`
+      + `<option value="churned"${churned?' selected':''}>이탈</option></select>`;
+  }
+  if (f === '_products') {
+    const ls = licensesOfCustomer(c);
+    if (!ls.length) return `<div class="cg-ro none">—</div>`;
+    return `<div class="cg-prods">` + PRODUCT_ORDER.flatMap(id => ls.filter(l => productOfKey(l.license_key).key === id)).map(l => {
+      const id = productOfKey(l.license_key).key, st = licenseState(l);
+      return `<span class="cg-prod st-${st}" title="${escapeHtml(l.license_key)} · ${escapeHtml(licenseStateText(l, st))}"><i class="pb p-${id}${l.license_type==='trial'?' trial':''}">${PRODUCT_TAG[id]||'?'}</i>${escapeHtml(memberTypeLabel(l.license_type))}</span>`;
+    }).join('') + `</div>`;
+  }
   if (col.ro) {
     const v = derivedCust(c, f);
-    return `<div class="cg-ro${v?'':' none'}">${escapeHtml(v || '—')}</div>`;
+    return `<div class="cg-ro${v?'':' none'}${col.sum?' num':''}">${escapeHtml(v || '—')}</div>`;
   }
 
   if (col.chk) {
@@ -3113,28 +3179,28 @@ function custCell(c, col) {
   return `<input type="text" class="cg-in" value="${escapeHtml(raw||'')}" ${f==='next_action'?'placeholder="예: 체험 종료 후 전화"':''} ${at}>`;
 }
 
+function custSubText(shown){
+  const live = CUSTOMERS.filter(c => custStatus(c) !== 'churned');
+  const lic = live.reduce((a, c) => a + licensesOfCustomer(c).length, 0);
+  return `${shown}곳 표시 · 현재 ${live.length}곳 · 라이선스 ${lic}개`;
+}
 function renderCustFoot(rows, cols) {
-  const sum = f => rows.reduce((a, c) => a + (Number(c[f]) || 0), 0);
-  const list = sum('list_price'), disc = sum('discount'),
-        paid = sum('paid_amount'), extra = sum('extra_amount');
-  const rate = list ? Math.round(disc / list * 100) : 0;
-
+  const nLic = rows.reduce((a, c) => a + licensesOfCustomer(c).length, 0);
+  const paid = rows.reduce((a, c) => a + custLicenseNumber(c, '_paid'), 0);
   const cells = cols.map(col => {
-    if (col.name) return `<td class="cg-name">합계 ${rows.length}명</td>`;
-    if (col.f === 'list_price')   return `<td class="num">${list.toLocaleString('ko-KR')}</td>`;
-    if (col.f === 'discount')     return `<td class="num">${disc.toLocaleString('ko-KR')}<br><span style="font-size:10px;color:#8a93a0">평균 ${rate}%</span></td>`;
-    if (col.f === 'paid_amount')  return `<td class="num" style="color:#12A15C">${paid.toLocaleString('ko-KR')}</td>`;
-    if (col.f === 'extra_amount') return `<td class="num">${extra.toLocaleString('ko-KR')}</td>`;
+    if (col.name) return `<td class="cg-name">합계 ${rows.length}곳 · 라이선스 ${nLic}개</td>`;
+    if (col.f === '_paid') return `<td class="num" style="color:#12A15C">${paid.toLocaleString('ko-KR')}</td>`;
     return '<td></td>';
   }).join('');
   document.getElementById('cgFoot').innerHTML = `<tr>${cells}<td></td></tr>`;
 }
 
+function licenseRevenue(l){ return (Number(l.pay_amount)||0) + (Number(l.extra_amount)||0); }
 function updateCustStats() {
-  const paidCnt = CUSTOMERS.filter(c => c.status === 'customer').length;
+  const paidCnt = CUSTOMERS.filter(c => custStatus(c) === 'customer').length;
   const dueCnt  = CUSTOMERS.filter(isDueOpen).length;
-  const revenue = CUSTOMERS.reduce((a,c) => a + (Number(c.paid_amount)||0) + (Number(c.extra_amount)||0), 0);
-  document.getElementById('cstTotal').textContent = CUSTOMERS.filter(c => c.status !== 'churned').length;
+  const revenue = (LICENSES||[]).reduce((a, l) => a + licenseRevenue(l), 0);
+  document.getElementById('cstTotal').textContent = CUSTOMERS.filter(c => custStatus(c) !== 'churned').length;
   document.getElementById('cstPaid').textContent = paidCnt;
   document.getElementById('cstDue').textContent = dueCnt;
   document.getElementById('cstRevenue').textContent = revenue ? (revenue/10000).toLocaleString('ko-KR') + '만' : '0';
@@ -3203,12 +3269,6 @@ async function drainCustomerSave(id){
       while(Object.keys(st.draft).length){
         const patch={...st.draft},rev={...st.revisions};
         const c=CUSTOMERS.find(x=>x.id===id);if(!c)break;
-        const linked=Object.hasOwn(patch,'status')?LICENSES.find(x=>x.license_key===c.license_key):null;
-        if(linked&&(patch.status==='trial'||patch.status==='customer')&&!(patch.status==='trial'?['trial']:['lifetime','package']).includes(linked.license_type)){
-          const toTrial=patch.status==='trial';
-          const fields={license_type:toTrial?'trial':'lifetime',expire_date:null,trial_days:toTrial?(Number(linked.trial_days)||3):null};
-          await edgeCall('UPDATE_LICENSE',{id:linked.id,...fields});Object.assign(linked,fields);
-        }
         const saved=await edgeCall('SAVE_CUSTOMER',{id,...patch});
         if(Object.hasOwn(patch,'branch_code')){
           if(!saved || !Object.hasOwn(saved,'branch_code') || (saved.branch_code||null)!==(patch.branch_code||null))throw new Error('고객 소속 저장을 확인하지 못했습니다. 서버 적용 상태를 확인해주세요.');
@@ -3230,24 +3290,15 @@ async function onCustCell(el){
   const id=el.dataset.id,f=el.dataset.f,c=CUSTOMERS.find(x=>x.id===id);if(!c)return;
   let v=el.type==='checkbox'?el.checked:el.type==='number'?(el.value===''?null:Number(el.value)):(el.value===''?null:el.value);
   if(f==='phone'&&v){v=formatPhone(v);el.value=v;}
-
-  if(f==='status'){
-    const lk=LICENSES.find(x=>x.license_key===c.license_key);
-    const want=v==='trial'?['trial']:v==='customer'?['lifetime','package']:null;
-    if(lk&&want&&!want.includes(lk.license_type)){
-      const to=v==='trial'?'체험판(3일)':'정식';
-      if(!confirm(`'${c.dojang_name}' 상태를 바꾸면 연결된 라이선스(${lk.license_key})도\n${to}으로 바뀝니다.\n\n고객이 쓰는 프로그램에 바로 적용됩니다. 바꿀까요?`)){
-        el.value=c.status||'lead';return;
-      }
-    }
-  }
+  
+  if(f==='status')v=(v==='churned')?'churned':custStatus(c,true);
   if(f==='branch_code')customerSaveState(id).branchRefresh=true;
   const before={...c};c[f]=v;const moneyChanged=recalcMoney(c,f),st=customerSaveState(id);
   for(const key of new Set([f,...Object.keys(c).filter(k=>c[k]!==before[k])])){
     st.draft[key]=c[key];st.revisions[key]=++st.seq;
   }
   persistCustomerDrafts();
-  if(moneyChanged||['status','next_action_at'].includes(f)){renderCustomers();if(f==='status')renderTable();}
+  if(moneyChanged||['status','next_action_at'].includes(f)){renderCustomers();}
   await drainCustomerSave(id);
 }
 window.addEventListener('beforeunload',e=>{
@@ -3272,21 +3323,135 @@ async function deleteCustomer(id) {
   const c = CUSTOMERS.find(x => x.id === id);
   if (!c) return;
 
-  const hasLic = !!c.license_key && LICENSES.some(l => l.license_key === c.license_key);
+  const lics = licensesOfCustomer(c);
   const msg = `'${c.dojang_name}' 을(를) 장부에서 지울까요?\n`
     + `상담 이력도 함께 지워집니다. 되돌릴 수 없습니다.\n\n`
-    + (hasLic
-        ? `※ 라이선스(${c.license_key})는 지워지지 않습니다.\n  고객은 그대로 프로그램을 쓸 수 있습니다.\n  정말 못 쓰게 하려면 라이선스 관리에서 '중지'를 누르세요.`
+    + (lics.length
+        ? `※ 이 도장의 라이선스 ${lics.length}개는 지워지지 않고 장부 연결만 풀립니다.\n  고객은 그대로 프로그램을 쓸 수 있습니다.\n  정말 못 쓰게 하려면 라이선스 관리에서 '중지'를 누르세요.`
         : `※ 라이선스 관리 탭은 영향을 받지 않습니다.`);
   if (!confirm(msg)) return;
   try {
     await edgeCall('DELETE_CUSTOMER', { id });
     customerSaves.delete(id);persistCustomerDrafts();
     CUSTOMERS = CUSTOMERS.filter(x => x.id !== id);
+    for (const l of (LICENSES||[])) if (l.customer_id === id) l.customer_id = null;   
+    openLicsFor.delete(id);
     if (openNotesFor === id) openNotesFor = null;
     renderCustomers();
     showToast('지웠습니다');
   } catch(err) { showToast('삭제 실패: ' + err.message); }
+}
+
+function licExpireText(l){
+  if (l.license_type === 'lifetime') return '정식';
+  if (l.license_type === 'trial' && !l.trial_started_at) return '시작 전';
+  return l.expire_date || '';
+}
+function toggleCustLicenses(id){
+  if (openLicsFor.has(id)) openLicsFor.delete(id); else openLicsFor.add(id);
+  renderCustomers();
+}
+const LIC_SALE_COLS = [
+  { f:'list_price',      t:'정가',     num:true },
+  { f:'discount',        t:'할인 (−)', num:true },
+  { f:'discount_reason', t:'할인 사유' },
+  { f:'pay_amount',      t:'실수령 (=)', num:true },
+  { f:'pay_date',        t:'판매일',   date:true },
+  { f:'pay_method',      t:'결제수단', sel:CUST_PAY },
+  { f:'tax_invoice',     t:'계산서',   chk:true },
+  { f:'extra_amount',    t:'추가판매', num:true },
+  { f:'extra_at',        t:'추가일',   date:true }
+];
+function licSaleCell(l, col){
+  const v = l[col.f], at = `class="cl-in${col.num?' num':''}" data-lid="${escapeHtml(l.id)}" data-f="${col.f}" onchange="onLicCell(this)" aria-label="${escapeHtml(col.t)}"`;
+  if (col.chk) return `<input type="checkbox" ${v?'checked':''} ${at}>`;
+  if (col.sel) {
+    const opts = col.sel.slice(); if (v && !opts.includes(v)) opts.push(v);
+    return `<select ${at}>` + opts.map(o => `<option value="${escapeHtml(o)}"${String(v||'')===o?' selected':''}>${escapeHtml(o||'—')}</option>`).join('') + '</select>';
+  }
+  if (col.date) return `<input type="date" value="${escapeHtml(v||'')}" ${at}>`;
+  if (col.num)  return `<input type="number" value="${v ?? ''}" ${at}>`;
+  return `<input type="text" value="${escapeHtml(v||'')}" ${at}>`;
+}
+function custLicensesHtml(c){
+  const ls = PRODUCT_ORDER.flatMap(id => licensesOfCustomer(c).filter(l => productOfKey(l.license_key).key === id)
+    .sort((a,b) => String(a.created_at||'').localeCompare(String(b.created_at||''))));
+  const have = new Set(ls.map(l => productOfKey(l.license_key).key));
+  const head = `<div class="cg-note-head"><b>${escapeHtml(c.dojang_name||'')}</b> 라이선스 <span>${ls.length}개</span>`
+    + `<button class="cg-btn" ${adminAction("toggleCustLicenses",[c.id])}>닫기</button></div>`;
+  const issue = PRODUCT_ORDER.filter(id => !have.has(id)).map(id =>
+    `<button type="button" class="btn-sm btn-cross" ${adminAction("issueForCustomer",[id, c.id, c.dojang_name||''])}>+ ${escapeHtml(PRODUCTS[id].short)} 발급</button>`).join('');
+  if (!ls.length) return head + `<div class="cg-note-empty">아직 라이선스가 없습니다.</div>` + (issue ? `<div class="cl-issue">${issue}</div>` : '');
+  const rows = ls.map(l => {
+    const P = productOfKey(l.license_key), st = licenseState(l);
+    return `<tr class="st-${st}">
+      <td class="cl-prod" data-label="제품"><i class="pb p-${P.key}${l.license_type==='trial'?' trial':''}">${PRODUCT_TAG[P.key]||'?'}</i>${escapeHtml(P.short)}</td>
+      <td class="cl-key" data-label="키"><button class="key-btn" title="${escapeHtml(l.license_key)}" ${adminAction("copyKeyOnly",[l.license_key])}>${escapeHtml(String(l.license_key||'').slice(0,8))}… 복사</button></td>
+      <td data-label="상태"><span class="badge st-${st}">${escapeHtml(licenseStateText(l, st))}</span><span class="cl-sub">${escapeHtml(memberTypeLabel(l.license_type))} · ${escapeHtml(licExpireText(l) || '-')}</span></td>
+      ${LIC_SALE_COLS.map(col => `<td data-label="${escapeHtml(col.t)}">${licSaleCell(l, col)}</td>`).join('')}
+      <td class="cl-act"><button class="btn-sm btn-edit" ${adminAction("openOwnedLicense",[l.id])}>회원정보</button>
+        <button class="btn-sm btn-toggle" title="이 라이선스를 다른 도장으로 옮깁니다" ${adminAction("moveLicenseToCustomer",[l.id])}>다른 도장으로</button></td>
+    </tr>`;
+  }).join('');
+  return head + `<div class="cl-scroll"><table class="cl"><thead><tr><th>제품</th><th>키</th><th>상태</th>`
+    + LIC_SALE_COLS.map(col => `<th>${escapeHtml(col.t)}</th>`).join('') + `<th></th></tr></thead><tbody>${rows}</tbody></table></div>`
+    + (issue ? `<div class="cl-issue">${issue}</div>` : '');
+}
+
+const licSaveChain = new Map();
+async function onLicCell(el){
+  const l = (LICENSES||[]).find(x => String(x.id) === String(el.dataset.lid)); if (!l) return;
+  const f = el.dataset.f;
+  const v = el.type==='checkbox' ? el.checked : el.type==='number' ? (el.value==='' ? null : Number(el.value)) : (el.value==='' ? null : el.value);
+  const patch = { [f]: v }; l[f] = v;
+  
+  const m = { list_price:l.list_price, discount:l.discount, paid_amount:l.pay_amount };
+  if (recalcMoney(m, f === 'pay_amount' ? 'paid_amount' : f)) {
+    if (m.paid_amount !== l.pay_amount) { l.pay_amount = m.paid_amount; patch.pay_amount = m.paid_amount; }
+    if (m.discount !== l.discount) { l.discount = m.discount; patch.discount = m.discount; }
+  }
+  el.classList.remove('cl-fail');
+  const prev = licSaveChain.get(l.id) || Promise.resolve();
+  const task = prev.catch(() => {}).then(() => edgeCall('UPDATE_LICENSE', { id:l.id, ...patch }));
+  licSaveChain.set(l.id, task);
+  try {
+    await task;
+    renderCustomers(); updateCustStats();
+    if (document.getElementById('dojangsTable').children.length) renderTable();
+  } catch(err) {
+    const again = document.querySelector(`.cl-in[data-lid="${l.id}"][data-f="${f}"]`); if (again) again.classList.add('cl-fail');
+    showToast('판매 기록을 저장하지 못했습니다. 다시 입력해주세요: ' + err.message);
+  }
+}
+
+async function moveLicenseToCustomer(lid){
+  const l = (LICENSES||[]).find(x => String(x.id) === String(lid)); if (!l) return;
+  const cur = customerOfLicense(l);
+  const q = String(prompt(`${productOfKey(l.license_key).short} 라이선스(${l.license_key})를 옮길 도장 이름을 적어주세요.\n없는 이름이면 새 고객으로 만듭니다.`) || '').trim();
+  if (!q) return;
+  const hits = (CUSTOMERS||[]).filter(c => (!cur || c.id !== cur.id) && String(c.dojang_name||'').includes(q));
+  let to = null;
+  if (hits.length === 1) to = hits[0];
+  else if (hits.length > 1) {
+    const list = hits.slice(0, 15).map((c, i) => `${i+1}. ${c.dojang_name} · ${c.owner_name||'관장명 없음'} · ${c.sido||'-'} · ${PHONE_DIGITS(c.phone).slice(-4)||'-'}`).join('\n');
+    const n = Number(prompt(`'${q}' 에 맞는 도장이 ${hits.length}곳입니다. 번호를 적어주세요.\n\n${list}`));
+    to = hits[n-1] || null;
+    if (!to) return;
+  } else if (!confirm(`'${q}' 도장이 장부에 없습니다. 새 고객으로 만들어 옮길까요?`)) return;
+  if (to && !confirm(`${l.license_key} 를\n'${cur ? cur.dojang_name : '연결 없음'}' → '${to.dojang_name}' 으로 옮길까요?`)) return;
+  try {
+    if (!to) {
+      to = await edgeCall('SAVE_CUSTOMER', { dojang_name:q, phone:l.phone || null, branch_code:null, status:'lead' });
+      if (!to || !to.id) throw new Error('고객을 만들지 못했습니다');
+      CUSTOMERS.unshift(to);
+    }
+    await edgeCall('UPDATE_LICENSE', { id:l.id, customer_id:to.id });
+    l.customer_id = to.id;
+    await syncCustomerStatus(to); if (cur) await syncCustomerStatus(cur);
+    openLicsFor.add(to.id);
+    renderCustomers(); renderTable();
+    showToast(`'${to.dojang_name}' 으로 옮겼습니다`);
+  } catch(err) { showToast('옮기기 실패: ' + err.message); }
 }
 
 function toggleNotes(id) {
@@ -3490,18 +3655,27 @@ async function deleteAcademyProject(id) {
 function exportCustomersCsv() {
   const rows = customerRowsNow();
   if (!rows.length) { showToast('내보낼 것이 없습니다'); return; }
-  const statusName = v => (CUST_STATUS.find(s => s[0] === v) || [,v||''])[1];
   const esc = v => `"${String(v ?? '').replace(/"/g,'""')}"`;
-  const head = CUST_COLS.map(c => c.t).join(',');
-  const body = rows.map(c => CUST_COLS.map(col => {
-    if (col.ro) return esc(derivedCust(c, col.f));   
-    if (col.f === 'status') return esc(statusName(c.status));
-    if (col.chk) return esc(c[col.f] ? 'O' : '');
-    if (col.f === 'branch_code') return esc(branchLabel(c.branch_code));
-    return esc(c[col.f]);
-  }).join(',')).join('\n');
-
-  const blob = new Blob(['﻿' + head + '\n' + body], { type:'text/csv;charset=utf-8' });
+  const custCols = CUST_COLS.filter(c => !c.f.startsWith('_'));
+  const licHead = ['제품','라이선스 키','종류','라이선스 상태','만료','정가','할인','할인 사유','실수령','판매일','결제수단','계산서','추가판매','추가일','추가 메모'];
+  const custVal = (c, col) => {
+    if (col.ro) return derivedCust(c, col.f);
+    if (col.st) return custStatusLabel(custStatus(c));
+    if (col.chk) return c[col.f] ? 'O' : '';
+    if (col.f === 'branch_code') return branchLabel(c.branch_code);
+    return c[col.f];
+  };
+  const licVals = l => l ? [productOfKey(l.license_key).short, l.license_key, memberTypeLabel(l.license_type),
+    licenseStateText(l, licenseState(l)), licExpireText(l), l.list_price, l.discount, l.discount_reason, l.pay_amount,
+    l.pay_date, l.pay_method, l.tax_invoice ? 'O' : '', l.extra_amount, l.extra_at, l.extra_memo] : licHead.map(() => '');
+  const lines = [];
+  for (const c of rows) {
+    const base = custCols.map(col => custVal(c, col));
+    const ls = licensesOfCustomer(c);
+    (ls.length ? ls : [null]).forEach(l => lines.push([...base, ...licVals(l)].map(esc).join(',')));
+  }
+  const head = [...custCols.map(c => c.t), ...licHead].map(esc).join(',');
+  const blob = new Blob(['\ufeff' + head + '\n' + lines.join('\n')], { type:'text/csv;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url; a.download = `회원장부_${todayStr()}.csv`;
@@ -3722,17 +3896,16 @@ async function copyPickedMsg(){
   catch { const t = document.getElementById('msgText'); t.focus(); t.select(); showToast('자동 복사가 막혔습니다. 선택된 글을 Ctrl+C 로 복사하세요.'); }
 }
 
+const PRODUCT_TAG = { kick:'K', jump:'J', strike:'S', poomsae:'P' };
 function custBadges(c){
-  const name = String(c.dojang_name||'').trim();
+  
   const own = new Map();
-  for (const l of (LICENSES||[])) {
-    if (l.license_key === c.license_key || (name && String(l.dojang_name||'').trim() === name)) {
-      const id = productOfKey(l.license_key).key;
-      const kind = l.license_type === 'trial' ? 'trial' : 'regular';
-      if (!own.has(id) || kind === 'regular') own.set(id, kind);
-    }
+  for (const l of licensesOfCustomer(c)) {
+    const id = productOfKey(l.license_key).key;
+    const kind = l.license_type === 'trial' ? 'trial' : 'regular';
+    if (!own.has(id) || kind === 'regular') own.set(id, kind);
   }
-  const tag = { kick:'K', jump:'J', strike:'S', poomsae:'P' };
+  const tag = PRODUCT_TAG;
   let h = PRODUCT_ORDER.filter(id => own.has(id))
     .map(id => `<i class="pb p-${id}${own.get(id)==='trial'?' trial':''}" title="${PRODUCTS[id].short} ${own.get(id)==='trial'?'체험':'정식'}">${tag[id]||'?'}</i>`).join('');
   return h ? `<span class="cg-badges">${h}</span>` : '';
@@ -3744,12 +3917,13 @@ function renderRevenueSub(){
   const ym = ymdLocal(now).slice(0,7);
   const prev = ymdLocal(new Date(now.getFullYear(), now.getMonth() - 1, 1)).slice(0,7);
   let thisM = 0, lastM = 0; const byP = {};
-  for (const c of (CUSTOMERS||[])) {
-    const paid = Number(c.paid_amount)||0, extra = Number(c.extra_amount)||0;
-    const sm = String(c.sold_at||'').slice(0,7), em = String(c.extra_at||'').slice(0,7);
+  
+  for (const l of (LICENSES||[])) {
+    const paid = Number(l.pay_amount)||0, extra = Number(l.extra_amount)||0;
+    const sm = String(l.pay_date||'').slice(0,7), em = String(l.extra_at||'').slice(0,7);
     if (sm === ym) thisM += paid; if (sm === prev) lastM += paid;
     if (em === ym) thisM += extra; if (em === prev) lastM += extra;
-    const pk = c.license_key ? productOfKey(c.license_key).short : '기타';
+    const pk = productOfKey(l.license_key).short;
     byP[pk] = (byP[pk]||0) + paid + extra;
   }
   const man = v => v ? (v/10000).toLocaleString('ko-KR') + '만' : '0';
@@ -4013,6 +4187,33 @@ details.old-fields>summary{cursor:pointer;font-size:13px;font-weight:800;color:#
 #tab-license .toolbar{grid-template-columns:1fr auto auto auto auto}
 @media(max-width:900px){#tab-license .toolbar{grid-template-columns:1fr 1fr}}
 @media(max-width:560px){#tab-license .toolbar{grid-template-columns:1fr}}
+
+.cg-prods{display:flex;gap:4px;flex-wrap:nowrap;align-items:center;height:100%;padding:0 6px;white-space:nowrap}
+.cg-prod{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:800;color:#475467;padding:2px 6px 2px 2px;border-radius:7px;background:#F2F4F7}
+.cg-prod.st-live{background:#ECFDF3;color:#067647}.cg-prod.st-trial{background:#EFF4FF;color:#1849A9}
+.cg-prod.st-soon{background:#FFF6E5;color:#B54708}.cg-prod.st-expired{background:#FEF3F2;color:#B42318}
+.cg-ro.num{text-align:right}
+.cg-status{font-weight:800}
+.cg-lic-box{width:min(100%,1180px)}
+.cl-scroll{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:#fff}
+table.cl{border-collapse:collapse;width:100%;font-size:12.5px}
+table.cl th{background:#F7FAFE;color:var(--muted);font-weight:900;font-size:11px;text-align:left;padding:7px 8px;white-space:nowrap;border-bottom:1px solid var(--line)}
+table.cl td{padding:5px 6px;border-bottom:1px solid #EEF2F6;vertical-align:middle;white-space:nowrap}
+table.cl tr:last-child td{border-bottom:0}
+table.cl .cl-prod{font-weight:900;display:flex;align-items:center;gap:6px;padding-top:9px}
+table.cl .cl-sub{display:block;font-size:11px;color:var(--muted2);margin-top:3px}
+.cl-in{font:inherit;font-size:12.5px;border:1px solid #E4E7EC;border-radius:7px;padding:5px 7px;background:#fff;min-width:0}
+.cl-in.num{width:92px;text-align:right}.cl-in[type=date]{width:132px}select.cl-in{width:96px}input.cl-in[type=text]{width:110px}
+.cl-in:focus{outline:2px solid #0757D8;outline-offset:-1px}
+.cl-in.cl-fail{border-color:#dc2626;background:#FEF3F2}
+.cl-act{display:flex;gap:4px}
+.cl-issue{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+
+table.cg tr.cg-notes td{height:auto}
+@media (max-width:900px){ table.cg tr.cg-notes td{display:block} table.cg tr.cg-notes > td::before{display:none} }
+
+@media (max-width:900px){ .cg-lic-box{width:100%} .cl-scroll{overflow:visible;border:0;background:transparent} table.cl{min-width:0} table.cl thead{display:none} table.cl .cl-prod{padding-top:0} table.cl td.cl-act::before{display:none} .cl-in.num,.cl-in[type=date],select.cl-in,input.cl-in[type=text]{width:150px} }
+
 </style>
 
 <style id="naruun-admin-clean-redesign-20260928">
