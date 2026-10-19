@@ -223,7 +223,7 @@ html.embed #footBox{right:28px;top:24px}
 <div id="gate" hidden><div class="gb">
   <div style="font-size:12px;letter-spacing:.14em;color:#E9D49A">NARUUN LABS · POOMSAE</div>
   <div class="gt">품새마스터 · 로봇</div>
-  <p class="gs">시험용 비공개 화면입니다.<br>품새마스터 마스터 라이선스(PMS-)로만 열립니다.</p>
+  <p class="gs">품새마스터 라이선스(PMS-)로 열립니다.</p>
   <input id="gateKey" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="PMS-0000-XXXX-0000" aria-label="라이선스 키">
   <button id="gateBtn" type="button">인증하기</button>
   <div class="ge" id="gateErr" role="alert"></div>
@@ -262,10 +262,9 @@ html.embed #footBox{right:28px;top:24px}
       .then(function(r){ return r.json(); })
       .then(function(res){
         if(!res||!res.valid) throw new Error(res&&res.reason==='rate_limited'?'인증 시도가 너무 많습니다. 잠시 뒤 다시 해 주세요.':((res&&res.error)||'유효하지 않은 키입니다.'));
-        if(!res.is_beta) throw new Error('마스터 라이선스 전용입니다.');
         return checkTok(key,res.tok).then(function(c){
           if(!c) throw new Error('인증 도장 확인에 실패했습니다.');
-          lsSet(LS_AUTH,{key:key,dojang:res.dojang_name||'',tok:res.tok,at:Date.now()}); grant(); });
+          lsSet(LS_AUTH,{key:key,dojang:res.dojang_name||'',tok:res.tok,beta:!!c.bt,at:Date.now()}); grant(); });
       })
       .catch(function(e){ lock(e&&e.name==='AbortError'?'인증 서버가 응답하지 않습니다. 인터넷을 확인해 주세요.':(e&&e.message?e.message:'인증에 실패했습니다.')); })
       .finally(function(){ clearTimeout(tm); btn.disabled=false; btn.textContent='인증하기'; });
@@ -275,7 +274,7 @@ html.embed #footBox{right:28px;top:24px}
   if(LOCAL && /[?&]fake=1/.test(location.search)){ grant(); return; }
   var a=lsGet(LS_AUTH,null);
   if(!a || !/^PMS-/.test(a.key||'') || !a.tok || Date.now()-a.at>7*86400000){ lock(''); return; }
-  checkTok(a.key,a.tok).then(function(c){ if(c && c.bt) grant(); else lock('다시 인증해 주세요.'); });
+  checkTok(a.key,a.tok).then(function(c){ if(c) grant(); else lock('다시 인증해 주세요.'); });
 })();
 </script>
 <canvas id="main"></canvas>

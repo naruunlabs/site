@@ -209,7 +209,7 @@ table.t input{width:100%}
   <div class="gate-box">
     <div class="gate-brand">NARUUN LABS · POOMSAE</div>
     <div class="gate-title">품새마스터</div>
-    <p class="gate-sub">품새마스터 개발용 시험 도구입니다.<br>품새 라이선스(PMS-)로만 열립니다.</p>
+    <p class="gate-sub">품새 라이선스(PMS-)로 열립니다.</p>
     <input id="gateKey" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="PMS-0000-XXXX-0000" aria-label="라이선스 키">
     <button class="gate-btn" id="gateBtn" type="button">인증하기</button>
     <div class="gate-err" id="gateErr" role="alert"></div>
@@ -341,7 +341,7 @@ table.t input{width:100%}
 <script id="psm-core">
 
 var PSM = (function(){
-  var VERSION = '0.8.3';   
+  var VERSION = '0.9.0';   
 
   var DEFAULT_CFG = {
     SMOOTH: 0.5,        
@@ -718,6 +718,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   var VERIFY_URL='https://ebgoolsymyzkftvavpyj.supabase.co/functions/v1/verify-pms';
   var LAB_URL='https://ebgoolsymyzkftvavpyj.supabase.co/functions/v1/lab-records';
   var authKey='';
+  var isMaster=false;   
   var LS_AUTH='psm_lab_auth_v1', LS_PREF='psm_lab_pref_v1', LS_CFG='psm_lab_cfg_v1';
   var PUBKEY={"kty":"EC","crv":"P-256","x":"TRVuOcoZYEagtQgi5GRgUOSIkAjiW_aUS4O9U6cfK0I","y":"IknjHnofBQw-5FhVBgeI2hx9WFT4OIs90G4aPYBNbuc"};
   var MODELS={
@@ -781,6 +782,10 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   }
   function grant(auth){
     authKey=auth.key;
+    isMaster=!!auth.beta;
+    
+    if(!isMaster && !TEST){ cfg=Object.assign({}, PSM.DEFAULT_CFG); ['btnKey','btnCfg'].forEach(function(id){ var b=$(id); if(b) b.hidden=true; }); }
+    refreshCollection();
     $('gate').hidden=true;
     $('tbDojang').textContent=auth.dojang||'AI POOMSAE MASTER';
     $('tbAuth').textContent='● 정품 인증됨';
@@ -797,10 +802,9 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     btn.disabled=true; btn.textContent='인증 중…'; err.textContent='';
     verifyOnline(key).then(function(res){
       if(!res || !res.valid){ throw new Error(res && res.reason==='rate_limited' ? '인증 시도가 너무 많습니다. 잠시 뒤 다시 해 주세요.' : ((res&&res.error)||'유효하지 않은 키입니다.')); }
-      if(!res.is_beta){ throw new Error('이 도구는 마스터 라이선스 전용입니다.'); }
       return checkTok(key,res.tok).then(function(c){
-        if(res.tok && !c) throw new Error('인증 도장 확인에 실패했습니다.');
-        var auth={key:key, dojang:res.dojang_name||'', tok:res.tok||null, at:Date.now()};
+        if(!c) throw new Error('인증 도장 확인에 실패했습니다.');
+        var auth={key:key, dojang:res.dojang_name||'', tok:res.tok, beta:!!c.bt, at:Date.now()};
         lsSet(LS_AUTH,auth); grant(auth);
       });
     }).catch(function(e){
@@ -811,15 +815,16 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   $('gateKey').addEventListener('keydown', function(e){ if(e.key==='Enter') doLogin(); });
 
   function startAuth(){
-    if(TEST){ grant({key:'TST-LOCAL', dojang:'로컬 시험'}); return; }
+    if(TEST){ grant({key:'TST-LOCAL', dojang:'로컬 시험', beta:true}); return; }
     var a=lsGet(LS_AUTH,null);
     if(!a || !/^PMS-/.test(a.key||'') || !a.tok || Date.now()-a.at > 7*86400000){ lock(''); return; }
     checkTok(a.key,a.tok).then(function(c){
-      if(!c || !c.bt){ lock('다시 인증해 주세요.'); return; }
+      if(!c){ lock('다시 인증해 주세요.'); return; }
+      a.beta=!!c.bt;   
       grant(a);
       verifyOnline(a.key).then(function(res){
         if(res && res.valid===false && res.reason!=='rate_limited'){ lock('라이선스 확인에 실패했습니다. 다시 인증해 주세요.'); location.reload(); return; }
-        if(res && res.valid && res.is_beta && res.tok){ a.tok=res.tok; a.at=Date.now(); lsSet(LS_AUTH,a); }
+        if(res && res.valid && res.tok){ checkTok(a.key,res.tok).then(function(c2){ if(!c2) return; a.tok=res.tok; a.beta=!!c2.bt; a.at=Date.now(); lsSet(LS_AUTH,a); isMaster=a.beta; }); }
       }).catch(function(){});
     });
   }
@@ -1224,7 +1229,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     var result=analyze(rec, cfg);
     rec.summary=summaryLine(result);
     var done=rec; rec=null; live=null;
-    if(!TEST) done.cloud='wait';
+    if(!TEST) done.cloud = canUpload() ? 'wait' : 'off';
     dbPut(done).then(function(){ showResult(done, result, true); }).catch(function(){ showResult(done, result, false); })
       .then(function(){ return uploadRec(done, result); });
   }
@@ -1420,8 +1425,25 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     return new Response(out).arrayBuffer();
   }
   function b64(str){ var bytes=new TextEncoder().encode(str), bin=''; for(var i=0;i<bytes.length;i++) bin+=String.fromCharCode(bytes[i]); return btoa(bin); }
+
+  var collectOk=false, collectAt=0, collectBusy=false;
+  function canUpload(){ return !!authKey && (isMaster || (collectOk && Date.now()-collectAt < 90000)); }
+  function refreshCollection(){
+    if(TEST || !authKey || isMaster || collectBusy) return;
+    collectBusy=true;
+    var key=authKey;
+    fetch(LAB_URL,{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({action:'consent-status', license_key:key, device_id:deviceId(key)})})
+      .then(function(r){ return r.json(); })
+      .then(function(j){ if(key!==authKey) return; collectOk=!!(j && j.ok && j.enabled && j.consent); collectAt=Date.now(); if(collectOk) retryUploads(); })
+      .catch(function(){ collectOk=false; })
+      .then(function(){ collectBusy=false; });
+  }
+  setInterval(refreshCollection, 60000);
+  window.addEventListener('online', refreshCollection);
+  document.addEventListener('visibilitychange', function(){ if(document.visibilityState==='visible') refreshCollection(); });
   function uploadRec(r, res){
     if(TEST || !authKey) return Promise.resolve(false);
+    if(!canUpload()){ if(r.cloud!=='ok'){ r.cloud='off'; setCloud(r,'off'); return dbPut(r).then(function(){ return false; }, function(){ return false; }); } return Promise.resolve(false); }
     var text=JSON.stringify(exportObj(r, res||analyze(r,cfg)));
     var meta={id:r.id, kind:'poomsae-session', role:r.role, label:r.label, created:r.created, raw_bytes:text.length};
     setCloud(r,'up');
@@ -1431,15 +1453,15 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
       .then(function(j){ if(!j || !j.ok) throw new Error(j&&j.error||'fail'); r.cloud='ok'; r.cloudBytes=j.bytes; setCloud(r,'ok'); return dbPut(r).then(function(){ return true; }); })
       .catch(function(){ r.cloud='fail'; setCloud(r,'fail'); return dbPut(r).then(function(){ return false; }, function(){ return false; }); });
   }
-  function cloudText(st){ return {up:'서버에 올리는 중…', ok:'서버에 올림 (10일 보관)', fail:'<span class="x">서버 올리기 실패 — 다음에 다시 올립니다</span>', wait:'서버에 올리는 중…'}[st]||''; }
+  function cloudText(st){ return {up:'서버에 올리는 중…', ok:'서버에 올림 (10일 보관)', off:'서버 보관 안 함', fail:'<span class="x">서버 올리기 실패 — 다음에 다시 올립니다</span>', wait:'서버에 올리는 중…'}[st]||''; }
   function setCloud(r, st){
     if(curRes && curRes.r && curRes.r.id===r.id){ var el=document.getElementById('cloudSt'); if(el) el.innerHTML=cloudText(st); }
   }
   function retryUploads(){
-    if(TEST || !authKey) return;
+    if(TEST || !canUpload()) return;
     dbAll().then(function(list){
       var lim=Date.now()-9*86400000;
-      var todo=list.filter(function(r){ return r.cloud!=='ok' && Date.parse(r.created)>lim; });
+      var todo=list.filter(function(r){ return r.cloud!=='ok' && r.cloud!=='off' && Date.parse(r.created)>lim; });
       todo.reduce(function(p,r){ return p.then(function(){ return uploadRec(r); }); }, Promise.resolve());
     }).catch(function(){});
   }
@@ -1472,7 +1494,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     h+='<p class="m-note">결과 보기는 지금의 판정 기준값으로 <b>다시 채점</b>합니다. 측정이 끝나면 서버에 자동으로 올라가(10일 보관) 따로 옮기지 않아도 됩니다. 서버 ×인 기록은 인터넷이 되면 다시 올립니다.</p>';
     if(!list.length) h+='<p class="dim">아직 기록이 없습니다.</p>';
     list.forEach(function(r){
-      h+='<div class="rec-item"><div><div class="ri-t">'+(roleName[r.role]||r.role)+(r.label?' · '+esc(r.label):'')+'</div><div class="ri-s">'+new Date(r.created).toLocaleString('ko-KR')+' · '+fmtT(r.dur||0)+' · 현장 '+esc(r.summary||'')+' · '+(r.cloud==='ok'?'서버 ○':'<span class="x">서버 ×</span>')+'</div></div>';
+      h+='<div class="rec-item"><div><div class="ri-t">'+(roleName[r.role]||r.role)+(r.label?' · '+esc(r.label):'')+'</div><div class="ri-s">'+new Date(r.created).toLocaleString('ko-KR')+' · '+fmtT(r.dur||0)+' · 현장 '+esc(r.summary||'')+' · '+(r.cloud==='ok'?'서버 ○':r.cloud==='off'?'서버 —':'<span class="x">서버 ×</span>')+'</div></div>';
       h+='<div class="ri-b"><button data-act="view" data-id="'+r.id+'">결과 보기</button><button data-act="dl" data-id="'+r.id+'">내려받기</button><button data-act="del" data-id="'+r.id+'">'+(delArm===r.id?'한 번 더 누르면 삭제':'삭제')+'</button></div></div>';
     });
     if(list.length) h+='<div class="btns"><button class="btn pri" data-act="dlall">전체 내려받기 (파일 하나)</button></div>';
