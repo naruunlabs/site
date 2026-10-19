@@ -1207,7 +1207,7 @@ function adminAction(action,args){
 document.addEventListener('click',function(event){
   const button=event.target.closest('[data-admin-action]');
   if(!button || button.disabled)return;
-  const allowed={copyKeyOnly:copyKeyOnly,openEditModal:openEditModal,openMsgPicker:openMsgPicker,gotoLedger:gotoLedger,sendToLedger:sendToLedger,toggleActive:toggleActive,deleteLicense:deleteLicense,openOwnedLicense:openOwnedLicense,issueForDojang:issueForDojang,openIpRiskLicense:openIpRiskLicense,removeDeviceSlot:removeDeviceSlot,toggleCustSort:toggleCustSort,toggleNotes:toggleNotes,deleteCustomer:deleteCustomer,deleteNote:deleteNote,addNote:addNote,deleteAcademyProject:deleteAcademyProject,switchLicenseSubtab:switchLicenseSubtab,pickMsgKind:pickMsgKind,setTodayView:setTodayView,gotoCustomer:gotoCustomer,openConvert:openConvert,saveAdminTask:saveAdminTask,toggleErrorRow:toggleErrorRow,issueForCustomer:issueForCustomer,toggleCustLicenses:toggleCustLicenses,moveLicenseToCustomer:moveLicenseToCustomer};
+  const allowed={copyKeyOnly:copyKeyOnly,openEditModal:openEditModal,openMsgPicker:openMsgPicker,gotoLedger:gotoLedger,sendToLedger:sendToLedger,toggleActive:toggleActive,deleteLicense:deleteLicense,openOwnedLicense:openOwnedLicense,issueForDojang:issueForDojang,openIpRiskLicense:openIpRiskLicense,removeDeviceSlot:removeDeviceSlot,toggleCustSort:toggleCustSort,toggleNotes:toggleNotes,deleteCustomer:deleteCustomer,deleteNote:deleteNote,addNote:addNote,deleteAcademyProject:deleteAcademyProject,switchLicenseSubtab:switchLicenseSubtab,pickMsgKind:pickMsgKind,setTodayView:setTodayView,gotoCustomer:gotoCustomer,openConvert:openConvert,saveAdminTask:saveAdminTask,toggleErrorRow:toggleErrorRow,issueForCustomer:issueForCustomer,openCustomerInfo:openCustomerInfo,toggleCustLicenses:toggleCustLicenses,moveLicenseToCustomer:moveLicenseToCustomer};
   const fn=allowed[button.dataset.adminAction];
   if(typeof fn!=='function')return;
   let args;try{args=JSON.parse(button.dataset.adminArgs||'[]');}catch(_){return;}
@@ -3090,7 +3090,7 @@ function renderCustomers() {
     const cls = ['cg-row', 's-' + custStatus(c), 'lic-' + customerLicenseState(c)];
     const nLic = licensesOfCustomer(c).length, licOpen = openLicsFor.has(c.id);
     if (isDueOpen(c)) cls.push('due');
-    let html = `<tr class="${cls.join(' ')}" data-id="${c.id}">`
+    let html = `<tr class="${cls.join(' ')}" data-id="${c.id}" data-name="${escapeHtml(c.dojang_name||'')}">`
       + cols.map(col => `<td class="${col.name?'cg-name':''}" data-field="${col.f}" data-label="${escapeHtml(col.t)}">${col.name ? `<div class="cg-namewrap">${custCell(c, col)}${custBadges(c)}<button type="button" class="mobile-expand" onclick="toggleMobileCard(this)" aria-expanded="false">상세 보기</button></div>${customerMobileSummary(c)}` : custCell(c, col)}</td>`).join('')
       + `<td class="cg-actions" data-label="관리"><div style="display:flex;gap:4px;padding:0 5px">
            <button class="btn-sm ${licOpen?'btn-toggle is-open':'btn-edit'}" aria-expanded="${licOpen}" ${adminAction("toggleCustLicenses",[c.id])}>라이선스 ${nLic} ${licOpen?'▴':'▾'}</button>
@@ -3128,6 +3128,10 @@ function custCell(c, col) {
   const id = c.id, f = col.f;
   const raw = c[f];
   const at = `data-id="${id}" data-f="${f}" onchange="onCustCell(this)"`;
+
+  if (col.name && licensesOfCustomer(c).length) {
+    return `<button type="button" class="cg-name-open" data-id="${id}" title="눌러서 회원정보 보기 · 도장 이름은 회원정보에서 고칩니다" ${adminAction("openCustomerInfo",[id])}>${escapeHtml(raw||'')}</button>`;
+  }
 
   if (col.st) {
 
@@ -3346,6 +3350,15 @@ function licExpireText(l){
   if (l.license_type === 'lifetime') return '정식';
   if (l.license_type === 'trial' && !l.trial_started_at) return '시작 전';
   return l.expire_date || '';
+}
+
+function openCustomerInfo(id){
+  const c = (CUSTOMERS||[]).find(x => x.id === id); if (!c) return;
+  const ls = licensesOfCustomer(c).slice().sort((a, b) =>
+    (LIC_STATE_ORDER.indexOf(licenseState(a)) - LIC_STATE_ORDER.indexOf(licenseState(b))) ||
+    (PRODUCT_ORDER.indexOf(productOfKey(a.license_key).key) - PRODUCT_ORDER.indexOf(productOfKey(b.license_key).key)));
+  if (!ls.length) { showToast('이 도장에는 아직 라이선스가 없습니다'); return; }
+  openOwnedLicense(ls[0].id);
 }
 function toggleCustLicenses(id){
   if (openLicsFor.has(id)) openLicsFor.delete(id); else openLicsFor.add(id);
@@ -4172,6 +4185,8 @@ tr.cg-row.flash td{background:#FFF3CC !important;transition:background .5s}
 
 .cg-namewrap{display:flex;align-items:center;height:31px}
 .cg-namewrap .cg-in{flex:1}
+.cg-name-open{flex:1;min-width:0;height:100%;padding:0 8px;border:0;background:transparent;font:inherit;font-weight:800;color:var(--text);text-align:left;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cg-name-open:hover,.cg-name-open:focus-visible{color:#0757D8;text-decoration:underline;text-underline-offset:3px}
 .cg-badges{display:flex;gap:3px;padding-right:6px;flex:none}
 .pb{font-style:normal;width:17px;height:17px;border-radius:5px;display:grid;place-items:center;font-size:10px;font-weight:900;color:#fff;font-family:ui-monospace,monospace}
 .pb.p-kick{background:#E3172E}.pb.p-jump{background:#14B8A6}.pb.p-strike{background:#A855F7}.pb.p-poomsae{background:#F5B829;color:#332300}
