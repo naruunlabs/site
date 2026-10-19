@@ -341,7 +341,7 @@ table.t input{width:100%}
 <script id="psm-core">
 
 var PSM = (function(){
-  var VERSION = '0.9.0';   
+  var VERSION = '0.9.1';   
 
   var DEFAULT_CFG = {
     SMOOTH: 0.5,        
@@ -360,14 +360,15 @@ var PSM = (function(){
     RAISE_H: 0.4,       
     FACE_UP: 0.0,       
     PUNCH_ELBOW: 138,   
-    READY_SYM: 0.1      
+    READY_SYM: 0.1,     
+    PUNCH_FWD: 0.55     
   };
   var CFG_INFO = {
     SMOOTH:['관절 부드럽게','0~1'], STILL_T:['멈춤 속도','몸통/초'], MOVE_T:['움직임 속도','몸통/초'],
     STILL_MS:['멈춤 유지 시간','ms'], SPEED_WIN:['속도 재는 폭','ms'], MIN_PATH:['새 동작 최소 이동','몸통'], AGG_MS:['자세 평균 시간','ms'],
     YAW_FRONT:['정면 판단 각도','도'], YAW_BACK:['뒤 판단 각도','도'],
     NARROW_T:['(참고) 준비 발 간격','몸통'], LONG_T:['(참고) 앞굽이 발 간격','몸통'], MID_T:['(참고) 굽힘 앞굽이 간격','몸통'], KNEE_BENT:['(참고) 굽힌 무릎','도'],
-    RAISE_H:['든 팔 높이','비율'], FACE_UP:['얼굴막기 높이','몸통'], PUNCH_ELBOW:['지르기 팔꿈치','도'], READY_SYM:['준비 두 손 높이 차','비율']
+    RAISE_H:['든 팔 높이','비율'], FACE_UP:['얼굴막기 높이','몸통'], PUNCH_ELBOW:['지르기 팔꿈치','도'], READY_SYM:['준비 두 손 높이 차','비율'], PUNCH_FWD:['낮은 지르기 앞으로 뻗음','몸통']
   };
 
   var DIR_NAME = {F:'정면', L:'왼쪽', R:'오른쪽', B:'뒤'};
@@ -461,6 +462,14 @@ var PSM = (function(){
   }
   function r(v,k){ var m=Math.pow(10,k); return Math.round(v*m)/m; }
 
+  function fwdReach(Q, wt){
+    var a=Q(11), b=Q(12), n=Q(0), mx=(a.x+b.x)/2, mz=(a.z+b.z)/2;
+    var sx=a.x-b.x, sz=a.z-b.z, L=Math.hypot(sx,sz)||1, fx=-sz/L, fz=sx/L;
+    if((n.x-mx)*fx+(n.z-mz)*fz<0){ fx=-fx; fz=-fz; }
+    function g(s,w){ var S=Q(s), W=Q(w); return ((W.x-S.x)*fx+(W.z-S.z)*fz)/wt; }
+    return [g(11,15), g(12,16)];
+  }
+
   function feat(lmF, wlF, W, H){
     if(!lmF || !wlF) return null;
     function P(i){ return {x:lmF[i*4]*W, y:lmF[i*4+1]*H, z:0, v:lmF[i*4+3]}; }
@@ -490,11 +499,13 @@ var PSM = (function(){
       hL: (P(15).y - sm.y)/torso, hR: (P(16).y - sm.y)/torso,
       rL: d3(Q(15),w23)/wt, rR: d3(Q(16),w24)/wt,
       nL: (nose.y - P(15).y)/torso, nR: (nose.y - P(16).y)/torso,
+      fL: 0, fR: 0,
       vis: Math.min(s11.v,s12.v,h23.v,h24.v),
       ankVis: Math.min(lmF[27*4+3], lmF[28*4+3]),
       hipX: (lmF[23*4]+lmF[24*4])/2,
       kp: []
     };
+    var fw=fwdReach(Q, wt); f.fL=fw[0]; f.fR=fw[1];
     for(var i=0;i<KP.length;i++){ var p=P(KP[i]); f.kp.push(p.x, p.y); }
     
     f.wk=[]; f.wt=wt;
@@ -502,7 +513,7 @@ var PSM = (function(){
     return f;
   }
 
-  var NUM_KEYS = ['sw','noseOff','noseVis','eyeVis','noseZ','ankW','ankI','kneeL','kneeR','eL','eR','hL','hR','rL','rR','nL','nR','vis','ankVis','torso'];
+  var NUM_KEYS = ['sw','noseOff','noseVis','eyeVis','noseZ','ankW','ankI','kneeL','kneeR','eL','eR','hL','hR','rL','rR','nL','nR','fL','fR','vis','ankVis','torso'];
   function aggregate(fs){
     var a={n:fs.length}; if(!fs.length) return a;
     for(var k=0;k<NUM_KEYS.length;k++){
@@ -537,7 +548,9 @@ var PSM = (function(){
       else if(e >= cfg.PUNCH_ELBOW) tech='몸통지르기';
       else tech='몸통안막기';
     } else {
-      tech = (dir==='F' && Math.abs(a.hL-a.hR) < cfg.READY_SYM) ? '준비' : '아래막기';
+      var fw = act==='L'?a.fL:a.fR;
+      tech = (dir==='F' && Math.abs(a.hL-a.hR) < cfg.READY_SYM) ? '준비'
+           : (dir!=='B' && fw!=null && fw >= cfg.PUNCH_FWD) ? '몸통지르기' : '아래막기';
       if(tech==='준비') stance='준비';
     }
     return {dir:dir, stance:stance, tech:tech, arm:act};
