@@ -117,8 +117,8 @@ body.recording #status, body.recording .tb-btns, body.recording #lobbyStats{disp
 .c-next .dir{display:inline-block;margin-right:6px;color:var(--teal-lit);font-size:.66em}
 .c-last{margin-top:6px;font-size:clamp(12px,1.05vw,16px);line-height:1.45;min-height:2.6em;color:rgba(234,244,241,.86)}
 .c-last .o{color:var(--ok);font-weight:900} .c-last .x{color:var(--bad);font-weight:900}
-.c-dots{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:4px;margin-top:8px}
-.c-dots i{width:16px;height:16px;border-radius:4px;background:rgba(28,49,73,.72);font-style:normal;font-size:9px;font-weight:900;display:flex;align-items:center;justify-content:center;color:#9bb0c8;font-family:var(--num);text-shadow:none}
+.c-dots{display:grid;grid-template-columns:repeat(6,18px);justify-content:end;gap:4px;margin-top:8px}
+.c-dots i{width:18px;height:18px;border-radius:4px;background:rgba(28,49,73,.72);font-style:normal;font-size:9px;font-weight:900;display:flex;align-items:center;justify-content:center;color:#9bb0c8;font-family:var(--num);text-shadow:none}
 .c-dots i.cur{outline:2px solid #fff}
 .c-dots i.ok{background:#1f6f4a;color:#d9ffe9} .c-dots i.ng{background:#7b2737;color:#ffe0e6} .c-dots i.miss{background:#4b3a12;color:#ffe9b3}
 #meter{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
@@ -341,7 +341,7 @@ table.t input{width:100%}
 <script id="psm-core">
 
 var PSM = (function(){
-  var VERSION = '0.9.2';   
+  var VERSION = '0.9.3';   
 
   var DEFAULT_CFG = {
     SMOOTH: 0.5,        
@@ -373,8 +373,10 @@ var PSM = (function(){
   };
 
   var DIR_NAME = {F:'정면', L:'왼쪽', R:'오른쪽', B:'뒤'};
-  var TECHS = ['준비','아래막기','몸통지르기','몸통안막기','얼굴막기'];
-  var STANCES = ['준비','앞서기','앞굽이'];
+  var TECHS = ['준비','아래막기','몸통지르기','몸통안막기','얼굴막기','손날목치기','손날바깥막기'];
+
+  var TECH_OK = {'손날목치기':['몸통안막기','몸통지르기'], '손날바깥막기':['몸통안막기','몸통지르기']};
+  var STANCES = ['준비','앞서기','앞굽이','뒷굽이'];
 
   var KEY_TG1 = [
     {n:0,  dir:'F', stance:'준비',  tech:'준비',      name:'나란히서기 기본준비', hand:''},
@@ -428,11 +430,11 @@ var PSM = (function(){
     {n:2,  dir:'L', stance:'앞굽이', tech:'몸통지르기', name:'오른발 앞차기 → 오른앞굽이 몸통두번지르기', hand:'오른·왼주먹'},
     {n:3,  dir:'R', stance:'앞서기', tech:'아래막기',   name:'오른앞서기 아래막기', hand:'오른팔'},
     {n:4,  dir:'R', stance:'앞굽이', tech:'몸통지르기', name:'왼발 앞차기 → 왼앞굽이 몸통두번지르기', hand:'왼·오른주먹'},
-    {n:5,  dir:'F', stance:'앞서기', tech:'몸통지르기', name:'왼앞서기 한손날목치기', hand:'오른손날', chk:true},
-    {n:6,  dir:'F', stance:'앞서기', tech:'몸통지르기', name:'오른앞서기 한손날목치기', hand:'왼손날', chk:true},
-    {n:7,  dir:'L', stance:'앞서기', tech:'몸통안막기', name:'오른뒷굽이 한손날바깥막기', hand:'왼손날', chk:true},
+    {n:5,  dir:'F', stance:'앞서기', tech:'손날목치기', name:'왼앞서기 한손날목치기', hand:'오른손날', chk:true},
+    {n:6,  dir:'F', stance:'앞서기', tech:'손날목치기', name:'오른앞서기 한손날목치기', hand:'왼손날', chk:true},
+    {n:7,  dir:'L', dirs:['L','F'], stance:'뒷굽이', tech:'손날바깥막기', name:'오른뒷굽이 한손날바깥막기', hand:'왼손날', chk:true},
     {n:8,  dir:'L', stance:'앞굽이', tech:'몸통지르기', name:'왼앞굽이 몸통바로지르기', hand:'오른주먹'},
-    {n:9,  dir:'R', stance:'앞서기', tech:'몸통안막기', name:'왼뒷굽이 한손날바깥막기', hand:'오른손날', chk:true},
+    {n:9,  dir:'R', dirs:['R','F'], stance:'뒷굽이', tech:'손날바깥막기', name:'왼뒷굽이 한손날바깥막기', hand:'오른손날', chk:true},
     {n:10, dir:'R', stance:'앞굽이', tech:'몸통지르기', name:'오른앞굽이 몸통바로지르기', hand:'왼주먹'},
     {n:11, dir:'F', stance:'앞서기', tech:'몸통안막기', name:'왼앞서기 몸통안막기', hand:'오른팔'},
     {n:12, dir:'F', stance:'앞서기', tech:'몸통안막기', name:'오른앞서기 몸통안막기', hand:'왼팔'},
@@ -560,8 +562,10 @@ var PSM = (function(){
   function noTech(k){ return !!k && k.dir==='B' && k.tech==='몸통지르기'; }
   function judge(cls, k){
     if(!cls || !k) return {score:0, ok:{dir:false,stance:false,tech:false}};
-    
-    var ok={dir: cls.dir===k.dir, stance: cls.stance===k.stance, tech: noTech(k) ? true : cls.tech===k.tech};
+
+    var dirOk = cls.dir===k.dir || (!!k.dirs && k.dirs.indexOf(cls.dir)>=0);
+    var techOk = noTech(k) ? true : (cls.tech===k.tech || (!!TECH_OK[k.tech] && TECH_OK[k.tech].indexOf(cls.tech)>=0));
+    var ok={dir: dirOk, stance: cls.stance===k.stance, tech: techOk};
     
     return {score: (ok.dir?0.55:0)+(ok.tech?0.45:0), ok:ok};
   }
@@ -717,7 +721,7 @@ var PSM = (function(){
   }
 
   return {VERSION:VERSION, DEFAULT_CFG:DEFAULT_CFG, CFG_INFO:CFG_INFO, DIR_NAME:DIR_NAME, TECHS:TECHS, STANCES:STANCES,
-    KEY_TG1:KEY_TG1, KEY_TG2:KEY_TG2, KEYS:KEYS, POOMSAE_NAME:POOMSAE_NAME, noTech:noTech, feat:feat, aggregate:aggregate, classify:classify, judge:judge, makeDetector:makeDetector,
+    TECH_OK:TECH_OK, KEY_TG1:KEY_TG1, KEY_TG2:KEY_TG2, KEYS:KEYS, POOMSAE_NAME:POOMSAE_NAME, noTech:noTech, feat:feat, aggregate:aggregate, classify:classify, judge:judge, makeDetector:makeDetector,
     replay:replay, align:align, summarize:summarize, syncPairs:syncPairs, stopLite:stopLite, round:r};
 })();
 if(typeof module!=='undefined' && module.exports) module.exports=PSM;
@@ -760,7 +764,11 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   var cfg=Object.assign({}, PSM.DEFAULT_CFG, lsGet(LS_CFG,{}));
   function getKey(){
     var saved=lsGet(lsKey(),null), base=baseKey();
-    if(saved && saved.length===base.length) return saved;
+    if(saved && saved.length===base.length){
+      
+      saved.forEach(function(k,i){ var b=base[i]; if(b && PSM.TECH_OK[b.tech] && k.tech!==b.tech && (k.tech==='몸통지르기'||k.tech==='몸통안막기')) k.tech=b.tech; if(b && b.dirs && !k.dirs && k.dir===b.dir) k.dirs=b.dirs; });
+      return saved;
+    }
     return JSON.parse(JSON.stringify(base));
   }
   var KEY=getKey();
@@ -1279,7 +1287,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
       var jd=PSM.judge(cls,key[took]);
       live.marks[k][took]= (jd.ok.dir && jd.ok.tech) ? 'ok' : 'ng';
       live.ptr[k]=took+1;
-      txt='<b>'+key[took].n+'번</b> '+mk(jd.ok.dir,'방향',PSM.DIR_NAME[cls.dir])+' · '+mk(jd.ok.stance,'서기',cls.stance)+' · '+mk(jd.ok.tech,'기술',cls.tech)+(took>from?' <span class="x">('+missText(key,from,took-1)+' 놓침)</span>':'');
+      txt='<b>'+key[took].n+'번</b> '+mk(jd.ok.dir,'방향',shownDir(jd,cls,key[took]))+' · '+mk(jd.ok.stance,'서기',cls.stance)+' · '+mk(jd.ok.tech,'기술',shownTech(jd,cls,key[took]))+(took>from?' <span class="x">('+missText(key,from,took-1)+' 놓침)</span>':'');
       if(rec.role!=='master' && pref.feedback==='on') beep(jd.ok.dir&&jd.ok.tech?1500:520,60,0.08);
       live.lastStop=performance.now();
     }
@@ -1287,6 +1295,9 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     live.events.push({k:k, t:ev.stop.t0, took:took, cls:cls});
   }
   function missText(key,a,b){ var o=[]; for(var i=a;i<=b;i++) o.push(key[i].n); return o.join('·')+'번'; }
+  
+  function shownTech(jd,c,k){ return (jd.ok.tech && PSM.TECH_OK[k.tech]) ? k.tech : c.tech; }
+  function shownDir(jd,c,k){ return PSM.DIR_NAME[jd.ok.dir ? k.dir : c.dir]; }
   function mk(ok,label,val){ return label+' <span class="'+(ok?'o':'x')+'">'+(ok?'○':'×')+'</span> '+esc(val); }
 
   function buildHud(mode){
@@ -1294,9 +1305,11 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     var meter=$('meter'); meter.innerHTML='';
     for(var k=0;k<mode;k++){
       var who= mode===2 ? (k===0?'화면 왼쪽 사람':'화면 오른쪽 사람') : (pref.role==='master'?'관장 시범':'학생 시험');
-      var dots=''; for(var j=1;j<KEY.length;j++){ if(KEY[j].opt) continue; dots+='<i data-j="'+j+'">'+j+'</i>'; }
+      
+      var dots='', nd=0; for(var j=1;j<KEY.length;j++){ if(KEY[j].opt) continue; dots+='<i data-j="'+j+'">'+j+'</i>'; nd++; }
+      var cols = (nd%6===0 || nd%5!==0) ? 6 : 5;
       var c=document.createElement('div'); c.className='card k'+k;
-      c.innerHTML='<div class="c-who">'+who+'</div><div class="c-next-lbl">다음 동작</div><div class="c-next"></div><div class="c-last"></div><div class="c-dots">'+dots+'</div>';
+      c.innerHTML='<div class="c-who">'+who+'</div><div class="c-next-lbl">다음 동작</div><div class="c-next"></div><div class="c-last"></div><div class="c-dots" style="grid-template-columns:repeat('+cols+',18px)">'+dots+'</div>';
       box.appendChild(c);
       var m=document.createElement('div');
       m.innerHTML='<div class="m-lbl">'+(mode===2?(k===0?'왼쪽 ':'오른쪽 '):'')+'움직임</div><div class="m-bar k'+k+'"><b></b></div><div class="m-st"></div>';
@@ -1376,9 +1389,9 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
       h+='<tr><td class="n">'+k.n+'</td><td>'+esc(k.name)+'</td>';
       if(!s0){ h+='<td colspan="3" class="x">못 찾음 (멈춤 없음)</td><td class="dim">-</td></tr>'; return; }
       var c=s0.cls||{};
-      h+='<td>'+cell(jd.ok.dir, PSM.DIR_NAME[c.dir], PSM.DIR_NAME[k.dir])+'</td>';
+      h+='<td>'+cell(jd.ok.dir, shownDir(jd,c,k), PSM.DIR_NAME[k.dir])+'</td>';
       h+='<td>'+cell(jd.ok.stance, c.stance, k.stance)+'</td>';
-      h+='<td>'+(PSM.noTech(k) ? '<span class="dim">판정 안 함 (뒤라 손이 안 보임)</span>' : cell(jd.ok.tech, c.tech, k.tech))+'</td>';
+      h+='<td>'+(PSM.noTech(k) ? '<span class="dim">판정 안 함 (뒤라 손이 안 보임)</span>' : cell(jd.ok.tech, shownTech(jd,c,k), k.tech))+'</td>';
       h+='<td class="num dim">'+(s0.t0/1000).toFixed(1)+'s</td></tr>';
     });
     h+='</tbody></table>';
