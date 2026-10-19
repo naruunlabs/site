@@ -103,6 +103,7 @@
 @font-face{font-family:'JM Noto KR';src:url('vendor/fonts/NotoSansKR-700.woff') format('woff');font-weight:550 799;font-style:normal;font-display:swap}
 @font-face{font-family:'JM Noto KR';src:url('vendor/fonts/NotoSansKR-900.woff') format('woff');font-weight:800 1000;font-style:normal;font-display:swap}
 @font-face{font-family:'JM Archivo';src:url('vendor/fonts/Archivo-latin.woff2') format('woff2');font-weight:100 900;font-stretch:62% 125%;font-style:normal;font-display:swap}
+
 </style>
 <style id="jmUiFix">
 
@@ -740,6 +741,14 @@ body.jmp-racing .jt-duo{display:none!important}
 @media(max-height:600px){.race-lane{top:32%;bottom:16%}body.jmp-racing #teamwrap{top:calc(var(--sat) + 64px);padding:5px 18px}body.jmp-racing #teamwrap .tval{font-size:25px}.race-car{height:65px;width:38px}}
 @media(prefers-reduced-motion:reduce){.race-car{transition:none}.race-car.boost svg{animation:none}}
 </style>
+<style id="jmCompetition">
+#competitionDialog{position:fixed;inset:0;width:100%;height:100%;max-width:none;max-height:none;box-sizing:border-box;border:0;margin:0;padding:clamp(18px,4vw,56px);background:radial-gradient(ellipse at 50% 35%,#1b382d,#0d1918 55%,#070e13);color:#edf6ef;font-family:inherit;overflow:auto}
+#competitionDialog::backdrop{background:#070e13}
+#competitionDialog .comp-wrap{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:space-between;gap:16px;max-width:1400px;margin:auto}
+.comp-top{width:100%;display:flex;justify-content:space-between;align-items:center;gap:20px}.comp-kicker{color:#b9ed80;font-size:12px;letter-spacing:.18em;font-weight:800}.comp-top h2{font-size:24px;margin:6px 0}.comp-btn{font:inherit;font-weight:800;border:1px solid #465c50;border-radius:12px;padding:12px 22px;background:#192c24;color:#edf6ef;cursor:pointer}.comp-btn:focus-visible{outline:3px solid #b9ed80;outline-offset:4px}.comp-times{display:flex;gap:10px}.comp-times button[aria-pressed="true"]{background:#b9ed80;color:#101912;border-color:#b9ed80}.comp-btn:disabled{opacity:.4;cursor:default}.comp-clock{text-align:center;width:100%}.comp-status{font-size:clamp(16px,2vw,26px);color:#bdd0c2;letter-spacing:.12em}.comp-number{font-size:clamp(110px,min(30vw,42vh),410px);font-weight:900;font-variant-numeric:tabular-nums;line-height:1.05;letter-spacing:-.065em;color:#b9ed80}.comp-clock[data-urgent="true"] .comp-number{color:#ffd085}.comp-track{height:6px;border-radius:9px;background:#30463a;overflow:hidden;width:min(700px,90%);margin:12px auto}.comp-track span{display:block;height:100%;width:100%;background:#b9ed80;transform-origin:left}.comp-hint{color:#a7bcae;font-size:14px;text-align:center;line-height:1.6}.comp-controls{display:flex;gap:12px;justify-content:center}.comp-primary{background:#b9ed80;color:#101912;min-width:180px;font-size:20px;border:0}.comp-bottom{display:grid;gap:14px;width:100%}
+@media(max-height:550px){#competitionDialog{padding:16px}.comp-number{font-size:clamp(90px,37vh,230px)}.comp-top h2{font-size:18px}.comp-wrap{gap:8px!important}.comp-hint{margin:0}.comp-btn{padding:8px 18px}}
+@media(max-width:500px){.comp-number{font-size:32vw}.comp-top h2{font-size:20px}.comp-times{gap:6px}.comp-times button{padding:10px 18px}}
+</style>
 </head>
 <body>
 
@@ -768,6 +777,7 @@ body.jmp-racing .jt-duo{display:none!important}
     <div class="gw-cards">
       <button class="gw-card" type="button" data-group-pick="rhythm" aria-pressed="true"><span class="gw-kind">동작과 리듬 익히기</span><strong>리듬게임</strong><span class="gw-description">발판과 다가오는 노트를 보며<br>여러 줄넘기 동작을 함께 익혀요.</span></button>
       <button class="gw-card" type="button" data-group-pick="pace" aria-pressed="false"><span class="gw-kind">일정한 속도로 뛰기</span><strong>속도게임</strong><span class="gw-description">줄넘기 선수의 착지에 맞춰<br>정해진 시간과 목표로 뛰어요.</span></button>
+      <button class="gw-card" type="button" id="competitionOpen"><span class="gw-kind">실전처럼 준비하기</span><strong>대회준비</strong><span class="gw-description">대회 사운드와 함께<br>큰 타이머로 남은 시간을 확인해요.</span></button>
     </div>
     <footer class="gw-footer"><div class="gw-summary" id="groupWelcomeSummary" aria-live="polite"></div><button class="gw-start" id="groupWelcomeStart" type="button">이 수업 시작 ▶</button></footer>
     <div class="gw-note">화면과 소리에 맞춰 따라 하는 수업입니다. 학생의 실제 성공 개수는 측정하지 않습니다.</div>
@@ -1129,9 +1139,18 @@ body.jmp-racing .jt-duo{display:none!important}
   </div>
 </div>
 
+<dialog id="competitionDialog" aria-labelledby="competitionTitle">
+ <div class="comp-wrap">
+  <header class="comp-top"><div><div class="comp-kicker">COMPETITION · AI JUMP MASTER</div><h2 id="competitionTitle">대회준비</h2></div><button type="button" class="comp-btn" id="competitionClose">닫기 ✕</button></header>
+  <div class="comp-times" role="group" aria-label="경기 시간"><button class="comp-btn" type="button" data-comp-seconds="30" aria-pressed="true">30초</button><button class="comp-btn" type="button" data-comp-seconds="60" aria-pressed="false">1분</button><button class="comp-btn" type="button" data-comp-seconds="120" aria-pressed="false">2분</button></div>
+  <div class="comp-clock" id="competitionClock"><div class="comp-status" id="competitionStatus" role="status">시작을 준비하세요</div><div class="comp-number" id="competitionNumber" role="timer" aria-label="남은 시간">30</div><div class="comp-track"><span id="competitionProgress"></span></div></div>
+  <div class="comp-bottom"><div class="comp-controls"><button class="comp-btn comp-primary" id="competitionStart" type="button">시작 ▶</button><button class="comp-btn" id="competitionReset" type="button">처음으로</button></div><p class="comp-hint" id="competitionHint">대회 사운드의 시작 신호에 맞춰 시간이 줄어듭니다.<br>스피커 음량을 확인하고 시작하세요.</p></div>
+ </div><audio id="competitionAudio" preload="auto" src="bgm/competition/30.mp3"></audio>
+</dialog>
+
 <script type="module">
 
-const APP_VERSION = '3.9.9';   
+const APP_VERSION = '3.9.10';   
 try{ window.__NL_VER = APP_VERSION; }catch(e){}   
 
 const MP_VERSION  = '1.0.1';
@@ -4839,6 +4858,36 @@ document.querySelectorAll('#duoSeg button').forEach(b=>b.addEventListener('click
 
 document.querySelectorAll('[data-ga]').forEach(b=>b.addEventListener('click',()=>{groupActivity=b.dataset.ga;applyModeUI();saveLobbyPrefs();}));
 document.querySelectorAll('[data-group-pick]').forEach(b=>b.addEventListener('click',()=>{if(appState!=='lobby')return;groupActivity=b.dataset.groupPick;applyModeUI();saveLobbyPrefs();}));
+
+const compDialog=$('competitionDialog'),compAudio=$('competitionAudio');
+let compSeconds=30,compActive=false,compFrame=0,compToken=0,compWake=null;
+function compPaint(){
+ const elapsed=Math.max(0,compAudio.currentTime-2.026),remaining=Math.max(0,compSeconds-elapsed);
+ $('competitionNumber').textContent=String(Math.ceil(Math.max(0,remaining-0.000001)));
+ $('competitionProgress').style.transform='scaleX('+(remaining/compSeconds)+')';
+ $('competitionClock').dataset.urgent=String(remaining<=10&&remaining>0);
+ if(compActive){$('competitionStatus').textContent=compAudio.currentTime<2.026?'준비 · 시작 신호를 기다리세요':remaining>0?'남은 시간':'경기 종료';}
+ if(compActive)compFrame=requestAnimationFrame(compPaint);
+}
+function compRelease(){if(compWake){compWake.release().catch(()=>{});compWake=null;}}
+function compStop(){compToken++;compActive=false;cancelAnimationFrame(compFrame);compAudio.pause();compRelease();$('competitionStart').disabled=false;document.querySelectorAll('[data-comp-seconds]').forEach(b=>b.disabled=false);}
+function compReset(){compStop();compAudio.currentTime=0;compPaint();$('competitionStatus').textContent='시작을 준비하세요';$('competitionStart').textContent='시작 ▶';}
+function compClose(){compReset();compDialog.close();}
+$('competitionOpen').addEventListener('click',()=>{if(appState!=='lobby'||mode!=='group')return;stopCamera();stopGroupMusic();compReset();compDialog.showModal();});
+$('competitionClose').addEventListener('click',compClose);
+compDialog.addEventListener('cancel',e=>{e.preventDefault();compClose();});
+$('competitionReset').addEventListener('click',compReset);
+document.querySelectorAll('[data-comp-seconds]').forEach(b=>b.addEventListener('click',()=>{if(compActive)return;compSeconds=+b.dataset.compSeconds;compAudio.src='bgm/competition/'+compSeconds+'.mp3';document.querySelectorAll('[data-comp-seconds]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));compReset();}));
+$('competitionStart').addEventListener('click',async()=>{
+ if(compActive)return;compReset();const token=compToken;compActive=true;
+ $('competitionStart').disabled=true;document.querySelectorAll('[data-comp-seconds]').forEach(b=>b.disabled=true);
+ try{await compAudio.play();if(token!==compToken)return;compPaint();if(navigator.wakeLock){navigator.wakeLock.request('screen').then(lock=>{if(compActive&&token===compToken)compWake=lock;else lock.release().catch(()=>{});}).catch(()=>{});}}
+ catch(e){if(token!==compToken)return;compStop();$('competitionStatus').textContent='사운드를 재생하지 못했어요';$('competitionHint').textContent='음원 파일과 스피커 연결을 확인한 뒤 다시 시작해 주세요.';}
+});
+compAudio.addEventListener('ended',()=>{const completed=compAudio.currentTime>=compSeconds+2;compStop();if(completed){$('competitionNumber').textContent='0';$('competitionProgress').style.transform='scaleX(0)';$('competitionStatus').textContent='경기 종료 · 수고했어요';$('competitionStart').textContent='다시 시작 ▶';}else{$('competitionStatus').textContent='음원이 일찍 끝났어요 · 다시 시작해 주세요';}});
+compAudio.addEventListener('error',()=>{if(!compActive)return;compStop();$('competitionStatus').textContent='음원을 불러오지 못했어요 · 다시 시작해 주세요';});
+window.addEventListener('pagehide',compReset);
+
 $('groupWelcomeStart').addEventListener('click',()=>$('playBtn').click());
 ['paceTime','paceTarget'].forEach(id=>$(id).addEventListener('change',()=>{paceTime=+$('paceTime').value;paceTarget=normalizePaceTarget($('paceTarget').value);$('paceTarget').value=paceTarget;applyModeUI();saveLobbyPrefs();}));
 $('groupSkill').innerHTML=['발 모양','발 리듬','손 기술'].map(c=>`<optgroup label="${c}">${SKILLS.filter(s=>s.cat===c).map(s=>`<option value="${s.id}">${esc(s.n)}</option>`).join('')}</optgroup>`).join('');
