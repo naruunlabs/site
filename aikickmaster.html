@@ -7244,23 +7244,40 @@ function runReadyCountdown(subText,cb,skipCount){
     setTimeout(()=>{ if(token===readyToken) cb(); },0);
     return;
   }
-  const steps=['3','2','1','시작!']; let i=0;
+
+  const prep=(typeof currentMode!=='undefined' && currentMode==='sparring') ? '겨루기 준비' : '발차기 준비';
+  const steps=['차렷',prep,'시작!']; let i=0;
   setReadyUi(true);
   readyOverlay.classList.add('show'); readySub.textContent=subText;
+  readyNum.classList.add('word');
   (function next(){
-    if(token!==readyToken) return;
+    if(token!==readyToken){ readyNum.classList.remove('word'); return; }
     if(i>=steps.length){
       readyOverlay.classList.remove('show');
+      readyNum.classList.remove('word');
       readyTimer=null;
       setReadyUi(false);
       cb();
       return;
     }
     readyNum.textContent=steps[i];
-    if(i<3) sndCount(); else sndGo();
+    if(i<steps.length-1) sndCount(); else sndGo();
+    akmSayCall(steps[i]);
+    readyTimer=setTimeout(next,READY_CALL_MS[i]);
     i++;
-    readyTimer=setTimeout(next,i<=3?800:600);
   })();
+}
+const READY_CALL_MS=[1100,1500,600];   
+
+function akmSayCall(text){
+  try{
+    if(!window.speechSynthesis || (typeof sndMuted!=='undefined' && sndMuted)) return;
+    speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(String(text).replace(/!/g,''));
+    u.lang='ko-KR'; u.rate=1.0; u.volume=1;
+    const ko=(speechSynthesis.getVoices()||[]).find(v=>/^ko/i.test(v.lang)); if(ko) u.voice=ko;
+    speechSynthesis.speak(u);
+  }catch(e){}
 }
 function startTimed(sec,onEnd){
   if(gameTimer){ clearInterval(gameTimer); gameTimer=null; }
@@ -10890,7 +10907,7 @@ const _AKM_CACHE_DAYS  = 7;
 const _AKM_TRIAL_CACHE_DAYS = 1;   
 const _AKM_FETCH_TIMEOUT_MS = 8 * 1000;   
 
-const _AKM_VERSION     = '3.2.21';   
+const _AKM_VERSION     = '3.2.22';   
 try{ window.__NL_VER = _AKM_VERSION; }catch(e){}   
 
 let _akmFailCount = 0;
@@ -12014,6 +12031,8 @@ html body #handNextPrompt .h-main{font-size:min(48px,9vw) !important;margin-top:
 html body #handNextPrompt .h-sub{font-size:min(26px,5vw) !important;margin-top:8px !important}
 html body #handNextPrompt .h-frame{padding:24px 52px 28px !important}
 html body #handNextPrompt .h-frame::before,html body #handNextPrompt .h-frame::after{width:32px !important;height:32px !important;border-width:3px !important}
+
+#readyOverlay #readyNum.word,body.hud-v21.akm-ui #readyOverlay #readyNum.word{font-size:min(120px,12vw) !important;white-space:nowrap !important;letter-spacing:-.02em}
 </style>
 <script>
 

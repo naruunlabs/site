@@ -1168,9 +1168,28 @@ let soundOn=true, voiceKo=null;
 function pickVoice(){ try{ const vs=speechSynthesis.getVoices(); voiceKo=vs.find(v=>/^ko/i.test(v.lang))||null; }catch(e){} }
 try{ pickVoice(); speechSynthesis.onvoiceschanged=pickVoice; }catch(e){}
 const RITUAL=['차렷','준비','시작','바로','쉬어'];
+
+let whAC=null;
+function whistle(dbl){
+  try{ if(window.parent!==window && typeof parent.__psmWhistle==='function'){ parent.__psmWhistle(dbl); return; } }catch(e){}
+  try{
+    const A=whAC||(whAC=new (window.AudioContext||window.webkitAudioContext)()); if(A.state==='suspended') A.resume();
+    const one=t0=>{ const g=A.createGain(); g.connect(A.destination);
+      g.gain.setValueAtTime(0.0001,t0); g.gain.exponentialRampToValueAtTime(0.32,t0+0.015); g.gain.setValueAtTime(0.32,t0+0.2); g.gain.exponentialRampToValueAtTime(0.0001,t0+0.26);
+      for(const [m,v] of [[1,1],[2,.15]]){ const o=A.createOscillator(), og=A.createGain(); o.type='sine';
+        o.frequency.setValueAtTime(1900*m,t0); o.frequency.linearRampToValueAtTime(1960*m,t0+0.26); og.gain.value=v; o.connect(og); og.connect(g); o.start(t0); o.stop(t0+0.28); }
+      const n=A.createBufferSource(), len=Math.floor(A.sampleRate*0.28), buf=A.createBuffer(1,len,A.sampleRate), d=buf.getChannelData(0);
+      for(let i=0;i<len;i++) d[i]=Math.random()*2-1;
+      const bp=A.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=1900; bp.Q.value=6; const ng=A.createGain(); ng.gain.value=.25;
+      n.buffer=buf; n.connect(bp); bp.connect(ng); ng.connect(g); n.start(t0); n.stop(t0+0.28); };
+    const t=A.currentTime+0.01; one(t); if(dbl) one(t+0.32);
+  }catch(e){}
+}
 function say(txt){
-  if(!soundOn || !window.speechSynthesis) return;
-  if(rate>=1.5 && RITUAL.indexOf(txt)<0) return;   
+  if(!soundOn) return;
+  
+  if(rate>=1.5 && RITUAL.indexOf(txt)<0){ whistle(txt.indexOf('기합')>=0); return; }
+  if(!window.speechSynthesis) return;
   try{ speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(txt.replace(/!/g,'').replace('기합','')); u.lang='ko-KR'; if(voiceKo) u.voice=voiceKo; u.rate=1.05; u.volume=1; speechSynthesis.speak(u); }catch(e){}
 }
 function ui(t){

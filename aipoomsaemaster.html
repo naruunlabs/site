@@ -427,7 +427,7 @@ table.t input{width:100%}
 <script id="psm-core">
 
 var PSM = (function(){
-  var VERSION = '1.0.4';   
+  var VERSION = '1.0.5';   
 
   var DEFAULT_CFG = {
     SMOOTH: 0.5,        
@@ -1484,6 +1484,25 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
       cue('쉬어', function(){ if(rec && rec.running && live.phase==='rest') finishSession('자동'); });
     }
   }
+
+  window.__psmWhistle=function(dbl){
+    if(pref.gSound==='off') return;
+    try{
+      var A=beep.ac||(beep.ac=new (window.AudioContext||window.webkitAudioContext)());
+      if(A.state==='suspended') A.resume();
+      function one(t0){
+        var g=A.createGain(); g.connect(A.destination);
+        g.gain.setValueAtTime(0.0001,t0); g.gain.exponentialRampToValueAtTime(0.32,t0+0.015); g.gain.setValueAtTime(0.32,t0+0.2); g.gain.exponentialRampToValueAtTime(0.0001,t0+0.26);
+        [[1,1],[2,0.15]].forEach(function(mv){ var o=A.createOscillator(), og=A.createGain(); o.type='sine';
+          o.frequency.setValueAtTime(1900*mv[0],t0); o.frequency.linearRampToValueAtTime(1960*mv[0],t0+0.26); og.gain.value=mv[1]; o.connect(og); og.connect(g); o.start(t0); o.stop(t0+0.28); });
+        var len=Math.floor(A.sampleRate*0.28), buf=A.createBuffer(1,len,A.sampleRate), d=buf.getChannelData(0);
+        for(var i=0;i<len;i++) d[i]=Math.random()*2-1;
+        var n=A.createBufferSource(), bp=A.createBiquadFilter(), ng=A.createGain(); bp.type='bandpass'; bp.frequency.value=1900; bp.Q.value=6; ng.gain.value=0.25;
+        n.buffer=buf; n.connect(bp); bp.connect(ng); ng.connect(g); n.start(t0); n.stop(t0+0.28);
+      }
+      var t=A.currentTime+0.01; one(t); if(dbl) one(t+0.32);
+    }catch(e){}
+  };
   function beep(freq,ms,vol){
     try{
       var A=beep.ac||(beep.ac=new (window.AudioContext||window.webkitAudioContext)());
