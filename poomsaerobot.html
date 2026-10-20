@@ -194,12 +194,12 @@ html.embed #footBox{right:28px;top:24px}
    [13,.19,.25,0],[14,-.19,.25,0],[15,.19,.0,.0],[16,-.19,.0,.0],[17,.19,-.07,0],[18,-.19,-.07,0],[19,.19,-.07,.04],[20,-.19,-.07,.04],[21,.17,-.03,.03],[22,-.17,-.03,.03]]
    .forEach(([i,x,y,z])=>{ ATT[i]=[x,y,z]; });
 
+  const KICK_PEAK=.36, KICK_KNEE_LEAD=.7;
   function kickLeg(side,s){ const x=side*.10;
-    const K0=[x,-.42,.02], A0=[x,-.80,0], K1=[x*.9,.04,.40], A1=[x*.9,-.30,.22], K2=[x*.8,.24,.34], A2=[x*.5,.56,.56];
-    let K,A; if(s<.45){ const u=sm(s/.45); K=lerp(K0,K1,u); A=lerp(A0,A1,u); }
-    else if(s<1){ const u=sm((s-.45)/.55); K=lerp(K1,K2,u); A=lerp(A1,A2,u); }
-    else { const u=sm((s-1)/.35); K=lerp(K2,K1,u); A=lerp(A2,A1,u); }
-    return {K,A}; }
+    const K0=[x,-.42,.02], A0=[x,-.80,0], K1=[x*.9,.30,.25], A1=[x*.9,-.06,.36], K2=[x*.8,.30,.25], A2=[x*.5,.64,.43];
+    const bz=(a,b,c,u)=>{ const m=b.map((v,i)=>2*v-(a[i]+c[i])/2); return a.map((v,i)=>(1-u)*(1-u)*v+2*(1-u)*u*m[i]+u*u*c[i]); };   
+    const tk=sm(Math.min(1,s/KICK_KNEE_LEAD)), ta=sm(Math.min(1,s));
+    return {K:bz(K0,K1,K2,tk), A:bz(A0,A1,A2,ta)}; }
   const T=[], WL=[];
   for(let tm=0; tm<=dur; tm+=1000/TIME.FPS){
     let j=mv.findIndex(m=>tm<=m.t1); if(j<0) j=mv.length-1;
@@ -207,8 +207,8 @@ html.embed #footBox{right:28px;top:24px}
     if(j===0 && tm<m.t0){ const u=sm((tm-TIME.ATTN)/TIME.ATTN_TO_READY); for(let i=0;i<33;i++) pose[i]=lerp(ATT[i],B[i],u); }
     if(!hold){ const pv=mv[j-1], fr=(tm-pv.t1)/(m.t0-pv.t1);
       yw=pv.yaw+(m.yaw-pv.yaw)*sm(Math.min(1,fr/.7));                     
-      if(m.kick){ const side=/^오른발/.test(m.name)?-1:1, s=fr/.45*1;      
-        const kl=kickLeg(side,Math.min(1.35,s)); const k=side>0?25:26, a=side>0?27:28;
+      if(m.kick){ const side=/^오른발/.test(m.name)?-1:1, s=fr/KICK_PEAK;      
+        const kl=kickLeg(side,Math.min(1,s)); const k=side>0?25:26, a=side>0?27:28;
         pose[k]=kl.K; pose[a]=kl.A; pose[a+2]=[kl.A[0],kl.A[1]-.05,kl.A[2]-.05]; pose[a+4]=[kl.A[0],kl.A[1]+.02,kl.A[2]+.13]; } }
     const c=Math.cos(yw), sn=Math.sin(yw), w=[];
     for(let i=0;i<33;i++){ const p=pose[i]; const X=p[0]*c+p[2]*sn, Z=-p[0]*sn+p[2]*c; w.push(+X.toFixed(4), +(-p[1]).toFixed(4), +(-Z).toFixed(4)); }   
