@@ -1192,9 +1192,18 @@ function say(txt){
   if(!window.speechSynthesis) return;
   try{ speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(txt.replace(/!/g,'').replace('기합','')); u.lang='ko-KR'; if(voiceKo) u.voice=voiceKo; u.rate=1.05; u.volume=1; speechSynthesis.speak(u); }catch(e){}
 }
+
+let LOOP=null;
+function setLoop(a,b){
+  if(a==null){ LOOP=null; return null; }
+  a=+a; b=+b; if(b<a){ const x=a; a=b; b=x; }
+  const fi=MV.findIndex(m=>m.n===a); let li=-1; MV.forEach((m,i)=>{ if(m.n===b) li=i; });
+  if(fi<1 || li<fi || li>=MV.length-1){ LOOP=null; return null; }
+  LOOP={a, b, start:Math.max(0,MV[fi-1].t1-CALL_LEAD-500), end:MV[li].t1, mute:MV[li].t1-CALL_LEAD-20};
+  return LOOP; }
 function ui(t){
   const m=moveAt(t);
-  const ct=callAt(t);
+  const ct=(LOOP && t>=LOOP.mute && t<LOOP.end && lastCall) ? lastCall : callAt(t);
   if(ct!==lastCall){ lastCall=ct; const c=el('call'); c.textContent=ct; fitCall(); c.classList.add('pop'); setTimeout(()=>c.classList.remove('pop'),140); if(playing) say(ct); }
   if(m.n!==lastN){ lastN=m.n;
     el('mvN').textContent= m.n===0?'준비': m.n===NLAST?'바로':m.n+'번'; setMoveName(m.label||m.name);
@@ -1270,10 +1279,13 @@ const EMBED=document.documentElement.classList.contains('embed'); if(EMBED){ pla
 const tgt=new THREE.Vector3(0,.95,0);
 function tick(now){
   const dt=Math.min(.1,(now-last)/1000); last=now;
-  const er= rate>1 && (t<MV[0].t1 || t>=MV[MV.length-1].t0) ? 1 : rate;   
+
+  const er= rate>1 && (t<MV[0].t1 || t>=MV[MV.length-2].t0) ? 1 : rate;
   if(playing && stopAt!=null && t+dt*1000*er>=stopAt){ t=stopAt; stopAt=null; playing=false; }   
   if(!playing && scrubDir){ t=Math.min(D.dur,Math.max(0,t+dt*1000*SCRUB_RATE*scrubDir)); }
-  if(playing){ t+=dt*1000*er; if(t>D.dur+1500){
+  if(playing){ t+=dt*1000*er;
+    if(LOOP && t>=LOOP.end){ t=LOOP.start; lastCall=callAt(LOOP.start); }   
+    if(t>D.dur+1500){
     if(EMBED){ playing=false; t=D.dur; document.documentElement.classList.add('idle'); try{ parent.__psmGroupDone && parent.__psmGroupDone(); }catch(e){} }   
     else t=0; } }
   const tt=Math.min(t,D.dur); curT=tt;
@@ -1328,7 +1340,10 @@ window.__robot={
   
   seek(ms){ playing=false; stopAt=null; scrubDir=0; t=Math.min(D.dur,Math.max(0,ms)); try{ speechSynthesis.cancel(); }catch(e){} document.documentElement.classList.remove('idle'); },
   scrub(d){ if(d){ playing=false; stopAt=null; try{ speechSynthesis.cancel(); }catch(e){} document.documentElement.classList.remove('idle'); } scrubDir=d||0; },
-  info(){ return {t:curT, dur:D.dur, marks:MV.map(m=>m.t0)}; },
+  info(){ return {t:curT, dur:D.dur, marks:MV.map(m=>m.t0), loop:LOOP}; },
+  
+  loop(a,b){ return setLoop(a,b); },
+  playLoop(){ const L=LOOP; if(!L){ this.play(); return; } t=(L.a===1?0:L.start); stopAt=null; lastCall=(L.a===1?'':callAt(L.start)); playing=true; document.documentElement.classList.remove('idle'); },
   
   step(d){
     let k=moveIndexAt(t); k=Math.max(1,Math.min(MV.length-1,k+d));
