@@ -364,7 +364,8 @@ const DIM={ hipHalf:M.hipW/2, shHalf:M.shW/2, torso:M.torso, neck:M.neck*0.55,
 const ARM_SCALE=1.18; DIM.up*=ARM_SCALE; DIM.fo*=ARM_SCALE;
 
 const bodyH = DIM.torso + DIM.th + DIM.sh + DIM.neck + 0.06;
-const HEAD_BASE = bodyH/4;
+const HEAD_SCALE0=.85;   
+const HEAD_BASE = bodyH/4*HEAD_SCALE0;
 
 const dirTo=(a,b)=>b.clone().sub(a).normalize();
 function frameBasis(xL, upHint){ 
@@ -944,7 +945,9 @@ function applySideColor(on){ sideColorOn=on; const gray=new THREE.Color('#5A6676
     for(const k of ['a'+s,'l'+s]) jointMat[k].color.copy(on? gray.clone().lerp(c,SIDE_COLOR.JOINT_MIX) : gray); } }
 applySideColor(true);
 P.elL=hexJoint(.048,.09,jointMat.aL); P.elR=hexJoint(.048,.09,jointMat.aR);
-P.soL=hexJoint(.062,.1,jointMat.aL); P.soR=hexJoint(.062,.1,jointMat.aR);
+
+const SHOULDER_R=.062*.8;
+P.soL=hexJoint(SHOULDER_R,.1,jointMat.aL); P.soR=hexJoint(SHOULDER_R,.1,jointMat.aR);
 
 const HAND_BACK={L:1, R:-1};
 const knuckleMat=new THREE.MeshStandardMaterial({color:'#E6ECF2',roughness:.45});
