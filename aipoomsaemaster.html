@@ -133,6 +133,8 @@ body.recording #status, body.recording .tb-btns, body.recording #lobbyStats{disp
 .card{padding:0}
 .c-who{font-size:clamp(12px,1.05vw,17px);font-weight:900;color:var(--teal-lit)}
 .card.k1 .c-who{color:var(--lime-lit)}
+#cards.two .card.k0 .c-who{color:#4CA3FF;font-size:clamp(18px,1.8vw,28px)} #cards.two .card.k1 .c-who{color:#FF5A6E;font-size:clamp(18px,1.8vw,28px)}
+#meter .m-bar.pk0 b{background:#4CA3FF} #meter .m-bar.pk1 b{background:#FF5A6E}
 .c-next-lbl{font-size:11px;color:rgba(255,255,255,.55);font-weight:800;margin-top:3px}
 .c-next{font-size:clamp(20px,2.4vw,38px);font-weight:900;line-height:1.2;margin-top:1px;color:#fff}
 .c-next .dir{display:inline-block;margin-right:6px;color:var(--teal-lit);font-size:.66em}
@@ -207,6 +209,14 @@ body.group-running #lobby, body.group-running .tb-btns{display:none}
 .sc-strip i.ng{background:rgba(251,146,60,.85);color:#2a1300}
 @keyframes scDot{to{opacity:1}}
 .sc-sync{margin-top:12px;font-size:15px;font-weight:900;color:var(--teal-lit)}
+.sc-who{font-size:clamp(22px,3vw,32px) !important;letter-spacing:.1em} .sc-who.k0{color:#4CA3FF} .sc-who.k1{color:#FF5A6E}
+.sc-sync-mid{flex:0 0 auto;align-self:center;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:clamp(120px,16vw,180px);padding:14px 10px;border-radius:18px;background:linear-gradient(180deg,rgba(76,163,255,.16),rgba(255,90,110,.16)),#0c1d33;border:1px solid rgba(255,209,102,.35)}
+.sc-sync-mid .sm-l{font-size:clamp(14px,1.6vw,18px);font-weight:900;color:var(--teal-lit);letter-spacing:.1em}
+.sc-sync-mid .sm-n{font-family:var(--num);font-weight:900;font-size:min(72px,11vw);line-height:1.05;color:#fff;font-variant-numeric:tabular-nums}
+.sc-sync-mid .sm-n small{font-size:.4em;color:var(--teal-lit);margin-left:2px}
+.sc-sync-mid .sm-s{margin-top:4px;font-size:12px;font-weight:800;color:var(--muted);text-align:center;line-height:1.35}
+.sc-box.two{width:min(980px,100%)}
+@media (max-width:700px){ .sc-box.two .sc-cols{flex-wrap:wrap} .sc-box.two .sc-sync-mid{order:3;flex-basis:100%;flex-direction:row;gap:12px;min-width:0} }
 .sc-foot{margin-top:12px;font-size:12px;color:var(--muted)}
 .sc-foot .x{color:var(--bad);font-weight:800}
 .sc-time{position:absolute;left:0;bottom:0;height:3px;width:100%;background:var(--teal);transform-origin:left;animation:scTime linear forwards}
@@ -427,7 +437,7 @@ table.t input{width:100%}
 <script id="psm-core">
 
 var PSM = (function(){
-  var VERSION = '1.0.5';   
+  var VERSION = '1.0.6';   
 
   var DEFAULT_CFG = {
     SMOOTH: 0.5,        
@@ -832,6 +842,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   var MP_BASE='https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1';
   var CONN=[[11,12],[11,13],[13,15],[12,14],[14,16],[11,23],[12,24],[23,24],[23,25],[25,27],[24,26],[26,28],[27,31],[28,32],[27,29],[28,30]];
   var TRACK_COL=['#FFD166','#FFF1B8'];
+  var PAIR_COL=['#4CA3FF','#FF5A6E'];   
 
   $('tbVer').textContent='v'+PSM.VERSION;
 
@@ -1250,7 +1261,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     function X(x){ return screenX(x)*srcW*sc+ox; }
     function Y(y){ return y*srcH*sc+oy; }
     for(var i=0;i<lastPoses.length;i++){
-      var P=lastPoses[i], lm=P.lm, col=TRACK_COL[P.k>=0?P.k:0];
+      var P=lastPoses[i], lm=P.lm, pairNow=(rec?rec.mode:(pref.role==='pair'?2:1))===2, col=(pairNow && P.k>=0 ? PAIR_COL : TRACK_COL)[P.k>=0?P.k:0];
       ctx.lineWidth=4*d; ctx.strokeStyle=col; ctx.globalAlpha=0.9; ctx.lineCap='round';
       for(var c=0;c<CONN.length;c++){
         var a=CONN[c][0], b=CONN[c][1];
@@ -1617,7 +1628,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     var box=$('cards'); box.innerHTML=''; box.classList.toggle('two', mode===2);
     var meter=$('meter'); meter.innerHTML='';
     for(var k=0;k<mode;k++){
-      var who= mode===2 ? (k===0?'화면 왼쪽 사람':'화면 오른쪽 사람') : (pref.role==='master'?'관장 시범':'학생 시험');
+      var who= mode===2 ? (k===0?'청':'홍') : (pref.role==='master'?'관장 시범':'학생 시험');
       
       var dots='', nd=0; for(var j=1;j<KEY.length;j++){ if(KEY[j].opt) continue; dots+='<i data-j="'+j+'">'+j+'</i>'; nd++; }
       var cols = (nd%6===0 || nd%5!==0) ? 6 : 5;
@@ -1625,7 +1636,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
       c.innerHTML='<div class="c-who">'+who+'</div><div class="c-next-lbl">다음 동작</div><div class="c-next"></div><div class="c-last"></div><div class="c-dots" style="grid-template-columns:repeat('+cols+',18px)">'+dots+'</div>';
       box.appendChild(c);
       var m=document.createElement('div');
-      m.innerHTML='<div class="m-lbl">'+(mode===2?(k===0?'왼쪽 ':'오른쪽 '):'')+'움직임</div><div class="m-bar k'+k+'"><b></b></div><div class="m-st"></div>';
+      m.innerHTML='<div class="m-lbl">'+(mode===2?(k===0?'청 ':'홍 '):'')+'움직임</div><div class="m-bar k'+k+(mode===2?' pk'+k:'')+'"><b></b></div><div class="m-st"></div>';
       meter.appendChild(m);
     }
   }
@@ -1805,7 +1816,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   function scoreCol(sc){ return sc>=75?'#86EFAC':(sc>=50?'#FFD166':'#FB923C'); }
   function scorePerson(r, t, k){
     var s=t.sum.stats, sc=s.score, R=46, C=2*Math.PI*R, col=scoreCol(sc);
-    var who= r.mode===2 ? '<div class="sc-who k'+k+'">'+(k===0?'왼쪽 사람':'오른쪽 사람')+'</div>' : '';
+    var who= r.mode===2 ? '<div class="sc-who k'+k+'">'+(k===0?'청':'홍')+'</div>' : '';
     function bar(lbl,a,b){ var pc=b?Math.round(100*a/b):0; return '<div class="sc-bar"><span>'+lbl+'</span><span class="tr"><b data-w="'+pc+'"></b></span><span class="v">'+a+'/'+b+'</span></div>'; }
     var strip='', d=0;
     t.sum.rows.forEach(function(row){
@@ -1826,12 +1837,15 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     var name=(PSM.POOMSAE_NAME&&PSM.POOMSAE_NAME[r.poomsae])||'';
     var roleName={master:'관장 시범', student:'학생 시험', pair:'2인 모드'}[r.role]||'';
     var h='<div class="sc-box'+(r.mode===2?' two':'')+'"><div class="sc-tag">POOMSAE SCORE</div><div class="sc-title">'+esc(name)+(roleName?' · '+roleName:'')+'</div><div class="sc-cols">';
-    for(var k=0;k<r.mode;k++) h+=scorePerson(r, res.tracks[k], k);
-    h+='</div>';
     if(r.mode===2){
-      var sy=res.sync||[], good=sy.filter(function(x){ return x.grade==='PERFECT'||x.grade==='GOOD'; }).length;
-      h+='<div class="sc-sync">싱크 '+(sy.length?Math.round(100*good/sy.length):0)+'% · 박자 맞은 동작 '+good+'/'+sy.length+'</div>';
-    }
+      
+      var sy=res.sync||[], good=sy.filter(function(x){ return x.grade==='PERFECT'||x.grade==='GOOD'; }).length, sp=sy.length?Math.round(100*good/sy.length):0;
+      h+=scorePerson(r, res.tracks[0], 0)
+        +'<div class="sc-sync-mid"><div class="sm-l">싱크율</div><div class="sm-n"><span class="sc-n" data-v="'+sp+'">0</span><small>%</small></div>'
+        +'<div class="sm-s">박자 맞은 동작<br>'+good+' / '+sy.length+'</div></div>'
+        +scorePerson(r, res.tracks[1], 1);
+    } else h+=scorePerson(r, res.tracks[0], 0);
+    h+='</div>';
     h+='<div class="sc-foot">'+(saved===false?'<span class="x">이 기기에 저장 실패 — 눌러서 기록을 내려받아 두세요</span> · ':'')+'누르면 자세히</div>'
       +'<div class="sc-time" style="animation-duration:'+SCORE_MS+'ms"></div></div>';
     var el=$('scoreCard'); el.innerHTML=h; el.hidden=false;
@@ -1872,7 +1886,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     h+='<p class="m-note">'+new Date(r.created).toLocaleString('ko-KR')+' · 길이 '+fmtT(r.dur||0)+' · '+(saved===false?'<span class="x">이 기기에 저장 실패 — 지금 내려받아 두세요</span>':'이 기기에 저장됨')+' · <span id="cloudSt">'+cloudText(r.cloud||'')+'</span></p>';
     if(r.mode===2){
       h+='<div class="tabs">';
-      ['화면 왼쪽 사람','화면 오른쪽 사람','함께 (싱크)'].forEach(function(n,i){ h+='<button data-tab="'+i+'" class="'+(tab===i?'on':'')+'">'+n+'</button>'; });
+      ['청','홍','함께 (싱크)'].forEach(function(n,i){ h+='<button data-tab="'+i+'" class="'+(tab===i?'on':'')+'">'+n+'</button>'; });
       h+='</div>';
     }
     if(tab===2) h+=syncHtml(r,res); else h+=trackHtml(r,res.tracks[tab]);
