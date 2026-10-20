@@ -5878,6 +5878,8 @@ function measureHFor(want){
   return t[want] || null;
 }
 
+const SPARRING_LIVE_RELIEF=10, SPARRING_LIVE_FLOOR=8;   
+
 let JUDGE=JUDGE_HARD;
 let kickLevel='hard';
 
@@ -5886,7 +5888,10 @@ function effThreshPct(){
   const p2Offset=(typeof twoPlayerMode!=='undefined' && twoPlayerMode)?-5:0;
 
   const lowFps=(typeof lowFpsThreshRelief==='function')?lowFpsThreshRelief():0;
-  return Math.max(12, Math.min(100, threshPct + (JUDGE.THRESH_OFFSET||0) + p2Offset - lowFps));
+
+  const sparLive=(typeof currentMode!=='undefined' && currentMode==='sparring' && typeof sparringMode!=='undefined' && sparringMode!=='speed');
+  const sparRelief=sparLive?SPARRING_LIVE_RELIEF:0;
+  return Math.max(sparLive?SPARRING_LIVE_FLOOR:12, Math.min(100, threshPct + (JUDGE.THRESH_OFFSET||0) + p2Offset - lowFps - sparRelief));
 }
 function applyThreshUi(){
   const eff=effThreshPct();
@@ -10885,7 +10890,7 @@ const _AKM_CACHE_DAYS  = 7;
 const _AKM_TRIAL_CACHE_DAYS = 1;   
 const _AKM_FETCH_TIMEOUT_MS = 8 * 1000;   
 
-const _AKM_VERSION     = '3.2.20';   
+const _AKM_VERSION     = '3.2.21';   
 try{ window.__NL_VER = _AKM_VERSION; }catch(e){}   
 
 let _akmFailCount = 0;
