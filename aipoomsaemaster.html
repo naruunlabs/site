@@ -175,6 +175,44 @@ body.group-running #lobby, body.group-running .tb-btns{display:none}
 #countdown .cd-n{font-family:var(--num);font-weight:900;font-size:min(34vw,240px);line-height:1;color:var(--lime-lit)}
 #countdown .cd-t{font-size:clamp(18px,3vw,30px);font-weight:900;margin-top:8px}
 
+#scoreCard{position:fixed;inset:0;z-index:36;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(2,7,14,.55);cursor:pointer}
+.sc-box{position:relative;width:min(560px,100%);max-height:100%;overflow:hidden;padding:20px 22px 16px;border-radius:22px;text-align:center;
+  background:linear-gradient(180deg,rgba(14,32,54,.98),rgba(6,16,30,.98));border:1px solid rgba(255,209,102,.38);box-shadow:0 0 40px rgba(245,184,41,.18),0 20px 60px rgba(0,0,0,.55);
+  animation:scIn .35s cubic-bezier(.2,1.3,.4,1) both}
+.sc-box.two{width:min(860px,100%)}
+@keyframes scIn{from{transform:scale(.86);opacity:0}to{transform:none;opacity:1}}
+.sc-tag{font-size:12px;font-weight:800;letter-spacing:.3em;color:var(--teal-lit)}
+.sc-title{margin-top:4px;font-size:clamp(16px,2.4vw,20px);font-weight:900}
+.sc-cols{display:flex;gap:18px;justify-content:center;margin-top:12px}
+.sc-p{flex:1 1 0;min-width:0}
+.sc-who{font-size:14px;font-weight:900;margin-bottom:4px}
+.sc-who.k0{color:var(--blue)} .sc-who.k1{color:var(--red)}
+.sc-ring{position:relative;width:min(220px,46vw);aspect-ratio:1;margin:0 auto}
+.two .sc-ring{width:min(180px,30vw)}
+.sc-ring svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg);filter:drop-shadow(0 0 10px rgba(245,184,41,.45))}
+.sc-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--num);font-weight:900;
+  font-size:min(84px,18vw);line-height:1;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.two .sc-num{font-size:min(66px,13vw)}
+.sc-num small{font-size:.32em;font-weight:800;margin-left:3px;color:var(--teal-lit)}
+.sc-msg{margin-top:6px;font-size:clamp(20px,3.4vw,28px);font-weight:900}
+.sc-bars{margin:12px auto 0;max-width:340px;display:grid;gap:7px}
+.sc-bar{display:grid;grid-template-columns:72px 1fr 48px;align-items:center;gap:8px;font-size:13px;font-weight:800;text-align:left}
+.sc-bar .tr{height:10px;border-radius:6px;background:rgba(255,255,255,.08);overflow:hidden}
+.sc-bar .tr b{display:block;height:100%;width:0;border-radius:6px;background:linear-gradient(90deg,var(--teal),var(--teal-lit));transition:width .9s cubic-bezier(.2,.8,.2,1)}
+.sc-bar .v{font-family:var(--num);text-align:right;color:#dbe7f5}
+.sc-strip{display:flex;flex-wrap:wrap;justify-content:center;gap:4px;margin:12px auto 0;max-width:480px}
+.sc-strip i{width:20px;height:20px;border-radius:5px;font-style:normal;font-size:10px;font-weight:800;line-height:20px;font-family:var(--num);
+  background:rgba(255,255,255,.07);color:#6b819c;opacity:0;animation:scDot .25s ease forwards}
+.sc-strip i.ok{background:rgba(134,239,172,.9);color:#062a14}
+.sc-strip i.ng{background:rgba(251,146,60,.85);color:#2a1300}
+@keyframes scDot{to{opacity:1}}
+.sc-sync{margin-top:12px;font-size:15px;font-weight:900;color:var(--teal-lit)}
+.sc-foot{margin-top:12px;font-size:12px;color:var(--muted)}
+.sc-foot .x{color:var(--bad);font-weight:800}
+.sc-time{position:absolute;left:0;bottom:0;height:3px;width:100%;background:var(--teal);transform-origin:left;animation:scTime linear forwards}
+@keyframes scTime{from{transform:scaleX(1)}to{transform:scaleX(0)}}
+@media (max-height:620px){ .sc-ring{width:min(150px,28vh)} .two .sc-ring{width:min(130px,24vh)} .sc-bars{gap:4px;margin-top:8px} .sc-strip{display:none} }
+
 .modal{position:fixed;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(2,7,14,.72)}
 .m-box{width:min(980px,100%);max-height:100%;overflow:auto;background:#0b1b2e;border:1px solid var(--line);border-radius:18px;padding:18px 16px}
 .m-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
@@ -301,13 +339,6 @@ table.t input{width:100%}
     <div class="lb-label">메모 (실명 대신 별칭)</div>
     <input class="lb-input" id="inLabel" type="text" maxlength="40" placeholder="예: 관장 1회 · 초2 A">
 
-    <div class="lb-label">시작 전 대기</div>
-    <div class="seg c3" id="segWait">
-      <button type="button" data-v="5">5초</button>
-      <button type="button" data-v="10">10초</button>
-      <button type="button" data-v="15">15초</button>
-    </div>
-
     <div class="lb-label">동작 판정음 · 관장 시범은 항상 꺼짐</div>
     <div class="seg c2" id="segFeedback">
       <button type="button" data-v="off">끄기</button>
@@ -326,6 +357,7 @@ table.t input{width:100%}
 
     <div class="lb-tip">
       <b>카메라</b> · 태블릿을 학생 <b>정면 4~5m</b>, 허리 높이에 가로로 둡니다. <b>양옆과 앞쪽 끝까지</b> 화면에 들어오는지 먼저 보세요.<br>
+      <b>한 손을 머리 위로 2초</b> 들면 시작합니다(시작! 버튼과 같음).<br>
       차렷 → “준비” 구령에 준비 자세 → <b>“시작”</b> → 동작마다 잠깐 멈추며 평소 속도로 → <b>“바로” → “쉬어”</b>.
     </div>
   </div>
@@ -384,6 +416,7 @@ table.t input{width:100%}
 <div id="wallHud" hidden><div class="wh-move" id="wallMove"></div><div class="wh-info" id="wallInfo"></div><div class="wh-bar"><i id="wallBar"></i></div></div>
 <div id="wallEnd" hidden><div class="we-box"><div class="we-t">벽 통과 · 결과</div><div class="we-n" id="weScore">0 / 10</div><div class="we-s" id="weSub"></div>
   <div class="we-b"><button type="button" id="weAgain">다시 하기</button><button type="button" id="weLobby">로비로</button></div></div></div>
+<div id="scoreCard" hidden></div>
 <div id="countdown" hidden><div class="cd-n" id="cdN">5</div><div class="cd-t" id="cdT">준비 자세로 서 주세요</div></div>
 
 <div class="modal" id="mResult" hidden><div class="m-box" id="resultBox"></div></div>
@@ -394,7 +427,7 @@ table.t input{width:100%}
 <script id="psm-core">
 
 var PSM = (function(){
-  var VERSION = '0.9.6';   
+  var VERSION = '1.0.0';   
 
   var DEFAULT_CFG = {
     SMOOTH: 0.5,        
@@ -807,7 +840,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
   function fmtT(ms){ var s=Math.max(0,Math.floor(ms/1000)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
 
-  var pref=Object.assign({role:'student', soloWho:'student', wallSpeed:'normal', wait:'10', cam:'user', model:'full', feedback:'off', poomsae:'tg1',
+  var pref=Object.assign({role:'student', soloWho:'student', wallSpeed:'normal', cam:'user', model:'full', feedback:'off', poomsae:'tg1',
     gSpeed:'1', gView:'free', gFoot:'on', gSound:'on'}, lsGet(LS_PREF,{}));
   pref.gView='free';   
   
@@ -1037,7 +1070,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
 
   function boot(){
     if(booted) return; booted=true;
-    segInit('segFeedback','feedback'); modeInit(); wallInit(); segInit('segWait','wait'); segInit('segCam','cam'); segInit('segModel','model');
+    segInit('segFeedback','feedback'); modeInit(); wallInit(); segInit('segCam','cam'); segInit('segModel','model');
     segInit('segGSpeed','gSpeed'); segInit('segGFoot','gFoot'); segInit('segGSound','gSound');
     
     var sel=$('selPoomsae');
@@ -1061,7 +1094,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
       if(!seekDrag) $('gSeek').value=Math.round(i.t/i.dur*2000); })();
     updateModeUi();
     $('lobby').hidden=false;
-    $('btnStart').addEventListener('click', function(){ if(pref.role==='game'){ startWall(); return; } if(pref.role==='group') startGroup(); else startSession(); });
+    $('btnStart').addEventListener('click', startFromLobby);
     $('fsBtn').addEventListener('click', toggleFullscreen);
     $('btnEnd').addEventListener('click', function(){ if(groupRunning) stopGroup(); else finishSession('수동'); });
     $('btnCancel').addEventListener('click', cancelSession);
@@ -1109,6 +1142,12 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
       });
     }).then(function(lmk){ landmarker=lmk; poses=want; loadingModel=false; readyCheck(); })
       .catch(function(e){ loadingModel=false; setStatus('AI 모델을 불러오지 못했습니다. 새로고침해 주세요.'); });
+  }
+  
+  function startFromLobby(){
+    hnStop(); hideScore();
+    if(pref.role==='game'){ startWall(); return; }
+    if(pref.role==='group') startGroup(); else startSession();
   }
   function ensurePoses(){
     var want=pref.role==='pair'?2:1;
@@ -1176,6 +1215,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     for(var i=0;i<lms.length;i++) list.push(flat(lms[i], wls[i]||[]));
     var ks=assign(list);
     lastPoses=list.map(function(o,i){ return {lm:o.lm, k:ks[i]}; });
+    handStartObserve(lms);   
     if(wall.on) wallPose(list);   
     if(rec && rec.running){
       var t=Math.round(now - rec.t0);
@@ -1278,7 +1318,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     stopWall(false);
     $('weScore').textContent=W.pass+' / '+W.total;
     $('weSub').textContent='최고 연속 '+W.best+' · '+(W.pass>best?'오늘 최고 기록!':'이 기기 최고 '+Math.max(best,W.pass)+'개');
-    $('wallEnd').hidden=false;
+    $('wallEnd').hidden=false; hnStart('wall');
     beep(988,140,0.2); setTimeout(function(){ beep(1480,260,0.2); },150);
   }
   
@@ -1382,8 +1422,8 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   function wallInit(){
     
     if(TEST) window.__wallDebug={n:WALL.MOVES.length, last:function(){ if(wall.on) wall.n=wall.total; }, show:function(i,p){ if(!wall.on) return; wall.move=WALL.MOVES[i]; wall.state='come'; wall.hist=[]; wall.dur=1e9; wall.t0=performance.now()-wall.dur*(p==null?0.99:p); $('wallMove').textContent=wall.move.name; }};
-    $('weAgain').addEventListener('click', function(){ $('wallEnd').hidden=true; startWall(); });
-    $('weLobby').addEventListener('click', function(){ $('wallEnd').hidden=true; $('lobby').hidden=false; });
+    $('weAgain').addEventListener('click', function(){ $('wallEnd').hidden=true; startFromLobby(); });
+    $('weLobby').addEventListener('click', function(){ hnStop(); $('wallEnd').hidden=true; $('lobby').hidden=false; });
     var box=$('segWallSpeed');
     function paint(){ Array.prototype.forEach.call(box.querySelectorAll('button'), function(b){ b.classList.toggle('on', b.dataset.v===(pref.wallSpeed||'normal')); }); }
     box.addEventListener('click', function(e){ var b=e.target.closest('button'); if(!b) return; pref.wallSpeed=b.dataset.v; lsSet(LS_PREF,pref); paint(); });
@@ -1470,24 +1510,26 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     document.body.classList.add('recording');
     buildHud(mode);
     $('hud').hidden=false; $('btnCancel').hidden=false;
-    var n=parseInt(pref.wait,10)||10, cd=$('countdown');
-    cd.hidden=false; $('cdN').textContent=n; $('cdT').textContent= mode===2 ? '두 사람 모두 차렷으로 기다리세요' : '차렷으로 기다리세요';
     try{ navigator.wakeLock && navigator.wakeLock.request('screen').then(function(w){ wakeLock=w; }).catch(function(){}); }catch(e){}
-    cdTimer=setInterval(function(){
-      n--;
-      if(n>0){ $('cdN').textContent=n; if(n<=3) beep(880,120,0.25); return; }
-      clearInterval(cdTimer); cdTimer=null;
-      phaseMessage('준비','준비 자세를 하고 잠깐 유지하세요 · 전신이 보여야 합니다');
-      live.phase='prepareCue'; rec.t0=performance.now(); rec.running=true;
-      cue('준비', function(){ if(rec && rec.running && live.phase==='prepareCue') live.phase='prepare'; });
-      $('btnEnd').hidden=false;
-    },1000);
+
+    phaseMessage('차렷', mode===2 ? '두 사람 모두 차렷 자세로 서세요' : '차렷 자세로 서세요');
+    cue('차렷', function(){
+      var tok=cueToken;
+      cdTimer=setTimeout(function(){
+        cdTimer=null;
+        if(!rec || tok!==cueToken || live.phase!=='countdown') return;
+        phaseMessage('준비','준비 자세를 하고 잠깐 유지하세요 · 전신이 보여야 합니다');
+        live.phase='prepareCue'; rec.t0=performance.now(); rec.running=true;
+        cue('준비', function(){ if(rec && rec.running && live.phase==='prepareCue') live.phase='prepare'; });
+        $('btnEnd').hidden=false;
+      }, 800);
+    });
   }
 
   function stopCommon(){
     ++cueToken; clearTimeout(cueTimer);
     try{ if(window.speechSynthesis) speechSynthesis.cancel(); }catch(e){}
-    if(cdTimer){ clearInterval(cdTimer); cdTimer=null; }
+    if(cdTimer){ clearInterval(cdTimer); clearTimeout(cdTimer); cdTimer=null; }
     $('countdown').hidden=true; $('hud').hidden=true; $('btnEnd').hidden=true; $('btnCancel').hidden=true;
     document.body.classList.remove('recording');
     try{ wakeLock && wakeLock.release(); }catch(e){} wakeLock=null;
@@ -1504,7 +1546,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     rec.summary=summaryLine(result);
     var done=rec; rec=null; live=null;
     if(!TEST) done.cloud = canUpload() ? 'wait' : 'off';
-    dbPut(done).then(function(){ showResult(done, result, true); }).catch(function(){ showResult(done, result, false); })
+    dbPut(done).then(function(){ showScore(done, result, true); }).catch(function(){ showScore(done, result, false); })
       .then(function(){ return uploadRec(done, result); });
   }
 
@@ -1603,6 +1645,201 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   }
   function pct(a,b){ return b ? Math.round(100*a/b)+'%' : '-'; }
 
+  var HAND_START={ HOLD_MS:2000, COOLDOWN_MS:3000, CLEAR_MS:400, GAP_MS:350 };
+  var SCORE_MS=5000;   
+  var hsT0=0, hsLastUp=0, hsClearSince=0, hsArmed=false, hsBlockUntil=0, hsWasBusy=true, hsEl=null;
+  function hsRaised(lm){
+    if(!lm || lm.length<17) return false;
+    var v=function(i){ return (lm[i] && lm[i].visibility!=null) ? lm[i].visibility : 1; };
+    if(v(0)<.5 || v(11)<.5 || v(12)<.5) return false;
+    var nose=lm[0], shY=(lm[11].y+lm[12].y)/2, head=Math.max(.02, shY-nose.y);
+    for(var w=15; w<=16; w++){ if(v(w)>=.5 && lm[w].y < nose.y - head*0.6) return true; }   
+    return false;
+  }
+  function holoCss(){
+    if(document.getElementById('holoHudCss')) return;
+    var st=document.createElement('style'); st.id='holoHudCss';
+    st.textContent=
+'.holo{position:fixed;left:50%;transform:translateX(-50%);z-index:99980;pointer-events:none;white-space:nowrap;color:#e9fdff;text-align:center;opacity:0;transition:opacity .18s ease;--holo:#6ff2ff;--holo-dim:rgba(111,242,255,.32);text-shadow:0 0 10px rgba(0,225,255,.75),0 1px 3px rgba(0,0,0,.95),0 0 18px rgba(0,0,0,.6)}'
++'.holo.on{opacity:1}'
++'.holo .h-tag{display:inline-flex;align-items:center;gap:10px;font-size:11px;font-weight:800;letter-spacing:.32em;color:var(--holo);opacity:.85;animation:holoFlick 2.4s steps(1) infinite}'
++'.holo .h-tag::before,.holo .h-tag::after{content:"";width:34px;height:1px;background:linear-gradient(90deg,transparent,var(--holo));box-shadow:0 0 6px var(--holo)}'
++'.holo .h-tag::after{transform:scaleX(-1)}'
++'.holo .h-ring{position:relative;width:148px;height:148px;margin:8px auto 6px;filter:drop-shadow(0 0 6px rgba(0,225,255,.55))}'
++'.holo .h-ring svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}'
++'.holo .h-spin{transform-origin:74px 74px;animation:holoSpin 14s linear infinite}'
++'.holo .h-spin2{transform-origin:74px 74px;animation:holoSpin 3.2s linear infinite reverse}'
++'.holo .h-pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:900;letter-spacing:-.02em;font-variant-numeric:tabular-nums}'
++'.holo .h-pct small{font-size:13px;font-weight:800;margin-left:2px;color:var(--holo)}'
++'.holo .h-main{font-size:24px;font-weight:900;letter-spacing:.04em}'
++'.holo .h-sub{margin-top:4px;font-size:13px;font-weight:700;color:#bff8ff;opacity:.9}'
++'.holo .h-frame{position:relative;padding:12px 26px 14px}'
++'.holo .h-frame::before,.holo .h-frame::after{content:"";position:absolute;width:16px;height:16px;border:1.5px solid var(--holo);filter:drop-shadow(0 0 4px rgba(0,225,255,.8))}'
++'.holo .h-frame::before{left:0;top:0;border-right:0;border-bottom:0}'
++'.holo .h-frame::after{right:0;bottom:0;border-left:0;border-top:0}'
++'@keyframes holoSpin{to{transform:rotate(360deg)}}'
++'@keyframes holoFlick{0%,100%{opacity:.85}47%{opacity:.85}48%{opacity:.4}50%{opacity:.85}}'
+
++'#handNextPrompt .h-tag{font-size:22px}#handNextPrompt .h-main{font-size:min(48px,7vw)}#handNextPrompt .h-sub{font-size:min(26px,4vw)}'
++'#handNextPrompt .h-frame::before,#handNextPrompt .h-frame::after{width:32px;height:32px}';
+    document.head.appendChild(st);
+  }
+  function hsShow(p){
+    try{
+      if(!hsEl){
+        holoCss();
+        hsEl=document.createElement('div'); hsEl.id='handStartGauge'; hsEl.className='holo';
+        hsEl.style.top='20%';
+        var C=2*Math.PI*46;
+        hsEl.innerHTML='<div class="h-tag">HAND SIGNAL</div>'
+          +'<div class="h-ring"><svg viewBox="0 0 148 148">'
+          +'<g class="h-spin"><circle cx="74" cy="74" r="68" fill="none" stroke="rgba(111,242,255,.45)" stroke-width="1" stroke-dasharray="2 7"/>'
+          +'<path d="M74 2 A72 72 0 0 1 132 32" fill="none" stroke="#6ff2ff" stroke-width="1.5" opacity=".8"/>'
+          +'<path d="M16 116 A72 72 0 0 1 4 74" fill="none" stroke="#6ff2ff" stroke-width="1.5" opacity=".6"/></g>'
+          +'<circle cx="74" cy="74" r="56" fill="none" stroke="rgba(111,242,255,.55)" stroke-width="6" stroke-dasharray="1 4.86"/>'
+          +'<circle cx="74" cy="74" r="46" fill="none" stroke="rgba(111,242,255,.16)" stroke-width="4"/>'
+          +'<circle class="hsArc" cx="74" cy="74" r="46" fill="none" stroke="#7ff5ff" stroke-width="4" stroke-linecap="round"'
+          +' stroke-dasharray="'+C.toFixed(1)+'" stroke-dashoffset="'+C.toFixed(1)+'" transform="rotate(-90 74 74)"/>'
+          +'<g class="h-spin2"><circle cx="74" cy="74" r="36" fill="none" stroke="rgba(111,242,255,.5)" stroke-width="1" stroke-dasharray="26 200"/></g>'
+          +'</svg><div class="h-pct"><span class="hsPct">0</span><small>%</small></div></div>'
+          +'<div class="h-main">그대로 유지</div>'
+          +'<div class="h-sub">손을 들고 있으면 곧 시작합니다</div>';
+        document.body.appendChild(hsEl);
+      }
+      var on=p>0, v=Math.max(0,Math.min(1,p)), C2=2*Math.PI*46;
+      hsEl.classList.toggle('on',on);
+      var a=hsEl.querySelector('.hsArc'); if(a) a.setAttribute('stroke-dashoffset',(C2*(1-v)).toFixed(1));
+      var t=hsEl.querySelector('.hsPct'); if(t) t.textContent=Math.round(v*100);
+    }catch(e){}
+  }
+  function hsReset(){ hsT0=0; hsLastUp=0; hsShow(0); }
+  function hsCanStart(){
+    if(rec || live || wall.on || groupRunning || pref.role==='group') return false;
+    if(document.hidden || !$('gate').hidden) return false;
+    if(document.querySelector('.modal:not([hidden])')) return false;
+    if(!$('scoreCard').hidden) return false;
+    if($('lobby').hidden && $('wallEnd').hidden) return false;
+    return !$('btnStart').disabled;
+  }
+  function handStartObserve(lms){
+    var ok=false; try{ ok=hsCanStart(); }catch(e){ ok=false; }
+    var now=performance.now();
+    hnTick();
+    if(!ok){ hsWasBusy=true; hsArmed=false; hsClearSince=0; if(hsT0||hsEl) hsReset(); return; }
+    if(hsWasBusy){ hsWasBusy=false; hsBlockUntil=now+HAND_START.COOLDOWN_MS; }
+    var up=(lms||[]).some(hsRaised);
+    if(!hsArmed){
+      if(!up){ if(!hsClearSince) hsClearSince=now; if(now-hsClearSince>=HAND_START.CLEAR_MS) hsArmed=true; }
+      else hsClearSince=0;
+      return;
+    }
+    if(now<hsBlockUntil){ if(hsT0) hsReset(); return; }
+    if(up){ hsLastUp=now; if(!hsT0) hsT0=now; }
+    else if(!hsT0 || now-hsLastUp>HAND_START.GAP_MS){ if(hsT0) hsReset(); return; }
+    var p=(now-hsT0)/HAND_START.HOLD_MS;
+    hsShow(Math.max(.02,p));
+    if(p>=1){
+      hsReset(); hsWasBusy=true; hsArmed=false; hsClearSince=0;
+      try{ startFromLobby(); }catch(e){ console.error(e); }
+    }
+  }
+
+  var hn={phase:'off', timer:null}, hnEl=null;
+  function hnPrompt(on){
+    try{
+      if(!hnEl){
+        holoCss();
+        hnEl=document.createElement('div'); hnEl.id='handNextPrompt'; hnEl.className='holo';
+        hnEl.style.top='52%';
+        hnEl.innerHTML='<div class="h-frame"><div class="h-tag">NEXT PLAYER</div>'
+          +'<div class="h-main" style="margin-top:6px">다음 선수 입장</div>'
+          +'<div class="h-sub">한 손을 머리 위로 2초 들면 시작해요</div></div>';
+        document.body.appendChild(hnEl);
+      }
+      hnEl.classList.toggle('on',!!on);
+    }catch(e){}
+  }
+  function hnStart(kind){
+    clearTimeout(hn.timer); hn.phase='result';
+    hn.timer=setTimeout(function(){
+      if(hn.phase!=='result' || rec || wall.on) return;
+      hideScore();
+      if(kind==='wall') $('wallEnd').hidden=true;
+      $('lobby').hidden=false;
+      hn.phase='wait'; hnTick();
+    }, SCORE_MS);
+  }
+  function hnStop(){ clearTimeout(hn.timer); hn.timer=null; hn.phase='off'; hnPrompt(false); }
+  function hnTick(){
+    if(hn.phase!=='wait') return;
+    var ok=false; try{ ok=hsCanStart(); }catch(e){}
+    hnPrompt(ok && !hsT0);   
+  }
+  
+  document.addEventListener('pointerdown', function(e){
+    if(hn.phase==='wait'){ hn.phase='off'; hnPrompt(false); }
+    try{ var A=beep.ac||(beep.ac=new (window.AudioContext||window.webkitAudioContext)()); if(A.state==='suspended') A.resume(); }catch(er){}
+  }, true);
+
+  var scoreData=null;
+  function scoreMsg(sc){ return sc>=90?'최고예요!':(sc>=75?'잘했어요!':(sc>=50?'조금만 더!':'다시 도전!')); }
+  function scoreCol(sc){ return sc>=75?'#86EFAC':(sc>=50?'#FFD166':'#FB923C'); }
+  function scorePerson(r, t, k){
+    var s=t.sum.stats, sc=s.score, R=46, C=2*Math.PI*R, col=scoreCol(sc);
+    var who= r.mode===2 ? '<div class="sc-who k'+k+'">'+(k===0?'왼쪽 사람':'오른쪽 사람')+'</div>' : '';
+    function bar(lbl,a,b){ var pc=b?Math.round(100*a/b):0; return '<div class="sc-bar"><span>'+lbl+'</span><span class="tr"><b data-w="'+pc+'"></b></span><span class="v">'+a+'/'+b+'</span></div>'; }
+    var strip='', d=0;
+    t.sum.rows.forEach(function(row){
+      if(row.k.n===0 || row.k.opt) return;
+      var c= !row.stop ? '' : ((row.jd.ok.dir && row.jd.ok.tech) ? 'ok' : 'ng');
+      strip+='<i class="'+c+'" style="animation-delay:'+(0.25+d*0.05).toFixed(2)+'s">'+row.k.n+'</i>'; d++;
+    });
+    return '<div class="sc-p">'+who
+      +'<div class="sc-ring"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="'+R+'" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="7"/>'
+      +'<circle class="sc-arc" cx="50" cy="50" r="'+R+'" fill="none" stroke="'+col+'" stroke-width="7" stroke-linecap="round" stroke-dasharray="'+C.toFixed(1)+'" stroke-dashoffset="'+C.toFixed(1)+'" data-c="'+C.toFixed(1)+'" data-v="'+sc+'"/></svg>'
+      +'<div class="sc-num"><span class="sc-n" data-v="'+sc+'">0</span><small>점</small></div></div>'
+      +'<div class="sc-msg" style="color:'+col+'">'+scoreMsg(sc)+'</div>'
+      +'<div class="sc-bars">'+bar('동작 맞음',s.full,s.n)+bar('방향',s.dir,s.n)+bar('기술',s.tech,s.n)+'</div>'
+      +'<div class="sc-strip">'+strip+'</div></div>';
+  }
+  function showScore(r, res, saved){
+    scoreData={r:r, res:res, saved:saved};
+    var name=(PSM.POOMSAE_NAME&&PSM.POOMSAE_NAME[r.poomsae])||'';
+    var roleName={master:'관장 시범', student:'학생 시험', pair:'2인 모드'}[r.role]||'';
+    var h='<div class="sc-box'+(r.mode===2?' two':'')+'"><div class="sc-tag">POOMSAE SCORE</div><div class="sc-title">'+esc(name)+(roleName?' · '+roleName:'')+'</div><div class="sc-cols">';
+    for(var k=0;k<r.mode;k++) h+=scorePerson(r, res.tracks[k], k);
+    h+='</div>';
+    if(r.mode===2){
+      var sy=res.sync||[], good=sy.filter(function(x){ return x.grade==='PERFECT'||x.grade==='GOOD'; }).length;
+      h+='<div class="sc-sync">싱크 '+(sy.length?Math.round(100*good/sy.length):0)+'% · 박자 맞은 동작 '+good+'/'+sy.length+'</div>';
+    }
+    h+='<div class="sc-foot">'+(saved===false?'<span class="x">이 기기에 저장 실패 — 눌러서 기록을 내려받아 두세요</span> · ':'')+'누르면 자세히</div>'
+      +'<div class="sc-time" style="animation-duration:'+SCORE_MS+'ms"></div></div>';
+    var el=$('scoreCard'); el.innerHTML=h; el.hidden=false;
+    $('lobby').hidden=true;
+    animateScore(el);
+    hnStart('score');
+  }
+  function animateScore(el){
+    var t0=performance.now(), D=1100;
+    var arcs=el.querySelectorAll('.sc-arc'), nums=el.querySelectorAll('.sc-n');
+    setTimeout(function(){ var bs=el.querySelectorAll('.sc-bar b'); for(var i=0;i<bs.length;i++) bs[i].style.width=bs[i].getAttribute('data-w')+'%'; }, 60);
+    (function step(){
+      if(el.hidden) return;
+      var p=Math.min(1,(performance.now()-t0)/D), e=1-Math.pow(1-p,3);
+      for(var i=0;i<arcs.length;i++){ var C=+arcs[i].getAttribute('data-c'), v=+arcs[i].getAttribute('data-v'); arcs[i].setAttribute('stroke-dashoffset',(C*(1-e*v/100)).toFixed(1)); }
+      for(var j=0;j<nums.length;j++) nums[j].textContent=Math.round(e*(+nums[j].getAttribute('data-v')));
+      if(p<1) requestAnimationFrame(step);
+    })();
+  }
+  function hideScore(){ var el=$('scoreCard'); if(el){ el.hidden=true; el.innerHTML=''; } }
+  $('scoreCard').addEventListener('click', function(){
+    if(!scoreData) return;
+    hnStop(); hideScore();
+    showResult(scoreData.r, scoreData.res, scoreData.saved);
+    hn.phase='wait';   
+  });
+
   var curRes=null;
   function showResult(r, res, saved){
     curRes={r:r, res:res, tab:0};
@@ -1672,7 +1909,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     if(b.dataset.tab){ curRes.tab=+b.dataset.tab; renderResult(); return; }
     var act=b.dataset.act;
     if(act==='close'){ $('mResult').hidden=true; $('lobby').hidden=false; }
-    if(act==='again'){ $('mResult').hidden=true; $('lobby').hidden=false; startSession(); }
+    if(act==='again'){ $('mResult').hidden=true; $('lobby').hidden=false; startFromLobby(); }
     if(act==='dl') download(curRes.r, curRes.res);
   });
 
