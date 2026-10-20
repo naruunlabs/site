@@ -164,7 +164,7 @@ html.embed #footBox{right:28px;top:24px}
       {n:21, name:'바로 (나란히서기)', hand:'', dir:'F', turn:180} ] }
   };
   const spec=SPECS[P]; if(!spec) return;
-  const TIME={SUB:420, SUB_HOLD:140,     ATTN:1800, ATTN_TO_READY:2400, READY:2600, TRANS:950, TURN_BIG:1150, KICK:1800, HOLD:800, LAST_HOLD:1100, BARO:2000, END_HOLD:1500, FPS:30};
+  const TIME={SUB:420, SUB_HOLD:140,     ATTN:1800, ATTN_TO_READY:2400, READY:2600, TRANS:950, TURN_BIG:1150, KICK:1800, HOLD:1150, LAST_HOLD:1350,    BARO:2000, END_HOLD:1500, FPS:30};
   const YAW={F:0, L:Math.PI/2, B:Math.PI, R:-Math.PI/2};
   
   const mv=spec.moves.map(m=>Object.assign({},m)); let t=0, yaw=0;
@@ -1150,13 +1150,19 @@ function fitCall(){ const c=el('call'); c.style.fontSize=''; let fs=parseFloat(g
 addEventListener('resize',()=>{ fitMoveName(); fitCall(); });
 let lastN=-1, lastCall='';
 
-function callAt(t,m){
-  const first=MV[0], last=MV[MV.length-1];
-  if(D.attn && t<first.t0-350) return '차렷';
-  if(m===first) return t>=first.t1-900 ? '시작' : '준비';
-  if(m===last && t>=last.t1-450) return '쉬어';
-  if(m===last) return '바로';
-  return COUNT[m.n]+(m.n===NCNT?'! 기합!':(m.n>0?'!':''));
+const CALL_LEAD=650, CALL_START_GAP=800;   
+let CALLS=null;
+function buildCalls(){
+  const first=MV[0], last=MV[MV.length-1], ev=[[0,'차렷']];
+  ev.push([D.attn ? Math.max(0,D.attn-CALL_LEAD) : 0, '준비']);
+  ev.push([first.t1-CALL_LEAD-CALL_START_GAP, '시작']);
+  for(let j=1;j<MV.length;j++){ const m=MV[j], pv=MV[j-1]; if(m.n===pv.n) continue;
+    ev.push([pv.t1-CALL_LEAD, m===last ? '바로' : COUNT[m.n]+(m.n===NCNT?'! 기합!':'!')]); }
+  ev.push([D.outro ? D.outro.a0-CALL_LEAD : last.t1-450, '쉬어']);
+  return ev.sort((a,b)=>a[0]-b[0]); }
+function callAt(t){
+  if(!CALLS) CALLS=buildCalls();
+  let c=CALLS[0][1]; for(const [tt,txt] of CALLS){ if(t>=tt) c=txt; else break; } return c;
 }
 let soundOn=true, voiceKo=null;
 function pickVoice(){ try{ const vs=speechSynthesis.getVoices(); voiceKo=vs.find(v=>/^ko/i.test(v.lang))||null; }catch(e){} }
@@ -1169,7 +1175,7 @@ function say(txt){
 }
 function ui(t){
   const m=moveAt(t);
-  const ct=callAt(t,m);
+  const ct=callAt(t);
   if(ct!==lastCall){ lastCall=ct; const c=el('call'); c.textContent=ct; fitCall(); c.classList.add('pop'); setTimeout(()=>c.classList.remove('pop'),140); if(playing) say(ct); }
   if(m.n!==lastN){ lastN=m.n;
     el('mvN').textContent= m.n===0?'준비': m.n===NLAST?'바로':m.n+'번'; setMoveName(m.label||m.name);
