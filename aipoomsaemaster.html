@@ -363,16 +363,24 @@ body.group-running #groupLesson{display:block}
       <button type="button" class="on" data-v="wall">벽 통과<small>동작 모양 구멍</small></button>
       <button type="button" disabled>더 준비 중<small>순발력 · 이어달리기</small></button>
     </div>
-    <div class="lb-label">벽 속도 · 10개</div>
+    <div class="lb-label">종류 · 벽 10개</div>
+    <div class="seg c3" id="segWallKind">
+      <button type="button" data-v="stretch">스트레칭<small>천천히 · 버티기</small></button>
+      <button type="button" data-v="basic">기본동작<small>막기 · 지르기</small></button>
+      <button type="button" data-v="hard">고난도<small>다리까지</small></button>
+    </div>
+    <div class="lb-label">빠르기 · 음악 박자</div>
     <div class="seg c3" id="segWallSpeed">
-      <button type="button" data-v="slow">느리게<small>5초</small></button>
-      <button type="button" data-v="normal">보통<small>4초</small></button>
-      <button type="button" data-v="fast">빠르게<small>3초</small></button>
+      <button type="button" data-v="slow">느리게<small>100</small></button>
+      <button type="button" data-v="normal">보통<small>120</small></button>
+      <button type="button" data-v="fast">빠르게<small>140</small></button>
     </div>
-    <div class="lb-tip">
-      멀리서 벽이 다가옵니다. 벽에 뚫린 <b>동작 모양</b>(기본준비 · 아래막기 · 지르기 · 안막기 · 얼굴막기)대로 서 있으면 <b>통과</b>, 아니면 <b>쿵!</b><br>
-      카메라 <b>정면 3~4m</b>에서 전신이 보이게 서세요. 통과할 때마다 벽이 조금씩 빨라집니다.
+    <div class="lb-label">음악</div>
+    <div class="seg c2" id="segWallMusic">
+      <button type="button" data-v="on">켜기<small>박자에 맞춰 벽이 옴</small></button>
+      <button type="button" data-v="off">끄기<small>박자 소리만</small></button>
     </div>
+    <div class="lb-tip" id="wallTip"></div>
   </div>
   </div>
 
@@ -489,7 +497,7 @@ body.group-running #groupLesson{display:block}
 <script id="psm-core">
 
 var PSM = (function(){
-  var VERSION = '1.1.5';   
+  var VERSION = '1.1.6';   
 
   var DEFAULT_CFG = {
     SMOOTH: 0.5,        
@@ -918,7 +926,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
   function fmtT(ms){ var s=Math.max(0,Math.floor(ms/1000)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
 
-  var pref=Object.assign({role:'student', soloWho:'student', wallSpeed:'normal', cam:'user', model:'full', feedback:'off', poomsae:'tg1',
+  var pref=Object.assign({role:'student', soloWho:'student', wallSpeed:'normal', wallKind:'basic', wallMusic:'on', cam:'user', model:'full', feedback:'off', poomsae:'tg1',
     gLevel:'beginner', gKiai:'0', gSpeed:'1', gView:'free', gFoot:'on', gSound:'on', gLoop:'off', gLoopA:'1', gLoopB:'3'}, lsGet(LS_PREF,{}));
   if(['beginner','intermediate','advanced'].indexOf(pref.gLevel)<0) pref.gLevel='beginner';
   if(!/^[0-4]$/.test(pref.gKiai)) pref.gKiai='0';
@@ -1423,48 +1431,109 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
       {tech:'얼굴막기',  name:'왼팔 얼굴막기',   say:'얼굴막기', arms:[[-.88,-1.55,.34,-1.9],[.78,-.34,.44,-.02]]},
       {tech:'얼굴막기',  name:'오른팔 얼굴막기',  say:'얼굴막기', arms:[[-.78,-.34,-.44,-.02],[.88,-1.55,-.34,-1.9]]}
     ],
-    SPEED:{slow:5000, normal:4000, fast:3000},   
-    FASTER:0.96,          
-    MIN_MS:2200,
-    GAP_MS:1300,          
-    JUDGE_MS:600,         
-    PASS_RATIO:0.5,
-    COUNT:10
+
+    BPM:{slow:100, normal:120, fast:140},
+    INTRO_BEATS:4,
+    SPEEDUP_FROM:6, SPEEDUP_BEATS:2,
+    COUNT:10,
+
+    SHAPE_TOL:38,
+    MUSIC:{100:['100bpm_Kitchen_Counter_Bounce.mp3','100bpm_Two_Feet_Landing.mp3'],
+           120:['120bpm_Boundless_Steps.mp3','120bpm_jump-iron-pace.mp3','120bpm_jump-final-rep.mp3'],
+           140:['140bpm_Rising_Motion.mp3','140bpm_Unbroken_Pace.mp3']},   
+    MUSIC_VOL:0.7
   };
+
+  var WA={   
+    UP:[[-.5,-1.6,-.55,-2.2],[.5,-1.6,.55,-2.2]],
+    T:[[-.95,-.98,-1.5,-.98],[.95,-.98,1.5,-.98]],
+    HIPS:[[-.8,-.55,-.32,-.12],[.8,-.55,.32,-.12]],
+    PRAY:[[-.5,-1.62,-.06,-2.12],[.5,-1.62,.06,-2.12]],
+    GUARD:[[-.62,-.5,-.26,-1.15],[.62,-.5,.26,-1.15]]
+  };
+  var WL={ STAND:[[-.3,.95,-.4,1.9],[.3,.95,.4,1.9]], WIDE:[[-.8,.85,-1.25,1.65],[.8,.85,1.25,1.65]], HORSE:[[-.72,.5,-.74,1.35],[.72,.5,.74,1.35]] };
+  var WALL_KINDS={
+    stretch:{label:'스트레칭', cycle:14, gap:3, judgeMs:1000, ratio:0.6, speedup:false, moves:[
+      {name:'만세',              arms:WA.UP},
+      {name:'팔 옆으로 벌리기',    arms:WA.T},
+      {name:'왼쪽 옆구리 늘리기',   arms:[WA.HIPS[0],[.5,-1.65,-.15,-2.1]]},
+      {name:'오른쪽 옆구리 늘리기',  arms:[[-.5,-1.65,.15,-2.1],WA.HIPS[1]]},
+      {name:'다리 벌리고 손 허리',  arms:WA.HIPS, legs:WL.WIDE},
+      {name:'나무 자세 (왼쪽)',    arms:WA.PRAY, legs:[[-.75,.5,-.02,.88],WL.STAND[1]]},
+      {name:'나무 자세 (오른쪽)',   arms:WA.PRAY, legs:[WL.STAND[0],[.75,.5,.02,.88]]}
+    ]},
+    basic:{label:'기본동작', cycle:10, gap:2, judgeMs:600, ratio:0.5, speedup:true, moves:WALL.MOVES},
+    hard:{label:'고난도', cycle:10, gap:2, judgeMs:600, ratio:0.5, speedup:true, moves:[
+      {name:'옆차기 (왼쪽)',       arms:WA.GUARD, legs:[[-.85,-.1,-1.6,-.26],WL.STAND[1]], check:['legs']},
+      {name:'옆차기 (오른쪽)',      arms:WA.GUARD, legs:[WL.STAND[0],[.85,-.1,1.6,-.26]], check:['legs']},
+      {name:'주춤서기 얼굴막기 (왼팔)',  arms:[[-.88,-1.55,.34,-1.9],[.78,-.34,.44,-.02]], legs:WL.HORSE},
+      {name:'주춤서기 얼굴막기 (오른팔)', arms:[[-.78,-.34,-.44,-.02],[.88,-1.55,-.34,-1.9]], legs:WL.HORSE},
+      {name:'학다리 (왼쪽 무릎)',    arms:WA.T, legs:[[-.62,-.04,-.56,.72],WL.STAND[1]]},
+      {name:'학다리 (오른쪽 무릎)',   arms:WA.T, legs:[WL.STAND[0],[.62,-.04,.56,.72]]}
+    ]}
+  };
+  function wallKind(){ return WALL_KINDS[pref.wallKind] || WALL_KINDS.basic; }
   var wall={on:false};
-  function wallTarget(){ return WALL.MOVES[Math.floor(Math.random()*WALL.MOVES.length)]; }
-  function wallNext(now){
-    var W=wall, prev=W.move, m;
-    do{ m=wallTarget(); }while(prev && m.name===prev.name && WALL.MOVES.length>1);
-    W.move=m; W.t0=now; W.n++; W.hist=[]; W.state='come'; W.res=null;
+  function wallTarget(){ var L=wall.kind.moves; return L[Math.floor(Math.random()*L.length)]; }
+  function wallBeatAt(b){ return wall.beat0 + b*wall.T; }
+  function wallNext(){
+    var W=wall, prev=W.move, m, K=W.kind;
+    do{ m=wallTarget(); }while(prev && m.name===prev.name && K.moves.length>1);
+    var cyc=K.cycle - ((K.speedup && W.n+1>=WALL.SPEEDUP_FROM) ? WALL.SPEEDUP_BEATS : 0);
+    W.move=m; W.n++; W.hist=[]; W.res=null; if(W.state!=='intro') W.state='come';
+    W.t0=wallBeatAt(W.sb); W.dur=(cyc-K.gap)*W.T; W.arriveBeat=W.sb+cyc-K.gap; W.sb+=cyc; W.nextAt=wallBeatAt(W.sb);
     
     $('wallMove').textContent=''; $('wallInfo').textContent=W.n+' / '+W.total+' · 통과 '+W.pass;
     beep(520,70,0.08);
   }
+  
+  var wallBufs={};
+  function wallAudio(){ try{ var A=beep.ac||(beep.ac=new (window.AudioContext||window.webkitAudioContext)()); if(A.state==='suspended') A.resume(); return A; }catch(e){ return null; } }
+  function wallLoadMusic(bpm){
+    var list=WALL.MUSIC[bpm]||[], f=list[Math.floor(Math.random()*list.length)], A=wallAudio();
+    if(!f || !A) return Promise.resolve(null);
+    if(wallBufs[f]) return Promise.resolve(wallBufs[f]);
+    return fetch('bgm/'+f).then(function(r){ if(!r.ok) throw 0; return r.arrayBuffer(); })
+      .then(function(b){ return new Promise(function(ok,no){ A.decodeAudioData(b, ok, no); }); })
+      .then(function(buf){ wallBufs[f]=buf; return buf; }).catch(function(){ return null; });
+  }
+  function wallStopMusic(){ try{ if(wall.src){ wall.src.stop(); wall.src.disconnect(); } }catch(e){} if(wall) wall.src=null; }
   function startWall(){
-    var gc=$('wallCv'); wall={on:true, n:0, pass:0, combo:0, best:0, total:WALL.COUNT,
-      dur:WALL.SPEED[pref.wallSpeed]||WALL.SPEED.normal, move:null, hist:[], state:'gap', t0:0, body:null, fx:null};
+    var gc=$('wallCv'), K=wallKind(), bpm=WALL.BPM[pref.wallSpeed]||WALL.BPM.normal;
+    wall={on:true, n:0, pass:0, combo:0, best:0, total:WALL.COUNT, kind:K, kindKey:WALL_KINDS[pref.wallKind]?pref.wallKind:'basic', bpm:bpm, T:60000/bpm,
+      move:null, hist:[], state:'wait', t0:0, dur:1, body:null, fx:null, src:null, sb:WALL.INTRO_BEATS, beat0:0, tickB:-1, arriveBeat:0, nextAt:0};
     $('lobby').hidden=true; $('btnCancel').hidden=false; $('wallHud').hidden=false; $('wallEnd').hidden=true; gc.hidden=false;
     document.body.classList.add('wall-running');
     try{ navigator.wakeLock && navigator.wakeLock.request('screen').then(function(w){ wakeLock=w; }).catch(function(){}); }catch(e){}
-    phaseMessage('벽 통과','벽에 뚫린 모양대로 동작을 하세요');
-    setTimeout(function(){ if(!wall.on) return; $('countdown').hidden=true; wallNext(performance.now()); }, 1600);
+    $('wallBar').style.width='0%';
+    phaseMessage('벽 통과 · '+K.label,'벽에 뚫린 모양대로 서세요');
+    var W=wall, go=function(buf){
+      if(!wall.on || wall!==W) return;
+      var A=wallAudio(), lead=0.15;
+      if(buf && A && pref.wallMusic!=='off'){
+        try{ var src=A.createBufferSource(), g=A.createGain(); src.buffer=buf; src.loop=true; g.gain.value=WALL.MUSIC_VOL; src.connect(g); g.connect(A.destination); src.start(A.currentTime+lead); W.src=src; }catch(e){ W.src=null; }
+      }
+      W.beat0=performance.now()+lead*1000; W.state='intro';
+      wallNext();
+    };
+    if(pref.wallMusic==='off') setTimeout(function(){ go(null); }, 400);
+    else wallLoadMusic(bpm).then(go);
     requestAnimationFrame(wallLoop);
   }
   function stopWall(showLobby){
     if(!wall.on) return;
-    wall.on=false; document.body.classList.remove('wall-running');
+    wall.on=false; wallStopMusic(); document.body.classList.remove('wall-running');
     $('wallHud').hidden=true; $('wallCv').hidden=true; $('btnCancel').hidden=true; $('countdown').hidden=true;
     try{ wakeLock && wakeLock.release(); }catch(e){} wakeLock=null;
     try{ if(window.speechSynthesis) speechSynthesis.cancel(); }catch(e){}
     if(showLobby!==false){ $('wallEnd').hidden=true; $('lobby').hidden=false; }
   }
   function finishWall(){
-    var W=wall, key='psm_wall_best_'+(pref.wallSpeed||'normal'), best=0;
+    var W=wall, key='psm_wall_best_'+W.kindKey+'_'+(pref.wallSpeed||'normal'), best=0;
     try{ best=+localStorage.getItem(key)||0; if(W.pass>best) localStorage.setItem(key,String(W.pass)); }catch(e){}
     stopWall(false);
     $('weScore').textContent=W.pass+' / '+W.total;
-    $('weSub').textContent='최고 연속 '+W.best+' · '+(W.pass>best?'오늘 최고 기록!':'이 기기 최고 '+Math.max(best,W.pass)+'개');
+    $('weSub').textContent=W.kind.label+' · 최고 연속 '+W.best+' · '+(W.pass>best?'오늘 최고 기록!':'이 기기 최고 '+Math.max(best,W.pass)+'개');
     $('wallEnd').hidden=false; hnStart('wall');
     beep(988,140,0.2); setTimeout(function(){ beep(1480,260,0.2); },150);
   }
@@ -1472,21 +1541,53 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   function wallPose(list){
     var W=wall, o=list[0];
     if(!o){ W.body=null; return; }
-    var lm=o.lm, f=PSM.feat(lm, o.wl, srcW, srcH);
-    var cls= f ? PSM.classify(PSM.aggregate([f]), cfg) : null;
-    if(W.state==='come') W.hist.push({t:performance.now(), tech:cls?cls.tech:null});
+    var lm=o.lm;
+    if(W.state==='come' && W.move){
+      if(W.move.tech){
+        var f=PSM.feat(lm, o.wl, srcW, srcH), cls= f ? PSM.classify(PSM.aggregate([f]), cfg) : null;
+        W.hist.push({t:performance.now(), ok: !!cls && cls.tech===W.move.tech});
+      } else {
+        var sm=wallShape(lm, W.move);
+        if(sm!=null) W.hist.push({t:performance.now(), ok:sm});
+      }
+    }
     if(lm[23*4+3]>0.3 && lm[11*4+3]>0.3){
       W.body={hx:(screenX(lm[23*4])+screenX(lm[24*4]))/2, hy:(lm[23*4+1]+lm[24*4+1])/2,
               sy:(lm[11*4+1]+lm[12*4+1])/2};
     }
   }
+
+  function wallShape(lm, mv){
+    var mir=(pref.cam==='user') ? 1 : -1;
+    function X(i){ return screenX(lm[i*4])*srcW; } function Y(i){ return lm[i*4+1]*srcH; } function V(i){ return lm[i*4+3]; }
+    var sL= X(11)<=X(12) ? [11,13,15] : [12,14,16], sR= sL[0]===11 ? [12,14,16] : [11,13,15];
+    var hL= X(23)<=X(24) ? [23,25,27] : [24,26,28], hR= hL[0]===23 ? [24,26,28] : [23,25,27];
+    function seg(i,j, tx1,ty1,tx2,ty2){
+      if(V(i)<0.35 || V(j)<0.35) return null;
+      var a=Math.atan2(Y(j)-Y(i), X(j)-X(i)), b=Math.atan2(ty2-ty1, (tx2-tx1)*mir), d=Math.abs(a-b)%(2*Math.PI); if(d>Math.PI) d=2*Math.PI-d;
+      return d*180/Math.PI;
+    }
+    var chk=mv.check || (mv.legs ? ['arms','legs'] : ['arms']), ds=[];
+    if(chk.indexOf('arms')>=0){
+      var A=mv.arms;
+      ds.push(seg(sL[0],sL[1], -.4,-.98, A[0][0],A[0][1]), seg(sL[1],sL[2], A[0][0],A[0][1], A[0][2],A[0][3]),
+              seg(sR[0],sR[1],  .4,-.98, A[1][0],A[1][1]), seg(sR[1],sR[2], A[1][0],A[1][1], A[1][2],A[1][3]));
+    }
+    if(chk.indexOf('legs')>=0){
+      var L=mv.legs||WL.STAND;
+      ds.push(seg(hL[0],hL[1], -.17,0, L[0][0],L[0][1]), seg(hL[1],hL[2], L[0][0],L[0][1], L[0][2],L[0][3]),
+              seg(hR[0],hR[1],  .17,0, L[1][0],L[1][1]), seg(hR[1],hR[2], L[1][0],L[1][1], L[1][2],L[1][3]));
+    }
+    if(ds.some(function(x){ return x==null; })) return null;
+    return ds.every(function(x){ return x<=WALL.SHAPE_TOL; });
+  }
   function wallJudge(now){
-    var W=wall, h=W.hist.filter(function(x){ return now-x.t<=WALL.JUDGE_MS; });
-    var hit=h.filter(function(x){ return x.tech===W.move.tech; }).length;
-    var ok= h.length>=2 && hit/h.length>=WALL.PASS_RATIO;
+    var W=wall, K=W.kind, h=W.hist.filter(function(x){ return now-x.t<=K.judgeMs; });
+    var hit=h.filter(function(x){ return x.ok; }).length;
+    var ok= h.length>=2 && hit/h.length>=K.ratio;
     if(TEST && window.__wallForce!=null) ok=!!window.__wallForce;   
     W.res=ok; W.state='hit'; W.th=now;
-    if(ok){ W.pass++; W.combo++; W.best=Math.max(W.best,W.combo); W.dur=Math.max(WALL.MIN_MS, W.dur*WALL.FASTER); beep(1320,90,0.2); setTimeout(function(){ beep(1760,140,0.18); },90); }
+    if(ok){ W.pass++; W.combo++; W.best=Math.max(W.best,W.combo); beep(1320,90,0.2); setTimeout(function(){ beep(1760,140,0.18); },90); }
     else { W.combo=0; beep(140,320,0.35); }
     $('wallInfo').textContent=W.n+' / '+W.total+' · 통과 '+W.pass+(W.combo>=2?' · '+W.combo+'연속':'');
   }
@@ -1498,27 +1599,33 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     if(gc.width!==cw||gc.height!==ch){ gc.width=cw; gc.height=ch; }
     var g=gc.getContext('2d'); g.clearRect(0,0,cw,ch);
     if(!W.move) return;
+    if(W.state==='intro'){
+      if(now>=wallBeatAt(WALL.INTRO_BEATS-1)) $('countdown').hidden=true;
+      if(now<W.t0) return;
+      W.state='come';
+    }
+    
+    if(!W.src && W.state==='come'){ var bi=Math.floor((now-W.beat0)/W.T); if(bi!==W.tickB && bi>=W.arriveBeat-3 && bi<W.arriveBeat){ W.tickB=bi; beep(880,40,0.06); } }
     var p=(now-W.t0)/W.dur;   
     if(W.state==='come' && p>=1) wallJudge(now);
-    if(W.state==='hit' && now-W.th>900){
-      W.state='gap'; W.move=null;
-      if(W.n>=W.total){ finishWall(); return; }
-      setTimeout(function(){ if(wall.on) wallNext(performance.now()); }, Math.max(0,WALL.GAP_MS-900));
-      return;
+    var fade=Math.min(900, Math.max(300, W.nextAt-(W.th||now)-60));
+    if(W.state==='hit' && now>=W.nextAt-30){
+      if(W.n>=W.total){ W.move=null; finishWall(); return; }
+      wallNext(); return;
     }
     
     var sc=Math.max(cw/srcW, ch/srcH), ox=(cw-srcW*sc)/2, oy=(ch-srcH*sc)/2;
     var B=W.body, hx=cw/2, hy=ch*0.62, T=ch*0.2;
     if(B){ hx=B.hx*srcW*sc+ox; hy=B.hy*srcH*sc+oy; T=Math.max(ch*0.08,(B.hy-B.sy)*srcH*sc); }
     
-    var pp=W.state==='hit' ? (W.res ? 1+(now-W.th)/900*0.8 : 1) : Math.min(1,p);
+    var pp=W.state==='hit' ? (W.res ? 1+(now-W.th)/fade*0.8 : 1) : Math.min(1,p);
     var z=1/(0.12+0.88*pp*pp);           
     var s=1/z;
     var vx=cw/2, vy=ch*0.38, cx=vx+(hx-vx)*s, cy=vy+(hy-vy)*s;
     var shake=(W.state==='hit' && !W.res) ? Math.sin((now-W.th)/22)*14*d*Math.max(0,1-(now-W.th)/600) : 0;
     cx+=shake;
     var t=T*s, ww=cw*1.9*s, wh=ch*1.9*s;
-    var alpha=W.state==='hit' ? (W.res ? Math.max(0,1-(now-W.th)/900) : Math.max(0,1-(now-W.th)/900)*0.95) : Math.min(0.94, 0.35+p*0.7);
+    var alpha=W.state==='hit' ? (W.res ? Math.max(0,1-(now-W.th)/fade) : Math.max(0,1-(now-W.th)/fade)*0.95) : Math.min(0.94, 0.35+p*0.7);
     
     var oc=wallLoop.oc||(wallLoop.oc=document.createElement('canvas')); if(oc.width!==cw||oc.height!==ch){ oc.width=cw; oc.height=ch; }
     var o=oc.getContext('2d'); o.clearRect(0,0,cw,ch);
@@ -1542,7 +1649,8 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
       cap(0,-1.12,0,-0.98,0.3);
       ctx2.beginPath(); var a=P(-.4,-1),b=P(.4,-1),c=P(.26,.05),e=P(-.26,.05); ctx2.moveTo(a[0],a[1]); ctx2.lineTo(b[0],b[1]); ctx2.lineTo(c[0],c[1]); ctx2.lineTo(e[0],e[1]); ctx2.closePath(); ctx2.fill(); if(PAD){ ctx2.lineWidth=PAD*2*t; ctx2.stroke(); }
       cap(-.38,-1,-.42,-.98,0.26); cap(.38,-1,.42,-.98,0.26);
-      cap(-.17,0,-.3,.95,0.34); cap(-.3,.95,-.4,1.9,0.28); cap(.17,0,.3,.95,0.34); cap(.3,.95,.4,1.9,0.28);
+      var LG=W.move.legs||WL.STAND;
+      cap(-.17,0,LG[0][0],LG[0][1],0.34); cap(LG[0][0],LG[0][1],LG[0][2],LG[0][3],0.28); cap(.17,0,LG[1][0],LG[1][1],0.34); cap(LG[1][0],LG[1][1],LG[1][2],LG[1][3],0.28);
       var A=W.move.arms;
       cap(-.4,-.98,A[0][0],A[0][1],0.22); cap(A[0][0],A[0][1],A[0][2],A[0][3],0.2);
       cap(.4,-.98,A[1][0],A[1][1],0.22); cap(A[1][0],A[1][1],A[1][2],A[1][3],0.2);
@@ -1568,13 +1676,23 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   }
   function wallInit(){
     
-    if(TEST) window.__wallDebug={n:WALL.MOVES.length, last:function(){ if(wall.on) wall.n=wall.total; }, show:function(i,p){ if(!wall.on) return; wall.move=WALL.MOVES[i]; wall.state='come'; wall.hist=[]; wall.dur=1e9; wall.t0=performance.now()-wall.dur*(p==null?0.99:p); $('wallMove').textContent=wall.move.name; }};
+    if(TEST) window.__wallDebug={n:WALL.MOVES.length, last:function(){ if(wall.on) wall.n=wall.total; }, show:function(i,p){ if(!wall.on) return; wall.move=wall.kind.moves[i]; wall.nextAt=1e15; wall.state='come'; wall.hist=[]; wall.dur=1e9; wall.t0=performance.now()-wall.dur*(p==null?0.99:p); $('wallMove').textContent=wall.move.name; }};
     $('weAgain').addEventListener('click', function(){ $('wallEnd').hidden=true; startFromLobby(); });
     $('weLobby').addEventListener('click', function(){ hnStop(); $('wallEnd').hidden=true; $('lobby').hidden=false; });
-    var box=$('segWallSpeed');
-    function paint(){ Array.prototype.forEach.call(box.querySelectorAll('button'), function(b){ b.classList.toggle('on', b.dataset.v===(pref.wallSpeed||'normal')); }); }
-    box.addEventListener('click', function(e){ var b=e.target.closest('button'); if(!b) return; pref.wallSpeed=b.dataset.v; lsSet(LS_PREF,pref); paint(); });
-    paint();
+    [['segWallSpeed','wallSpeed','normal'],['segWallKind','wallKind','basic'],['segWallMusic','wallMusic','on']].forEach(function(a){
+      var box=$(a[0]); if(!box) return;
+      function paint(){ Array.prototype.forEach.call(box.querySelectorAll('button'), function(b){ b.classList.toggle('on', b.dataset.v===(pref[a[1]]||a[2])); }); wallTip(); }
+      box.addEventListener('click', function(e){ var b=e.target.closest('button'); if(!b) return; pref[a[1]]=b.dataset.v; lsSet(LS_PREF,pref); paint(); });
+      paint();
+    });
+  }
+  function wallTip(){
+    var el=$('wallTip'); if(!el) return;
+    el.innerHTML='멀리서 벽이 음악 박자에 맞춰 다가옵니다. 벽에 뚫린 <b>모양</b>대로 서 있으면 <b>통과</b>, 아니면 <b>쿵!</b><br>'
+      +(pref.wallKind==='stretch' ? '스트레칭 · 천천히 오고, 그 자세로 <b>1초 버티면</b> 통과 (만세 · 팔 벌리기 · 옆구리 · 다리 벌리고 손 허리 · 나무 자세)'
+       : pref.wallKind==='hard' ? '고난도 · 옆차기 자세 · 주춤서기 얼굴막기 · 학다리 — 다리 모양까지 봅니다'
+       : '기본동작 · 기본준비 · 아래막기 · 지르기 · 안막기 · 얼굴막기')
+      +'<br>카메라 <b>정면 3~4m</b>에서 전신이 보이게 서세요. 뒤 절반은 벽이 조금 빨라집니다.';
   }
 
   var cdTimer=null, wakeLock=null, cueTimer=null, cueToken=0;
