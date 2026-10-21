@@ -284,6 +284,17 @@ table.t input{width:100%}
   #hud{width:min(420px,62vw)}
   .title-block{max-width:60vw}
 }
+
+#groupLesson{display:none;position:fixed;z-index:24;left:16px;top:calc(var(--sat) + 125px);bottom:calc(var(--sab) + 160px);width:clamp(220px,22vw,285px);padding:16px;background:rgba(8,17,31,.86);border:1px solid rgba(245,184,41,.18);border-radius:14px;overflow:auto;scrollbar-width:thin}
+body.group-running #groupLesson{display:block}
+#groupLesson .gl-title{font-size:22px;font-weight:900;margin-bottom:12px}
+#groupLesson .lb-label{display:block;margin-top:16px;margin-bottom:6px}
+#groupLesson .seg button{padding:8px 4px;font-size:14px}
+#groupLesson .loop-row{grid-template-columns:1fr auto;gap:6px}
+#groupLesson .gl-audio{display:flex;align-items:center;gap:8px}
+#groupLesson .gl-audio select{min-width:0}
+#groupLesson #gKiaiPlay{padding:9px;color:#ffe3a0;white-space:nowrap;border:1px solid rgba(245,184,41,.3);border-radius:8px}
+@media(max-width:700px){#groupLesson{left:8px;top:calc(var(--sat) + 115px);width:190px;padding:10px;bottom:calc(var(--sab) + 170px)}#groupLesson .gl-title{font-size:18px}#groupLesson .lb-select{font-size:13px}}
 </style>
 </head>
 <body>
@@ -396,18 +407,14 @@ table.t input{width:100%}
       <button type="button" data-v="1.5">1.5배<small>숫자 대신 호루라기</small></button>
       <button type="button" data-v="2">2배<small>숫자 대신 호루라기</small></button>
     </div>
-    
-    <div class="lb-label">구간 반복</div>
-    <div class="seg c2" id="segGLoop">
-      <button type="button" data-v="off">끄기<small>처음부터 끝까지</small></button>
-      <button type="button" data-v="on">켜기<small>아래 구간만 되풀이</small></button>
-    </div>
-    <div class="loop-row" id="gLoopRow"><select class="lb-select" id="selLoopA" aria-label="반복 시작 동작"></select><span>부터</span><select class="lb-select" id="selLoopB" aria-label="반복 끝 동작"></select><span>까지</span></div>
+    <div class="lb-label">수업 단계</div>
+    <div class="seg c3" id="segGLevel"><button type="button" data-v="beginner">초급<small>회전 화살표</small></button><button type="button" data-v="intermediate">중급<small>화살표 없이</small></button><button type="button" data-v="advanced">고급<small>화살표 없이</small></button></div>
+    <div class="lb-label">기합</div><select class="lb-select" id="selGKiai" aria-label="기합 선택"><option value="0">기합1</option><option value="1">기합2</option><option value="2">기합3</option><option value="3">기합4</option><option value="4">기합5</option></select>
     <div class="lb-label">시점</div>
     <div class="lb-tip" style="margin-top:0">자유 시점 · 화면을 끌면 돌아가고, 휠·두 손가락으로 크게·작게. 진행 중 <b>↺ 뒷모습</b>을 누르면 로봇 뒤에서 따라 보는 시점으로 바로 갑니다.</div>
     <div class="lb-label">구령 소리</div>
     <div class="seg c2" id="segGSound">
-      <button type="button" data-v="on">켜기<small>차렷·준비·시작…바로·쉬어</small></button>
+      <button type="button" data-v="on">켜기<small>차렷·품새 이름·준비·시작…바로·쉬어</small></button>
       <button type="button" data-v="off">끄기</button>
     </div>
     <div class="lb-label">발 위치</div>
@@ -429,6 +436,19 @@ table.t input{width:100%}
   <div id="meter"></div>
   <div id="clock" class="num">0:00</div>
 </div>
+<aside id="groupLesson" aria-label="단체 수업 조작">
+  <div class="gl-title" id="glTitle">태극 1장</div>
+  <label class="lb-label" for="selGLevelLive">수업 단계</label><select class="lb-select" id="selGLevelLive"><option value="beginner">초급</option><option value="intermediate">중급</option><option value="advanced">고급</option></select>
+  <label class="lb-label" for="selGKiaiLive">기합</label><div class="gl-audio"><select class="lb-select" id="selGKiaiLive"><option value="0">기합1</option><option value="1">기합2</option><option value="2">기합3</option><option value="3">기합4</option><option value="4">기합5</option></select><button type="button" id="gKiaiPlay" aria-label="선택한 기합 듣기">듣기</button></div>
+    
+    <div class="lb-label">구간 반복</div>
+    <div class="seg c2" id="segGLoop">
+      <button type="button" data-v="off">끄기</button>
+      <button type="button" data-v="on">켜기</button>
+    </div>
+    <div class="loop-row" id="gLoopRow"><select class="lb-select" id="selLoopA" aria-label="반복 시작 동작"></select><span>부터</span><select class="lb-select" id="selLoopB" aria-label="반복 끝 동작"></select><span>까지</span></div>
+
+</aside>
 <div class="ctrl" id="ctrl">
   <button class="ctrl-link" id="btnCancel" type="button" hidden>취소</button>
   
@@ -459,7 +479,7 @@ table.t input{width:100%}
 <script id="psm-core">
 
 var PSM = (function(){
-  var VERSION = '1.0.7';   
+  var VERSION = '1.1.2';   
 
   var DEFAULT_CFG = {
     SMOOTH: 0.5,        
@@ -874,7 +894,9 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   function fmtT(ms){ var s=Math.max(0,Math.floor(ms/1000)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
 
   var pref=Object.assign({role:'student', soloWho:'student', wallSpeed:'normal', cam:'user', model:'full', feedback:'off', poomsae:'tg1',
-    gSpeed:'1', gView:'free', gFoot:'on', gSound:'on', gLoop:'off', gLoopA:'1', gLoopB:'3'}, lsGet(LS_PREF,{}));
+    gLevel:'beginner', gKiai:'0', gSpeed:'1', gView:'free', gFoot:'on', gSound:'on', gLoop:'off', gLoopA:'1', gLoopB:'3'}, lsGet(LS_PREF,{}));
+  if(['beginner','intermediate','advanced'].indexOf(pref.gLevel)<0) pref.gLevel='beginner';
+  if(!/^[0-4]$/.test(pref.gKiai)) pref.gKiai='0';
   pref.gView='free';   
   
   if(pref.role==='master'||pref.role==='student') pref.soloWho=pref.role;
@@ -1035,11 +1057,34 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     $('optSolo').hidden= modeOf(pref.role)!=='solo';
     $('optGame').hidden= pref.role!=='game';
     document.body.classList.toggle('group-mode', pref.role==='group');
+    $('selGLevelLive').value=pref.gLevel; $('selGKiai').value=pref.gKiai; $('selGKiaiLive').value=pref.gKiai;
+    $('glTitle').textContent=pName;
   }
 
   var groupRunning=false, groupWantPlay=false, groupPaused=false;
   
   function setGroupPaused(b){ groupPaused=b; $('gPausedTag').hidden=!(b && groupRunning); }
+  
+  var groupAudio=null, groupAudioBuffers=[], groupAudioSources=null, groupAudioNode=null, groupAudioGeneration=0;
+  function warmGroupAudio(){
+    try{if(!groupAudio){var AC=window.AudioContext||window.webkitAudioContext;if(AC)groupAudio=new AC();}if(groupAudio&&groupAudio.state==='suspended')groupAudio.resume().catch(function(){});}catch(e){}
+    return groupAudio;
+  }
+  function prepareGroupAudio(sources){
+    if(groupAudioSources)return;
+    var ac=warmGroupAudio();if(!ac)return;groupAudioSources=sources;
+    sources.forEach(function(src,index){try{var bin=atob(src.split(',')[1]),bytes=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+      ac.decodeAudioData(bytes.buffer).then(function(buffer){groupAudioBuffers[index]=buffer;}).catch(function(){});
+    }catch(e){}});
+  }
+  window.__psmStopKiai=function(){groupAudioGeneration++;try{if(groupAudioNode)groupAudioNode.stop();}catch(e){}groupAudioNode=null;};
+  window.__psmKiai=function(index){
+    if(pref.gSound==='off')return;
+    window.__psmStopKiai();var generation=groupAudioGeneration,ac=warmGroupAudio(),buffer=groupAudioBuffers[index];if(!ac||!buffer)return;
+    function play(){if(generation!==groupAudioGeneration || pref.gSound==='off')return;try{if(window.speechSynthesis)speechSynthesis.cancel();var node=ac.createBufferSource(),gain=ac.createGain();node.buffer=buffer;gain.gain.value=.85;node.connect(gain);gain.connect(ac.destination);groupAudioNode=node;node.onended=function(){if(groupAudioNode===node)groupAudioNode=null;node.disconnect();gain.disconnect();};node.start();}catch(e){}}
+    if(ac.state==='suspended')ac.resume().then(play).catch(function(){});else play();
+  };
+
   function robot(){ var f=$('groupFrame'); try{ return f && f.contentWindow && f.contentWindow.__robot; }catch(e){ return null; } }
   function enterGroup(){
     if(stream){ stream.getTracks().forEach(function(t){ t.stop(); }); stream=null; }
@@ -1072,6 +1117,9 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   function applyRobot(){
     var r=robot(); if(!r) return;
     r.rate(parseFloat(pref.gSpeed)||1); r.view('free'); r.foot(pref.gFoot==='on'); if(r.sound) r.sound(pref.gSound==='on');
+    if(r.guidance) r.guidance(pref.gLevel==='beginner');
+    if(r.kiai) r.kiai(pref.gKiai);
+    if(r.audioSources) prepareGroupAudio(r.audioSources());
     applyLoop();
   }
   
@@ -1091,9 +1139,11 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     var L= r && r.loop ? r.loop(on?a:null, on?b:null) : null;
     $('gLoopTag').textContent= on && L ? '⟳ '+a+'번~'+b+'번 반복' : '';
     $('gLoopRow').classList.toggle('off', !on);
+    if(on && L && groupRunning && r.info){var info=r.info(); if(info.t<L.start || info.t>=L.end){r.seek(L.start);if(!groupPaused)r.resume();}}
   }
   function playRobot(r){ if(pref.gLoop==='on' && r.playLoop) r.playLoop(); else r.play(); }
   function startGroup(){
+    warmGroupAudio();
     groupRunning=true; groupWantPlay=true; setGroupPaused(false);
     document.body.classList.add('group-running');
     $('btnStart').hidden=true; $('btnEnd').hidden=false; $('btnEnd').textContent='중지';
@@ -1102,6 +1152,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   }
   function stopGroup(quiet){
     if(!groupRunning && !quiet) return;
+    window.__psmStopKiai();
     groupRunning=false; groupWantPlay=false; setGroupPaused(false);
     var r=robot(); if(r) r.stop();
     document.body.classList.remove('group-running');
@@ -1124,7 +1175,10 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   function boot(){
     if(booted) return; booted=true;
     segInit('segFeedback','feedback'); modeInit(); wallInit(); segInit('segCam','cam'); segInit('segModel','model');
-    segInit('segGSpeed','gSpeed'); segInit('segGFoot','gFoot'); segInit('segGSound','gSound'); segInit('segGLoop','gLoop');
+    segInit('segGLevel','gLevel'); segInit('segGSpeed','gSpeed'); segInit('segGFoot','gFoot'); segInit('segGSound','gSound'); segInit('segGLoop','gLoop');
+    ['selGKiai','selGKiaiLive'].forEach(function(id){$(id).addEventListener('change',function(){pref.gKiai=this.value;lsSet(LS_PREF,pref);updateModeUi();applyRobot();});});
+    $('selGLevelLive').addEventListener('change',function(){pref.gLevel=this.value;lsSet(LS_PREF,pref);Array.prototype.forEach.call($('segGLevel').querySelectorAll('button'),function(b){b.classList.toggle('on',b.dataset.v===pref.gLevel);});applyRobot();});
+    $('gKiaiPlay').addEventListener('click',function(){warmGroupAudio();if(pref.gSound==='off')return;window.__psmKiai(Number(pref.gKiai));});
     $('segGLoop').addEventListener('click', function(){ setTimeout(applyLoop,0); });
     $('selLoopA').addEventListener('change', function(){ pref.gLoopA=this.value; lsSet(LS_PREF,pref); applyLoop(); });
     $('selLoopB').addEventListener('change', function(){ pref.gLoopB=this.value; lsSet(LS_PREF,pref); applyLoop(); });
