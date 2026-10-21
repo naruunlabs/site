@@ -1231,7 +1231,9 @@ function say(txt){
   
   if(rate>=1.5 && RITUAL.indexOf(txt)<0){ whistle(txt.indexOf('기합')>=0); return; }
   if(!window.speechSynthesis) return;
-  try{ speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(spoken.replace(/!/g,'').replace('기합','')); u.lang='ko-KR'; if(voiceKo) u.voice=voiceKo; u.rate=1.05; u.volume=1; speechSynthesis.speak(u); }catch(e){}
+  
+  const isReady= txt==='준비';
+  try{ speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(isReady ? '준비.' : spoken.replace(/!/g,'').replace('기합','')); u.lang='ko-KR'; if(voiceKo) u.voice=voiceKo; u.rate=isReady ? 0.78 : 1.05; if(isReady) u.pitch=0.95; u.volume=1; speechSynthesis.speak(u); }catch(e){}
 }
 
 let LOOP=null;

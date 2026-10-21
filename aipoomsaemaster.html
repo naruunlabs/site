@@ -497,7 +497,7 @@ body.group-running #groupLesson{display:block}
 <script id="psm-core">
 
 var PSM = (function(){
-  var VERSION = '1.1.6';   
+  var VERSION = '1.1.7';   
 
   var DEFAULT_CFG = {
     SMOOTH: 0.5,        
@@ -1480,7 +1480,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     var W=wall, prev=W.move, m, K=W.kind;
     do{ m=wallTarget(); }while(prev && m.name===prev.name && K.moves.length>1);
     var cyc=K.cycle - ((K.speedup && W.n+1>=WALL.SPEEDUP_FROM) ? WALL.SPEEDUP_BEATS : 0);
-    W.move=m; W.n++; W.hist=[]; W.res=null; if(W.state!=='intro') W.state='come';
+    W.move=m; W.n++; W.hist=[]; W.frames=[]; W.res=null; if(W.state!=='intro') W.state='come';
     W.t0=wallBeatAt(W.sb); W.dur=(cyc-K.gap)*W.T; W.arriveBeat=W.sb+cyc-K.gap; W.sb+=cyc; W.nextAt=wallBeatAt(W.sb);
     
     $('wallMove').textContent=''; $('wallInfo').textContent=W.n+' / '+W.total+' · 통과 '+W.pass;
@@ -1501,7 +1501,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   function startWall(){
     var gc=$('wallCv'), K=wallKind(), bpm=WALL.BPM[pref.wallSpeed]||WALL.BPM.normal;
     wall={on:true, n:0, pass:0, combo:0, best:0, total:WALL.COUNT, kind:K, kindKey:WALL_KINDS[pref.wallKind]?pref.wallKind:'basic', bpm:bpm, T:60000/bpm,
-      move:null, hist:[], state:'wait', t0:0, dur:1, body:null, fx:null, src:null, sb:WALL.INTRO_BEATS, beat0:0, tickB:-1, arriveBeat:0, nextAt:0};
+      move:null, hist:[], frames:[], log:[], startedAt:new Date().toISOString(), state:'wait', t0:0, dur:1, body:null, fx:null, src:null, sb:WALL.INTRO_BEATS, beat0:0, tickB:-1, arriveBeat:0, nextAt:0};
     $('lobby').hidden=true; $('btnCancel').hidden=false; $('wallHud').hidden=false; $('wallEnd').hidden=true; gc.hidden=false;
     document.body.classList.add('wall-running');
     try{ navigator.wakeLock && navigator.wakeLock.request('screen').then(function(w){ wakeLock=w; }).catch(function(){}); }catch(e){}
@@ -1536,6 +1536,30 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     $('weSub').textContent=W.kind.label+' · 최고 연속 '+W.best+' · '+(W.pass>best?'오늘 최고 기록!':'이 기기 최고 '+Math.max(best,W.pass)+'개');
     $('wallEnd').hidden=false; hnStart('wall');
     beep(988,140,0.2); setTimeout(function(){ beep(1480,260,0.2); },150);
+    uploadWall(W);
+  }
+
+  var WALL_REC_MS=1600, wallPending=[];
+  function rnd(a,k){ if(!a) return null; var m=Math.pow(10,k), o=new Array(a.length); for(var i=0;i<a.length;i++) o[i]=Math.round(a[i]*m)/m; return o; }
+  function uploadWall(W){
+    if(!W || !W.log || !W.log.length) return;
+    var rec={id:'psw-'+Date.now().toString(36), app:'psm-wall', ver:PSM.VERSION, created:W.startedAt, kind:W.kindKey, speed:pref.wallSpeed||'normal',
+      bpm:W.bpm, music:!!W.src, cam:pref.cam, model:pref.model, W:srcW, H:srcH, ua:navigator.userAgent,
+      tol:WALL.SHAPE_TOL, judgeMs:W.kind.judgeMs, ratio:W.kind.ratio, recMs:WALL_REC_MS, pass:W.pass, total:W.total, best:W.best, walls:W.log};
+    if(TEST){ window.__wallRec=rec; return; }   
+    if(!authKey) return;
+    wallPending.push(rec); flushWall();
+  }
+  function flushWall(){
+    if(TEST || !canUpload() || !wallPending.length || flushWall.busy) return;
+    flushWall.busy=true;
+    var rec=wallPending[0], text=JSON.stringify(rec);
+    var meta={id:rec.id, kind:'poomsae-wall', role:'game', label:rec.kind+' '+rec.pass+'/'+rec.total, created:rec.created, raw_bytes:text.length};
+    gzip(text).then(function(buf){
+      return fetch(LAB_URL+'?action=upload',{method:'POST', headers:{'Content-Type':'application/gzip','x-lab-key':authKey,'x-lab-device':deviceId(authKey),'x-lab-meta':b64(JSON.stringify(meta))}, body:buf});
+    }).then(function(r){ return r.json(); })
+      .then(function(j){ if(j && j.ok){ wallPending.shift(); flushWall.busy=false; flushWall(); } else throw 0; })
+      .catch(function(){ flushWall.busy=false; });
   }
   
   function wallPose(list){
@@ -1543,12 +1567,17 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     if(!o){ W.body=null; return; }
     var lm=o.lm;
     if(W.state==='come' && W.move){
+      var now=performance.now(), fr=null;
+      
+      if(now >= W.t0+W.dur-WALL_REC_MS){ fr={t:Math.round(now-(W.t0+W.dur)), lm:rnd(lm,4), wl:rnd(o.wl,3)}; W.frames.push(fr); }
       if(W.move.tech){
         var f=PSM.feat(lm, o.wl, srcW, srcH), cls= f ? PSM.classify(PSM.aggregate([f]), cfg) : null;
-        W.hist.push({t:performance.now(), ok: !!cls && cls.tech===W.move.tech});
+        W.hist.push({t:now, ok: !!cls && cls.tech===W.move.tech});
+        if(fr){ fr.tech=cls?cls.tech:null; fr.dir=cls?cls.dir:null; }
       } else {
-        var sm=wallShape(lm, W.move);
-        if(sm!=null) W.hist.push({t:performance.now(), ok:sm});
+        var sm=wallShapeD(lm, W.move);
+        if(sm.ok!=null) W.hist.push({t:now, ok:sm.ok});
+        if(fr){ fr.ok=sm.ok; fr.ds=sm.ds; }
       }
     }
     if(lm[23*4+3]>0.3 && lm[11*4+3]>0.3){
@@ -1557,7 +1586,8 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     }
   }
 
-  function wallShape(lm, mv){
+  function wallShape(lm, mv){ return wallShapeD(lm, mv).ok; }
+  function wallShapeD(lm, mv){
     var mir=(pref.cam==='user') ? 1 : -1;
     function X(i){ return screenX(lm[i*4])*srcW; } function Y(i){ return lm[i*4+1]*srcH; } function V(i){ return lm[i*4+3]; }
     var sL= X(11)<=X(12) ? [11,13,15] : [12,14,16], sR= sL[0]===11 ? [12,14,16] : [11,13,15];
@@ -1578,8 +1608,9 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
       ds.push(seg(hL[0],hL[1], -.17,0, L[0][0],L[0][1]), seg(hL[1],hL[2], L[0][0],L[0][1], L[0][2],L[0][3]),
               seg(hR[0],hR[1],  .17,0, L[1][0],L[1][1]), seg(hR[1],hR[2], L[1][0],L[1][1], L[1][2],L[1][3]));
     }
-    if(ds.some(function(x){ return x==null; })) return null;
-    return ds.every(function(x){ return x<=WALL.SHAPE_TOL; });
+    var r=function(x){ return x==null ? null : Math.round(x); };
+    if(ds.some(function(x){ return x==null; })) return {ok:null, ds:ds.map(r)};
+    return {ok:ds.every(function(x){ return x<=WALL.SHAPE_TOL; }), ds:ds.map(r)};
   }
   function wallJudge(now){
     var W=wall, K=W.kind, h=W.hist.filter(function(x){ return now-x.t<=K.judgeMs; });
@@ -1587,6 +1618,8 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     var ok= h.length>=2 && hit/h.length>=K.ratio;
     if(TEST && window.__wallForce!=null) ok=!!window.__wallForce;   
     W.res=ok; W.state='hit'; W.th=now;
+    W.log.push({n:W.n, name:W.move.name, tech:W.move.tech||null, arms:W.move.arms, legs:W.move.legs||null, check:W.move.check||null,
+      pass:ok, frames_in:h.length, frames_ok:hit, frames:W.frames});
     if(ok){ W.pass++; W.combo++; W.best=Math.max(W.best,W.combo); beep(1320,90,0.2); setTimeout(function(){ beep(1760,140,0.18); },90); }
     else { W.combo=0; beep(140,320,0.35); }
     $('wallInfo').textContent=W.n+' / '+W.total+' · 통과 '+W.pass+(W.combo>=2?' · '+W.combo+'연속':'');
@@ -1696,7 +1729,9 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   }
 
   var cdTimer=null, wakeLock=null, cueTimer=null, cueToken=0;
-  function cue(text, done){
+  
+  var READY_SAY={text:'준비.', rate:0.78, pitch:0.95}, READY_GAP_MS=450;
+  function cue(text, done, opt){
     var token=++cueToken, ended=false;
     clearTimeout(cueTimer);
     function end(){ if(ended || token!==cueToken) return; ended=true; clearTimeout(cueTimer); if(done) done(); }
@@ -1704,7 +1739,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     try{
       if(!window.speechSynthesis) { cueTimer=setTimeout(end,900); return; }
       speechSynthesis.cancel();
-      var u=new SpeechSynthesisUtterance(text); u.lang='ko-KR'; u.rate=0.9;
+      var u=new SpeechSynthesisUtterance(text); u.lang='ko-KR'; u.rate=(opt&&opt.rate)||0.9; if(opt&&opt.pitch) u.pitch=opt.pitch;
       u.onend=end; u.onerror=end; speechSynthesis.speak(u);
     }catch(e){ end(); }
   }
@@ -1804,13 +1839,19 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
       cdTimer=setTimeout(function(){
         cdTimer=null;
         if(!rec || tok!==cueToken || live.phase!=='countdown') return;
-        
+
         var pName=PSM.POOMSAE_NAME[rec.poomsae]||'';
-        phaseMessage(pName ? pName+' 준비' : '준비','준비 자세를 하고 잠깐 유지하세요 · 전신이 보여야 합니다');
-        if(pName) $('cdN').style.fontSize='min(13vw,104px)';
-        live.phase='prepareCue'; rec.t0=performance.now(); rec.running=true;
-        cue(pName ? sayPoomsae(pName)+' 준비' : '준비', function(){ if(rec && rec.running && live.phase==='prepareCue') live.phase='prepare'; });
+        function ready(){
+          if(!rec || tok2!==cueToken || live.phase!=='countdown') return;
+          phaseMessage('준비','준비 자세를 하고 잠깐 유지하세요 · 전신이 보여야 합니다');
+          live.phase='prepareCue'; rec.t0=performance.now(); rec.running=true;
+          cue(READY_SAY.text, function(){ if(rec && rec.running && live.phase==='prepareCue') live.phase='prepare'; }, READY_SAY);
+        }
         $('btnEnd').hidden=false;
+        if(!pName){ var tok2=cueToken; ready(); return; }
+        phaseMessage(pName,'');
+        cue(sayPoomsae(pName), function(){ tok2=cueToken; cdTimer=setTimeout(function(){ cdTimer=null; ready(); }, READY_GAP_MS); });
+        var tok2=cueToken;
       }, 800);
     });
   }
@@ -2291,6 +2332,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   }
   function retryUploads(){
     if(TEST || !canUpload()) return;
+    flushWall();
     dbAll().then(function(list){
       var lim=Date.now()-9*86400000;
       var todo=list.filter(function(r){ return r.cloud!=='ok' && r.cloud!=='off' && Date.parse(r.created)>lim; });
