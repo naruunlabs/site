@@ -770,10 +770,10 @@ function stepFoot(j){ const mi=MINFO[j], pv=MINFO[j-1];
   if(fr===pf && mi.dir===pv.dir && !!mi.ap===!!pv.ap && !!mi.dwi===!!pv.dwi) return null;  
   return fr; }
 
-function previewFootRoute(A,B,pivot,u,j){
+function previewFootRoute(A,B,pivot,u,j,gather=false){
  const n=D.moves[j].n, yaw=D.moves[j].yaw-D.moves[j-1].yaw;
  const previous=MINFO[j-1],current=MINFO[j];
- if(previous.ap && current.seo && stepFoot(j)!==previous.front && Math.abs(yaw)>.5){
+ if(gather || (previous.ap && current.seo && stepFoot(j)!==previous.front && Math.abs(yaw)>.5)){
   
   const va=A.clone().sub(pivot).normalize(),vb=B.clone().sub(pivot).normalize();
   let inward=va.clone().add(vb);if(inward.lengthSq()<.001)inward=va.clone();inward.normalize();
@@ -1400,7 +1400,8 @@ window.__robot={
 };
 
 const demoRoot=new THREE.Group(); scene.add(demoRoot);
-const gold=new THREE.MeshBasicMaterial({color:0xffe388,transparent:true,opacity:.48,side:THREE.DoubleSide,depthWrite:false});
+const guideFootColor={R:0xff7777,L:0x70aaff};
+const gold=new THREE.MeshBasicMaterial({color:guideFootColor.L,transparent:true,opacity:.48,side:THREE.DoubleSide,depthWrite:false});
 const cyan=new THREE.MeshBasicMaterial({color:0x70dcff,transparent:true,opacity:.32,side:THREE.DoubleSide});
 const softGold=new THREE.MeshBasicMaterial({color:0xffd43b,transparent:true,opacity:.16,side:THREE.DoubleSide});
 const landingMat=gold.clone();landingMat.opacity=.23;
@@ -1421,14 +1422,17 @@ for(let j=1;j<MV.length;j++){
 function loadGuideTurn(j){
  const demoBegin=MV[j-1].t1;
  activeGuide=j;const moving=stepFoot(j),fixed=moving==='L'?'R':'L';
+ const movingColor=guideFootColor[moving];
+ gold.color.setHex(movingColor);landingMat.color.setHex(movingColor);softGold.color.setHex(movingColor);
 
  const A=footWorldAt(demoBegin,moving),B=footWorldAt(MV[j].t0+100,moving),pivot=footWorldAt(demoBegin,fixed);
  
+ const gather=(MINFO[j-1].ap && MINFO[j].seo && moving!==MINFO[j-1].front) || (D.title==='태극 3장' && MV[j].n===7);
  const pts=[],av=new THREE.Vector2(A.x,A.z),bv=new THREE.Vector2(B.x,B.z),pv=new THREE.Vector2(pivot.x,pivot.z);
  for(let k=0;k<=64;k++){
-  const u=k/64,route=previewFootRoute(av,bv,pv,u,j);
+  const u=k/64,route=previewFootRoute(av,bv,pv,u,j,gather);
   const point=new THREE.Vector3(route.x,.12,route.y),chord=A.clone().lerp(B,u);chord.y=.12;
-  pts.push((MINFO[j-1].ap && MINFO[j].seo && moving!==MINFO[j-1].front)?point:chord.lerp(point,.42));
+  pts.push(gather?point:chord.lerp(point,.42));
  }
  const fullCurve=new THREE.CatmullRomCurve3(pts),length=fullCurve.getLength();
  const gap=Math.min(.18,length*.22),trimmed=[];
