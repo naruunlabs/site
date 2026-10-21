@@ -17,7 +17,7 @@
 //    그러면 예전 캐시가 통째로 비워집니다.
 // =========================================================
 
-const CACHE_NAME = 'naruunlabs-2026-10-21-poomsae113-gather-guide';
+const CACHE_NAME = 'naruunlabs-2026-10-21-poomsae114-head-dir';
 
 const APP_SHELL = [
   './',
