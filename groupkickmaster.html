@@ -19,7 +19,7 @@ else location.replace('aikickmaster.html');
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
 <meta name="theme-color" content="#050609">
-<link rel="stylesheet" href="assets/group-primary.css?v=3.3.1">
+<link rel="stylesheet" href="assets/group-primary.css?v=3.3.2">
 <title>AI KICK MASTER · 단체 콤비네이션</title>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css">
@@ -320,7 +320,7 @@ html.embed .app.running .side-note{bottom:24px}
  <div class="km-mine"><strong>내 콤보</strong><span>이 기기에 3개까지 저장</span><div id="comboSlots"></div></div><p id="comboMessage" role="status"></p>
  <div class="km-actions"><button id="comboClear">비우기</button><button id="comboClose">닫기</button><button id="comboUse">현재 콤보 사용</button></div></div>
 </div>
-<script src="assets/group-primary.js?v=3.3.1"></script>
+<script src="assets/group-primary.js?v=3.3.2"></script>
 <script>
 
 if(new URLSearchParams(location.search).get('product')==='strike'){try{location.replace('groupstrikemaster.html'+location.hash);}catch(e){}}
@@ -491,7 +491,7 @@ const CALL_LEAD=.15, WARM_LEAD=.45;
 let stage='follow', ri=0;
 let running=false, paused=false, phase='idle';        
 let runToken=0, segToken=0, resumeToken=0, tickTimer=0, sayTimer=0, hitTimer=0, callTimer=0, resumeIdx=null, warmCall=false;
-let setNo=1, count=0, bundles=0, totalDone=0;
+let setNo=1, count=0, bundles=0, totalDone=0, nextTurnStart=0;
 let switchTimer=0, switchPending=false;
 const TEAM_GAP_BEATS=4;   
 let TL=null, seg=null, audio=null, wakeLock=null, koVoice=null;
@@ -559,7 +559,7 @@ function compile(){
   if(r.type==='combo') steps.forEach((s,i)=>{if(!s.end)return;for(let k=1;k<n;k++){const q=steps[(i-k+n)%n];if(q.end)break;if(q.counted){q.kiai=true;break;}}});
   
   let groups=[],cur=[];steps.forEach(s=>{cur.push(s);if(r.type==='combo'&&s.end){groups.push(cur);cur=[];}});if(cur.length)groups.push(cur);
-  groups.forEach(g=>{let k=0;const tot=g.filter(s=>s.counted).length;g.forEach(s=>{if(s.counted){s.ord=++k;s.of=tot;}});});
+  groups.forEach(g=>{const actions=g.filter(s=>s.act);if(actions.length){actions[0].routineFirst=true;actions.at(-1).bundleLast=true;}g.at(-1).bundleEnd=true;let k=0;const tot=g.filter(s=>s.counted).length;g.forEach(s=>{if(s.counted){s.ord=++k;s.of=tot;}});});
   const pick=+$('bpm').value||80;
   
   let cap=Infinity;
@@ -577,7 +577,7 @@ function callTextFor(st){
   if(!namesVoiced()||!st||!st.act||!st.phraseStart) return null;
   return st.phrase;
 }
-const firstPhrase=()=>{const i=TL.steps.findIndex(s=>s.phraseStart);return i<0?0:i;};
+const firstPhrase=()=>{if(rotateOn())return nextTurnStart;const i=TL.steps.findIndex(s=>s.phraseStart);return i<0?0:i;};
 function phraseStartOf(i){const n=TL.n;let j=i;for(let k=0;k<n&&TL.steps[j].chain;k++)j=(j-1+n)%n;return j;}
 function nextActionAfter(i){const n=TL.n;for(let k=1;k<=n;k++){const j=(i+k)%n;if(TL.steps[j].act)return j;}return i;}
 function introBeats(text,warm){return Math.max(2,Math.ceil((SAY_DELAY+(warm?WARM_LEAD+.25:0)+speechSec(text||'',fastTempo()?READY_RATE:voiceRate())+CALL_LEAD)/(TL.beatMs/1000)));}
@@ -613,7 +613,7 @@ function tick(tok){
 function finishStep(st){
   if(st.intro) return true;
   if(rotateOn()){
-    if(st.i===TL.n-1){totalDone++;paintCounts();endSet(runToken);return false;}
+    if(st.bundleEnd){nextTurnStart=(st.i+1)%TL.n;totalDone++;paintCounts();endSet(runToken);return false;}
     return true;
   }
   if(st.lastInSet){if(isCombo()){bundles++;totalDone++;}paintCounts();endSet(runToken);return false;}
@@ -640,7 +640,7 @@ function stepStart(st){
 }
 
 function endsSetAfter(st,nx){
-  if(rotateOn())return st.i===TL.steps.filter(s=>s.act).at(-1).i;
+  if(rotateOn())return !!st.bundleLast;
   if(!isCombo())return st.counted&&count>=goal();
   let endings=0;for(let k=1;k<=TL.n;k++){const i=(st.i+k)%TL.n;if(TL.steps[i].end)endings++;if(i===nx)break;}
   return bundles+endings>=goal();
@@ -677,7 +677,7 @@ function beatsUntilUpcoming(){
 async function start(){
   if(!window.groupAccessAllowed()) return;
   if(running||document.hidden) return;
-  trainingClock.resume();setNo=1;compile();
+  trainingClock.resume();setNo=1;nextTurnStart=0;compile();
   $('finishScreen').hidden=true;
   const token=++runToken;setNo=1;count=bundles=0;totalDone=0;running=true;paused=false;phase='countdown';
   setControls();keepAwake(true);ensureAudio();
@@ -840,7 +840,7 @@ function paintHead(){
   const r=routine();paintClassCue();
   $('stageHint').textContent=namesVoiced()?'연습용 · 자연스러운 말 속도로 안내합니다. 구령이 들어갈 만큼 진행 속도를 조절합니다.':'순서는 준비 화면에서 확인합니다. 운동 중에는 발차기 이름을 보고 호루라기에 찹니다. 발차기 이름은 말하지 않습니다.';
   const app=$('app');[...app.classList].filter(c=>c.startsWith('stage-')).forEach(c=>app.classList.remove(c));app.classList.add('stage-'+(namesVoiced()?stage:'follow'));
-  $('teamHint').textContent=rotateOn()?`루틴 한 번마다 A팀 → B팀 교대 · 총 ${goal()}회입니다. 상대팀 차례가 휴식입니다.`:'세트가 끝나면 설정한 시간만큼 함께 쉽니다.';
+  $('teamHint').textContent=rotateOn()?`묶음 하나마다 A팀 → B팀 교대 · 총 ${goal()}회입니다. 상대팀 차례가 휴식입니다.`:'세트가 끝나면 설정한 시간만큼 함께 쉽니다.';
   const note=TL.capped?` · <i>구령 이름을 말할 시간이 필요해 ${TL.bpm}으로 진행</i>`:'';
   $('speedNote').innerHTML=`${isCombo()?'한 묶음':'동작 간격'} 약 <b>${TL.unitSec.toFixed(1)}초</b>${note}`;
   $('goalLab').textContent=rotateOn()?'전체 루틴 횟수 · A/B 합계':isCombo()?'세트 목표 · 콤보 반복':'세트 목표 · 횟수';
@@ -1012,7 +1012,7 @@ function paintGroupWelcome(){
   box.style.setProperty('--gw-accent',P.exitUrl.includes('strike')?'#d8b4fe':'#ff8994');
   box.querySelectorAll('[data-group-routine]').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.groupRoutine===ri)));
   const label=document.createElement('b');label.textContent=routine().name;
-  const details=document.createElement('span');details.textContent=`${signalLabel()} · ${rotateOn()?`루틴마다 A/B 교대 · 총 ${goal()}회`:`전원 함께 · ${$('sets').value}세트`} · ${TL.bpm} BPM · ${namesVoiced()?'음성 코치':'리듬 집중'}`;
+  const details=document.createElement('span');details.textContent=`${signalLabel()} · ${rotateOn()?`묶음마다 A/B 교대 · 총 ${goal()}회`:`전원 함께 · ${$('sets').value}세트`} · ${TL.bpm} BPM · ${namesVoiced()?'음성 코치':'리듬 집중'}`;
   $('groupWelcomeSummary').replaceChildren(label,details);
   $('groupWelcomeSequence').replaceChildren(...TL.steps.filter(s=>s.act).map((s,i)=>{const item=document.createElement('span');item.textContent=`${i+1}. ${s.n}`;return item;}));
 }

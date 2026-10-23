@@ -23,7 +23,7 @@ canvas,.hud{pointer-events:none}.settings{top:100px;left:24px}.controls{z-index:
 .settings{background:transparent;border:0;box-shadow:none;bottom:265px}.controls{background:transparent;bottom:88px}.hud{left:50%;right:auto;transform:translateX(-50%);width:min(620px,48vw);margin:0}.cue,.running .cue{left:260px;right:260px;top:145px}.caption,.running .caption{left:285px;right:30px;bottom:22px}.results{z-index:200}.identity{background:transparent}
 @media(max-width:850px){.cue,.running .cue{left:220px;right:40px;top:150px}.hud{width:48vw;left:62%}.caption,.running .caption{left:240px;right:20px}}
 @media(max-width:600px){.cue,.running .cue{left:195px;right:12px;top:180px}.hud{top:70px;left:65%;width:60vw}.caption,.running .caption{left:200px;right:12px}}
-</style><link rel="stylesheet" href="assets/group-primary.css?v=3.3.1"></head><body>
+</style><link rel="stylesheet" href="assets/group-primary.css?v=3.3.2"></head><body>
 <header class="identity" id="identity"><div class="title-dojang" id="identityDojang">AI KICK MASTER</div><div class="title-auth" id="identityAuth" hidden></div><div class="title-version" id="identityVersion" hidden></div><div class="akm-powered" id="identityPowered" hidden></div></header>
 <canvas id="game"></canvas><div class="hud"><span class="badge">정면 격파 · 시운전</span><span class="badge" id="progress">진행 0 / 40</span><span class="badge" id="patternBadge">연속 간격 0.6초</span></div>
 <aside class="settings" id="settings"><h2>정면 격파 · 단체 수업</h2><small>빨강 오른발 · 파랑 왼발<br>선에 도착하는 표적에 맞춰 찹니다.</small>
@@ -38,7 +38,7 @@ canvas,.hud{pointer-events:none}.settings{top:100px;left:24px}.controls{z-index:
 <div class="cue" id="cue">준비되셨나요?</div><div class="caption">화면의 표적 진행 수입니다. 학생의 실제 성공 횟수는 자동 측정하지 않습니다.</div>
 <nav class="controls"><button class="primary" id="quickStart">▶ 시작</button><button id="pause" disabled>Ⅱ 일시정지</button><button id="reset">↺ 설정으로</button><button id="routines">루틴 수업</button><button id="fullscreen">전체화면</button><button id="exit">단체모드 종료</button></nav>
 <section class="results" id="results" hidden><div class="box"><h2>수업 완료!</h2><p id="summary"></p><button class="primary" id="again">한 번 더 ▶</button><button id="configure">설정으로</button></div></section>
-<script src="assets/group-primary.js?v=3.3.1"></script>
+<script src="assets/group-primary.js?v=3.3.2"></script>
 <script id="kick-game-engine">
 'use strict';
 const $=id=>document.getElementById(id),cv=$('game'),ctx=cv.getContext('2d'),HOST=window.parent;
