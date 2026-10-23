@@ -7775,14 +7775,23 @@ window.openKickGroupGame=async function(){
   if(!await window.akmPrepareKickGroupGame()) return;
   if(running && typeof stopGame==='function') stopGame();
   const f=document.getElementById('groupFrame');
-  if(f){window.setGroupRunning(false);f.src='groupkickgame.html?v=3.2.24';}
-  else openGroupOverlay('groupkickgame.html?v=3.2.24');
+  if(f){window.setGroupRunning(false);setKickGroupGameLayer(true);f.src='groupkickgame.html?v=3.2.25';}
+  else openGroupOverlay('groupkickgame.html?v=3.2.25');
 };
 window.showKickGroupRoutines=function(){
   if(!window.akmCanOpenGroup()) return;
   const f=document.getElementById('groupFrame');
-  if(f){window.setGroupRunning(false);f.src='groupkickmaster.html?embed=1';}
+  if(f){window.setGroupRunning(false);setKickGroupGameLayer(false);f.src='groupkickmaster.html?embed=1';}
 };
+function setKickGroupGameLayer(on){
+  const wrap=document.getElementById('groupOverlay');if(!wrap)return;
+  document.body.classList.toggle('akm-group-game',!!on);
+  if(on){document.body.appendChild(wrap);wrap.style.cssText='position:fixed;inset:0;z-index:2147483000;background:#050609;isolation:isolate;pointer-events:auto';}
+  else{
+    const stage=document.querySelector('.stage'),panel=stage&&stage.querySelector(':scope>.panel');
+    if(stage&&panel){stage.insertBefore(wrap,panel);wrap.style.cssText='position:absolute;inset:0;z-index:5;background:#050609';}
+  }
+}
 
 function openGroupOverlay(src){
   if(window.__groupOverlayOpen && document.getElementById('groupOverlay')) return;   
@@ -7799,6 +7808,7 @@ function openGroupOverlay(src){
   if(stage&&panel){wrap.style.cssText='position:absolute;inset:0;z-index:5;background:#050609';stage.insertBefore(wrap,panel);}
   else{wrap.style.cssText='position:fixed;inset:0;z-index:2147483000;background:#050609';document.body.appendChild(wrap);}
   window.__groupOverlayOpen=true;
+  if(src.includes('groupkickgame.html'))setKickGroupGameLayer(true);
   releaseCameraForGroup();
   document.body.classList.add('akm-group-open');document.body.classList.remove('akm-group-running');
   markGroupModeActive(true);
@@ -7854,7 +7864,7 @@ window.closeGroupOverlay=function(){
   const wrap=document.getElementById('groupOverlay');
   if(wrap) wrap.remove();              
   window.__groupOverlayOpen=false;
-  document.body.classList.remove('akm-group-open','akm-group-running');
+  document.body.classList.remove('akm-group-open','akm-group-running','akm-group-game');
   markGroupModeActive(false);
   try{ runtimeVideoAt=trainingClock.realNow(); runtimeVideoTime=video.currentTime; lastVideoTime=-1; }catch(e){}
   try{ window.focus(); }catch(e){}
@@ -10928,7 +10938,7 @@ const _AKM_CACHE_DAYS  = 7;
 const _AKM_TRIAL_CACHE_DAYS = 1;   
 const _AKM_FETCH_TIMEOUT_MS = 8 * 1000;   
 
-const _AKM_VERSION     = '3.2.24';   
+const _AKM_VERSION     = '3.2.25';   
 try{ window.__NL_VER = _AKM_VERSION; }catch(e){}   
 
 let _akmFailCount = 0;
