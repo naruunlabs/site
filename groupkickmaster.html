@@ -982,6 +982,17 @@ function initGroupWelcome(){
     b.append(kind,name,desc);b.onclick=()=>{if(running)return;ri=i;$('routine').value=String(i);fillGoals();onSetting();};return b;
   }));
   $('groupWelcomeStart').onclick=()=>{if(!running)start();};
+  
+  if(HOST && typeof HOST.akmPrepareKickGroupGame==='function'){
+    HOST.akmPrepareKickGroupGame().then(allowed=>{
+      if(!allowed || !HOST.akmCanOpenKickGroupGame()) return;
+      const b=document.createElement('button');b.type='button';b.className='gw-card';
+      const kind=document.createElement('span');kind.className='gw-kind';kind.textContent='내 라이선스 시운전';
+      const name=document.createElement('strong');name.textContent='정면 격파 게임';
+      const desc=document.createElement('span');desc.className='gw-description';desc.textContent='단발·2연속 랜덤 · 연속 간격 0.6초 · 카메라 없이 함께';
+      b.append(kind,name,desc);b.onclick=()=>{if(!running)HOST.openKickGroupGame();};cards.prepend(b);
+    }).catch(()=>{});
+  }
 }
 function paintGroupWelcome(){
   const box=$('groupWelcome');if(!box)return;

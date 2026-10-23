@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex,nofollow"><title>AI KICK MASTER · 정면 격파</title>
+<style id="kick-game-auth-hide">html{visibility:hidden}</style>
+<script id="kick-game-access-gate">
+window.kickGameAccessAllowed=function(){try{const p=window.parent;return p!==window && p.location.origin===location.origin && /^\/aikickmaster(?:\.html)?\/?$/.test(p.location.pathname) && typeof p.akmCanOpenKickGroupGame==='function' && p.akmCanOpenKickGroupGame() && p.document.getElementById('groupFrame')?.contentWindow===window;}catch(e){return false;}};
+if(window.kickGameAccessAllowed())document.getElementById('kick-game-auth-hide').remove();else location.replace('aikickmaster.html');
+</script>
+<style>
+:root{color-scheme:dark;font-family:Pretendard,'Malgun Gothic',sans-serif;background:#07101d;color:#edf4ff}*{box-sizing:border-box}body{margin:0;overflow:hidden}button,select,input{font:inherit}button,select{background:#17263a;color:#fff;border:1px solid #3a4c65;border-radius:10px;padding:11px 13px}button{cursor:pointer}button:hover{background:#2b3c54}button:focus-visible,select:focus-visible{outline:3px solid #fff}button:disabled{opacity:.45}canvas{position:fixed;inset:0;width:100%;height:100%}.settings{position:fixed;left:var(--host-left,24px);top:calc(var(--host-top,230px) + 12px);bottom:88px;width:232px;overflow:auto;padding:14px;background:#0b1629e8;border:1px solid #2b3d55;border-radius:14px;z-index:4}.settings h2{font-size:19px;margin:0 0 7px}.settings small{font-size:12px;color:#9eb2ca;line-height:1.8}label{display:block;font-size:13px;color:#b3c7df;margin:13px 0 6px}select{width:100%;padding:9px}label.sound{display:flex;align-items:center;gap:8px}input{accent-color:#ff4b67}.primary{background:#ff526a;color:#0c1120;border-color:#ff526a;font-weight:900}.primary:hover{background:#ff8192}.settings .primary{width:100%;margin-top:14px}.hud{position:fixed;right:24px;top:24px;display:flex;gap:10px;z-index:3}.badge{background:#091625c9;border:1px solid #35485d;border-radius:24px;padding:9px 15px;font-size:13px}.cue{position:fixed;top:15%;left:27%;right:8%;text-align:center;font-size:clamp(24px,3.5vw,48px);font-weight:900;text-shadow:0 3px 12px #000;pointer-events:none}.caption{position:fixed;bottom:75px;left:28%;right:8%;text-align:center;font-size:12px;color:#8aa1ba;pointer-events:none}.controls{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);display:flex;gap:8px;white-space:nowrap;z-index:5}.results{position:fixed;inset:0;z-index:6;background:#07101abf;display:grid;place-items:center}.results[hidden]{display:none}.box{text-align:center;background:#101e30;border:1px solid #40536f;border-radius:20px;padding:30px;max-width:min(90vw,500px)}.box p{color:#b0c3d9;line-height:1.8}.box button{margin:5px}.running .settings{display:none}.running .cue{left:12%;right:12%}.running .caption{left:12%;right:12%}@media(max-height:640px){.settings{top:calc(var(--host-top,170px) + 6px);padding:10px}.settings label{margin-top:8px}}@media(max-width:650px){.settings{width:200px;left:10px}.cue{left:220px;right:10px;font-size:24px}.hud{top:12px;right:12px}.controls{bottom:12px;gap:5px}.controls button{padding:10px 9px;font-size:13px}}
+</style></head><body>
+<canvas id="game"></canvas><div class="hud"><span class="badge">정면 격파 · 시운전</span><span class="badge" id="progress">진행 0 / 40</span><span class="badge" id="patternBadge">연속 간격 0.6초</span></div>
+<aside class="settings" id="settings"><h2>정면 격파 게임</h2><small>빨강 오른발 · 파랑 왼발<br>선에 도착하는 표적에 맞춰 찹니다.</small>
+<label for="skill">발차기</label><select id="skill"><option value="front">앞차기 · 가로 표적</option><option value="round">돌려차기 · 세로 표적</option><option value="mixed">앞차기 + 돌려차기</option></select>
+<label for="speed">접근 속도</label><select id="speed"><option value="2150">느리게 · 2.15초</option><option value="1600" selected>보통 · 1.6초</option><option value="1150">빠르게 · 1.15초</option></select>
+<label for="pattern">표적 패턴</label><select id="pattern"><option value="mix">랜덤 · 하나 / 두 개 연속</option><option value="single">하나씩</option><option value="double">두 개 연속</option></select>
+<label for="count">표적 수</label><select id="count"><option>20</option><option selected>40</option><option>60</option><option>100</option></select>
+<label class="sound"><input type="checkbox" id="sound" checked>효과음</label><small>두 개 연속은 0.6초 간격입니다.<br>카메라 없이 화면에 맞춰 함께 운동하며, 실제 성공 여부는 측정하지 않습니다.</small><button class="primary" id="start">수업 시작 ▶</button></aside>
+<div class="cue" id="cue">준비되셨나요?</div><div class="caption">화면의 표적 진행 수입니다. 학생의 실제 성공 횟수는 자동 측정하지 않습니다.</div>
+<nav class="controls"><button class="primary" id="quickStart">▶ 시작</button><button id="pause" disabled>Ⅱ 일시정지</button><button id="reset">↺ 설정으로</button><button id="routines">루틴 수업</button><button id="exit">단체모드 종료</button></nav>
+<section class="results" id="results" hidden><div class="box"><h2>수업 완료!</h2><p id="summary"></p><button class="primary" id="again">한 번 더 ▶</button><button id="configure">설정으로</button></div></section>
+<script id="kick-game-engine">
+'use strict';
+const $=id=>document.getElementById(id),cv=$('game'),ctx=cv.getContext('2d'),HOST=window.parent;
+const PAIR_GAP=600,RIGHT='#ff4b67',LEFT='#45a4ff';
+let state='idle',elapsed=0,last=0,done=0,total=40,targets=[],nextSpawn=0,options={},audio=null,wake=null,epoch=0;
+function allowed(){return window.kickGameAccessAllowed();}
+function hostRunning(on){$('quickStart').hidden=state!=='idle';try{HOST.setGroupRunning(on);}catch(e){}}
+function tone(){if(!$('sound').checked)return;try{audio=audio||new(window.AudioContext||window.webkitAudioContext)();audio.resume();const o=audio.createOscillator(),g=audio.createGain();o.type='triangle';o.frequency.setValueAtTime(210,audio.currentTime);o.frequency.exponentialRampToValueAtTime(70,audio.currentTime+.09);g.gain.setValueAtTime(.14,audio.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+.11);o.connect(g);g.connect(audio.destination);o.start();o.stop(audio.currentTime+.12);}catch(e){}}
+function cue(text,color=''){$('cue').textContent=text;$('cue').style.color=color;}
+function lock(on){for(const id of ['skill','speed','pattern','count'])$(id).disabled=on;}
+async function wakeOn(){const ticket=epoch;try{if(navigator.wakeLock){const w=await navigator.wakeLock.request('screen');if(ticket!==epoch||state!=='running')w.release().catch(()=>{});else wake=w;}}catch(e){}}
+function wakeOff(){epoch++;try{if(wake)wake.release().catch(()=>{});}catch(e){}wake=null;}
+function reset(){state='idle';elapsed=0;done=0;targets=[];total=+$('count').value;document.body.classList.remove('running');$('results').hidden=true;$('pause').disabled=true;$('pause').textContent='Ⅱ 일시정지';$('progress').textContent='진행 0 / '+total;$('patternBadge').textContent='연속 간격 0.6초';cue('준비되셨나요?');lock(false);hostRunning(false);wakeOff();}
+function start(){if(!allowed())return;reset();options={skill:$('skill').value,travel:+$('speed').value,pattern:$('pattern').value};total=+$('count').value;state='running';document.body.classList.add('running');lock(true);$('pause').disabled=false;nextSpawn=3000;hostRunning(true);tone();wakeOn();}
+function pause(){if(state==='running'){state='paused';$('pause').textContent='▶ 계속하기';cue('일시정지');hostRunning(false);wakeOff();}else if(state==='paused'&&allowed()){state='running';$('pause').textContent='Ⅱ 일시정지';hostRunning(true);showUpcoming();wakeOn();}}
+function makeTarget(index,at,round){return {name:(index%2?'왼발':'오른발')+' '+(round?'돌려차기':'앞차기'),round,right:index%2===0,color:index%2?LEFT:RIGHT,at,travel:options.travel,hit:false,fx:[]};}
+function spawn(){const size=options.pattern==='single'?1:options.pattern==='double'?2:(Math.random()<.5?1:2),n=Math.min(size,total-done),round=options.skill==='round'||(options.skill==='mixed'&&Math.random()<.5);targets=[];
+for(let i=0;i<n;i++)targets.push(makeTarget(done+i,elapsed+options.travel+i*PAIR_GAP,round));
+$('patternBadge').textContent=n===2?'2연속 · 0.6초':'단발';showUpcoming();}
+function showUpcoming(){const upcoming=targets.filter(t=>!t.hit);cue(upcoming.map(t=>t.name).join(' → '),upcoming.length===1?upcoming[0].color:'');}
+function impact(t){t.hit=true;done++;tone();t.fx=Array.from({length:28},()=>({x:0,y:0,vx:(Math.random()-.5)*860,vy:(Math.random()-.5)*540,r:2+Math.random()*4}));$('progress').textContent='진행 '+done+' / '+total;showUpcoming();}
+function finish(){state='ended';wakeOff();hostRunning(false);$('pause').disabled=true;$('results').hidden=false;$('summary').textContent='표적 '+total+'개의 화면 진행을 마쳤습니다. 실제 발차기 성공 여부는 측정하지 않았습니다.';}
+function update(dt){elapsed+=dt;if(elapsed<3000){cue(String(Math.max(1,Math.ceil((3000-elapsed)/1000))));return;}if(!targets.length&&elapsed>=nextSpawn)spawn();
+for(const t of targets){if(!t.hit&&elapsed>=t.at)impact(t);if(t.hit)for(const f of t.fx){f.x+=f.vx*dt/1000;f.y+=f.vy*dt/1000;f.vy+=dt*.35;}}
+if(targets.length&&targets.every(t=>t.hit)&&elapsed>=targets[targets.length-1].at+500){if(done>=total)finish();else spawn();}}
+function geometry(t,w,h){const base=Math.min(w*.40,h*.68)*.60;return {width:t.round?base*.18:base*1.2,height:t.round?base*1.05:base*.18,angle:t.round?(t.right?1:-1)*20*Math.PI/180:0};}
+function grid(w,h){const g=ctx.createLinearGradient(0,0,0,h);g.addColorStop(0,'#071020');g.addColorStop(1,'#172b40');ctx.fillStyle=g;ctx.fillRect(0,0,w,h);const vx=w/2,vy=h*.4;ctx.strokeStyle='#254057';ctx.lineWidth=1;for(let i=-6;i<=6;i++){ctx.beginPath();ctx.moveTo(vx,vy);ctx.lineTo(vx+i*w*.2,h);ctx.stroke();}for(let i=0;i<12;i++){const y=vy+(i/12)**2*(h-vy);ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();}}
+function draw(){const box=cv.getBoundingClientRect(),w=box.width,h=box.height,dpr=Math.min(devicePixelRatio||1,2);if(cv.width!==Math.round(w*dpr)||cv.height!==Math.round(h*dpr)){cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);}ctx.setTransform(dpr,0,0,dpr,0,0);grid(w,h);
+const active=targets.find(t=>!t.hit)||targets[targets.length-1];if(active){const g=geometry(active,w,h);ctx.save();ctx.translate(w/2,h*.57);ctx.rotate(g.angle);ctx.strokeStyle=active.color;ctx.globalAlpha=.65;ctx.lineWidth=1;ctx.strokeRect(-g.width/2,-g.height/2,g.width,g.height);ctx.restore();}
+for(const t of [...targets].reverse()){if(t.hit||elapsed<t.at-t.travel)continue;const p=Math.max(0,Math.min(1,1-(t.at-elapsed)/t.travel)),s=.12+.88*p*p,g=geometry(t,w,h);ctx.save();ctx.translate(w/2,h*(.41+p*p*.16));ctx.rotate(g.angle);ctx.fillStyle=t.color;ctx.fillRect(-g.width*s/2,-g.height*s/2,g.width*s,g.height*s);ctx.restore();}
+for(const t of targets){if(!t.hit)continue;const opacity=Math.max(0,1-(elapsed-t.at)/320);ctx.save();ctx.globalAlpha=opacity;ctx.fillStyle=t.color;for(const f of t.fx)ctx.fillRect(w/2+f.x,h*.57+f.y,f.r*2,f.r);ctx.restore();}}
+function frame(now){const dt=last?Math.min(80,now-last):0;last=now;if(state==='running')update(dt);draw();requestAnimationFrame(frame);}
+$('start').onclick=start;$('quickStart').onclick=start;$('again').onclick=start;$('pause').onclick=pause;$('reset').onclick=reset;$('configure').onclick=reset;
+$('routines').onclick=()=>{reset();HOST.showKickGroupRoutines();};$('exit').onclick=()=>{reset();HOST.closeGroupOverlay();};$('count').onchange=reset;
+document.addEventListener('keydown',e=>{if(e.code==='Space'&&!/SELECT|INPUT|BUTTON/.test(e.target.tagName)){e.preventDefault();if(state==='running'||state==='paused')pause();else start();}if(e.key==='Escape')reset();});
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&state==='running')pause();});window.addEventListener('pagehide',()=>{hostRunning(false);wakeOff();try{audio&&audio.close();}catch(e){}});
+setInterval(()=>{if(!allowed()){reset();location.replace('aikickmaster.html');}},1000);
+if(allowed()){reset();requestAnimationFrame(frame);}
+</script></body></html>
