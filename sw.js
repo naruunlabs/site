@@ -17,7 +17,7 @@
 //    그러면 예전 캐시가 통째로 비워집니다.
 // =========================================================
 
-const CACHE_NAME = 'naruunlabs-2026-10-23-kick323-group-game';
+const CACHE_NAME = 'naruunlabs-2026-10-23-kick324-group-audio-touch';
 
 const APP_SHELL = [
   './',

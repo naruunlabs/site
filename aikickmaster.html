@@ -3703,6 +3703,15 @@ body.akm-group-open #camWrap,body.akm-group-open #camWrap *{visibility:hidden !i
 body.akm-group-open .stage>.panel>.title{pointer-events:none !important;}
 body.akm-group-open .stage>.panel>.title button{pointer-events:auto !important;}
 
+body.akm-group-open .stage>.panel,
+body.akm-group-open .stage>.panel *{pointer-events:none !important;}
+body.akm-group-open .stage>.panel>.title button,
+body.akm-group-open .stage>.panel>.title button *,
+body.akm-group-open .stage>.panel>.mode-row button,
+body.akm-group-open .stage>.panel>.mode-row button *,
+body.akm-group-open .stage>.panel>.fullscreen-only button,
+body.akm-group-open .stage>.panel>.fullscreen-only button *{pointer-events:auto !important;}
+
 body.akm-group-open.akm-group-running .stage>.panel>.mode-row,
 body.akm-group-open.akm-group-running .stage>.panel>.mode-row *{visibility:hidden !important;pointer-events:none !important;}
 </style>
@@ -7766,8 +7775,8 @@ window.openKickGroupGame=async function(){
   if(!await window.akmPrepareKickGroupGame()) return;
   if(running && typeof stopGame==='function') stopGame();
   const f=document.getElementById('groupFrame');
-  if(f){window.setGroupRunning(false);f.src='groupkickgame.html?v=3.2.23';}
-  else openGroupOverlay('groupkickgame.html?v=3.2.23');
+  if(f){window.setGroupRunning(false);f.src='groupkickgame.html?v=3.2.24';}
+  else openGroupOverlay('groupkickgame.html?v=3.2.24');
 };
 window.showKickGroupRoutines=function(){
   if(!window.akmCanOpenGroup()) return;
@@ -10919,7 +10928,7 @@ const _AKM_CACHE_DAYS  = 7;
 const _AKM_TRIAL_CACHE_DAYS = 1;   
 const _AKM_FETCH_TIMEOUT_MS = 8 * 1000;   
 
-const _AKM_VERSION     = '3.2.23';   
+const _AKM_VERSION     = '3.2.24';   
 try{ window.__NL_VER = _AKM_VERSION; }catch(e){}   
 
 let _akmFailCount = 0;
