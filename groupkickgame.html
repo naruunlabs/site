@@ -10,10 +10,19 @@ if(window.kickGameAccessAllowed())document.getElementById('kick-game-auth-hide')
 </style>
 <style id="independent-game-controls">
 canvas,.hud{pointer-events:none}.settings{top:100px;left:24px}.controls{z-index:100;max-width:calc(100vw - 24px);flex-wrap:wrap;justify-content:center;white-space:normal;pointer-events:auto}.controls button{white-space:nowrap;touch-action:manipulation;pointer-events:auto}.game-brand{position:fixed;left:24px;top:24px;font-size:15px;font-weight:900;letter-spacing:.08em;pointer-events:none}.game-brand small{display:block;font-size:11px;color:#9aacc3;margin-top:7px;letter-spacing:0}@media(max-width:650px){.settings{top:92px;left:12px;bottom:125px}.hud{top:56px;left:12px;right:auto;gap:5px}.badge{font-size:11px;padding:7px 9px}.caption{bottom:115px}.game-brand{left:12px;top:14px}}
+</style>
+<style id="group-class-layout">
+:root{--rail:282px;--acc:#ff5265;background:#050609;font-family:Pretendard,'Noto Sans KR',system-ui,sans-serif}body{background:#050609}.identity{position:fixed;left:22px;top:18px;width:232px;z-index:10;pointer-events:none}.identity>div{overflow-wrap:anywhere}.identity .title-dojang{font-size:20px;font-weight:900;color:#fff}.identity .title-auth{font-size:11px;color:#87e6ac;margin-top:5px}.identity .title-version{font-size:11px;color:#8d99a9;margin-top:4px}.identity .akm-powered{font-size:10px;color:#8190a3;margin-top:5px}.identity [hidden]{display:none}
+.settings{left:22px;top:var(--identity-bottom,140px);bottom:222px;width:232px;padding:0 5px 12px 0;background:none;border:0;border-radius:0;scrollbar-width:thin;scrollbar-color:#35404f transparent}.settings h2{font-size:17px;font-weight:900;margin:0 0 10px;letter-spacing:-.02em}.settings>small{font-size:11px;color:#8390a3;line-height:1.65}.settings label{font-size:10px;font-weight:800;letter-spacing:.04em;color:#7d899b;margin:14px 0 5px}.settings select{height:36px;padding:5px 9px;background:#121821;border:1px solid #35404c;border-radius:7px;font-size:13px;font-weight:700}.settings .sound{font-size:12px;color:#c9d1dd;margin:14px 0 7px}.settings #soundTest{min-height:30px;padding:5px 10px;font-size:11px;color:#a3b0c4;border:1px solid #303a49;background:transparent;border-radius:6px}.settings #audioStatus{font-size:10px;color:#6f7d90;display:block;line-height:1.5;margin-top:5px}
+.hud{left:var(--rail);right:28px;top:24px;display:grid;grid-template-columns:1fr 1fr;gap:8px;max-width:740px;margin:0 auto}.hud .badge{background:none;border:0;border-radius:0;padding:0;font-size:12px;font-weight:800;color:#9ba7b9}.hud .badge:first-child{grid-column:1/-1;text-align:center;color:#fff;font-size:21px;font-weight:900;font-style:italic;padding-bottom:12px;border-bottom:2px solid #ff52655c;letter-spacing:.04em}.hud #patternBadge{text-align:right}.cue,.running .cue{left:var(--rail);right:28px;top:155px;font-size:clamp(30px,4vw,60px);font-weight:900;letter-spacing:-.045em;line-height:1.15}.caption,.running .caption{left:var(--rail);right:28px;bottom:20px;font-size:11px;color:#657285;line-height:1.6}
+.controls{position:fixed;left:22px;bottom:18px;transform:none;width:232px;max-width:none;display:grid;grid-template-columns:1fr 1fr;gap:5px 10px;justify-content:normal;border-top:1px solid #ffffff1c;padding-top:8px}.controls button{min-height:34px;padding:7px 4px;font-size:12px;font-weight:800;color:#aab4c3;background:transparent;border:0;border-radius:5px}.controls button:hover{background:#ffffff0b;color:#fff}.controls #quickStart{grid-column:1/-1;min-height:46px;color:var(--acc);font-size:19px;border-bottom:2px solid #ff52656e;border-radius:0}.controls #quickStart[hidden]{display:none!important}.controls #routines,.controls #exit{grid-column:1/-1}.controls #exit{border-top:1px solid #ffffff1c;border-radius:0;color:#818da0}.controls #fullscreen{position:fixed;top:22px;right:28px;width:auto;min-height:32px;padding:7px 12px;border:1px solid #ffffff24;border-radius:7px;font-size:11px;background:#080c13;color:#adb8c7}.results{z-index:200;background:#050609bc}.box{background:#11151d;border-color:#ffffff24}.box .primary{color:#fff;background:#bb2b43;border-color:#bb2b43}
+@media(max-height:650px){.settings{bottom:208px}.settings label{margin-top:9px}.controls{bottom:10px;gap:2px 8px}.controls button{min-height:30px}.controls #quickStart{min-height:38px}.cue,.running .cue{top:125px}}
+@media(max-width:850px){:root{--rail:250px}.identity,.settings,.controls{left:16px;width:208px}.hud{right:18px}.cue,.running .cue{right:18px;font-size:clamp(28px,4vw,42px)}.controls #fullscreen{right:18px}.caption,.running .caption{right:18px}}
+@media(max-width:600px){:root{--rail:200px}.identity,.settings,.controls{left:12px;width:170px}.hud{top:70px;left:var(--rail);right:12px}.hud .badge:first-child{font-size:15px}.hud .badge{font-size:10px}.cue,.running .cue{top:180px;right:12px;font-size:26px}.controls button{font-size:11px}.controls #fullscreen{top:18px;right:12px}.caption,.running .caption{right:12px;font-size:10px}.settings{bottom:222px}.identity .title-dojang{font-size:17px}}
 </style></head><body>
-<div class="game-brand">AI KICK MASTER<small>정면 격파 · v3.2.25</small></div>
+<header class="identity" id="identity"><div class="title-dojang" id="identityDojang">AI KICK MASTER</div><div class="title-auth" id="identityAuth" hidden></div><div class="title-version" id="identityVersion" hidden></div><div class="akm-powered" id="identityPowered" hidden></div></header>
 <canvas id="game"></canvas><div class="hud"><span class="badge">정면 격파 · 시운전</span><span class="badge" id="progress">진행 0 / 40</span><span class="badge" id="patternBadge">연속 간격 0.6초</span></div>
-<aside class="settings" id="settings"><h2>정면 격파 게임</h2><small>빨강 오른발 · 파랑 왼발<br>선에 도착하는 표적에 맞춰 찹니다.</small>
+<aside class="settings" id="settings"><h2>정면 격파 · 단체 수업</h2><small>빨강 오른발 · 파랑 왼발<br>선에 도착하는 표적에 맞춰 찹니다.</small>
 <label for="skill">발차기</label><select id="skill"><option value="front">앞차기 · 가로 표적</option><option value="round">돌려차기 · 세로 표적</option><option value="mixed">앞차기 + 돌려차기</option></select>
 <label for="speed">접근 속도</label><select id="speed"><option value="2150">느리게 · 2.15초</option><option value="1600" selected>보통 · 1.6초</option><option value="1150">빠르게 · 1.15초</option></select>
 <label for="pattern">표적 패턴</label><select id="pattern"><option value="mix">랜덤 · 하나 / 두 개 연속</option><option value="single">하나씩</option><option value="double">두 개 연속</option></select>
@@ -31,6 +40,18 @@ const $=id=>document.getElementById(id),cv=$('game'),ctx=cv.getContext('2d'),HOS
 const PAIR_GAP=600,RIGHT='#ff4b67',LEFT='#45a4ff';
 let state='idle',elapsed=0,last=0,done=0,total=40,targets=[],nextSpawn=0,options={},audio=null,wake=null,epoch=0;
 let musicPlayer=null,noiseBuffer=null;
+let identityObserver=null;
+function syncHostIdentity(){
+  try{
+    for(const [source,target] of [['#panelDojangName','identityDojang'],['#panelAuth','identityAuth'],['#panelVersion','identityVersion'],['.akm-powered','identityPowered']]){
+      const from=HOST.document.querySelector(source),to=$(target);if(!from||!to)continue;
+      const text=from.textContent.trim();to.textContent=text;to.hidden=!text;
+      const style=HOST.getComputedStyle(from);
+      for(const prop of ['font-family','font-size','font-weight','font-style','color','line-height','letter-spacing','text-shadow','text-transform'])to.style.setProperty(prop,style.getPropertyValue(prop));
+    }
+    document.documentElement.style.setProperty('--identity-bottom',Math.max(130,$('identity').getBoundingClientRect().bottom+24)+'px');
+  }catch(e){}
+}
 function allowed(){return window.kickGameAccessAllowed();}
 function hostRunning(on){$('quickStart').hidden=state!=='idle';try{HOST.setGroupRunning(on);}catch(e){}}
 function tone(){if(!$('sound').checked)return;try{audio=audio||new(window.AudioContext||window.webkitAudioContext)();audio.resume();const now=audio.currentTime;
@@ -61,11 +82,11 @@ function update(dt){elapsed+=dt;if(elapsed<3000){cue(String(Math.max(1,Math.ceil
 for(const t of targets){if(!t.hit&&elapsed>=t.at)impact(t);if(t.hit)for(const f of t.fx){f.x+=f.vx*dt/1000;f.y+=f.vy*dt/1000;f.vy+=dt*.35;}}
 if(targets.length&&targets.every(t=>t.hit)&&elapsed>=targets[targets.length-1].at+500){if(done>=total)finish();else spawn();}}
 function geometry(t,w,h){const base=Math.min(w*.40,h*.68)*.60;return {width:t.round?base*.18:base*1.2,height:t.round?base*1.05:base*.18,angle:t.round?(t.right?1:-1)*20*Math.PI/180:0};}
-function grid(w,h){const g=ctx.createLinearGradient(0,0,0,h);g.addColorStop(0,'#071020');g.addColorStop(1,'#172b40');ctx.fillStyle=g;ctx.fillRect(0,0,w,h);const vx=w/2,vy=h*.4;ctx.strokeStyle='#254057';ctx.lineWidth=1;for(let i=-6;i<=6;i++){ctx.beginPath();ctx.moveTo(vx,vy);ctx.lineTo(vx+i*w*.2,h);ctx.stroke();}for(let i=0;i<12;i++){const y=vy+(i/12)**2*(h-vy);ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();}}
-function draw(){const box=cv.getBoundingClientRect(),w=box.width,h=box.height,dpr=Math.min(devicePixelRatio||1,2);if(cv.width!==Math.round(w*dpr)||cv.height!==Math.round(h*dpr)){cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);}ctx.setTransform(dpr,0,0,dpr,0,0);grid(w,h);
+function grid(w,h){const g=ctx.createRadialGradient(w*.5,h*.38,0,w*.5,h*.38,Math.max(w,h));g.addColorStop(0,'#242a36');g.addColorStop(.4,'#11151d');g.addColorStop(1,'#050609');ctx.fillStyle=g;ctx.fillRect(0,0,w,h);const vx=w/2,vy=h*.4;ctx.strokeStyle='rgba(255,255,255,.045)';ctx.lineWidth=1;for(let i=-6;i<=6;i++){ctx.beginPath();ctx.moveTo(vx,vy);ctx.lineTo(vx+i*w*.2,h);ctx.stroke();}for(let i=0;i<12;i++){const y=vy+(i/12)**2*(h-vy);ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();}}
+function draw(){const box=cv.getBoundingClientRect(),fullWidth=box.width,h=box.height,dpr=Math.min(devicePixelRatio||1,2),rail=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--rail'))||282,w=Math.max(100,fullWidth-rail);if(cv.width!==Math.round(fullWidth*dpr)||cv.height!==Math.round(h*dpr)){cv.width=Math.round(fullWidth*dpr);cv.height=Math.round(h*dpr);}ctx.setTransform(dpr,0,0,dpr,0,0);ctx.fillStyle='#080b11';ctx.fillRect(0,0,fullWidth,h);ctx.save();ctx.translate(rail,0);ctx.beginPath();ctx.rect(0,0,w,h);ctx.clip();grid(w,h);
 const active=targets.find(t=>!t.hit)||targets[targets.length-1];if(active){const g=geometry(active,w,h);ctx.save();ctx.translate(w/2,h*.57);ctx.rotate(g.angle);ctx.strokeStyle=active.color;ctx.globalAlpha=.65;ctx.lineWidth=1;ctx.strokeRect(-g.width/2,-g.height/2,g.width,g.height);ctx.restore();}
 for(const t of [...targets].reverse()){if(t.hit||elapsed<t.at-t.travel)continue;const p=Math.max(0,Math.min(1,1-(t.at-elapsed)/t.travel)),s=.12+.88*p*p,g=geometry(t,w,h);ctx.save();ctx.translate(w/2,h*(.41+p*p*.16));ctx.rotate(g.angle);ctx.fillStyle=t.color;ctx.fillRect(-g.width*s/2,-g.height*s/2,g.width*s,g.height*s);ctx.restore();}
-for(const t of targets){if(!t.hit)continue;const opacity=Math.max(0,1-(elapsed-t.at)/320);ctx.save();ctx.globalAlpha=opacity;ctx.fillStyle=t.color;for(const f of t.fx)ctx.fillRect(w/2+f.x,h*.57+f.y,f.r*2,f.r);ctx.restore();}}
+for(const t of targets){if(!t.hit)continue;const opacity=Math.max(0,1-(elapsed-t.at)/320);ctx.save();ctx.globalAlpha=opacity;ctx.fillStyle=t.color;for(const f of t.fx)ctx.fillRect(w/2+f.x,h*.57+f.y,f.r*2,f.r);ctx.restore();}ctx.restore();}
 function frame(now){const dt=last?Math.min(80,now-last):0;last=now;if(state==='running')update(dt);draw();requestAnimationFrame(frame);}
 $('quickStart').onclick=start;$('again').onclick=start;$('pause').onclick=pause;$('reset').onclick=reset;$('configure').onclick=reset;
 $('fullscreen').onclick=()=>{if(typeof HOST.toggleHostFullscreen==='function')HOST.toggleHostFullscreen();};
@@ -74,5 +95,10 @@ $('routines').onclick=()=>{reset();HOST.showKickGroupRoutines();};$('exit').oncl
 document.addEventListener('keydown',e=>{if(e.code==='Space'&&!/SELECT|INPUT|BUTTON/.test(e.target.tagName)){e.preventDefault();if(state==='running'||state==='paused')pause();else start();}if(e.key==='Escape')reset();});
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&state==='running')pause();});window.addEventListener('pagehide',()=>{stopMusic();hostRunning(false);wakeOff();try{audio&&audio.close();}catch(e){}});
 setInterval(()=>{if(!allowed()){reset();location.replace('aikickmaster.html');}},1000);
-if(allowed()){reset();requestAnimationFrame(frame);}
+if(allowed()){
+  syncHostIdentity();try{const title=HOST.document.getElementById('panelDojangName')?.closest('.title');if(title){identityObserver=new MutationObserver(syncHostIdentity);identityObserver.observe(title,{subtree:true,childList:true,characterData:true});}}catch(e){}
+  window.addEventListener('resize',syncHostIdentity);document.fonts?.ready.then(syncHostIdentity);
+  reset();requestAnimationFrame(frame);
+}
 </script></body></html>
+
