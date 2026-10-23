@@ -749,6 +749,16 @@ body.jmp-racing .jt-duo{display:none!important}
 @media(max-height:600px){.race-lane{top:32%;bottom:16%}body.jmp-racing #teamwrap{top:calc(var(--sat) + 64px);padding:5px 18px}body.jmp-racing #teamwrap .tval{font-size:25px}.race-car{height:65px;width:38px}}
 @media(prefers-reduced-motion:reduce){.race-car{transition:none}.race-car.boost svg{animation:none}}
 </style>
+<style id="jmEcho">
+.gw-card.echo-card{display:none}body.jmp-beta-on .gw-card.echo-card{display:flex}
+#jmpEchoDialog{position:fixed;inset:0;width:100%;height:100%;height:100dvh;max-width:none;max-height:none;border:0;padding:0;margin:0;overflow:hidden;background:#041714;color:var(--ink);font-family:var(--kr)}
+#jmpEchoDialog:not([open]){display:none}#jmpEchoDialog::backdrop{background:#020b0a}
+#jmpEchoFrame{position:absolute;inset:0;border:0;width:100%;height:100%;display:block}
+#jmpEchoDialog .title-block{position:absolute;left:22px;top:18px;width:232px;max-width:40%;z-index:4;pointer-events:none}
+#jmpEchoDialog .title-block button{pointer-events:auto}#jmpEchoDialog #fsBtn{z-index:5}
+@media(max-width:850px){#jmpEchoDialog .title-block{left:16px;width:208px}}
+@media(max-width:600px){#jmpEchoDialog .title-block{left:12px;top:12px;width:170px}#jmpEchoDialog .tb-dojang{font-size:15px}}
+</style>
 <style id="jmCompetition">
 
 #competitionDialog{position:fixed;inset:0;width:100%;height:100%;height:100dvh;max-width:none;max-height:none;box-sizing:border-box;border:0;margin:0;padding:16px 24px 58px;background:radial-gradient(ellipse at 34% 30%,rgba(20,184,166,.16),rgba(2,11,10,0) 70%),linear-gradient(180deg,#06201c 0%,#041714 55%,#020b0a 100%);color:var(--ink);font-family:var(--kr);overflow:auto}
@@ -802,11 +812,13 @@ body.jmp-racing .jt-duo{display:none!important}
     <div id="vignette"></div>
   </div>
 
+  <dialog id="jmpEchoDialog" aria-label="리듬 메아리 단체 수업"><iframe id="jmpEchoFrame" title="리듬 메아리" allow="autoplay; screen-wake-lock; fullscreen"></iframe></dialog>
   <section class="group-welcome" id="groupWelcome" aria-label="단체 수업 선택" hidden>
     <header><div class="gw-eyebrow">단체 수업 · 카메라 없이 함께</div><h2>오늘은 어떻게 뛰어볼까요?</h2><p class="gw-intro">운동을 고르고, 왼쪽에서 음악과 목표를 맞춰 주세요.</p></header>
     <div class="gw-cards">
       <button class="gw-card" type="button" data-group-pick="rhythm" aria-pressed="true"><span class="gw-kind">동작과 리듬 익히기</span><strong>리듬게임</strong><span class="gw-description">발판과 다가오는 노트를 보며<br>여러 줄넘기 동작을 함께 익혀요.</span></button>
       <button class="gw-card" type="button" data-group-pick="pace" aria-pressed="false"><span class="gw-kind">일정한 속도로 뛰기</span><strong>속도게임</strong><span class="gw-description">줄넘기 선수의 착지에 맞춰<br>정해진 시간과 목표로 뛰어요.</span></button>
+      <button class="gw-card echo-card" type="button" id="echoOpen"><span class="gw-kind">듣고 기억해서 뛰기 · 시운전</span><strong>리듬 메아리</strong><span class="gw-description">듣기 4박 → 뛰기 4박<br>다양한 리듬을 듣고 바로 따라 뛰어요.</span></button>
       <button class="gw-card" type="button" id="competitionOpen"><span class="gw-kind">실전처럼 준비하기</span><strong>대회준비</strong><span class="gw-description">대회 사운드와 함께<br>큰 타이머로 남은 시간을 확인해요.</span></button>
     </div>
     <footer class="gw-footer"><div class="gw-summary" id="groupWelcomeSummary" aria-live="polite"></div><button class="gw-start" id="groupWelcomeStart" type="button">이 수업 시작 ▶</button></footer>
@@ -1180,7 +1192,7 @@ body.jmp-racing .jt-duo{display:none!important}
 
 <script type="module">
 
-const APP_VERSION = '3.9.13';   
+const APP_VERSION = '3.10.0';   
 try{ window.__NL_VER = APP_VERSION; }catch(e){}   
 
 const MP_VERSION  = '1.0.1';
@@ -4993,6 +5005,35 @@ function compClose(){compReset();compRestoreCommon();compDialog.close();}
 compDialog.addEventListener('close',()=>{if(!compDialog.open){compReset();compRestoreCommon();}});
 compIdentity.addEventListener('click',e=>{if(compDialog.open&&e.target.closest('button'))compClose();},true);
 $('competitionOpen').addEventListener('click',()=>{if(appState!=='lobby'||mode!=='group')return;stopCamera();stopGroupMusic();compReset();compMountCommon();compDialog.showModal();});
+const echoDialog=$('jmpEchoDialog'),echoFrame=$('jmpEchoFrame');
+let echoUntil=0,echoFsHidden=false,echoPlaying=false;
+window.jmpEchoSetRunning=function(on){echoPlaying=!!on&&echoDialog.open;keepScreenOn(echoPlaying);};
+function syncEchoLayout(){
+  if(!echoDialog.open)return;
+  try{const root=echoFrame.contentDocument.documentElement;root.style.setProperty('--echo-settings-top',Math.max(150,compIdentity.getBoundingClientRect().bottom+20)+'px');root.style.setProperty('--jm-font',getComputedStyle(document.body).fontFamily);}catch(e){}
+}
+echoFrame.addEventListener('load',syncEchoLayout);window.addEventListener('resize',syncEchoLayout);
+window.jmpCanOpenEcho=function(){
+  const c=_jmpGetCache();
+  return !!(jmpIsLab() && mode==='group' && appState==='lobby' && echoDialog.open && c && c.license_key===_jmpAuth.key && !_jmpIsCacheExpired(c) && Date.now()<echoUntil && (!_jmpAuth.exp||Date.now()<_jmpAuth.exp));
+};
+window.closeJmpEcho=function(){
+  window.jmpEchoSetRunning(false);
+  echoFrame.removeAttribute('src');echoUntil=0;
+  if(compIdentity.parentNode===echoDialog){compIdentityHome.after(compIdentity);compFullscreenHome.after(compFullscreen);compFullscreen.hidden=echoFsHidden;}
+  if(echoDialog.open)echoDialog.close();
+};
+$('echoOpen').addEventListener('click',async()=>{
+  if(appState!=='lobby'||mode!=='group'||!jmpIsLab()||echoDialog.open)return;
+  const c=_jmpGetCache();if(!c || await _jmpCheckToken(c)!=='ok'||!jmpIsLab()||mode!=='group'||appState!=='lobby')return;
+  try{const claims=JSON.parse(new TextDecoder().decode(_jmpB64urlToBytes(c.tok.split('.')[0])));echoUntil=Math.min(claims.sxp,claims.exp||Infinity);}catch(e){return;}
+  stopCamera();stopGroupMusic();echoFsHidden=compFullscreen.hidden;
+  echoDialog.append(compIdentity,compFullscreen);compFullscreen.hidden=false;syncFsBtn();echoDialog.showModal();
+  echoFrame.src='jumprhythmecho.html?v=3.10.0';
+});
+echoDialog.addEventListener('cancel',e=>{e.preventDefault();window.closeJmpEcho();});
+echoDialog.addEventListener('close',()=>{if(!echoDialog.open)window.closeJmpEcho();});
+compIdentity.addEventListener('click',e=>{if(echoDialog.open&&e.target.closest('button'))window.closeJmpEcho();},true);
 $('competitionClose').addEventListener('click',compClose);
 compDialog.addEventListener('cancel',e=>{e.preventDefault();compClose();});
 $('competitionReset').addEventListener('click',compReset);
@@ -5403,7 +5444,7 @@ $('loginBtn').addEventListener('click',doLicenseActivate);
 $('licenseKeyInput').addEventListener('keydown',e=>{ if(e.key==='Enter') doLicenseActivate(); });
 
 function _jmpIsTraining(){
-  return appState==='running' || appState==='countdown' || !!running;
+  return appState==='running' || appState==='countdown' || !!running || echoPlaying;
 }
 function _jmpShouldBlock(result){
   if(!result || result.valid) return false;
@@ -5523,6 +5564,7 @@ function applyJmpLabVisibility(){
   labRecording=jmpCanRecord(); 
   labRenderCount();
   if(!on){
+    if($('jmpEchoDialog').open)window.closeJmpEcho();
     labOpen=false;
     const m=$('jumpLabModal'); if(m) m.hidden=true;
   }
