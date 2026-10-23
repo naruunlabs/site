@@ -7769,19 +7769,19 @@ let labModalOpen=false;
 window.openGroupMode=function(){
   if(!window.akmCanOpenGroup()) return;
   if(running && typeof stopGame==='function') stopGame();
-  openGroupOverlay('groupkickmaster.html?embed=1');
+  openGroupOverlay('groupkickmaster.html?embed=1&v=3.3.4');
 };
 window.openKickGroupGame=async function(){
   if(!await window.akmPrepareKickGroupGame()) return;
   if(running && typeof stopGame==='function') stopGame();
   const f=document.getElementById('groupFrame');
-  if(f){window.setGroupRunning(false);setKickGroupGameLayer(true);f.src='groupkickgame.html?v=3.3.3';}
-  else openGroupOverlay('groupkickgame.html?v=3.3.3');
+  if(f){window.setGroupRunning(false);setKickGroupGameLayer(true);f.src='groupkickgame.html?v=3.3.4';}
+  else openGroupOverlay('groupkickgame.html?v=3.3.4');
 };
 window.showKickGroupRoutines=function(){
   if(!window.akmCanOpenGroup()) return;
   const f=document.getElementById('groupFrame');
-  if(f){window.setGroupRunning(false);setKickGroupGameLayer(false);f.src='groupkickmaster.html?embed=1';}
+  if(f){window.setGroupRunning(false);setKickGroupGameLayer(false);f.src='groupkickmaster.html?embed=1&v=3.3.4';}
 };
 function setKickGroupGameLayer(on){
   const wrap=document.getElementById('groupOverlay');if(!wrap)return;
@@ -10938,7 +10938,7 @@ const _AKM_CACHE_DAYS  = 7;
 const _AKM_TRIAL_CACHE_DAYS = 1;   
 const _AKM_FETCH_TIMEOUT_MS = 8 * 1000;   
 
-const _AKM_VERSION     = '3.3.3';   
+const _AKM_VERSION     = '3.3.4';   
 try{ window.__NL_VER = _AKM_VERSION; }catch(e){}   
 
 let _akmFailCount = 0;
