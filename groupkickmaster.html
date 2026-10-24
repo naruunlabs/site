@@ -264,18 +264,19 @@ html.embed .app.running .side-note{bottom:24px}
 @media(max-height:600px){.app.running .control-stack,html.embed .app.running .control-stack{bottom:16px}.app.running .actions,html.embed .app.running .actions{padding:9px;gap:8px}}
 </style>
 <style id="group-start-unified">#groupWelcomeStart{display:none!important}.control-stack{bottom:90px!important}.control-stack label[hidden]{display:none!important}.control-stack .grid{flex:0 0 auto;align-items:stretch;grid-template-columns:repeat(2,minmax(0,1fr))}.control-stack .grid .field{min-width:0;display:flex;flex-direction:column;justify-content:flex-end}.control-stack .grid .field>span{min-height:2.6em;line-height:1.3;margin-bottom:4px;flex-shrink:0}.control-stack .grid .field select{flex-shrink:0;margin-top:auto}.actions{margin-top:auto}.actions .start{display:none}#start.group-primary{display:block!important}</style>
+<style id="kick-training-merge">@media(min-width:1100px){.gw-cards{grid-template-columns:repeat(2,minmax(0,1fr))}}.km-presets{margin:10px 0 14px}.km-presets strong{display:block;font-size:13px;color:#aab3c2;margin-bottom:6px}#comboPresets{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}#comboPresets button{font-weight:800}#comboRests{display:grid;grid-template-columns:1fr 1fr;gap:8px}.km-sub{margin-top:14px}.km-box button.km-rest,.km-box button.km-end{font-size:13px;color:#cfd6e0}.km-box button.km-end{border-color:#ff899466}.km-row.is-rest span{color:#9aa4b2;font-size:13px}.km-row.is-end{border-bottom:1px dashed #ff899466;padding-bottom:8px;margin-bottom:10px}.km-row.is-end span{color:#ffb3ba;font-size:13px}@media(max-width:760px){#comboPresets{grid-template-columns:1fr 1fr}}</style>
 </head>
 <body>
 <select id="routine" hidden aria-hidden="true" tabindex="-1"></select>
 <main class="app stage-follow" id="app">
   <aside class="side">
-    <div class="brand">AI <em>KICK</em> MASTER</div><div class="version">GROUP COMBINATION · v1.9</div>
+    <div class="brand">AI <em>KICK</em> MASTER</div><div class="version">GROUP COMBINATION · v2.0</div>
     <div class="control-stack">
       <div class="rhythm-mode">리듬 집중 · 화면 + 호루라기</div><div class="stage-hint" id="stageHint"></div>
       
       <label class="field"><span>팀 운영</span><select id="teamMode"><option value="all">전원 함께</option><option value="rotate">A/B팀 교대</option></select></label><p class="stage-hint" id="teamHint"></p>
 
-      <button type="button" id="comboOpen" style="padding:12px;border:1px solid var(--line);border-radius:10px;width:100%;margin:8px 0">콤보 설정</button>
+      <button type="button" id="comboOpen" style="padding:12px;border:1px solid var(--line);border-radius:10px;width:100%;margin:8px 0">순서 설정</button>
       <div class="grid"><label class="field"><span>속도</span><select id="bpm"><option value="60">느리게 · 60</option><option value="80" selected>기본 · 80</option><option value="100">빠르게 · 100</option><option value="120">매우 빠르게 · 120</option><option value="140">고속 · 140</option><option value="160">최고속 · 160</option></select></label><label class="field"><span>세트</span><select id="sets"><option>1</option><option selected>2</option><option>3</option><option>4</option></select></label></div>
       <div class="speed-note" id="speedNote"></div>
       <div class="grid"><label class="field"><span id="goalLab">세트 목표</span><select id="kickGoal"></select></label><label class="field"><span>세트 휴식</span><select id="rest"><option value="5">5초</option><option value="10">10초</option><option value="15" selected>15초</option><option value="20">20초</option><option value="30">30초</option></select></label></div>
@@ -290,8 +291,8 @@ html.embed .app.running .side-note{bottom:24px}
   </aside>
   <section class="stage" id="stage">
     <section class="group-welcome" id="groupWelcome" aria-label="단체 수업 선택">
-      <header><div class="gw-eyebrow">단체 수업 · 카메라 없이 함께</div><h2>오늘은 어떤 운동을 할까요?</h2><p class="gw-intro">루틴을 고르고, 왼쪽에서 속도와 팀 운영을 맞춰 주세요.</p></header>
-      <div class="gw-sequence"><b>선택한 루틴 순서</b><p id="groupWelcomeSequence"></p><small>순서를 먼저 익히고 시작하세요. 운동 중에는 발차기 이름을 보고 휘슬에 맞춰 찹니다.</small></div><div class="gw-cards" id="groupWelcomeCards"></div>
+      <header><div class="gw-eyebrow">단체 수업 · 카메라 없이 함께</div><h2>오늘은 어떤 운동을 할까요?</h2><p class="gw-intro">운동을 고르고, 왼쪽에서 속도와 팀 운영을 맞춰 주세요.</p></header>
+      <div class="gw-sequence"><b>발차기 훈련 순서</b><p id="groupWelcomeSequence"></p><small>순서를 먼저 익히고 시작하세요. 운동 중에는 발차기 이름을 보고 휘슬에 맞춰 찹니다.</small></div><div class="gw-cards" id="groupWelcomeCards"></div>
       <footer class="gw-footer"><div class="gw-summary" id="groupWelcomeSummary" aria-live="polite"></div><button class="gw-start" id="groupWelcomeStart" type="button">이 수업 시작 ▶</button></footer>
       <div class="gw-note">발차기 이름을 보고 휘슬에 맞춰 운동하세요. 진행 횟수는 화면 기준이며, 학생의 실제 성공 횟수는 측정하지 않습니다.</div>
     </section>
@@ -315,10 +316,11 @@ html.embed .app.running .side-note{bottom:24px}
   </section>
 </main>
 <div id="comboModal" role="dialog" aria-modal="true" aria-labelledby="comboTitle" hidden>
- <div class="km-box"><h2 id="comboTitle">발차기 콤보 설정</h2><p>동작을 눌러 순서대로 담으세요. 같은 동작도 여러 번 넣을 수 있습니다.</p>
- <div class="km-body"><section><h3>동작 고르기</h3><div id="comboSkills"></div></section><section><h3>선택한 동작 <small id="comboSum"></small></h3><div id="comboOrder"></div></section></div>
- <div class="km-mine"><strong>내 콤보</strong><span>이 기기에 3개까지 저장</span><div id="comboSlots"></div></div><p id="comboMessage" role="status"></p>
- <div class="km-actions"><button id="comboClear">비우기</button><button id="comboClose">닫기</button><button id="comboUse">현재 콤보 사용</button></div></div>
+ <div class="km-box"><h2 id="comboTitle">발차기 훈련 순서</h2><p>기본 순서를 고르거나 동작을 눌러 순서대로 담으세요. <b>묶음 끝</b>마다 호루라기가 다시 울리고, A/B팀 교대도 묶음마다 합니다.</p>
+ <div class="km-presets"><strong>기본 순서</strong><div id="comboPresets"></div></div>
+ <div class="km-body"><section><h3>발차기</h3><div id="comboSkills"></div><h3 class="km-sub">복귀 · 묶음</h3><div id="comboRests"></div></section><section><h3>선택한 순서 <small id="comboSum"></small></h3><div id="comboOrder"></div></section></div>
+ <div class="km-mine"><strong>내 순서</strong><span>이 기기에 3개까지 저장</span><div id="comboSlots"></div></div><p id="comboMessage" role="status"></p>
+ <div class="km-actions"><button id="comboClear">비우기</button><button id="comboClose">닫기</button><button id="comboUse">이 순서로 사용</button></div></div>
 </div>
 <script src="assets/group-primary.js?v=3.3.4"></script>
 <script>
@@ -333,32 +335,8 @@ const PRODUCT={
     follow:'궤적 시범 · 동작 이름 · 이름 구령을 모두 보여줘요. 호루라기에 찹니다.',
     call:'화면엔 순서만 보여요. 이름 구령을 듣고 호루라기에 찹니다.'
   },
-  routines:[
-    {id:'front',name:'기초 앞차기',type:'single',intro:{n:'준비 자세',d:'양발을 모으고 정면을 봅니다'},cycle:[
-      K('오른발 앞차기','front-right',2,'무릎을 들고 정면으로 찹니다',{chip:'오른 앞차기'}),
-      R('제자리',1,'오른발을 원래 자리에 놓습니다'),
-      K('왼발 앞차기','front-left',2,'무릎을 들고 정면으로 찹니다',{chip:'왼 앞차기'}),
-      R('제자리',1,'왼발을 원래 자리에 놓습니다')]},
-    {id:'round',name:'좌우 돌려차기',type:'single',intro:{n:'겨루기 준비',d:'양손을 올리고 중심을 잡습니다'},cycle:[
-      K('오른발 돌려차기','round-right',2,'축발을 돌리고 몸통 높이로 찹니다',{chip:'오른 돌려차기'}),
-      R('앞에 내려놓기',1,'찬 발을 앞에 내려놓습니다'),
-      K('왼발 돌려차기','round-left',2,'축발을 돌리고 몸통 높이로 찹니다',{chip:'왼 돌려차기'}),
-      R('준비',1,'간격을 다시 맞춥니다')]},
-    {id:'front-round',name:'앞차기 → 돌려차기',type:'combo',intro:{n:'겨루기 준비',d:'양손을 올리고 시작합니다'},cycle:[
-      K('오른발 앞차기','front-right',2,'정면으로 빠르게 찹니다',{chip:'오른 앞차기'}),
-      K('오른발 돌려차기','round-right',2,'내리지 않고 이어서 돌려찹니다',{chain:true,call:'돌려차기',chip:'돌려차기'}),
-      R('뒤로 복귀',2,'안전 간격을 다시 확보합니다',{end:true}),
-      K('왼발 앞차기','front-left',2,'정면으로 빠르게 찹니다',{chip:'왼 앞차기'}),
-      K('왼발 돌려차기','round-left',2,'내리지 않고 이어서 돌려찹니다',{chain:true,call:'돌려차기',chip:'돌려차기'}),
-      R('준비 자세',2,'호흡을 정리합니다',{end:true})]},
-    {id:'fitness',name:'발차기 체력',type:'combo',intro:{n:'준비 자세',d:'가볍게 제자리에서 준비합니다'},cycle:[
-      K('오른발 앞차기','front-right',2,'빠르고 짧게 찹니다',{chip:'오른 앞'}),
-      K('왼발 앞차기','front-left',2,'빠르고 짧게 찹니다',{chip:'왼 앞'}),
-      K('오른발 돌려차기','round-right',2,'몸통 높이로 찹니다',{chip:'오른 돌려'}),
-      K('왼발 돌려차기','round-left',2,'몸통 높이로 찹니다',{chip:'왼 돌려'}),
-      R('좌우 스텝',2,'두 번 가볍게 이동합니다'),
-      R('준비 자세',2,'다음 반복을 준비합니다',{end:true})]}
-  ],
+  
+  routines:[],
   okNote:'확인 기준 · 축발 회전 · 복귀 균형 · 가드',
   focus:['축발 회전','복귀 균형','가드 유지'],
   baseRole:'가드 스텝',
@@ -381,32 +359,57 @@ for(const kind of ['front','round'])for(const height of ['face','body'])for(cons
  const n=`${side==='right'?'오른발':'왼발'} ${kind==='front'?'앞차기':'돌려차기'} ${height==='face'?'얼굴':'몸통'}`;
  KICK_SKILLS.push({id:`${kind}-${height}-${side}`,n,t:`${kind}-${height}-${side}`,b:2,d:`${height==='face'?'얼굴':'몸통'} 높이로 차고 균형을 잡습니다`,chip:n});
 }
-const COMBO_KEY='akm_group_combos_v1';
-const validCombo=a=>Array.isArray(a)?a.filter(id=>KICK_SKILLS.some(s=>s.id===id)).slice(0,16):[];
+const REST_SKILLS=[
+ {id:'ret',n:'제자리',b:1,d:'찬 발을 제자리에 놓습니다',t:'ready'},
+ {id:'step',n:'좌우 스텝',b:2,d:'두 번 가볍게 이동합니다',t:'ready'},
+ {id:'ret-end',n:'제자리',lab:'제자리 · 묶음 끝',b:1,d:'찬 발을 제자리에 놓고 다음 묶음을 준비합니다',t:'ready',end:true},
+ {id:'ready-end',n:'준비 자세',lab:'준비 자세 · 묶음 끝',b:2,d:'호흡을 정리하고 다음 묶음을 준비합니다',t:'ready',end:true}
+];
+const ITEM_OF=id=>KICK_SKILLS.find(s=>s.id===id)||REST_SKILLS.find(s=>s.id===id);
+const isKickId=id=>KICK_SKILLS.some(s=>s.id===id);
+const itemLabel=id=>{const s=ITEM_OF(id);return isKickId(id)?s.n:`${s.lab||s.n} (${s.b}박)`;};
+
+const KICK_PRESETS=[
+ {n:'기초 앞차기',ids:['front-body-right','ret-end','front-body-left','ret-end']},
+ {n:'좌우 돌려차기',ids:['round-body-right','ret-end','round-body-left','ret-end']},
+ {n:'앞차기 → 돌려차기',ids:['front-body-right','round-body-right','ready-end','front-body-left','round-body-left','ready-end']},
+ {n:'발차기 체력',ids:['front-body-right','front-body-left','round-body-right','round-body-left','step','ready-end']}
+];
+const COMBO_KEY='akm_group_combos_v1', MAX_KICKS=16, MAX_ITEMS=32;
+
+const validCombo=a=>{if(!Array.isArray(a))return [];const out=[];let kicks=0,since=0;for(const id of a){if(!ITEM_OF(id)||out.length>=MAX_ITEMS)continue;if(isKickId(id)){if(kicks>=MAX_KICKS)continue;kicks++;since++;}else if(ITEM_OF(id).end){if(!since)continue;since=0;}out.push(id);}return kicks?out:[];};
+const draftKicks=()=>comboDraft.filter(isKickId).length;
+const draftBundles=()=>{const ids=validCombo(comboDraft);const n=ids.filter(id=>ITEM_OF(id).end).length;return n+(ids.length&&!ITEM_OF(ids.at(-1)).end?1:0);};
 function readCombos(){try{const d=JSON.parse(localStorage.getItem(COMBO_KEY)||'{}');return {active:validCombo(d.active),slots:Array.from({length:3},(_,i)=>validCombo(d.slots?.[i]))};}catch(e){return {active:[],slots:[[],[],[]]};}}
 let comboData=readCombos(),comboDraft=[],comboFocus=null;
-const customRoutine={id:'custom',name:'내 발차기 콤보',type:'combo',intro:{n:'발차기 준비',d:'설정한 순서대로 연속해서 찹니다'},cycle:[]};
-function applyCombo(ids){customRoutine.cycle=[...validCombo(ids).map(id=>({...KICK_SKILLS.find(s=>s.id===id)})),R('준비 자세',2,'다음 묶음을 준비합니다',{end:true})];}
-applyCombo(comboData.active.length?comboData.active:['front-body-right','round-face-left']);
+const customRoutine={id:'custom',name:'발차기 훈련',type:'combo',intro:{n:'발차기 준비',d:'설정한 순서대로 찹니다'},cycle:[]};
+function applyCombo(ids){const v=validCombo(ids);customRoutine.cycle=v.map(id=>({...ITEM_OF(id)}));if(!v.length||!ITEM_OF(v.at(-1)).end)customRoutine.cycle.push(R('준비 자세',2,'다음 묶음을 준비합니다',{end:true}));}
+applyCombo(comboData.active.length?comboData.active:KICK_PRESETS[0].ids);
 PRODUCT.routines.push(customRoutine);
 function saveCombos(){try{localStorage.setItem(COMBO_KEY,JSON.stringify(comboData));return true;}catch(e){$('comboMessage').textContent='저장 공간을 확인해 주세요. 현재 화면에서는 사용할 수 있습니다.';return false;}}
-function openCombo(){if(running)return;comboFocus=document.activeElement;comboDraft=customRoutine.cycle.filter(s=>s.t!=='ready').map(s=>s.id);$('comboMessage').textContent='';renderCombo();$('comboModal').hidden=false;$('comboClose').focus();}
+function openCombo(){if(running)return;comboFocus=document.activeElement;comboDraft=customRoutine.cycle.filter(s=>s.id).map(s=>s.id);$('comboMessage').textContent='';renderCombo();$('comboModal').hidden=false;$('comboClose').focus();}
 function closeCombo(){$('comboModal').hidden=true;comboFocus?.focus();}
 function renderCombo(){
+ const presets=$('comboPresets');presets.replaceChildren();
+ KICK_PRESETS.forEach(p=>{const b=document.createElement('button');b.textContent=p.n;b.title=p.ids.map(itemLabel).join(' → ');b.onclick=()=>{comboDraft=[...p.ids];$('comboMessage').textContent=`기본 순서 '${p.n}'을 담았습니다. 고쳐서 써도 됩니다.`;renderCombo();};presets.append(b);});
  const skills=$('comboSkills');skills.replaceChildren();
- KICK_SKILLS.forEach(s=>{const b=document.createElement('button');b.textContent=s.n;b.disabled=comboDraft.length>=16;b.onclick=()=>{comboDraft.push(s.id);renderCombo();};skills.append(b);});
+ KICK_SKILLS.forEach(s=>{const b=document.createElement('button');b.textContent=s.n;b.disabled=draftKicks()>=MAX_KICKS||comboDraft.length>=MAX_ITEMS;b.onclick=()=>{comboDraft.push(s.id);renderCombo();};skills.append(b);});
+ const rests=$('comboRests');rests.replaceChildren();
+ REST_SKILLS.forEach(s=>{const b=document.createElement('button');b.className=s.end?'km-end':'km-rest';b.textContent=itemLabel(s.id);b.disabled=comboDraft.length>=MAX_ITEMS;b.onclick=()=>{comboDraft.push(s.id);renderCombo();};rests.append(b);});
  const order=$('comboOrder');order.replaceChildren();
- if(!comboDraft.length)order.textContent='왼쪽에서 동작을 선택하세요.';
- comboDraft.forEach((id,i)=>{const row=document.createElement('div');row.className='km-row';const label=document.createElement('span');label.textContent=`${i+1}. ${KICK_SKILLS.find(s=>s.id===id).n}`;row.append(label);
- [['↑','위로',i===0,-1],['↓','아래로',i===comboDraft.length-1,1],['×','삭제',false,0]].forEach(([text,name,disabled,dir])=>{const b=document.createElement('button');b.textContent=text;b.setAttribute('aria-label',`${i+1}번 동작 ${name}`);b.disabled=disabled;b.onclick=()=>{if(dir)[comboDraft[i],comboDraft[i+dir]]=[comboDraft[i+dir],comboDraft[i]];else comboDraft.splice(i,1);renderCombo();};row.append(b);});order.append(row);});
- $('comboSum').textContent=`${comboDraft.length}/16개 · 한 묶음`;$('comboUse').disabled=!comboDraft.length;
- const slots=$('comboSlots');slots.replaceChildren();comboData.slots.forEach((ids,i)=>{const box=document.createElement('div');box.className='km-slot';const name=document.createElement('strong');name.textContent=`${i+1} · ${ids.length?ids.length+'개 동작':'비어 있음'}`;box.title=ids.map(id=>KICK_SKILLS.find(s=>s.id===id).n).join(' → ');box.append(name);
- const save=document.createElement('button');save.textContent='저장';save.disabled=!comboDraft.length;save.onclick=()=>{comboData.slots[i]=[...comboDraft];const saved=saveCombos();renderCombo();if(saved)$('comboMessage').textContent=`${i+1}번에 저장했습니다.`;};
+ if(!comboDraft.length)order.textContent='기본 순서를 고르거나 왼쪽에서 동작을 담으세요.';
+ let no=0;
+ comboDraft.forEach((id,i)=>{const kick=isKickId(id),row=document.createElement('div');row.className='km-row'+(kick?'':ITEM_OF(id).end?' is-end':' is-rest');const label=document.createElement('span');label.textContent=kick?`${++no}. ${itemLabel(id)}`:`· ${itemLabel(id)}`;row.append(label);
+ [['↑','위로',i===0,-1],['↓','아래로',i===comboDraft.length-1,1],['×','삭제',false,0]].forEach(([text,name,disabled,dir])=>{const b=document.createElement('button');b.textContent=text;b.setAttribute('aria-label',`${i+1}번째 칸 ${name}`);b.disabled=disabled;b.onclick=()=>{if(dir)[comboDraft[i],comboDraft[i+dir]]=[comboDraft[i+dir],comboDraft[i]];else comboDraft.splice(i,1);renderCombo();};row.append(b);});order.append(row);});
+ const ok=validCombo(comboDraft).length>0;
+ $('comboSum').textContent=`발차기 ${draftKicks()}/${MAX_KICKS} · 묶음 ${ok?draftBundles():0}개`;$('comboUse').disabled=!ok;
+ const slots=$('comboSlots');slots.replaceChildren();comboData.slots.forEach((ids,i)=>{const box=document.createElement('div');box.className='km-slot';const name=document.createElement('strong');const k=ids.filter(isKickId).length;name.textContent=`${i+1} · ${k?k+'개 발차기':'비어 있음'}`;box.title=ids.map(itemLabel).join(' → ');box.append(name);
+ const save=document.createElement('button');save.textContent='저장';save.disabled=!ok;save.onclick=()=>{comboData.slots[i]=validCombo(comboDraft);const saved=saveCombos();renderCombo();if(saved)$('comboMessage').textContent=`${i+1}번에 저장했습니다.`;};
  const load=document.createElement('button');load.textContent='불러오기';load.disabled=!ids.length;load.onclick=()=>{comboDraft=[...ids];renderCombo();};box.append(save,load);slots.append(box);});
 }
 function bindCombo(){
  $('comboOpen').onclick=openCombo;$('comboClose').onclick=closeCombo;$('comboClear').onclick=()=>{comboDraft=[];renderCombo();};
- $('comboUse').onclick=()=>{if(!comboDraft.length)return;comboData.active=[...comboDraft];saveCombos();applyCombo(comboDraft);ri=P.routines.indexOf(customRoutine);$('routine').value=String(ri);fillGoals();onSetting();closeCombo();};
+ $('comboUse').onclick=()=>{const v=validCombo(comboDraft);if(!v.length)return;comboData.active=v;saveCombos();applyCombo(v);ri=P.routines.indexOf(customRoutine);$('routine').value=String(ri);fillGoals();onSetting();closeCombo();};
  $('comboModal').onclick=e=>{if(e.target===$('comboModal'))closeCombo();};
  $('comboModal').addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();closeCombo();}if(e.key==='Tab'){const a=[...$('comboModal').querySelectorAll('button:not(:disabled)')],first=a[0],last=a[a.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}}});
 }
@@ -536,12 +539,7 @@ function callLead(){return fastTempo()?.06:CALL_LEAD;}
 function speechSec(t,rate=voiceRate()){const syl=(t.match(/[가-힣]/g)||[]).length,other=(t.match(/[A-Za-z0-9]/g)||[]).length,pause=(t.match(/[,·]/g)||[]).length;return syl*.16/rate+other*.08+pause*.18+.15;}
 function compile(){
   const r=routine(), n=r.cycle.length;
-  const steps=r.cycle.map((s,i)=>{
-    let q={...s};if(q.t!=='ready'&&r.id!=='custom'){
-      const h='body',word='몸통';q.t=q.t.replace(/-(right|left)$/,`-${h}-$1`);q.n+=' '+word;q.chip=q.n;q.d=`${word} 높이로 찹니다. `+q.d.replace('몸통 높이로 찹니다','균형을 잡습니다');if(q.call)q.call+=' '+word;
-    }
-    return {...q,i,act:q.t!=='ready',counted:q.t!=='ready'&&!q.quiet,announce:null};
-  });
+  const steps=r.cycle.map((s,i)=>({...s,i,act:s.t!=='ready',counted:s.t!=='ready'&&!s.quiet,announce:null}));
   steps.forEach(s=>{s.phraseStart=s.act&&!s.chain;});
   const firstAction=steps.find(s=>s.act);
   steps.forEach(s=>{s.routineFirst=s===firstAction;});
@@ -556,7 +554,7 @@ function compile(){
     for(let k=1;k<=n;k++){const j=(i-k+n)%n;W+=steps[j].b;if(steps[j].act){s.window=W;break;}}
   });
   
-  if(r.type==='combo') steps.forEach((s,i)=>{if(!s.end)return;for(let k=1;k<n;k++){const q=steps[(i-k+n)%n];if(q.end)break;if(q.counted){q.kiai=true;break;}}});
+  if(r.type==='combo') steps.forEach((s,i)=>{if(!s.end)return;const kicks=[];for(let k=1;k<n;k++){const q=steps[(i-k+n)%n];if(q.end)break;if(q.counted)kicks.push(q);}if(kicks.length>=2)kicks[0].kiai=true;});
   
   let groups=[],cur=[];steps.forEach(s=>{cur.push(s);if(r.type==='combo'&&s.end){groups.push(cur);cur=[];}});if(cur.length)groups.push(cur);
   groups.forEach(g=>{const actions=g.filter(s=>s.act);if(actions.length){actions[0].routineFirst=true;actions.at(-1).bundleLast=true;}g.at(-1).bundleEnd=true;let k=0;const tot=g.filter(s=>s.counted).length;g.forEach(s=>{if(s.counted){s.ord=++k;s.of=tot;}});});
@@ -950,7 +948,7 @@ function frame(now){
   requestAnimationFrame(frame);
 }
 
-function fillRoutines(){$('routine').innerHTML=P.routines.map((r,i)=>`<option value="${i}">${r.name}${r.type==='combo'?' · 콤보':''}</option>`).join('');}
+function fillRoutines(){$('routine').innerHTML=P.routines.map((r,i)=>`<option value="${i}">${r.name}</option>`).join('');}
 function fillGoals(keep){
   const t=routine().type,opts=P.goals[t],saved=store.load()['goal_'+t];
   const candidate=Number(keep||saved||P.defGoal[t]),want=Number.isFinite(candidate)?candidate:P.defGoal[t];
@@ -989,10 +987,11 @@ function initGroupWelcome(){
   const cards=$('groupWelcomeCards');
   cards.replaceChildren(...P.routines.map((r,i)=>{
     const b=document.createElement('button');b.type='button';b.className='gw-card';b.dataset.groupRoutine=String(i);
-    const kind=document.createElement('span');kind.className='gw-kind';kind.textContent=r.type==='combo'?'연속 동작':'기초 동작';
+    const kind=document.createElement('span');kind.className='gw-kind';kind.textContent='발차기';
     const name=document.createElement('strong');name.textContent=r.name;
-    const desc=document.createElement('span');desc.className='gw-description';desc.textContent=r.intro.d;
-    b.append(kind,name,desc);b.onclick=()=>{if(running)return;ri=i;$('routine').value=String(i);fillGoals();onSetting();};return b;
+    const desc=document.createElement('span');desc.className='gw-description';desc.textContent='기본 순서를 고르거나 직접 만들어 찹니다 · 눌러서 순서 설정';
+    
+    b.append(kind,name,desc);b.onclick=()=>{if(running)return;ri=i;$('routine').value=String(i);fillGoals();onSetting();openCombo();};return b;
   }));
   $('groupWelcomeStart').onclick=()=>{if(!running)start();};
   
@@ -1001,7 +1000,7 @@ function initGroupWelcome(){
       if(!allowed || !HOST.akmCanOpenKickGroupGame()) return;
       const b=document.createElement('button');b.type='button';b.className='gw-card';
       const kind=document.createElement('span');kind.className='gw-kind';kind.textContent='내 라이선스 시운전';
-      const name=document.createElement('strong');name.textContent='정면 격파 게임';
+      const name=document.createElement('strong');name.textContent='단체 격파';
       const desc=document.createElement('span');desc.className='gw-description';desc.textContent='단발·2연속 랜덤 · 연속 간격 0.6초 · 카메라 없이 함께';
       b.append(kind,name,desc);b.onclick=()=>{if(!running)HOST.openKickGroupGame();};cards.prepend(b);
     }).catch(()=>{});

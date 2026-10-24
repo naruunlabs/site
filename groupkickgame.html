@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex,nofollow"><title>AI KICK MASTER · 정면 격파</title>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex,nofollow"><title>AI KICK MASTER · 단체 격파</title>
 <style id="kick-game-auth-hide">html{visibility:hidden}</style>
 <script id="kick-game-access-gate">
 window.kickGameAccessAllowed=function(){try{const p=window.parent;return p!==window && p.location.origin===location.origin && /^\/aikickmaster(?:\.html)?\/?$/.test(p.location.pathname) && typeof p.akmCanOpenKickGroupGame==='function' && p.akmCanOpenKickGroupGame() && p.document.getElementById('groupFrame')?.contentWindow===window;}catch(e){return false;}};
@@ -25,8 +25,8 @@ canvas,.hud{pointer-events:none}.settings{top:100px;left:24px}.controls{z-index:
 @media(max-width:600px){.cue,.running .cue{left:195px;right:12px;top:180px}.hud{top:70px;left:65%;width:60vw}.caption,.running .caption{left:200px;right:12px}}
 </style><link rel="stylesheet" href="assets/group-primary.css?v=3.3.4"></head><body>
 <header class="identity" id="identity"><div class="title-dojang" id="identityDojang">AI KICK MASTER</div><div class="title-auth" id="identityAuth" hidden></div><div class="title-version" id="identityVersion" hidden></div><div class="akm-powered" id="identityPowered" hidden></div></header>
-<canvas id="game"></canvas><div class="hud"><span class="badge">정면 격파 · 시운전</span><span class="badge" id="progress">진행 0 / 40</span><span class="badge" id="patternBadge">연속 간격 0.6초</span></div>
-<aside class="settings" id="settings"><h2>정면 격파 · 단체 수업</h2><small>빨강 오른발 · 파랑 왼발<br>선에 도착하는 표적에 맞춰 찹니다.</small>
+<canvas id="game"></canvas><div class="hud"><span class="badge">단체 격파 · 시운전</span><span class="badge" id="progress">진행 0 / 40</span><span class="badge" id="patternBadge">연속 간격 0.6초</span></div>
+<aside class="settings" id="settings"><h2>단체 격파 · 단체 수업</h2><small>빨강 오른발 · 파랑 왼발<br>선에 도착하는 표적에 맞춰 찹니다.</small>
 <label for="skill">발차기</label><select id="skill"><option value="front">앞차기 · 가로 표적</option><option value="round">돌려차기 · 세로 표적</option><option value="mixed">앞차기 + 돌려차기</option></select>
 <label for="speed">접근 속도</label><select id="speed"><option value="2150">느리게 · 2.15초</option><option value="1600" selected>보통 · 1.6초</option><option value="1150">빠르게 · 1.15초</option></select>
 <label for="pattern">표적 패턴</label><select id="pattern"><option value="mix">랜덤 · 하나 / 두 개 연속</option><option value="single">하나씩</option><option value="double">두 개 연속</option></select>
