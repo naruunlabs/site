@@ -267,7 +267,7 @@ html.embed .app.running .side-note{bottom:24px}
 <select id="routine" hidden aria-hidden="true" tabindex="-1"></select>
 <main class="app stage-follow" id="app">
   <aside class="side">
-    <div class="brand">AI <em>KICK</em> MASTER</div><div class="version">GROUP COMBINATION · v2.1</div>
+    <div class="brand">AI <em>KICK</em> MASTER</div><div class="version">GROUP COMBINATION · v2.2</div>
     <div class="control-stack">
       <div class="rhythm-mode">리듬 집중 · 화면 + 호루라기</div><div class="stage-hint" id="stageHint"></div>
       
@@ -421,7 +421,9 @@ function drawKickRings(gx,W,H,now){
 }
 function kickGeom(W,H,type){
   const left=type.endsWith('left'),round=type.startsWith('round'),side=left?-1:1;
-  return {left,round,side,start:{x:W/2+(round?side*W*.105:0),y:H*.83},end:{x:W/2,y:H*(type.includes('-face-')?.172:.35)},ctrl:{x:W/2+side*W*.31,y:H*.62}};
+  
+  const end={x:W/2,y:H*(type.includes('-face-')?.172:.35)};
+  return {left,round,side,start:{x:W/2+(round?side*W*.105:0),y:H*.83},end,ctrl:{x:W/2+side*W*.30,y:end.y+H*.07}};
 }
 function drawKickGuide(gx,W,H,now,type,alpha=1,ghost=false){
   const G=kickGeom(W,H,type),{left,round,start,end,ctrl}=G,rgb=left?'86,180,255':'255,82,101',pale=left?'190,230,255':'255,202,208';
