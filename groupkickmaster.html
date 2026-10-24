@@ -116,9 +116,6 @@ button,select{font:inherit}button{border:0;cursor:pointer;color:inherit;backgrou
 .side-note{position:absolute;z-index:5;right:28px;bottom:24px;display:flex;align-items:center;gap:7px;color:#8a94a6;font-size:11.5px;font-weight:800}
 .side-note:before{content:"";width:8px;height:8px;border-radius:50%;background:var(--next);box-shadow:0 0 10px var(--next)}
 
-.kiai{position:absolute;z-index:7;left:50%;top:44%;transform:translate(-50%,-50%) scale(.6);opacity:0;pointer-events:none;font-size:clamp(60px,9vw,140px);font-weight:900;letter-spacing:-.04em;color:#fff;text-shadow:0 0 30px rgba(var(--acc-rgb),.95),0 0 80px rgba(var(--acc-rgb),.55)}
-.kiai.show{animation:kiai .75s cubic-bezier(.2,1.4,.4,1) both}
-@keyframes kiai{0%{opacity:0;transform:translate(-50%,-50%) scale(.55)}25%{opacity:1;transform:translate(-50%,-50%) scale(1.05)}70%{opacity:1}100%{opacity:0;transform:translate(-50%,-50%) scale(1.12)}}
 .okflash{position:absolute;z-index:7;left:50%;top:34%;transform:translateX(-50%);padding:10px 20px;border-radius:999px;background:rgba(10,40,24,.85);box-shadow:inset 0 0 0 1.5px var(--ok),0 0 30px rgba(81,255,157,.35);color:var(--ok);font-size:18px;font-weight:900;opacity:0;pointer-events:none}
 .okflash.show{animation:okf .9s ease both}
 @keyframes okf{0%{opacity:0;transform:translate(-50%,8px)}20%{opacity:1;transform:translate(-50%,0)}75%{opacity:1}100%{opacity:0}}
@@ -270,7 +267,7 @@ html.embed .app.running .side-note{bottom:24px}
 <select id="routine" hidden aria-hidden="true" tabindex="-1"></select>
 <main class="app stage-follow" id="app">
   <aside class="side">
-    <div class="brand">AI <em>KICK</em> MASTER</div><div class="version">GROUP COMBINATION · v2.0</div>
+    <div class="brand">AI <em>KICK</em> MASTER</div><div class="version">GROUP COMBINATION · v2.1</div>
     <div class="control-stack">
       <div class="rhythm-mode">리듬 집중 · 화면 + 호루라기</div><div class="stage-hint" id="stageHint"></div>
       
@@ -309,7 +306,6 @@ html.embed .app.running .side-note{bottom:24px}
     </div>
     <div class="strip" id="strip"></div>
     <div class="side-note">좌우는 학생 기준 · 화면 오른쪽 = 내 오른쪽</div>
-    <div class="kiai" id="kiai">기합!</div>
     <div class="overlay countdown" id="countdown" hidden><div class="box"><b class="big" id="countNum">3</b><span class="sub" id="countSub"></span><div class="cd-seq" id="cdSeq"></div></div></div>
     <div class="overlay rest" id="restScreen" hidden><div class="box"><span class="lab" id="restLabel">다음 세트 준비</span><b class="big" id="restNum">15</b><em id="restNext"></em></div></div>
     <div class="overlay finish" id="finishScreen" hidden><div class="card"><h3>운동 <em>끝</em></h3><div class="sum" id="finishSum"></div><p id="finishNote">화면의 수업 진행 기록입니다. 학생의 실제 성공 횟수는 측정하지 않습니다.</p><div class="row"><button class="again" id="finAgain">다시 시작</button><button id="finClose">닫기</button></div></div></div>
@@ -351,6 +347,7 @@ const PRODUCT={
     if(V.announced&&up&&up.act) type=up.t; else if(cur&&cur.act) type=cur.t;
     drawKickRings(ctx,W,H,now);
     if(type&&st==='follow') drawKickGuide(ctx,W,H,now,type,1);
+    drawComet(ctx,W,H,now,V);
     drawImpact(ctx,W,H,now,V);
   }
 };
@@ -432,25 +429,43 @@ function drawKickGuide(gx,W,H,now,type,alpha=1,ghost=false){
   const path=()=>{gx.beginPath();gx.moveTo(start.x,start.y);if(round)gx.quadraticCurveTo(ctrl.x,ctrl.y,end.x,end.y);else gx.lineTo(end.x,end.y)};
   gx.save();gx.globalAlpha=alpha;gx.lineCap='round';gx.lineJoin='round';
   [[30,.06],[13,.15],[3,.34]].forEach(([w,a])=>{path();gx.lineWidth=w;gx.strokeStyle=`rgba(${rgb},${a})`;gx.stroke()});
-  if(!ghost){
-    const t=(now%(round?1650:1450))/(round?1650:1450);
-    [[t,11,.9],[(t+.38)%1,7,.48],[(t+.72)%1,5,.28]].forEach(([u,r,a])=>{const p=point(u);gx.shadowColor=`rgb(${rgb})`;gx.shadowBlur=20;gx.fillStyle=`rgba(255,255,255,${a})`;gx.beginPath();gx.arc(p.x,p.y,r,0,Math.PI*2);gx.fill()});
-    [((t+.2)%1),((t+.58)%1)].forEach((u,i)=>{const p=point(u),q=point(Math.min(1,u+.025)),ang=Math.atan2(q.y-p.y,q.x-p.x);gx.save();gx.translate(p.x,p.y);gx.rotate(ang);gx.strokeStyle=`rgba(${pale},${i?.32:.55})`;gx.lineWidth=i?2:3;gx.beginPath();gx.moveTo(-9,-7);gx.lineTo(7,0);gx.lineTo(-9,7);gx.stroke();gx.restore()});
-  }
+  
   gx.shadowColor=`rgb(${rgb})`;gx.shadowBlur=18;gx.strokeStyle=`rgba(${rgb},.62)`;gx.lineWidth=4;gx.beginPath();gx.arc(end.x,end.y,24,0,Math.PI*2);gx.stroke();gx.shadowBlur=0;
   if(!ghost){gx.fillStyle='#fff';gx.font='900 18px Pretendard,"Noto Sans KR",sans-serif';gx.textAlign='center';gx.fillText(left?'왼발':'오른발',start.x,start.y+40);}
   gx.restore();
 }
 
+const COMET_LEAD=1300;
+function drawComet(gx,W,H,now,V){
+  if(!running||paused)return;
+  let st,arrive;
+  if(V.impactStep&&V.impactAt>now){st=V.impactStep;arrive=V.impactAt;}
+  else if(V.nextStep&&V.nextImpactAt>now){st=V.nextStep;arrive=V.nextImpactAt;}
+  else return;
+  if(!st.act||st.quiet)return;
+  const fly=Math.max(250,Math.min(COMET_LEAD,arrive-(V.cometFrom||0))),p=1-(arrive-now)/fly;if(p<0)return;
+  const G=kickGeom(W,H,st.t),{start,end,ctrl,round}=G,rgb=G.left?'86,180,255':'255,82,101',s=Math.min(W,H);
+  const at=u=>round?{x:(1-u)*(1-u)*start.x+2*(1-u)*u*ctrl.x+u*u*end.x,y:(1-u)*(1-u)*start.y+2*(1-u)*u*ctrl.y+u*u*end.y}:{x:start.x+(end.x-start.x)*u,y:start.y+(end.y-start.y)*u};
+  const q=Math.min(1,p),u=q*q*.55+q*.45;
+  gx.save();gx.globalCompositeOperation='lighter';
+  for(let k=14;k>=0;k--){const v=Math.max(0,u-k*.022),P=at(v),rad=s*(k?.024*(1-k/15):.032)*(.85+.3*q);
+    gx.fillStyle=k?`rgba(${rgb},${.5*(1-k/15)})`:'#fff';gx.shadowColor=`rgb(${rgb})`;gx.shadowBlur=k?0:34;gx.beginPath();gx.arc(P.x,P.y,rad,0,Math.PI*2);gx.fill();}
+  gx.shadowBlur=0;const gl=gx.createRadialGradient(end.x,end.y,0,end.x,end.y,s*.09);gl.addColorStop(0,`rgba(${rgb},${.5*q})`);gl.addColorStop(1,`rgba(${rgb},0)`);gx.fillStyle=gl;gx.beginPath();gx.arc(end.x,end.y,s*.09,0,Math.PI*2);gx.fill();
+  gx.restore();
+}
+
+const FX_MS=900, fxRand=(i,k)=>{const x=Math.sin(i*127.1+k*311.7)*43758.5453;return x-Math.floor(x);};
 function drawImpact(gx,W,H,now,V){
-  const age=now-V.impactAt;if(!V.impactStep||V.impactAt<0||age<0||age>=430)return;
-  const end=kickGeom(W,H,V.impactStep.t).end,p=age/430,ease=1-Math.pow(1-p,3),power=1-p;
-  gx.save();gx.translate(end.x,end.y);gx.globalCompositeOperation='lighter';
-  const glow=gx.createRadialGradient(0,0,0,0,0,54+32*ease);
-  glow.addColorStop(0,`rgba(255,255,255,${power*.96})`);glow.addColorStop(.2,`rgba(255,220,100,${power*.72})`);glow.addColorStop(1,'rgba(255,70,50,0)');
-  gx.fillStyle=glow;gx.beginPath();gx.arc(0,0,54+32*ease,0,Math.PI*2);gx.fill();
-  [[36,92,8],[58,142,4]].forEach(([a,b,w],i)=>{gx.strokeStyle=i?`rgba(255,126,64,${power*.68})`:`rgba(255,245,190,${power*.9})`;gx.lineWidth=Math.max(1,w*(1-p));gx.beginPath();gx.ellipse(0,0,a+(b-a)*ease,(a+(b-a)*ease)*.54,-.15,0,Math.PI*2);gx.stroke()});
-  [[-1.2,66],[-.72,92],[-.28,76],[.18,98],[.58,70],[1.02,88],[1.48,64],[-2.55,78],[-2.05,96]].forEach(([ang,dist],i)=>{const d=20+dist*ease,x=Math.cos(ang)*d,y=Math.sin(ang)*d*.72,len=10+18*power;gx.save();gx.translate(x,y);gx.rotate(ang);gx.fillStyle=i%2?`rgba(255,93,54,${power})`:`rgba(255,224,104,${power})`;gx.fillRect(-len/2,-2.5,len,5);gx.restore()});
+  const age=now-V.impactAt;if(!V.impactStep||V.impactAt<0||age<0||age>=FX_MS)return;
+  const G=kickGeom(W,H,V.impactStep.t),end=G.end,rgb=G.left?'86,180,255':'255,82,101',s=Math.min(W,H),t=Math.min(1,age/650),al=Math.max(0,1-age/FX_MS);
+  gx.save();
+  if(age<220){gx.fillStyle=`rgba(${rgb},${.28*(1-age/220)})`;gx.fillRect(0,0,W,H);}
+  const sh=age<200?(1-age/200)*8:0;gx.translate(end.x+(fxRand(age,1)-.5)*sh,end.y+(fxRand(age,2)-.5)*sh);gx.globalCompositeOperation='lighter';
+  if(age<160){const c=1-age/160,gl=gx.createRadialGradient(0,0,0,0,0,s*.1);gl.addColorStop(0,`rgba(255,255,255,${c})`);gl.addColorStop(.5,`rgba(${rgb},${c*.8})`);gl.addColorStop(1,`rgba(${rgb},0)`);gx.fillStyle=gl;gx.beginPath();gx.arc(0,0,s*.1,0,Math.PI*2);gx.fill();}
+  gx.lineCap='round';gx.lineWidth=Math.max(3,s*.006);
+  for(let i=0;i<44;i++){const a0=i/44*Math.PI*2+fxRand(i,9)*.1,d=s*(.18+fxRand(i,10)*.17)*(1-Math.pow(1-t,3)),x=Math.cos(a0)*d,y=Math.sin(a0)*d+s*.12*t*t,tail=s*.08*(1-t);
+    gx.strokeStyle=i%4?`rgba(${rgb},${al})`:`rgba(255,235,170,${al})`;gx.beginPath();gx.moveTo(x,y);gx.lineTo(x-Math.cos(a0)*tail,y-Math.sin(a0)*tail);gx.stroke();
+    if(age>350&&fxRand(i,Math.floor(age/60))>.5){gx.fillStyle=`rgba(255,255,255,${al})`;gx.beginPath();gx.arc(x,y,Math.max(2.6,s*.005),0,Math.PI*2);gx.fill();}}
   gx.restore();
 }
 
@@ -487,7 +502,7 @@ const P=PRODUCT;
 const COUNT_WORD=['하나','둘','셋','넷','다섯','여섯','일곱','여덟','아홉','열'];
 const VOICE_RATE=1.25, SAY_DELAY=.35, SAY_MARGIN=.1;
 
-const HIT_MS=800, HIT_CAP=.6, SAY_GAP=.12;
+const HIT_MS=800, HIT_CAP=.6, SAY_GAP=.12, RETURN_SEC=3;
 
 const CALL_LEAD=.15, WARM_LEAD=.45;
 
@@ -498,7 +513,7 @@ let setNo=1, count=0, bundles=0, totalDone=0, nextTurnStart=0;
 let switchTimer=0, switchPending=false;
 const TEAM_GAP_BEATS=4;   
 let TL=null, seg=null, audio=null, wakeLock=null, koVoice=null;
-const V={cur:null,upcoming:null,announced:false,impactAt:-1,impactStep:null,stepAt:0,beatAt:0,beat:0,stage:'follow',idle:true};
+const V={cur:null,upcoming:null,announced:false,impactAt:-1,impactStep:null,nextImpactAt:-1,nextStep:null,cometFrom:0,stepAt:0,beatAt:0,beat:0,stage:'follow',idle:true};
 
 const store={
   load(){try{return JSON.parse(localStorage.getItem(P.storeKey)||'null')||{}}catch(e){return{}}},
@@ -554,8 +569,6 @@ function compile(){
     for(let k=1;k<=n;k++){const j=(i-k+n)%n;W+=steps[j].b;if(steps[j].act){s.window=W;break;}}
   });
   
-  if(r.type==='combo') steps.forEach((s,i)=>{if(!s.end)return;const kicks=[];for(let k=1;k<n;k++){const q=steps[(i-k+n)%n];if(q.end)break;if(q.counted)kicks.push(q);}if(kicks.length>=2)kicks[0].kiai=true;});
-  
   let groups=[],cur=[];steps.forEach(s=>{cur.push(s);if(r.type==='combo'&&s.end){groups.push(cur);cur=[];}});if(cur.length)groups.push(cur);
   groups.forEach(g=>{const actions=g.filter(s=>s.act);if(actions.length){actions[0].routineFirst=true;actions.at(-1).bundleLast=true;}g.at(-1).bundleEnd=true;let k=0;const tot=g.filter(s=>s.counted).length;g.forEach(s=>{if(s.counted){s.ord=++k;s.of=tot;}});});
   const pick=+$('bpm').value||80;
@@ -563,6 +576,18 @@ function compile(){
   let cap=Infinity;
   steps.forEach(s=>{const t=callTextFor(s);if(t&&s.window)cap=Math.min(cap,60*s.window/(hitDelay()/1000+sayGap()+speechSec(t)+callLead()));});
   const bpm=Math.max(40,Math.min(pick,Math.floor(cap)));
+
+  const beatMs=60000/bpm, hitOf=s=>Math.min(hitDelay(),s.b*beatMs*HIT_CAP);
+  if(r.type==='combo'&&!rotateOn()){
+    const want=RETURN_SEC*1000;
+    steps.forEach((s,i)=>{if(!s.end)return;
+      let last=null,beats=0;for(let k=0;k<n;k++){const q=steps[(i-k+n)%n];if(k&&q.end)break;beats+=q.b;if(q.act){last=q;break;}}
+      for(let k=1;k<n;k++){const q=steps[(i+k)%n];if(q.act)break;beats+=q.b;}
+      if(!last)return;const gap=beats*beatMs-hitOf(last);
+      if(gap<want){const add=Math.ceil((want-gap)/beatMs);s.b+=add;s.returnAdd=add;}
+    });
+    steps.forEach((s,i)=>{if(!s.act)return;let w=0;for(let k=1;k<=n;k++){const j=(i-k+n)%n;w+=steps[j].b;if(steps[j].act){s.window=w;break;}}});
+  }
   const cycleBeats=steps.reduce((a,s)=>a+s.b,0), perCycle=r.type==='combo'?steps.filter(s=>s.end).length:steps.filter(s=>s.counted).length;
   TL={steps,n,bpm,pick,capped:bpm<pick,beatMs:60000/bpm,unitSec:cycleBeats/Math.max(1,perCycle)*60/bpm};
   return TL;
@@ -588,7 +613,8 @@ function runFrom(idx,why){
   const introName=why==='again'?'다시 한 번':'발차기 준비';
   seg={tok,mode:why==='team'?'cycle':'intro',si:idx,target:idx,beat:0,g:0,anchor:performance.now(),
        intro:{n:introName,t:'ready',b:namesVoiced()?introBeats(callTextFor(target),why==='start'||why==='resume')+Math.ceil(READY_MS/TL.beatMs):Math.ceil(READY_MS/TL.beatMs)+3,d:why==='set'?`${dispSet()}세트 시작`:r.intro.d,intro:true}};
-  V.idle=false;
+  V.idle=false;V.nextImpactAt=-1;
+  if(seg.mode==='cycle'){let w=seg.anchor,j=idx;for(let k=0;k<TL.n&&!TL.steps[j].act;k++){w+=TL.steps[j].b*TL.beatMs;j=(j+1)%TL.n;}predictImpact(j,w,seg.anchor);}
   tick(tok);
 }
 function tick(tok){
@@ -621,7 +647,7 @@ function finishStep(st){
 }
 function stepStart(st){
   const now=performance.now(); V.cur=st; V.stepAt=now;
-  if(st.intro){V.upcoming=TL.steps[seg.target];V.announced=false;speak(st.n,READY_RATE);planSay(seg.target,READY_MS);planCall(seg.target,now+st.b*TL.beatMs,true);paintStep(st);return;}
+  if(st.intro){V.upcoming=TL.steps[seg.target];V.announced=false;predictImpact(seg.target,now+st.b*TL.beatMs,now);speak(st.n,READY_RATE);planSay(seg.target,READY_MS);planCall(seg.target,now+st.b*TL.beatMs,true);paintStep(st);return;}
   if(st.act){
     
     const hitMs=Math.min(hitDelay(),st.b*TL.beatMs*HIT_CAP);
@@ -644,11 +670,14 @@ function endsSetAfter(st,nx){
   return bundles+endings>=goal();
 }
 function impactNow(st,nx){
-  if(!st.quiet){P.impact(st);if(st.kiai&&stage!=='call')showKiai();}
+  if(!st.quiet)P.impact(st);   
   if(st.lastInSet){paintNext();if(rotateOn()&&setNo<totalTurns())planTeamSwitch();return;}
   planSay(nx,st.quiet?0:sayGap()*1000);
   planCall(nx,V.cueAt+TL.steps[nx].window*TL.beatMs);
+  predictImpact(nx,V.cueAt+TL.steps[nx].window*TL.beatMs,performance.now());
 }
+
+function predictImpact(i,whistleAt,from){const s=TL.steps[i];if(!s)return;V.nextStep=s;V.nextImpactAt=whistleAt+Math.min(hitDelay(),s.b*TL.beatMs*HIT_CAP);V.cometFrom=from;}
 
 function planSay(i,delayMs){
   const tok=segToken;clearTimeout(sayTimer);
@@ -917,7 +946,6 @@ function paintSeq(el){
   el.innerHTML=steps.filter(s=>s.act).map(s=>`<span class="chip">${P.plain(s)}</span>`).join('<span class="arr" style="align-self:center">›</span>');
 }
 function fitCue(){const h=$('cue');h.style.fontSize='';const w=h.parentElement.clientWidth;if(!w)return;let fs=parseFloat(getComputedStyle(h).fontSize)||60;let guard=0;while(h.scrollWidth>w&&fs>24&&guard++<30){fs-=3;h.style.fontSize=fs+'px';}}
-function showKiai(){const k=$('kiai');k.classList.remove('show');void k.offsetWidth;k.classList.add('show');}
 function setControls(){
   paintGroupWelcome();
   const live=running&&!paused;
@@ -932,7 +960,7 @@ function setControls(){
   $('sets').disabled=running||rotateOn();$('rest').disabled=rotateOn();$('comboOpen').disabled=running;
 }
 function idleView(){
-  compile();V.cur=null;V.idle=true;V.upcoming=TL.steps[firstPhrase()];V.announced=true;V.impactAt=-1;
+  compile();V.cur=null;V.idle=true;V.upcoming=TL.steps[firstPhrase()];V.announced=true;V.impactAt=-1;V.nextImpactAt=-1;
   $('dots').innerHTML='';$('beat').textContent='준비';paintAll();paintGroupWelcome();
 }
 
