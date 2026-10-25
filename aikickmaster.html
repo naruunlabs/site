@@ -7769,19 +7769,19 @@ let labModalOpen=false;
 window.openGroupMode=function(){
   if(!window.akmCanOpenGroup()) return;
   if(running && typeof stopGame==='function') stopGame();
-  openGroupOverlay('groupkickmaster.html?embed=1&v=3.4.1');
+  openGroupOverlay('groupkickmaster.html?embed=1&v=3.5.0');
 };
 window.openKickGroupGame=async function(){
   if(!await window.akmPrepareKickGroupGame()) return;
   if(running && typeof stopGame==='function') stopGame();
   const f=document.getElementById('groupFrame');
-  if(f){window.setGroupRunning(false);setKickGroupGameLayer(true);f.src='groupkickgame.html?v=3.4.1';}
-  else openGroupOverlay('groupkickgame.html?v=3.4.1');
+  if(f){window.setGroupRunning(false);setKickGroupGameLayer(true);f.src='groupkickgame.html?v=3.5.0';}
+  else openGroupOverlay('groupkickgame.html?v=3.5.0');
 };
 window.showKickGroupRoutines=function(){
   if(!window.akmCanOpenGroup()) return;
   const f=document.getElementById('groupFrame');
-  if(f){window.setGroupRunning(false);setKickGroupGameLayer(false);f.src='groupkickmaster.html?embed=1&v=3.4.1';}
+  if(f){window.setGroupRunning(false);setKickGroupGameLayer(false);f.src='groupkickmaster.html?embed=1&v=3.5.0';}
 };
 function setKickGroupGameLayer(on){
   const wrap=document.getElementById('groupOverlay');if(!wrap)return;
@@ -10938,7 +10938,7 @@ const _AKM_CACHE_DAYS  = 7;
 const _AKM_TRIAL_CACHE_DAYS = 1;   
 const _AKM_FETCH_TIMEOUT_MS = 8 * 1000;   
 
-const _AKM_VERSION     = '3.4.1';   
+const _AKM_VERSION     = '3.5.0';   
 try{ window.__NL_VER = _AKM_VERSION; }catch(e){}   
 
 let _akmFailCount = 0;
@@ -10960,25 +10960,10 @@ window.akmCanOpenGroup=function(){
   const c=_akmGetCache(),login=document.getElementById("loginScreen");
   return !!(_akmGroupAuthenticated && c && !_akmIsCacheExpired(c) && login && login.classList.contains("hidden"));
 };
-let _akmKickGamePermit=null;
-window.akmCanOpenKickGroupGame=function(){
-  const c=_akmGetCache(),p=_akmKickGamePermit;
-  return !!(window.akmCanOpenGroup() && c && c.is_beta && p && p.key===c.license_key && p.tok===c.tok && Date.now()<p.until);
-};
-window.akmPrepareKickGroupGame=async function(){
-  _akmKickGamePermit=null;
-  if(!window.akmCanOpenGroup()) return false;
-  const c=_akmGetCache();
-  if(!c || !c.is_beta || await _akmCheckToken(c)!=='ok') return false;
-  const current=_akmGetCache();
-  if(!current || current.license_key!==c.license_key || current.tok!==c.tok || !current.is_beta) return false;
-  try{
-    const claims=JSON.parse(new TextDecoder().decode(_akmB64urlToBytes(c.tok.split('.')[0])));
-    if(!claims.bt) return false;
-    _akmKickGamePermit={key:c.license_key,tok:c.tok,until:Math.min(claims.sxp,claims.exp||Infinity)};
-  }catch(e){return false;}
-  return window.akmCanOpenKickGroupGame();
-};
+let _akmKickGamePermit=null;   
+                               
+window.akmCanOpenKickGroupGame=function(){ return !!window.akmCanOpenGroup(); };
+window.akmPrepareKickGroupGame=async function(){ return window.akmCanOpenKickGroupGame(); };
 function _akmClearCache(){ _akmGroupAuthenticated=false; try{ localStorage.removeItem(_AKM_LS_KEY); }catch(e){} }
 
 const _AKM_SIGN_PUBKEY = {"kty":"EC","crv":"P-256",

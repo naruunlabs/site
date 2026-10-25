@@ -273,7 +273,7 @@ html.embed .app.running .side-note{bottom:24px}
 <select id="routine" hidden aria-hidden="true" tabindex="-1"></select>
 <main class="app stage-follow" id="app">
   <aside class="side">
-    <div class="brand">AI <em>KICK</em> MASTER</div><div class="version">GROUP COMBINATION · v2.3</div>
+    <div class="brand">AI <em>KICK</em> MASTER</div><div class="version">GROUP COMBINATION · v2.4</div>
     <div class="control-stack">
       <div class="rhythm-mode">리듬 집중 · 화면 + 호루라기</div><div class="stage-hint" id="stageHint"></div>
       
@@ -1051,9 +1051,9 @@ function initGroupWelcome(){
     HOST.akmPrepareKickGroupGame().then(allowed=>{
       if(!allowed || !HOST.akmCanOpenKickGroupGame()) return;
       const b=document.createElement('button');b.type='button';b.className='gw-card';
-      const kind=document.createElement('span');kind.className='gw-kind';kind.textContent='내 라이선스 시운전';
+      const kind=document.createElement('span');kind.className='gw-kind';kind.textContent='격파';
       const name=document.createElement('strong');name.textContent='단체 격파';
-      const desc=document.createElement('span');desc.className='gw-description';desc.textContent='단발·2연속 랜덤 · 연속 간격 0.6초 · 카메라 없이 함께';
+      const desc=document.createElement('span');desc.className='gw-description';desc.textContent='날아오는 나무 송판을 함께 차서 깨뜨립니다';
       b.append(kind,name,desc);b.onclick=()=>{if(!running)HOST.openKickGroupGame();};cards.prepend(b);
     }).catch(()=>{});
   }
