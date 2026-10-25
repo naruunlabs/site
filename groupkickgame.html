@@ -62,6 +62,9 @@ canvas{position:fixed;inset:0;width:100%;height:100%;pointer-events:none}
 .cue .beat{font-size:12px;font-weight:900;letter-spacing:.24em;color:#ffcf9e}
 .cue h2{margin-top:6px;white-space:nowrap;font-size:clamp(34px,5vw,76px);line-height:1.04;letter-spacing:-.05em;text-shadow:0 6px 24px rgba(0,0,0,.75)}
 .cue h2 .r{color:var(--right)}.cue h2 .l{color:var(--left)}
+
+.cue h2{overflow:hidden}.cue h2 .c2{display:block;margin-top:.1em;font-size:.55em;opacity:.9}.cue h2.pair{font-size:clamp(28px,3.6vw,54px)}.cue.pair-on p{margin-top:5px;font-size:clamp(12px,1.05vw,15px)}
+@media(max-height:650px){.cue{top:11%}.cue p{font-size:13px;margin-top:4px}.cue.pair-on p{display:none}}
 .cue p{margin-top:9px;color:#b6bfcc;font-size:clamp(13px,1.25vw,18px);font-weight:700;min-height:1.4em}
 .rail{position:fixed;z-index:5;top:112px;right:28px;width:216px;text-align:right;pointer-events:none}
 .st{position:relative;padding:10px 0 13px}
@@ -75,7 +78,7 @@ canvas{position:fixed;inset:0;width:100%;height:100%;pointer-events:none}
 .strip span.now{background:var(--wood);color:#1a1007}
 .strip span.r{box-shadow:inset 0 -2px 0 var(--right)}.strip span.l{box-shadow:inset 0 -2px 0 var(--left)}
 .strip .arr{color:#4b5465;font-size:12px;font-weight:900;background:none;padding:0;box-shadow:none}
-@media(max-width:900px){.cue{left:calc(50% + 110px);width:calc(100vw - 300px);min-width:0}.cue h2{font-size:clamp(28px,4.4vw,48px)}.rail{width:170px}.top{left:calc(50% + 110px);width:calc(100vw - 520px);min-width:220px}}
+@media(max-width:900px){.cue{left:262px;transform:none;width:calc(100vw - 470px);min-width:0}.cue h2{font-size:clamp(28px,4.4vw,48px)}.rail{width:170px}.top{left:calc(50% + 110px);width:calc(100vw - 520px);min-width:220px}}
 
 .overlay{position:fixed;z-index:200;inset:0;display:grid;place-items:center;background:rgba(3,4,7,.72);backdrop-filter:blur(6px)}
 .overlay[hidden]{display:none}
@@ -165,9 +168,13 @@ const footHtml=n=>n.replace(/^(오른발|왼발)/,m=>`<span class="${m==='오른
 function paintCount(){$('progress').innerHTML=`송판 <b>${done}</b> / ${total}`;$('progressBar').style.width=(total?done/total*100:0)+'%';$('doneVal').innerHTML=`${done}<small>/ ${total}</small>`;}
 function paintCue(text,sub,beat){const up=targets.filter(t=>!t.hit);
   if(text!==undefined){$('cue').textContent=text;$('cueSub').textContent=sub||'';$('cueBeat').textContent=beat||'READY';}
-  else{$('cue').innerHTML=up.length?up.map(t=>footHtml(t.name)).join(' → '):'다음 송판';$('cueBeat').textContent=up.length===2?'두 장 연속':'지금';$('cueSub').textContent=up.length?(up[0].face?'얼굴 높이 · ':'몸통 높이 · ')+(up[0].round?'세로 송판 · 돌려차기':'가로 송판 · 앞차기')+' — 틀에 닿을 때 찹니다':'';}
+  else{$('cue').innerHTML=up.length?footHtml(up[0].name)+(up[1]?`<span class="c2">→ ${footHtml(up[1].name)}</span>`:''):'다음 송판';$('cueBeat').textContent=up.length===2?'두 장 연속':'지금';$('cueSub').textContent=up.length?(up[0].face?'얼굴 높이 · ':'몸통 높이 · ')+(up[0].round?'세로 송판 · 돌려차기':'가로 송판 · 앞차기')+' — 틀에 닿을 때 찹니다':'';}
   $('nextName').textContent=up[1]?up[1].name:'—';
+  $('cue').classList.toggle('pair',up.length===2&&text===undefined);$('cue').parentElement.classList.toggle('pair-on',up.length===2&&text===undefined);fitCue();
   $('strip').innerHTML=up.map((t,i)=>`<span class="${t.right?'r':'l'}${i===0?' now':''}">${t.name}</span>`).join('<span class="arr">›</span>');}
+
+function fitCue(){const h=$('cue');h.style.fontSize='';let size=parseFloat(getComputedStyle(h).fontSize)||0;for(let i=0;i<40&&h.scrollWidth>h.clientWidth+1&&size>22;i++){size-=2;h.style.fontSize=size+'px';}}
+window.addEventListener('resize',fitCue);
 function reset(){stopMusic();state='idle';elapsed=0;done=0;doubles=0;targets=[];chips=[];total=+$('count').value;document.body.classList.remove('running');$('results').hidden=true;$('countdown').hidden=true;$('welcome').hidden=false;$('pause').disabled=true;$('pause').textContent='Ⅱ 일시정지';$('patternBadge').textContent='한 장';paintCount();paintCue('준비','','READY');paintWelcome();lock(false);hostRunning(false);wakeOff();}
 function start(){if(!allowed())return;reset();options={skill:$('skill').value,travel:+$('speed').value,pattern:$('pattern').value,height:$('height').value};footRun=[];total=+$('count').value;state='running';document.body.classList.add('running');$('welcome').hidden=true;lock(true);$('pause').disabled=false;nextSpawn=3000;paintCount();hostRunning(true);tone();playMusic();wakeOn();}
 function pause(){if(state==='running'){state='paused';$('countdown').hidden=true;if(musicPlayer)musicPlayer.pause();$('pause').textContent='▶ 계속하기';paintCue('일시정지','계속하기를 누르면 이어서 합니다','PAUSE');hostRunning(false);wakeOff();}else if(state==='paused'&&allowed()){state='running';$('pause').textContent='Ⅱ 일시정지';hostRunning(true);paintCue();playMusic(true);wakeOn();}}
