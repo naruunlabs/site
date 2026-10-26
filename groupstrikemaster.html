@@ -551,7 +551,7 @@ const CALL_LEAD=.15, WARM_LEAD=.45;
 let stage='follow', ri=0;
 let running=false, paused=false, phase='idle';        
 let runToken=0, segToken=0, resumeToken=0, tickTimer=0, sayTimer=0, hitTimer=0, callTimer=0, resumeIdx=null, warmCall=false;
-let setNo=1, count=0, bundles=0, totalDone=0;
+let setNo=1, count=0, bundles=0, totalDone=0, nextTurnStart=0;
 let switchTimer=0, switchPending=false;
 const TEAM_GAP_BEATS=4;   
 let TL=null, seg=null, audio=null, wakeLock=null, koVoice=null;
@@ -571,8 +571,8 @@ function settingsNow(){
 const rotateOn=()=>$('teamMode').value==='rotate';
 function activeTeam(n=setNo){return n%2?'A팀':'B팀';}
 
-function totalTurns(){return +$('sets').value*(rotateOn()?2:1);}
-function dispSet(n=setNo){return rotateOn()?Math.ceil(n/2):n;}
+function totalTurns(){return rotateOn()?goal():+$('sets').value;}
+function dispSet(n=setNo){return n;}
 function paintClassCue(){
  const rotate=rotateOn();$('app').classList.toggle('team-rotate',rotate);
  const title=$('routineName');title.classList.toggle('team-turn',rotate);title.textContent=rotate?activeTeam():routine().name;
@@ -580,9 +580,9 @@ function paintClassCue(){
 }
 const routine=()=>P.routines[ri];
 const isCombo=()=>routine().type==='combo';
-const unit=()=>isCombo()?'묶음':'회';
+const unit=()=>rotateOn()?'루틴':isCombo()?'묶음':'회';
 const goal=()=>+$('kickGoal').value||10;
-const done=()=>isCombo()?bundles:count;
+const done=()=>rotateOn()?Math.min(goal(),totalDone):isCombo()?bundles:count;
 
 function fastTempo(){return +$('bpm').value>120;}
 function voiceRate(){return 1.0;}
@@ -615,7 +615,7 @@ function compile(){
   if(r.type==='combo') steps.forEach((s,i)=>{if(!s.end)return;for(let k=1;k<n;k++){const q=steps[(i-k+n)%n];if(q.end)break;if(q.counted){q.kiai=true;break;}}});
   
   let groups=[],cur=[];steps.forEach(s=>{cur.push(s);if(r.type==='combo'&&s.end){groups.push(cur);cur=[];}});if(cur.length)groups.push(cur);
-  groups.forEach(g=>{let k=0;const tot=g.filter(s=>s.counted).length;g.forEach(s=>{if(s.counted){s.ord=++k;s.of=tot;}});});
+  groups.forEach(g=>{const actions=g.filter(s=>s.act);if(actions.length){actions[0].routineFirst=true;actions.at(-1).bundleLast=true;}g.at(-1).bundleEnd=true;let k=0;const tot=g.filter(s=>s.counted).length;g.forEach(s=>{if(s.counted){s.ord=++k;s.of=tot;}});});
   const pick=+$('bpm').value||80;
   
   let cap=Infinity;
@@ -633,7 +633,7 @@ function callTextFor(st){
   if(!namesVoiced()||!st||!st.act||!st.phraseStart) return null;
   return st.phrase;
 }
-const firstPhrase=()=>{const i=TL.steps.findIndex(s=>s.phraseStart);return i<0?0:i;};
+const firstPhrase=()=>{if(rotateOn())return nextTurnStart;const i=TL.steps.findIndex(s=>s.phraseStart);return i<0?0:i;};
 function phraseStartOf(i){const n=TL.n;let j=i;for(let k=0;k<n&&TL.steps[j].chain;k++)j=(j-1+n)%n;return j;}
 function nextActionAfter(i){const n=TL.n;for(let k=1;k<=n;k++){const j=(i+k)%n;if(TL.steps[j].act)return j;}return i;}
 function introBeats(text,warm){return Math.max(2,Math.ceil((SAY_DELAY+(warm?WARM_LEAD+.25:0)+speechSec(text||'',fastTempo()?READY_RATE:voiceRate())+CALL_LEAD)/(TL.beatMs/1000)));}
@@ -668,6 +668,10 @@ function tick(tok){
 }
 function finishStep(st){
   if(st.intro) return true;
+  if(rotateOn()){
+    if(st.bundleEnd){nextTurnStart=(st.i+1)%TL.n;totalDone++;paintCounts();endSet(runToken);return false;}
+    return true;
+  }
   if(st.lastInSet){if(isCombo()){bundles++;totalDone++;}paintCounts();endSet(runToken);return false;}
   if(st.end){bundles++;if(isCombo())totalDone++;paintCounts();if(isCombo()&&bundles>=goal()){endSet(runToken);return false;}}
   if(!isCombo()&&st.counted&&count>=goal()){endSet(runToken);return false;}
@@ -680,7 +684,7 @@ function stepStart(st){
     
     const hitMs=Math.min(hitDelay(),st.b*TL.beatMs*HIT_CAP);
     V.impactStep=st;V.impactAt=now+hitMs;V.cueAt=now;
-    if(st.counted){count++;if(!isCombo())totalDone++;}
+    if(st.counted){count++;if(!isCombo()&&!rotateOn())totalDone++;}
     if(st.quiet) P.soft(st); else P.hit(st);
     const nx=nextActionAfter(st.i);st.lastInSet=endsSetAfter(st,nx);
     V.upcoming=st.lastInSet?null:TL.steps[nx];V.announced=false;
@@ -692,6 +696,7 @@ function stepStart(st){
 }
 
 function endsSetAfter(st,nx){
+  if(rotateOn())return !!st.bundleLast;
   if(!isCombo())return st.counted&&count>=goal();
   let endings=0;for(let k=1;k<=TL.n;k++){const i=(st.i+k)%TL.n;if(TL.steps[i].end)endings++;if(i===nx)break;}
   return bundles+endings>=goal();
@@ -728,7 +733,7 @@ function beatsUntilUpcoming(){
 async function start(){
   if(!window.groupAccessAllowed()) return;
   if(running||document.hidden) return;
-  trainingClock.resume();setNo=1;compile();
+  trainingClock.resume();setNo=1;nextTurnStart=0;compile();
   $('finishScreen').hidden=true;
   const token=++runToken;setNo=1;count=bundles=0;totalDone=0;running=true;paused=false;phase='countdown';
   setControls();keepAwake(true);ensureAudio();
@@ -774,7 +779,7 @@ function finishAll(){
   running=false;paused=false;phase='done';segToken++;clearTimeout(tickTimer);clearTimeout(sayTimer);clearTimeout(hitTimer);clearTimeout(callTimer);
   keepAwake(false);cancelSpeech();V.upcoming=null;V.announced=false;speak('운동 끝');chime();
   const sets=+$('sets').value;
-  $('finishSum').innerHTML=`<div><span>세트</span><b>${sets}</b></div><div><span>${rotateOn()?'팀당 완주':'완주'}</span><b>${rotateOn()?Math.round(totalDone/2):totalDone}<small style="font-size:.5em;color:#aab3c2"> ${unit()}</small></b></div>`;
+  $('finishSum').innerHTML=rotateOn()?`<div><span>전체 루틴</span><b>${totalDone}<small style="font-size:.5em">회</small></b></div><div><span>A팀 / B팀</span><b>${Math.ceil(totalDone/2)} / ${Math.floor(totalDone/2)}</b></div>`:`<div><span>세트</span><b>${sets}</b></div><div><span>완주</span><b>${totalDone}<small style="font-size:.5em;color:#aab3c2"> ${unit()}</small></b></div>`;
   $('finishScreen').hidden=false;$('beat').textContent='FINISH';
   setControls();
 }
@@ -879,10 +884,12 @@ function paintHead(){
   const r=routine();paintClassCue();
   $('stageHint').textContent=namesVoiced()?'연습용 · 자연스러운 말 속도로 안내합니다. 구령이 들어갈 만큼 진행 속도를 조절합니다.':'순서는 준비 화면에서 확인합니다. 운동 중에는 동작 이름을 보고 호루라기에 찹니다. 동작 이름은 말하지 않습니다.';
   const app=$('app');[...app.classList].filter(c=>c.startsWith('stage-')).forEach(c=>app.classList.remove(c));app.classList.add('stage-'+(namesVoiced()?stage:'follow'));
-  $('teamHint').textContent=rotateOn()?'A팀 → B팀, 쉬는 시간 없이 교대합니다. 상대팀 차례가 휴식입니다.':'세트가 끝나면 설정한 시간만큼 함께 쉽니다.';
+  $('teamHint').textContent=rotateOn()?`묶음 하나마다 A팀 → B팀 교대 · 총 ${goal()}회입니다. 상대팀 차례가 휴식입니다.`:'세트가 끝나면 설정한 시간만큼 함께 쉽니다.';
   const note=TL.capped?` · <i>구령 이름을 말할 시간이 필요해 ${TL.bpm}으로 진행</i>`:'';
   $('speedNote').innerHTML=`${isCombo()?'한 묶음':'동작 간격'} 약 <b>${TL.unitSec.toFixed(1)}초</b>${note}`;
-  $('goalLab').textContent=isCombo()?'세트 목표 · 콤보 반복':'세트 목표 · 횟수';
+  $('goalLab').textContent=rotateOn()?'총 묶음 · A/B 합계':isCombo()?'세트 목표 · 콤보 반복':'세트 목표 · 횟수';
+  $('sets').closest('label').hidden=rotateOn();
+  $('rest').closest('label').hidden=rotateOn();
 }
 
 function previewing(){return !!(running&&phase==='run'&&V.announced&&V.upcoming&&V.upcoming.act&&V.cur!==V.upcoming);}
@@ -926,7 +933,7 @@ function paintNext(){
 function paintCounts(){
   const g=goal(),d=done();
   $('countText').innerHTML=`<b>${d}</b> / ${g}${unit()}`;
-  $('setText').innerHTML=`<b>${dispSet()}</b>세트 / ${$('sets').value}`;
+  $('setText').innerHTML=rotateOn()?`<b>${setNo}</b>차례 / ${goal()} · ${activeTeam()}`:`<b>${dispSet()}</b>세트 / ${$('sets').value}`;
   $('progress').style.width=Math.min(100,d/g*100)+'%';
   $('stDoneLab').textContent=isCombo()?'완주 묶음':'횟수';
   $('stDone').innerHTML=`${d}<small>/ ${g}</small>`;
@@ -967,7 +974,7 @@ function setControls(){
   $('pause').disabled=!running;$('pause').textContent=paused?'▶ 계속하기':'Ⅱ 일시정지';
   $('again').disabled=!(running&&!paused&&phase==='run');
   document.querySelectorAll('.control-stack select,.tabs button').forEach(el=>{if(el.id==='sets'||el.id==='rest')return;el.disabled=running;});
-  $('sets').disabled=running;$('rest').disabled=rotateOn();$('comboOpen').disabled=running;
+  $('sets').disabled=running||rotateOn();$('rest').disabled=rotateOn();$('comboOpen').disabled=running;
 }
 function idleView(){
   compile();V.cur=null;V.idle=true;V.upcoming=TL.steps[firstPhrase()];V.announced=true;V.impactAt=-1;
@@ -1038,7 +1045,7 @@ function paintGroupWelcome(){
   box.style.setProperty('--gw-accent',P.exitUrl.includes('strike')?'#d8b4fe':'#ff8994');
   box.querySelectorAll('[data-group-routine]').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.groupRoutine===ri)));
   const label=document.createElement('b');label.textContent=routine().name;
-  const details=document.createElement('span');details.textContent=`${signalLabel()} · ${$('teamMode').value==='rotate'?'A/B팀 교대':'전원 함께'} · ${$('sets').value}세트 · ${TL.bpm} BPM · ${namesVoiced()?'음성 코치':'리듬 집중'}`;
+  const details=document.createElement('span');details.textContent=`${signalLabel()} · ${rotateOn()?`묶음마다 A/B 교대 · 총 ${goal()}회`:`전원 함께 · ${$('sets').value}세트`} · ${TL.bpm} BPM · ${namesVoiced()?'음성 코치':'리듬 집중'}`;
   $('groupWelcomeSummary').replaceChildren(label,details);
   $('groupWelcomeSequence').replaceChildren(...TL.steps.filter(s=>s.act).map((s,i)=>{const item=document.createElement('span');item.textContent=`${i+1}. ${s.n}`;return item;}));
 }
