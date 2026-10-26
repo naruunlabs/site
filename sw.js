@@ -17,7 +17,7 @@
 //    그러면 예전 캐시가 통째로 비워집니다.
 // =========================================================
 
-const CACHE_NAME = 'naruunlabs-2026-10-26-jump3101-unified-version';
+const CACHE_NAME = 'naruunlabs-2026-10-26-jump3102-echo-routine';
 
 const APP_SHELL = [
   './',
