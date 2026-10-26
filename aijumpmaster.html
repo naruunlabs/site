@@ -1194,7 +1194,7 @@ body.jmp-group-list #optGroup,body.jmp-group-list #optBeat,body.jmp-group-list #
 
 <script type="module">
 
-const APP_VERSION = '3.10.0';   
+const APP_VERSION = '3.10.1';   
 try{ window.__NL_VER = APP_VERSION; }catch(e){}   
 
 const MP_VERSION  = '1.0.1';
@@ -5038,7 +5038,7 @@ $('echoOpen').addEventListener('click',async()=>{
   try{const claims=JSON.parse(new TextDecoder().decode(_jmpB64urlToBytes(c.tok.split('.')[0])));echoUntil=Math.min(claims.sxp,claims.exp||Infinity);}catch(e){return;}
   stopCamera();stopGroupMusic();echoFsHidden=compFullscreen.hidden;
   echoDialog.append(compIdentity,compFullscreen);compFullscreen.hidden=false;syncFsBtn();echoDialog.showModal();
-  echoFrame.src='jumprhythmecho.html?v=3.10.1';
+  echoFrame.src='jumprhythmecho.html?v='+encodeURIComponent(APP_VERSION);
 });
 echoDialog.addEventListener('cancel',e=>{e.preventDefault();window.closeJmpEcho();});
 echoDialog.addEventListener('close',()=>{if(!echoDialog.open)window.closeJmpEcho();});
