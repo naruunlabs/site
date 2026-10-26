@@ -548,6 +548,17 @@ body.jmp-lite-hud .jt-bars i{box-shadow:none}body.jmp-lite-hud .jt-wing{filter:n
 #resultNext .rn-main{font-size:max(44px,calc(var(--u)*4.8));font-weight:900;color:#fff}
 #resultNext .rn-sub{margin-top:10px;font-size:max(28px,calc(var(--u)*2.6));font-weight:800;color:#bfe9d4}
 #resultNext .rn-last{margin-top:12px;font-size:max(24px,calc(var(--u)*2.2));font-weight:800;color:rgba(255,255,255,.6)}
+
+#resultTruth{margin:max(10px,calc(var(--u)*1)) auto 0;max-width:620px;padding:max(10px,calc(var(--u)*1)) max(12px,calc(var(--u)*1.2));
+  border:1px solid rgba(163,230,53,.35);border-radius:max(10px,calc(var(--u)*.9));background:rgba(8,26,40,.92);text-shadow:none}
+#resultTruth .rt-ask{font-size:max(14px,calc(var(--u)*1.3));font-weight:800;color:#eaf4f1;line-height:1.45;word-break:keep-all}
+#resultTruth .rt-row{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:8px;margin-top:max(8px,calc(var(--u)*.8))}
+#resultTruth .rt-row label{font-size:max(14px,calc(var(--u)*1.25));font-weight:800;color:rgba(234,244,241,.85)}
+#resultTruth input{width:max(96px,calc(var(--u)*9));height:max(44px,calc(var(--u)*3.8));border-radius:9px;border:1px solid rgba(255,255,255,.35);
+  background:rgba(255,255,255,.08);color:#fff;text-align:center;font-family:var(--num);font-size:max(22px,calc(var(--u)*2.2));font-weight:900}
+#resultTruth button{height:max(44px,calc(var(--u)*3.8));padding:0 18px;border-radius:9px;font-size:max(15px,calc(var(--u)*1.3));font-weight:900;
+  color:#052B27;background:linear-gradient(110deg,var(--lime),var(--teal))}
+#resultTruth .rt-done{font-size:max(15px,calc(var(--u)*1.35));font-weight:800;color:var(--lime-lit)}
 .rhand-hint{margin-top:10px;font-size:max(22px,calc(var(--u)*2));font-weight:700;color:rgba(191,233,212,.75)}
 @media (max-width:700px),(max-height:560px){#result{width:min(860px,calc(100vw - 24px));max-height:calc(100vh - 20px)}#resultBody>.duo-result .rgrid{grid-template-columns:repeat(4,1fr)}#resultBody>.duo-result .rbox strong{font-size:max(20px,calc(var(--u)*2.3))}}
 
@@ -1058,7 +1069,8 @@ body.jmp-group-list #optGroup,body.jmp-group-list #optBeat,body.jmp-group-list #
 
   <section class="panel" id="result" hidden aria-live="polite">
     <div id="resultBody"></div>
-    
+
+    <div id="resultTruth" hidden></div>
     <div id="resultNext"><div class="rn-main">다음 선수 들어오세요</div><div class="rn-sub">한 손을 머리 위로 2초 들면 시작해요</div><div class="rn-last" id="resultLast"></div></div>
     
     <div class="rbtn-row">
@@ -1194,7 +1206,7 @@ body.jmp-group-list #optGroup,body.jmp-group-list #optBeat,body.jmp-group-list #
 
 <script type="module">
 
-const APP_VERSION = '3.10.3';   
+const APP_VERSION = '3.10.4';   
 try{ window.__NL_VER = APP_VERSION; }catch(e){}   
 
 const MP_VERSION  = '1.0.1';
@@ -2548,6 +2560,7 @@ function hsCanStart(){
   if(bootBusy || document.hidden || mode==='group') return false;
   const ls=$('loginScreen'); if(ls && !ls.hidden) return false;
   if(document.querySelector('.modal:not([hidden])')) return false;
+  { const a=document.activeElement; if(a && a.closest && a.closest('#resultTruth')) return false; }   
 
   return true;
 }
@@ -3329,6 +3342,7 @@ function finish(cancelled){
     const hasTip=m==='solo'&&players[0].coach&&players[0].coach.tip;   
     if(!(m==='solo'&&stepRound)) resultCompactTimer=setTimeout(()=>{ if(appState==='result') $('result').classList.add('compact'); },hasTip?6000:3000);
   }
+  { const rt=$('resultTruth'); if(rt){ rt.hidden=true; rt.innerHTML=''; } }   
   if(!(m==='solo'&&stepRound)) labRoundFinished(m);   
 }
 
@@ -5937,7 +5951,37 @@ function labKeepPendingNoTruth(){
   labPersistPending();
   labPending=null; labRenderTruth();
 }
+/* 2026-10-26 · 결과 화면에서 바로 실제 개수를 적는다 (완수님: 매번 연구소를 열고 닫기 번거롭다).
+   수집 자격이 있는 기기(마스터 또는 관리자 수집 허용)에서 판이 끝나면 보인다. 다른 선생님·아이가 적어도 그대로 쌓인다.
+   저장은 연구소 '정답 저장'과 같은 길(labPersistPending)이다. 적지 않고 다음 판을 시작하면 '정답 없음'으로 보관된다. */
+function resultTruthRender(){
+  const box=$('resultTruth'); if(!box) return;
+  const p=labPending;
+  if(!p || appState!=='result'){ box.hidden=true; box.innerHTML=''; return; }
+  const two=p.players.length>1;
+  box.hidden=false;
+  box.innerHTML=`<div class="rt-ask">화면 개수와 실제로 넘은 개수가 많이 다르다면, 실제 개수를 적어 주시겠어요?<br>적어 주신 기록 덕분에 개수가 점점 더 정확해집니다. 고맙습니다.</div>
+    <div class="rt-row">${p.players.map(q=>`<label for="rtIn${q.pid}">${two?(q.pid===0?'청 ':'홍 '):''}화면 ${q.main}개 → 실제</label><input id="rtIn${q.pid}" type="number" min="0" max="999" inputmode="numeric" data-pid="${q.pid}">`).join('')}
+    <button type="button" id="rtSave">저장</button></div>`;
+}
+function resultTruthSave(){
+  if(!labPending) return;
+  let any=false;
+  $('resultTruth').querySelectorAll('input[data-pid]').forEach(inp=>{
+    const v=parseInt(inp.value,10), q=labPending.players.find(x=>x.pid===+inp.dataset.pid);
+    if(q && Number.isFinite(v) && v>=0 && v<1000){ q.truth=v; any=true; }
+  });
+  if(!any){ const f=$('resultTruth').querySelector('input'); if(f) f.focus(); return; }
+  const said=labPending.players.filter(q=>q.truth!=null).map(q=>q.truth+'개').join(' · ');
+  labPersistPending();
+  labPending=null; labRenderTruth();
+  try{ document.activeElement && document.activeElement.blur(); }catch(e){}
+  const box=$('resultTruth'); box.hidden=false; box.innerHTML=`<div class="rt-done">저장했어요 · 실제 ${said}. 고맙습니다!</div>`;
+}
+$('resultTruth')?.addEventListener('click',e=>{ if(e.target.id==='rtSave') resultTruthSave(); });
+$('resultTruth')?.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); resultTruthSave(); } });
 function labRenderTruth(){
+  if(labPending) resultTruthRender(); else if(!$('resultTruth')?.querySelector('.rt-done')) resultTruthRender();
   const box=$('labTruthBox'); if(!box) return;
   const note='';
   if(!labPending){ box.innerHTML=note; }
