@@ -789,7 +789,12 @@ body.jmp-racing .jt-duo{display:none!important}
 @media(max-width:600px){#competitionDialog{padding:14px 16px 56px}#competitionDialog .comp-top{min-height:132px;align-items:flex-end;padding:0 0 8px}#competitionDialog .comp-close{right:16px;top:14px;padding:8px 14px}#competitionDialog .title-block{max-width:65%}#competitionDialog .tb-dojang{max-width:60vw;font-size:14px}#competitionDialog .comp-number{font-size:30vw}#competitionDialog .comp-btn{padding:10px 20px}#competitionDialog .comp-primary{min-width:150px}}
 @media(max-height:550px) and (min-width:601px){#competitionDialog{padding:12px 20px 40px}#competitionDialog .comp-wrap{gap:6px}#competitionDialog .comp-top{min-height:74px;padding-top:3px}#competitionDialog .comp-number{font-size:clamp(72px,24vh,132px)}#competitionDialog .comp-status{font-size:14px}#competitionDialog .comp-btn{padding:7px 20px}#competitionDialog .comp-hint{display:none}#competitionDialog .comp-track{margin:5px auto}#competitionDialog .comp-close{top:14px;right:20px}#competitionDialog .comp-top h2{font-size:20px}}
 </style>
-</head>
+<style id="jump-group-selection-flow">
+body.jmp-group-list #optGroup,body.jmp-group-list #optBeat,body.jmp-group-list #spDown,body.jmp-group-list #spUp{display:none!important}
+#groupWelcome [hidden]{display:none!important}
+#jumpGroupBack{background:transparent;border:0;color:#b9ed80;padding:8px 0;margin-bottom:16px;font:inherit;cursor:pointer}
+#groupWelcome[data-view="setup"] .gw-setup{flex:1}
+</style></head>
 <body>
 
 <div id="loginScreen" hidden>
@@ -813,12 +818,13 @@ body.jmp-racing .jt-duo{display:none!important}
   </div>
 
   <dialog id="jmpEchoDialog" aria-label="리듬 메아리 단체 수업"><iframe id="jmpEchoFrame" title="리듬 메아리" allow="autoplay; screen-wake-lock; fullscreen"></iframe></dialog>
-  <section class="group-welcome" id="groupWelcome" aria-label="단체 수업 선택" hidden>
-    <header><div class="gw-eyebrow">단체 수업 · 카메라 없이 함께</div><h2>오늘은 어떻게 뛰어볼까요?</h2><p class="gw-intro">운동을 고르고, 왼쪽에서 음악과 목표를 맞춰 주세요.</p></header>
+  <section class="group-welcome" id="groupWelcome" aria-label="단체 수업 선택" data-view="list" hidden>
+    <header><div class="gw-eyebrow">단체 수업 · 카메라 없이 함께</div><h2>오늘은 어떻게 뛰어볼까요?</h2><p class="gw-intro">운동을 누르면 설정 화면으로 들어갑니다.</p></header>
+    <div class="gw-setup" hidden><button id="jumpGroupBack" type="button">← 단체 수업 목록</button><h2 id="jumpGroupTitle"></h2><p class="gw-intro">왼쪽에서 수업을 설정한 뒤 시작해 주세요.</p></div>
     <div class="gw-cards">
       <button class="gw-card" type="button" data-group-pick="rhythm" aria-pressed="true"><span class="gw-kind">동작과 리듬 익히기</span><strong>리듬게임</strong><span class="gw-description">발판과 다가오는 노트를 보며<br>여러 줄넘기 동작을 함께 익혀요.</span></button>
       <button class="gw-card" type="button" data-group-pick="pace" aria-pressed="false"><span class="gw-kind">일정한 속도로 뛰기</span><strong>속도게임</strong><span class="gw-description">줄넘기 선수의 착지에 맞춰<br>정해진 시간과 목표로 뛰어요.</span></button>
-      <button class="gw-card echo-card" type="button" id="echoOpen"><span class="gw-kind">듣고 기억해서 뛰기 · 시운전</span><strong>리듬 메아리</strong><span class="gw-description">듣기 4박 → 뛰기 4박<br>다양한 리듬을 듣고 바로 따라 뛰어요.</span></button>
+      <button class="gw-card echo-card" type="button" id="echoOpen"><span class="gw-kind">듣고 기억해서 뛰기 · 시운전</span><strong>리듬 메아리</strong><span class="gw-description">4·8·12·16박 듣고 따라 뛰기<br>다양한 리듬을 듣고 바로 따라 뛰어요.</span></button>
       <button class="gw-card" type="button" id="competitionOpen"><span class="gw-kind">실전처럼 준비하기</span><strong>대회준비</strong><span class="gw-description">대회 사운드와 함께<br>큰 타이머로 남은 시간을 확인해요.</span></button>
     </div>
     <footer class="gw-footer"><div class="gw-summary" id="groupWelcomeSummary" aria-live="polite"></div><button class="gw-start" id="groupWelcomeStart" type="button">이 수업 시작 ▶</button></footer>
@@ -1002,10 +1008,6 @@ body.jmp-racing .jt-duo{display:none!important}
     </div>
 
     <div class="opts" id="optGroup" hidden>
-      <div class="seg two" id="groupActivitySeg">
-        <button type="button" data-ga="rhythm" class="on">리듬게임</button>
-        <button type="button" data-ga="pace">속도게임</button>
-      </div>
       <div id="paceSettings" hidden>
         <label class="lfield"><i>훈련 시간</i><select id="paceTime"><option value="30">30초</option><option value="60">60초</option><option value="120">120초</option></select></label>
         <label class="lfield"><i>목표 개수</i><select id="paceTarget"><option value="10">10개</option><option value="50">50개</option><option value="60">60개</option><option value="70">70개</option><option value="80">80개</option><option value="90" selected>90개</option><option value="100">100개</option><option value="110">110개</option><option value="120">120개</option><option value="130">130개</option><option value="140">140개</option><option value="150">150개</option><option value="160">160개</option><option value="200">200개</option><option value="300">300개</option><option value="600">600개</option></select></label>
@@ -1699,6 +1701,7 @@ function practiceSummary(){ const names=groupPracticeRoutine.slice(0,3).map(m=>s
 
 const PACE_TARGETS=[10,50,60,70,80,90,100,110,120,130,140,150,160,200,300,600];
 const normalizePaceTarget=value=>PACE_TARGETS.reduce((best,n)=>Math.abs(n-(Number(value)||90))<Math.abs(best-(Number(value)||90))?n:best,90);
+let jumpGroupView='list';
 let groupActivity='rhythm', paceTarget=90, paceTime=30;
 const paceAthlete=new Image(); paceAthlete.src='assets/jump-athlete-v1.webp';
 const PACE_FRAMES=[{x:72,y:72,w:454,h:874,l:95,r:506,hy:440},{x:542,y:35,w:452,h:908,l:568,r:971,hy:430},{x:998,y:37,w:463,h:894,l:1028,r:1433,hy:430}];
@@ -2985,6 +2988,12 @@ function restoreLobbyPrefs(){
 function syncJumpGroupWelcome(){
   const show=mode==='group'&&appState==='lobby',box=$('groupWelcome');
   box.hidden=!show;document.body.classList.toggle('jmp-group-lobby',show);
+  const list=show&&jumpGroupView==='list';
+  document.body.classList.toggle('jmp-group-list',list);
+  box.dataset.view=jumpGroupView;
+  box.querySelector('header').hidden=!list;box.querySelector('.gw-cards').hidden=!list;
+  box.querySelector('.gw-setup').hidden=list;box.querySelector('footer').hidden=list;
+  $('jumpGroupTitle').textContent=groupActivity==='pace'?'속도게임':'리듬게임';
   if(!show)return;
   box.querySelectorAll('[data-group-pick]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.groupPick===groupActivity)));
   const title=document.createElement('b');title.textContent=groupActivity==='pace'?'속도게임':'리듬게임';
@@ -4956,7 +4965,7 @@ $('stepExportBtn').addEventListener('click',stepExport);
 
 document.querySelectorAll('#modelist .choice').forEach(b=>b.addEventListener('click',async()=>{
   if(appState!=='lobby') return;
-  mode=b.dataset.mode; applyModeUI(); saveLobbyPrefs();
+  mode=b.dataset.mode; if(mode==='group')jumpGroupView='list'; applyModeUI(); saveLobbyPrefs();
   const n=neededPoses();
   ensurePlayers(n);
   if(mode==='group'){stopCamera();setLobbyError('');}
@@ -4978,8 +4987,8 @@ document.querySelectorAll('#duoSeg button').forEach(b=>b.addEventListener('click
 }));
 ['raceTarget','soloTime','soloTarget','bpm','duration','relayPlayers','relayTarget','relayRounds','relayChange'].forEach(id=>$(id).addEventListener('change',()=>{ applyModeUI(); saveLobbyPrefs(); }));
 
-document.querySelectorAll('[data-ga]').forEach(b=>b.addEventListener('click',()=>{groupActivity=b.dataset.ga;applyModeUI();saveLobbyPrefs();}));
-document.querySelectorAll('[data-group-pick]').forEach(b=>b.addEventListener('click',()=>{if(appState!=='lobby')return;groupActivity=b.dataset.groupPick;applyModeUI();saveLobbyPrefs();}));
+$('jumpGroupBack').addEventListener('click',()=>{if(appState!=='lobby')return;jumpGroupView='list';applyModeUI();});
+document.querySelectorAll('[data-group-pick]').forEach(b=>b.addEventListener('click',()=>{if(appState!=='lobby')return;groupActivity=b.dataset.groupPick;jumpGroupView='setup';applyModeUI();saveLobbyPrefs();}));
 
 const compDialog=$('competitionDialog'),compAudio=$('competitionAudio');
 let compSeconds=30,compActive=false,compFrame=0,compToken=0,compWake=null;
@@ -5029,7 +5038,7 @@ $('echoOpen').addEventListener('click',async()=>{
   try{const claims=JSON.parse(new TextDecoder().decode(_jmpB64urlToBytes(c.tok.split('.')[0])));echoUntil=Math.min(claims.sxp,claims.exp||Infinity);}catch(e){return;}
   stopCamera();stopGroupMusic();echoFsHidden=compFullscreen.hidden;
   echoDialog.append(compIdentity,compFullscreen);compFullscreen.hidden=false;syncFsBtn();echoDialog.showModal();
-  echoFrame.src='jumprhythmecho.html?v=3.10.0';
+  echoFrame.src='jumprhythmecho.html?v=3.10.1';
 });
 echoDialog.addEventListener('cancel',e=>{e.preventDefault();window.closeJmpEcho();});
 echoDialog.addEventListener('close',()=>{if(!echoDialog.open)window.closeJmpEcho();});
