@@ -503,7 +503,7 @@ body.group-running #groupLesson{display:block}
 <script id="psm-core">
 
 var PSM = (function(){
-  var VERSION = '1.1.8';   
+  var VERSION = '1.1.9';   
 
   var DEFAULT_CFG = {
     SMOOTH: 0.5,        
@@ -1009,6 +1009,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
       if(!res || !res.valid){ throw new Error(res && res.reason==='rate_limited' ? '인증 시도가 너무 많습니다. 잠시 뒤 다시 해 주세요.' : ((res&&res.error)||'유효하지 않은 키입니다.')); }
       return checkTok(key,res.tok).then(function(c){
         if(!c) throw new Error('인증 도장 확인에 실패했습니다.');
+        authClaims=c;
         var auth={key:key, dojang:res.dojang_name||'', tok:res.tok, beta:!!c.bt, at:Date.now()};
         lsSet(LS_AUTH,auth); grant(auth);
       });
@@ -1025,14 +1026,39 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     if(!a || !/^PMS-/.test(a.key||'') || !a.tok || Date.now()-a.at > 7*86400000){ lock(''); return; }
     checkTok(a.key,a.tok).then(function(c){
       if(!c){ lock('다시 인증해 주세요.'); return; }
+      authClaims=c;
       a.beta=!!c.bt;   
       grant(a);
-      verifyOnline(a.key).then(function(res){
-        if(res && res.valid===false && res.reason!=='rate_limited'){ lock('라이선스 확인에 실패했습니다. 다시 인증해 주세요.'); location.reload(); return; }
-        if(res && res.valid && res.tok){ checkTok(a.key,res.tok).then(function(c2){ if(!c2) return; a.tok=res.tok; a.beta=!!c2.bt; a.at=Date.now(); lsSet(LS_AUTH,a); isMaster=a.beta; }); }
-      }).catch(function(){});
+      recheckAuth(true);
     });
   }
+
+  var authClaims=null, AUTH_RECHECK_MS=30*60000, authLockPending='';
+  function authExpired(){ var c=authClaims; return !!c && ((c.sxp && Date.now()>c.sxp) || (c.exp && Date.now()>c.exp)); }
+  function busy(){ return !!rec || wall.on || groupRunning; }
+  function lockNow(msg){
+    if(busy()){ authLockPending=msg; return; }
+    authLockPending='';
+    stopGroup(true);
+    lock(msg);
+  }
+  var lastAuthCheck=0;
+  function recheckAuth(force){
+    if(TEST) return;
+    if(force!==true && Date.now()-lastAuthCheck<5*60000) return;   
+    lastAuthCheck=Date.now();
+    var a=lsGet(LS_AUTH,null); if(!a || !a.key) return;
+    verifyOnline(a.key).then(function(res){
+      if(res && res.valid===false && res.reason!=='rate_limited'){ lockNow('라이선스 확인에 실패했습니다. 다시 인증해 주세요.'); return; }
+      if(res && res.valid && res.tok){ checkTok(a.key,res.tok).then(function(c2){ if(!c2) return; authClaims=c2; a.tok=res.tok; a.beta=!!c2.bt; a.at=Date.now(); lsSet(LS_AUTH,a); isMaster=a.beta; }); }
+    }).catch(function(){
+      if(authExpired()) lockNow('인터넷 연결 뒤 다시 인증해 주세요.');
+    });
+  }
+  
+  function authAfterRound(){ if(authLockPending && !busy()) lockNow(authLockPending); }
+  setInterval(function(){ recheckAuth(true); }, AUTH_RECHECK_MS);
+  setInterval(authAfterRound, 3000);
 
   var video=$('video'), canvas=$('canvas'), ctx=canvas.getContext('2d');
   var landmarker=null, poses=0, stream=null, srcW=1280, srcH=720, fake=null;
@@ -1126,7 +1152,8 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
 
   function robot(){ var f=$('groupFrame'); try{ return f && f.contentWindow && f.contentWindow.__robot; }catch(e){ return null; } }
   function enterGroup(){
-    if(stream){ stream.getTracks().forEach(function(t){ t.stop(); }); stream=null; }
+    ++camGen;   
+    if(stream){ stopStream(stream); stream=null; }
     loadGroupFrame();
     readyCheck();
   }
@@ -1251,6 +1278,23 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     $('btnKey').addEventListener('click', openKey);
     $('btnRecs').addEventListener('click', openRecs);
     $('btnCfg').addEventListener('click', openCfg);
+
+    var hideNote='';
+    function onHide(){
+      if(rec){ cancelSession(); hideNote='화면을 벗어나 이번 판을 취소했습니다'; }
+      if(wall.on){ stopWall(); hideNote='화면을 벗어나 벽 통과를 그만뒀습니다'; }
+      if(groupRunning && !groupPaused) toggleGroupPause();
+      try{ if(window.speechSynthesis) speechSynthesis.cancel(); }catch(e){}
+    }
+    function onShow(){
+      if(pref.role!=='group' && !fake && !cameraUsable()) startCamera();
+      else if(hideNote) setStatus(hideNote);
+      hideNote='';
+      recheckAuth();
+    }
+    document.addEventListener('visibilitychange', function(){ if(document.visibilityState==='hidden') onHide(); else onShow(); });
+    window.addEventListener('pagehide', onHide);
+    window.addEventListener('pageshow', function(e){ if(e.persisted) onShow(); });
     window.addEventListener('resize', fitCanvas); fitCanvas();
     window.addEventListener('online', function(){ setTimeout(retryUploads, 2000); });
     if(TEST && window.__psmFake){ fake=window.__psmFake; srcW=fake.W; srcH=fake.H; setStatus('가짜 자세 입력'); readyCheck(); fakeLoop(); if(pref.role==='group') enterGroup(); return; }
@@ -1264,24 +1308,38 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     canvas.width=Math.round(innerWidth*d); canvas.height=Math.round(innerHeight*d);
   }
 
+  var camGen=0;
+  function stopStream(s){ try{ s.getTracks().forEach(function(t){ t.onended=null; t.stop(); }); }catch(e){} }
   function startCamera(){
-    if(stream){ stream.getTracks().forEach(function(t){ t.stop(); }); stream=null; }
+    var my=++camGen;
+    if(stream){ stopStream(stream); stream=null; }
+    readyCheck();
     setStatus('카메라 준비 중…');
     navigator.mediaDevices.getUserMedia({audio:false, video:{facingMode:pref.cam, width:{ideal:1280}, height:{ideal:720}}})
       .then(function(s){
-        if(pref.role==='group'){ s.getTracks().forEach(function(t){ t.stop(); }); return; }   
+        if(my!==camGen || pref.role==='group'){ stopStream(s); return false; }   
         stream=s; video.srcObject=s;
+        s.getVideoTracks().forEach(function(t){ t.onended=function(){ if(stream===s) cameraLost(); }; });
         video.classList.toggle('mirror', pref.cam==='user');
-        return video.play();
-      }).then(function(){ srcW=video.videoWidth||1280; srcH=video.videoHeight||720; readyCheck(); })
-      .catch(function(e){ setStatus('카메라를 열 수 없습니다: '+(e&&e.name||'오류')); });
+        return video.play().then(function(){ return true; });
+      }).then(function(ok){ if(!ok || my!==camGen) return; srcW=video.videoWidth||1280; srcH=video.videoHeight||720; readyCheck(); })
+      .catch(function(e){ if(my!==camGen) return; setStatus('카메라를 열 수 없습니다: '+(e&&e.name||'오류')); readyCheck(); });
   }
+  
+  function cameraLost(){
+    if(stream){ stopStream(stream); stream=null; }
+    if(rec || wall.on) cancelSession();
+    readyCheck();
+    setStatus('카메라 연결이 끊겼습니다 · 화면을 다시 열면 연결합니다');
+  }
+  function cameraUsable(){ return !!stream && stream.getVideoTracks().some(function(t){ return t.readyState==='live'; }); }
 
-  var loadingModel=false;
+  var modelGen=0;
   function loadModel(){
-    if(loadingModel) return; loadingModel=true;
+    var my=++modelGen;
     setStatus('AI 모델 불러오는 중…');
     var old=landmarker; landmarker=null; if(old){ try{ old.close(); }catch(e){} }
+    readyCheck();
     var want=pref.role==='pair'?2:1;
     import(MP_BASE+'/vision_bundle.mjs').then(function(vision){
       return vision.FilesetResolver.forVisionTasks(MP_BASE+'/wasm').then(function(fs){
@@ -1290,11 +1348,14 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
           minPoseDetectionConfidence:0.5, minPosePresenceConfidence:0.5, minTrackingConfidence:0.5}); }
         return make('GPU').catch(function(){ return make('CPU'); });
       });
-    }).then(function(lmk){ landmarker=lmk; poses=want; loadingModel=false; readyCheck(); })
-      .catch(function(e){ loadingModel=false; setStatus('AI 모델을 불러오지 못했습니다. 새로고침해 주세요.'); });
+    }).then(function(lmk){ if(my!==modelGen){ try{ lmk.close(); }catch(e){} return; } landmarker=lmk; poses=want; readyCheck(); })
+      .catch(function(e){ if(my!==modelGen) return; setStatus('AI 모델을 불러오지 못했습니다. 새로고침해 주세요.'); });
   }
   
   function startFromLobby(){
+    if(authExpired()){ lockNow('라이선스 기간이 지났습니다. 다시 인증해 주세요.'); return; }   
+    if(authLockPending){ lockNow(authLockPending); return; }
+    if(!$('gate').hidden) return;   
     hnStop(); hideScore();
     if(pref.role==='game'){ startWall(); return; }
     if(pref.role==='group') startGroup(); else startSession();
