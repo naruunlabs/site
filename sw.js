@@ -17,7 +17,7 @@
 //    그러면 예전 캐시가 통째로 비워집니다.
 // =========================================================
 
-const CACHE_NAME = 'naruunlabs-2026-10-27-home-media-redacted';
+const CACHE_NAME = 'naruunlabs-2026-10-27-poomsae-silhouette2';
 
 const APP_SHELL = [
   './',
