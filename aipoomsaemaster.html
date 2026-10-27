@@ -362,6 +362,11 @@ body.group-running #groupLesson{display:block}
       <button type="button" class="on" data-v="wall">벽 통과<small>동작 모양 구멍</small></button>
       <button type="button" disabled>더 준비 중<small>순발력 · 이어달리기</small></button>
     </div>
+    <div class="lb-label">인원</div>
+    <div class="seg c2" id="segWallPlayers">
+      <button type="button" data-v="solo">1인<small>혼자 통과</small></button>
+      <button type="button" data-v="duo">2인 대결<small>청·홍 누가 더 많이</small></button>
+    </div>
     <div class="lb-label">종류 · 벽 10개</div>
     <div class="seg c3" id="segWallKind">
       <button type="button" data-v="stretch">스트레칭<small>천천히 · 버티기</small></button>
@@ -502,7 +507,7 @@ body.group-running #groupLesson{display:block}
 <script id="psm-core">
 
 var PSM = (function(){
-  var VERSION = '1.2.1';   
+  var VERSION = '1.2.2';   
 
   var DEFAULT_CFG = {
     SMOOTH: 0.5,        
@@ -955,7 +960,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
   function fmtT(ms){ var s=Math.max(0,Math.floor(ms/1000)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
 
-  var pref=Object.assign({role:'student', soloWho:'student', wallSpeed:'normal', wallKind:'basic', wallMusic:'on', cam:'user', model:'full', feedback:'off', poomsae:'tg1',
+  var pref=Object.assign({role:'student', soloWho:'student', wallSpeed:'normal', wallKind:'basic', wallMusic:'on', wallPlayers:'solo', cam:'user', model:'full', feedback:'off', poomsae:'tg1',
     gLevel:'beginner', gKiai:'0', gSpeed:'1', gView:'free', gFoot:'on', gSound:'on', gLoop:'off', gLoopA:'1', gLoopB:'3'}, lsGet(LS_PREF,{}));
   if(['beginner','intermediate','advanced'].indexOf(pref.gLevel)<0) pref.gLevel='beginner';
   if(!/^[0-4]$/.test(pref.gKiai)) pref.gKiai='0';
@@ -1363,7 +1368,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     setStatus('AI 모델 불러오는 중…');
     var old=landmarker; landmarker=null; if(old){ try{ old.close(); }catch(e){} }
     readyCheck();
-    var want=pref.role==='pair'?2:1;
+    var want=peopleNow();
     import(MP_BASE+'/vision_bundle.mjs').then(function(vision){
       return vision.FilesetResolver.forVisionTasks(MP_BASE+'/wasm').then(function(fs){
         function make(dlg){ return vision.PoseLandmarker.createFromOptions(fs,{
@@ -1374,7 +1379,13 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     }).then(function(lmk){ if(my!==modelGen){ try{ lmk.close(); }catch(e){} return; } landmarker=lmk; poses=want; readyCheck(); })
       .catch(function(e){ if(my!==modelGen) return; setStatus('AI 모델을 불러오지 못했습니다. 새로고침해 주세요.'); });
   }
-  
+
+  function peopleNow(){
+    if(rec) return rec.mode;
+    if(pref.role==='pair') return 2;
+    if(pref.role==='game' && (wall.on ? wall.np===2 : pref.wallPlayers==='duo')) return 2;
+    return 1;
+  }
   function startFromLobby(){
     if(authExpired()){ lockNow('라이선스 기간이 지났습니다. 다시 인증해 주세요.'); return; }   
     if(authLockPending){ lockNow(authLockPending); return; }
@@ -1384,7 +1395,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     if(pref.role==='group') startGroup(); else startSession();
   }
   function ensurePoses(){
-    var want=pref.role==='pair'?2:1;
+    var want=peopleNow();
     if(fake || !landmarker || poses===want) return;
     landmarker.setOptions({numPoses:want}).then(function(){ poses=want; }).catch(function(){ loadModel(); });
   }
@@ -1408,7 +1419,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   function fakeLoop(){
     var t0=performance.now();
     setInterval(function(){
-      var now=performance.now(), o=fake.next(now - t0, rec?rec.mode:1);
+      var now=performance.now(), o=fake.next(now - t0, peopleNow());
       onResult(o.landmarks, o.worldLandmarks, now);
     }, 1000/30);
   }
@@ -1426,7 +1437,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   function assign(list){
     var xs=list.map(function(o){ return screenX((o.lm[23*4]+o.lm[24*4])/2); });
     var out=list.map(function(){ return -1; });
-    if(!rec || rec.mode===1){ if(list.length) out[0]=0; return out; }
+    if(peopleNow()===1){ if(list.length) out[0]=0; return out; }
     if(list.length>=2){
       var order=[0,1].sort(function(a,b){ return xs[a]-xs[b]; });
       if(tracks[0]!=null && tracks[1]!=null){
@@ -1450,7 +1461,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     var ks=assign(list);
     lastPoses=list.map(function(o,i){ return {lm:o.lm, k:ks[i]}; });
     handStartObserve(lms);   
-    if(wall.on) wallPose(list);   
+    if(wall.on) wallPose(list, ks);   
     if(rec && rec.running){
       var t=Math.round(now - rec.t0);
       var fr={t:t, p:[]};
@@ -1463,8 +1474,16 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
         var ev=live.det[k].push(t, f);
         if(ev) onLiveEvent(k, ev);
         if(live.phase==='prepare' || live.phase==='return') checkReady(k,hit,f,now);
+        else if(live.phase==='perform') checkStuck(k,hit,f,now);
       }
       if(rec.mode===2){ if(fr.p.length>=2) live.both++; live.frames++; }
+      
+      if(live.phase==='prepare' || live.phase==='return'){
+        var fk=frameHintNow(fr.p.map(function(q){ return q.lm; }));
+        var msg= fk ? FRAME_HINT.TEXT[fk][0]+' · '+FRAME_HINT.TEXT[fk][1]
+          : (live.phase==='prepare' ? '준비 자세를 하고 잠깐 유지하세요 · 전신이 보여야 합니다' : '정면을 보고 준비 자세로 돌아오세요');
+        if(live.fhMsg!==msg){ live.fhMsg=msg; $('cdT').textContent=msg; }
+      }
       if(live.phase==='perform'){
         var allEnd=true;
         for(var q=0;q<rec.mode;q++) if(live.ptr[q]<=lastMove(KEY)) allEnd=false;
@@ -1494,7 +1513,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     function X(x){ return screenX(x)*srcW*sc+ox; }
     function Y(y){ return y*srcH*sc+oy; }
     for(var i=0;i<lastPoses.length;i++){
-      var P=lastPoses[i], lm=P.lm, pairNow=(rec?rec.mode:(pref.role==='pair'?2:1))===2, col=(pairNow && P.k>=0 ? PAIR_COL : TRACK_COL)[P.k>=0?P.k:0];
+      var P=lastPoses[i], lm=P.lm, pairNow=peopleNow()===2, col=(pairNow && P.k>=0 ? PAIR_COL : TRACK_COL)[P.k>=0?P.k:0];
       ctx.lineWidth=4*d; ctx.strokeStyle=col; ctx.globalAlpha=0.9; ctx.lineCap='round';
       for(var c=0;c<CONN.length;c++){
         var a=CONN[c][0], b=CONN[c][1];
@@ -1577,10 +1596,10 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     var W=wall, prev=W.move, m, K=W.kind;
     do{ m=wallTarget(); }while(prev && m.name===prev.name && K.moves.length>1);
     var travel=wallTravelBeats(W.kindKey,W.approach,W.n+1), cyc=travel+K.gap;
-    W.move=m; W.n++; W.hist=[]; W.frames=[]; W.res=null; if(W.state!=='intro') W.state='come';
+    W.move=m; W.n++; W.P.forEach(function(q){ q.hist=[]; q.frames=[]; q.res=null; }); if(W.state!=='intro') W.state='come';
     W.t0=wallBeatAt(W.sb); W.dur=(cyc-K.gap)*W.T; W.arriveBeat=W.sb+cyc-K.gap; W.sb+=cyc; W.nextAt=wallBeatAt(W.sb);
     
-    $('wallMove').textContent=''; $('wallInfo').textContent=W.n+' / '+W.total+' · 통과 '+W.pass;
+    $('wallMove').textContent=''; wallInfoPaint();
     beep(520,70,0.08);
   }
   
@@ -1597,14 +1616,19 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   function wallStopMusic(){ try{ if(wall.src){ wall.src.stop(); wall.src.disconnect(); } }catch(e){} if(wall) wall.src=null; }
   function startWall(){
     var gc=$('wallCv'), K=wallKind(), bpm=WALL.BPM[pref.wallSpeed]||WALL.BPM.normal;
-    wall={on:true, n:0, pass:0, combo:0, best:0, total:WALL.COUNT, kind:K, kindKey:WALL_KINDS[pref.wallKind]?pref.wallKind:'basic', bpm:bpm, T:60000/bpm,
+    
+    var np=pref.wallPlayers==='duo'?2:1, Pk=[];
+    for(var k=0;k<np;k++) Pk.push({pass:0, combo:0, best:0, hist:[], frames:[], res:null, body:null});
+    tracks=[null,null];
+    wall={on:true, np:np, P:Pk, n:0, total:WALL.COUNT, kind:K, kindKey:WALL_KINDS[pref.wallKind]?pref.wallKind:'basic', bpm:bpm, T:60000/bpm,
       approach:WALL.APPROACH_BEATS[pref.wallApproach]?pref.wallApproach:'normal',
-      move:null, hist:[], frames:[], log:[], startedAt:new Date().toISOString(), state:'wait', t0:0, dur:1, body:null, fx:null, src:null, sb:WALL.INTRO_BEATS, beat0:0, tickB:-1, arriveBeat:0, nextAt:0};
+      move:null, log:[], startedAt:new Date().toISOString(), state:'wait', t0:0, dur:1, fx:null, src:null, sb:WALL.INTRO_BEATS, beat0:0, tickB:-1, arriveBeat:0, nextAt:0};
     $('lobby').hidden=true; $('btnCancel').hidden=false; $('wallHud').hidden=false; $('wallEnd').hidden=true; gc.hidden=false;
     document.body.classList.add('wall-running');
     try{ navigator.wakeLock && navigator.wakeLock.request('screen').then(function(w){ wakeLock=w; }).catch(function(){}); }catch(e){}
     $('wallBar').style.width='0%';
-    phaseMessage('벽 통과 · '+K.label,'벽에 뚫린 모양대로 서세요');
+    phaseMessage('벽 통과 · '+K.label+(np===2?' · 2인 대결':''), np===2?'청은 왼쪽 · 홍은 오른쪽 · 자기 구멍 모양대로 서세요':'벽에 뚫린 모양대로 서세요');
+    ensurePoses();
     var W=wall, go=function(buf){
       if(!wall.on || wall!==W) return;
       var A=wallAudio(), lead=0.15;
@@ -1627,11 +1651,18 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     if(showLobby!==false){ $('wallEnd').hidden=true; $('lobby').hidden=false; }
   }
   function finishWall(){
-    var W=wall, key='psm_wall_best_v2_'+W.kindKey+'_'+W.bpm+'_'+W.approach, best=0;
-    try{ best=+localStorage.getItem(key)||0; if(W.pass>best) localStorage.setItem(key,String(W.pass)); }catch(e){}
+    var W=wall, key='psm_wall_best_v2_'+W.kindKey+'_'+W.bpm+'_'+W.approach, best=0, P0=W.P[0];
     stopWall(false);
-    $('weScore').textContent=W.pass+' / '+W.total;
-    $('weSub').textContent=W.kind.label+' · 최고 연속 '+W.best+' · '+(W.pass>best?'오늘 최고 기록!':'이 기기 최고 '+Math.max(best,W.pass)+'개');
+    if(W.np===2){   
+      var a=W.P[0].pass, b=W.P[1].pass;
+      $('weScore').style.fontSize='clamp(36px,6vw,60px)'; $('weScore').style.whiteSpace='nowrap';
+      $('weScore').innerHTML='<span style="color:'+PAIR_COL[0]+'">청 '+a+'</span> : <span style="color:'+PAIR_COL[1]+'">홍 '+b+'</span>';
+      $('weSub').textContent=W.kind.label+' · '+(a>b?'청 승리!':(b>a?'홍 승리!':'무승부!'))+' · 최고 연속 청 '+W.P[0].best+' · 홍 '+W.P[1].best;
+    } else {
+      try{ best=+localStorage.getItem(key)||0; if(P0.pass>best) localStorage.setItem(key,String(P0.pass)); }catch(e){}
+      $('weScore').style.fontSize=''; $('weScore').textContent=P0.pass+' / '+W.total;
+      $('weSub').textContent=W.kind.label+' · 최고 연속 '+P0.best+' · '+(P0.pass>best?'오늘 최고 기록!':'이 기기 최고 '+Math.max(best,P0.pass)+'개');
+    }
     $('wallEnd').hidden=false; hnStart('wall');
     beep(988,140,0.2); setTimeout(function(){ beep(1480,260,0.2); },150);
     uploadWall(W);
@@ -1643,7 +1674,8 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     if(!W || !W.log || !W.log.length) return;
     var rec={id:'psw-'+Date.now().toString(36), app:'psm-wall', ver:PSM.VERSION, created:W.startedAt, kind:W.kindKey, speed:pref.wallSpeed||'normal',
       bpm:W.bpm, approach:W.approach, music:!!W.src, cam:pref.cam, model:pref.model, W:srcW, H:srcH, ua:navigator.userAgent,
-      tol:WALL.SHAPE_TOL, judgeMs:W.kind.judgeMs, ratio:W.kind.ratio, recMs:WALL_REC_MS, pass:W.pass, total:W.total, best:W.best, walls:W.log};
+      tol:WALL.SHAPE_TOL, judgeMs:W.kind.judgeMs, ratio:W.kind.ratio, recMs:WALL_REC_MS, pass:W.P[0].pass, total:W.total, best:W.P[0].best, walls:W.log,
+      players:W.np, pass2:W.np===2?W.P.map(function(q){ return q.pass; }):null};   
     if(TEST){ window.__wallRec=rec; return; }   
     if(!authKey) return;
     wallPending.push(rec); flushWall();
@@ -1652,7 +1684,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     if(TEST || !canUpload() || !wallPending.length || flushWall.busy) return;
     flushWall.busy=true;
     var rec=wallPending[0], text=JSON.stringify(rec);
-    var meta={id:rec.id, kind:'poomsae-wall', role:'game', label:rec.kind+' '+rec.pass+'/'+rec.total, created:rec.created, raw_bytes:text.length};
+    var meta={id:rec.id, kind:'poomsae-wall', role:'game', label:rec.kind+' '+(rec.players===2?('2인 '+rec.pass2.join(':')):(rec.pass+'/'+rec.total)), created:rec.created, raw_bytes:text.length};
     gzip(text).then(function(buf){
       return fetch(LAB_URL+'?action=upload',{method:'POST', headers:{'Content-Type':'application/gzip','x-lab-key':authKey,'x-lab-device':deviceId(authKey),'x-lab-meta':b64(JSON.stringify(meta))}, body:buf});
     }).then(function(r){ return r.json(); })
@@ -1660,26 +1692,32 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
       .catch(function(){ flushWall.busy=false; });
   }
   
-  function wallPose(list){
-    var W=wall, o=list[0];
-    if(!o){ W.body=null; return; }
+  function wallPose(list, ks){
+    var W=wall;
+    for(var k=0;k<W.np;k++){
+      var i=-1; for(var q=0;q<list.length;q++){ if((ks?ks[q]:q)===k){ i=q; break; } }
+      wallPoseOne(W, W.P[k], i>=0 ? list[i] : null);
+    }
+  }
+  function wallPoseOne(W, Q, o){
+    if(!o){ Q.body=null; return; }
     var lm=o.lm;
     if(W.state==='come' && W.move){
       var now=performance.now(), fr=null;
       
-      if(now >= W.t0+W.dur-WALL_REC_MS){ fr={t:Math.round(now-(W.t0+W.dur)), lm:rnd(lm,4), wl:rnd(o.wl,3)}; W.frames.push(fr); }
+      if(now >= W.t0+W.dur-WALL_REC_MS){ fr={t:Math.round(now-(W.t0+W.dur)), lm:rnd(lm,4), wl:rnd(o.wl,3)}; Q.frames.push(fr); }
       if(W.move.tech){
         var f=PSM.feat(lm, o.wl, srcW, srcH), cls= f ? PSM.classify(PSM.aggregate([f]), cfg) : null;
-        W.hist.push({t:now, ok: !!cls && cls.tech===W.move.tech});
+        Q.hist.push({t:now, ok: !!cls && cls.tech===W.move.tech});
         if(fr){ fr.tech=cls?cls.tech:null; fr.dir=cls?cls.dir:null; }
       } else {
         var sm=wallShapeD(lm, W.move);
-        if(sm.ok!=null) W.hist.push({t:now, ok:sm.ok});
+        if(sm.ok!=null) Q.hist.push({t:now, ok:sm.ok});
         if(fr){ fr.ok=sm.ok; fr.ds=sm.ds; }
       }
     }
     if(lm[23*4+3]>0.3 && lm[11*4+3]>0.3){
-      W.body={hx:(screenX(lm[23*4])+screenX(lm[24*4]))/2, hy:(lm[23*4+1]+lm[24*4+1])/2,
+      Q.body={hx:(screenX(lm[23*4])+screenX(lm[24*4]))/2, hy:(lm[23*4+1]+lm[24*4+1])/2,
               sy:(lm[11*4+1]+lm[12*4+1])/2};
     }
   }
@@ -1710,17 +1748,34 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     if(ds.some(function(x){ return x==null; })) return {ok:null, ds:ds.map(r)};
     return {ok:ds.every(function(x){ return x<=WALL.SHAPE_TOL; }), ds:ds.map(r)};
   }
+  function wallInfoPaint(){
+    var W=wall;
+    if(W.np===2){
+      $('wallInfo').innerHTML=W.n+' / '+W.total+' · <span style="color:'+PAIR_COL[0]+'">청 '+W.P[0].pass+'</span> : <span style="color:'+PAIR_COL[1]+'">홍 '+W.P[1].pass+'</span>';
+      return;
+    }
+    var Q=W.P[0]; $('wallInfo').textContent=W.n+' / '+W.total+' · 통과 '+Q.pass+(Q.combo>=2?' · '+Q.combo+'연속':'');
+  }
   function wallJudge(now){
-    var W=wall, K=W.kind, h=W.hist.filter(function(x){ return now-x.t<=K.judgeMs; });
-    var hit=h.filter(function(x){ return x.ok; }).length;
-    var ok= h.length>=2 && hit/h.length>=K.ratio;
-    if(TEST && window.__wallForce!=null) ok=!!window.__wallForce;   
-    W.res=ok; W.state='hit'; W.th=now;
-    W.log.push({n:W.n, name:W.move.name, tech:W.move.tech||null, arms:W.move.arms, legs:W.move.legs||null, check:W.move.check||null,
-      pass:ok, frames_in:h.length, frames_ok:hit, frames:W.frames});
-    if(ok){ W.pass++; W.combo++; W.best=Math.max(W.best,W.combo); beep(1320,90,0.2); setTimeout(function(){ beep(1760,140,0.18); },90); }
-    else { W.combo=0; beep(140,320,0.35); }
-    $('wallInfo').textContent=W.n+' / '+W.total+' · 통과 '+W.pass+(W.combo>=2?' · '+W.combo+'연속':'');
+    var W=wall, K=W.kind, anyOk=false, anyNg=false, per=[];
+    W.P.forEach(function(Q, k){
+      var h=Q.hist.filter(function(x){ return now-x.t<=K.judgeMs; });
+      var hit=h.filter(function(x){ return x.ok; }).length;
+      var ok= h.length>=2 && hit/h.length>=K.ratio;
+      if(TEST && window.__wallForce!=null) ok= Array.isArray(window.__wallForce) ? !!window.__wallForce[k] : !!window.__wallForce;   
+      Q.res=ok;
+      if(ok){ Q.pass++; Q.combo++; Q.best=Math.max(Q.best,Q.combo); anyOk=true; } else { Q.combo=0; anyNg=true; }
+      per.push({pass:ok, frames_in:h.length, frames_ok:hit, frames:Q.frames});
+    });
+    W.res= W.P.every(function(Q){ return Q.res; });   
+    W.state='hit'; W.th=now;
+    var e={n:W.n, name:W.move.name, tech:W.move.tech||null, arms:W.move.arms, legs:W.move.legs||null, check:W.move.check||null,
+      pass:per[0].pass, frames_in:per[0].frames_in, frames_ok:per[0].frames_ok, frames:per[0].frames};
+    if(W.np===2) e.players=per;
+    W.log.push(e);
+    if(anyOk){ beep(1320,90,0.2); setTimeout(function(){ beep(1760,140,0.18); },90); }
+    if(anyNg) beep(140,320,0.35);
+    wallInfoPaint();
   }
   function wallLoop(){
     if(!wall.on) return;
@@ -1746,8 +1801,13 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     }
     
     var sc=Math.max(cw/srcW, ch/srcH), ox=(cw-srcW*sc)/2, oy=(ch-srcH*sc)/2;
-    var B=W.body, hx=cw/2, hy=ch*0.62, T=ch*0.2;
-    if(B){ hx=B.hx*srcW*sc+ox; hy=B.hy*srcH*sc+oy; T=Math.max(ch*0.08,(B.hy-B.sy)*srcH*sc); }
+    
+    var spots=W.P.map(function(Q,k){
+      var B=Q.body, sp={hx: W.np===2 ? cw*(k?0.7:0.3) : cw/2, hy:ch*0.62, T: W.np===2 ? ch*0.17 : ch*0.2};
+      if(B){ sp.hx=B.hx*srcW*sc+ox; sp.hy=B.hy*srcH*sc+oy; sp.T=Math.max(ch*0.08,(B.hy-B.sy)*srcH*sc); }
+      return sp;
+    });
+    var hx=0, hy=0, T=0; spots.forEach(function(sp){ hx+=sp.hx/spots.length; hy+=sp.hy/spots.length; T+=sp.T/spots.length; });
     
     var pp=W.state==='hit' ? (W.res ? 1+(now-W.th)/fade*0.8 : 1) : Math.min(1,p);
     var z=1/(0.12+0.88*pp*pp);           
@@ -1755,12 +1815,12 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     var vx=cw/2, vy=ch*0.38, cx=vx+(hx-vx)*s, cy=vy+(hy-vy)*s;
     var shake=(W.state==='hit' && !W.res) ? Math.sin((now-W.th)/22)*14*d*Math.max(0,1-(now-W.th)/600) : 0;
     cx+=shake;
-    var t=T*s, ww=cw*1.9*s, wh=ch*1.9*s;
+    var t=T*s, ww=cw*1.9*s*(W.np===2?1.4:1), wh=ch*1.9*s;
     var alpha=W.state==='hit' ? (W.res ? Math.max(0,1-(now-W.th)/fade) : Math.max(0,1-(now-W.th)/fade)*0.95) : Math.min(0.94, 0.35+p*0.7);
     
     var oc=wallLoop.oc||(wallLoop.oc=document.createElement('canvas')); if(oc.width!==cw||oc.height!==ch){ oc.width=cw; oc.height=ch; }
     var o=oc.getContext('2d'); o.clearRect(0,0,cw,ch);
-    var crash=W.state==='hit' && !W.res;
+    var crash=W.state==='hit' && !W.res && W.np===1;   
     var grd=o.createLinearGradient(0,cy-wh/2,0,cy+wh/2); grd.addColorStop(0, crash?'#7b1d2a':'#2b2416'); grd.addColorStop(1, crash?'#4a0f18':'#15110a');
     o.fillStyle=grd; o.fillRect(cx-ww/2, cy-wh/2, ww, wh);
     o.strokeStyle='rgba(245,184,41,.28)'; o.lineWidth=Math.max(1,2*d*s);   
@@ -1771,7 +1831,8 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     }
     o.strokeStyle='#F5B829'; o.lineWidth=Math.max(2,6*d*s); o.strokeRect(cx-ww/2, cy-wh/2, ww, wh);
     var mir=(pref.cam==='user') ? 1 : -1;
-    function P(x,y){ return [cx+x*mir*t, cy+y*t]; }
+    var hcx=cx, hcy=cy;   
+    function P(x,y){ return [hcx+x*mir*t, hcy+y*t]; }
     var PAD=0;   
     function cap(x1,y1,x2,y2,w){ var a=P(x1,y1), b=P(x2,y2); o.lineWidth=(w+PAD*2)*t; o.beginPath(); o.moveTo(a[0],a[1]); o.lineTo(b[0],b[1]); o.stroke(); }
     function silhouette(ctx2){
@@ -1789,16 +1850,31 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
       ctx2.beginPath(); ctx2.arc(f1[0],f1[1],(0.15+PAD)*t,0,7); ctx2.fill(); ctx2.beginPath(); ctx2.arc(f2[0],f2[1],(0.15+PAD)*t,0,7); ctx2.fill();
     }
     
-    var keepT=t;
-    o.save(); o.fillStyle=crash?'#ff5a6e':'#FFD166'; o.strokeStyle=o.fillStyle; PAD=0.05; silhouette(o); o.restore();
-    o.save(); o.globalCompositeOperation='destination-out'; o.fillStyle='#000'; o.strokeStyle='#000'; PAD=0; silhouette(o); o.restore();
+    var holes=W.P.map(function(Q,k){
+      var sp=spots[k], hs=T>0 ? sp.T/T : 1;
+      return {x:vx+(sp.hx-vx)*s+shake, y:vy+(sp.hy-vy)*s, t:t*hs, Q:Q, k:k};
+    });
+    holes.forEach(function(H){
+      var bad= W.state==='hit' && !H.Q.res, edge= W.np===2 && W.state!=='hit' ? PAIR_COL[H.k] : '#FFD166';
+      hcx=H.x; hcy=H.y; t=H.t;
+      o.save(); o.fillStyle=bad?'#ff5a6e':edge; o.strokeStyle=o.fillStyle; PAD=0.05; silhouette(o); o.restore();
+      o.save(); o.globalCompositeOperation='destination-out'; o.fillStyle='#000'; o.strokeStyle='#000'; PAD=0; silhouette(o); o.restore();
+    });
     g.globalAlpha=alpha; g.drawImage(oc,0,0); g.globalAlpha=1;
     
     if(W.state==='hit'){
-      var k=Math.min(1,(now-W.th)/250), fs=Math.round(Math.min(cw,ch)*0.16*(0.8+0.2*k));
-      g.font='900 '+fs+'px '+getComputedStyle(document.body).fontFamily; g.textAlign='center'; g.textBaseline='middle';
-      g.fillStyle=W.res?'#9BFF7A':'#FF5A6E'; g.shadowColor='rgba(0,0,0,.7)'; g.shadowBlur=24*d;
-      g.fillText(W.res?'통과!':'쿵!', cw/2, ch*0.36); g.shadowBlur=0;
+      var kk=Math.min(1,(now-W.th)/250), ff=getComputedStyle(document.body).fontFamily;
+      g.textAlign='center'; g.textBaseline='middle'; g.shadowColor='rgba(0,0,0,.7)'; g.shadowBlur=24*d;
+      if(W.np===1){
+        var fs=Math.round(Math.min(cw,ch)*0.16*(0.8+0.2*kk));
+        g.font='900 '+fs+'px '+ff; g.fillStyle=W.res?'#9BFF7A':'#FF5A6E';
+        g.fillText(W.res?'통과!':'쿵!', cw/2, ch*0.36);
+      } else {
+        var fs2=Math.round(Math.min(cw,ch)*0.10*(0.8+0.2*kk));
+        g.font='900 '+fs2+'px '+ff;
+        holes.forEach(function(H){ g.fillStyle=H.Q.res?'#9BFF7A':'#FF5A6E'; g.fillText((H.k?'홍 ':'청 ')+(H.Q.res?'통과!':'쿵!'), spots[H.k].hx, ch*0.30); });
+      }
+      g.shadowBlur=0;
     }
     
     if(W.state==='come'){
@@ -1807,13 +1883,13 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   }
   function wallInit(){
     
-    if(TEST) window.__wallDebug={n:WALL.MOVES.length, last:function(){ if(wall.on) wall.n=wall.total; }, show:function(i,p){ if(!wall.on) return; wall.move=wall.kind.moves[i]; wall.nextAt=1e15; wall.state='come'; wall.hist=[]; wall.dur=1e9; wall.t0=performance.now()-wall.dur*(p==null?0.99:p); $('wallMove').textContent=wall.move.name; }};
+    if(TEST) window.__wallDebug={n:WALL.MOVES.length, last:function(){ if(wall.on) wall.n=wall.total; }, show:function(i,p){ if(!wall.on) return; wall.move=wall.kind.moves[i]; wall.nextAt=1e15; wall.state='come'; wall.P.forEach(function(q){ q.hist=[]; }); wall.dur=1e9; wall.t0=performance.now()-wall.dur*(p==null?0.99:p); $('wallMove').textContent=wall.move.name; }};
     $('weAgain').addEventListener('click', function(){ $('wallEnd').hidden=true; startFromLobby(); });
     $('weLobby').addEventListener('click', function(){ hnStop(); $('wallEnd').hidden=true; $('lobby').hidden=false; });
-    [['segWallSpeed','wallSpeed','normal'],['segWallApproach','wallApproach','normal'],['segWallKind','wallKind','basic'],['segWallMusic','wallMusic','on']].forEach(function(a){
+    [['segWallSpeed','wallSpeed','normal'],['segWallApproach','wallApproach','normal'],['segWallKind','wallKind','basic'],['segWallMusic','wallMusic','on'],['segWallPlayers','wallPlayers','solo']].forEach(function(a){
       var box=$(a[0]); if(!box) return;
       function paint(){ Array.prototype.forEach.call(box.querySelectorAll('button'), function(b){ b.classList.toggle('on', b.dataset.v===(pref[a[1]]||a[2])); }); wallTip(); }
-      box.addEventListener('click', function(e){ var b=e.target.closest('button'); if(!b) return; pref[a[1]]=b.dataset.v; lsSet(LS_PREF,pref); paint(); });
+      box.addEventListener('click', function(e){ var b=e.target.closest('button'); if(!b) return; pref[a[1]]=b.dataset.v; lsSet(LS_PREF,pref); paint(); if(a[1]==='wallPlayers'){ tracks=[null,null]; ensurePoses(); } });
       paint();
     });
   }
@@ -1824,6 +1900,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
       +(pref.wallKind==='stretch' ? '스트레칭 · 천천히 오고, 그 자세로 <b>1초 버티면</b> 통과 (만세 · 팔 벌리기 · 옆구리 · 다리 벌리고 손 허리 · 나무 자세)'
        : pref.wallKind==='hard' ? '고난도 · 옆차기 자세 · 주춤서기 얼굴막기 · 학다리 — 다리 모양까지 봅니다'
        : '기본동작 · 기본준비 · 아래막기 · 지르기 · 안막기 · 얼굴막기')
+      +(pref.wallPlayers==='duo' ? '<br><b>2인 대결</b> · 청은 화면 왼쪽, 홍은 오른쪽. 벽에 구멍이 두 개 뚫려 오고 각자 판정 — 많이 통과한 쪽이 이깁니다' : '')
       +'<br>카메라 <b>정면 3~4m</b>에서 전신이 보이게 서세요. '+(kindKey==='stretch'||beats===2?'선택한 접근 속도를 끝까지 유지합니다.':'뒤 절반은 1박 짧아집니다 (최소 2박).');
   }
 
@@ -1861,23 +1938,39 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   function beginReturn(){
     live.phase='returnCue'; live.readySince=[null,null];
     phaseMessage('바로','정면을 보고 준비 자세로 돌아오세요');
-    cue('바로', function(){ if(rec && rec.running && live.phase==='returnCue') live.phase='return'; });
+    cue('바로', function(){ if(rec && rec.running && live.phase==='returnCue'){ live.phase='return'; live.returnAt=performance.now(); } });
   }
-  function checkReady(k, hit, f, now){
+
+  var RETURN_WAIT_MS=5000, STUCK_READY_MS=2000;
+  function isReadyPose(k, hit, f){
     var cls=f ? PSM.classify(PSM.aggregate([f]),cfg) : null;
     var visible=hit && [11,12,15,16,23,24,27,28].every(function(i){
       return hit.lm[i*4+3]>=0.5 && hit.lm[i*4]>=0 && hit.lm[i*4]<=1 && hit.lm[i*4+1]>=0 && hit.lm[i*4+1]<=1;
     });
     var shoulder=hit ? Math.abs(hit.lm[11*4]-hit.lm[12*4]) : 0;
     var handsInFront=hit && shoulder>0.02 && Math.abs(hit.lm[15*4]-hit.lm[16*4])<shoulder*0.95;
-    var ready=visible && handsInFront && cls && cls.dir==='F' && cls.tech==='준비' && live.det[k].inStop() && live.det[k].speed()<cfg.STILL_T;
-    if(!ready) live.readySince[k]=null;
+    return !!(visible && handsInFront && cls && cls.dir==='F' && cls.tech==='준비' && live.det[k].inStop() && live.det[k].speed()<cfg.STILL_T);
+  }
+  function checkReady(k, hit, f, now){
+    if(!isReadyPose(k,hit,f)) live.readySince[k]=null;
     else if(live.readySince[k]===null) live.readySince[k]=now;
+  }
+  function checkStuck(k, hit, f, now){
+    var last=lastMove(KEY), p=live.ptr[k];
+    if(!live.stuckSince) live.stuckSince=[null,null];
+    if(p>last || p<=Math.ceil(last/2) || !isReadyPose(k,hit,f)){ live.stuckSince[k]=null; return; }
+    if(live.stuckSince[k]===null){ live.stuckSince[k]=now; return; }
+    if(now-live.stuckSince[k]<STUCK_READY_MS) return;
+    for(var q=p;q<=last;q++) live.marks[k][q]='miss';
+    live.ptr[k]=last+1; live.stuckSince[k]=null;
+    live.last[k]='<b>준비</b> 자세 확인 <span class="x">('+missText(KEY,p,last)+' 놓침)</span>';
+    live.events.push({k:k, t:Math.round(now-rec.t0), took:'end', stuck:true});
   }
   function advanceRitual(now){
     if(live.phase!=='prepare' && live.phase!=='return') return;
     var ready=true;
     for(var k=0;k<rec.mode;k++) if(live.readySince[k]===null || now-live.readySince[k]<700) ready=false;
+    if(live.phase==='return' && live.returnAt!=null && now-live.returnAt>=RETURN_WAIT_MS) ready=true;
     if(!ready) return;
     if(live.phase==='prepare') beginPerformance();
     else {
@@ -2205,10 +2298,15 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
         hnEl.style.top='52%';
         document.body.appendChild(hnEl);
       }
-      var two=pref.role==='pair';
+      var two=peopleNow()===2;
       if(on && kind && kind+two!==hnKind){
         hnKind=kind+two;
-        hnEl.innerHTML='<div class="h-frame"><div class="h-tag">'+(kind==='next'?'NEXT PLAYER':'HAND SIGNAL')+'</div>'
+        if(kind==='far' || kind==='side'){
+          var fh=FRAME_HINT.TEXT[kind];
+          hnEl.innerHTML='<div class="h-frame"><div class="h-tag">CHECK POSITION</div>'
+            +'<div class="h-main" style="margin-top:6px">'+fh[0]+'</div><div class="h-sub">'+fh[1]+'</div></div>';
+        }
+        else hnEl.innerHTML='<div class="h-frame"><div class="h-tag">'+(kind==='next'?'NEXT PLAYER':'HAND SIGNAL')+'</div>'
           +'<div class="h-main" style="margin-top:6px">'+(kind==='next'?(two?'다음 선수들 입장':'다음 선수 입장'):(two?'두 사람 자리에 서기':'화면 앞에 서기'))+'</div>'
           +'<div class="h-sub">'+(two?'한 사람이 ':'')+'한 손을 머리 위로 2초 들면 시작해요</div></div>';
       }
@@ -2230,7 +2328,30 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     if(hn.phase==='result') return;
     var ok=false; try{ ok=hsCanStart(); }catch(e){}
     var quiet= hn.phase!=='wait' && performance.now()<hnQuietUntil;
+    
+    var fk= ok && !hsT0 ? frameHintNow(lastPoses.map(function(P){ return P.lm; })) : '';
+    if(fk){ hnPrompt(true, fk); return; }
     hnPrompt(ok && !hsT0 && !quiet, hn.phase==='wait' ? 'next' : 'first');   
+  }
+
+  var FRAME_HINT={EDGE:0.02, HOLD_MS:800,
+    TEXT:{far:['조금 더 뒤로 서 주세요','머리부터 발끝까지 화면에 보여야 해요'], side:['가운데로 와 주세요','몸 전체가 화면 안에 들어와야 해요']}};
+  function frameOut(lm){
+    if(!lm) return '';
+    var E=FRAME_HINT.EDGE, i;
+    var feet=-1; [27,28,29,30,31,32].forEach(function(j){ feet=Math.max(feet, lm[j*4+1]); });
+    if(feet>1-E || lm[1]<E) return 'far';   
+    var pts=[11,12,15,16,23,24,27,28];
+    for(i=0;i<pts.length;i++){ var x=lm[pts[i]*4]; if(x<E || x>1-E) return 'side'; }
+    return '';
+  }
+  var fhSince=0, fhLast='';
+  function frameHintNow(lmList){
+    var k=''; for(var i=0;i<lmList.length && !k;i++) k=frameOut(lmList[i]);
+    var now=performance.now();
+    if(!k){ fhSince=0; fhLast=''; return ''; }
+    if(k!==fhLast){ fhLast=k; fhSince=now; }
+    return now-fhSince>=FRAME_HINT.HOLD_MS ? k : '';
   }
   
   document.addEventListener('pointerdown', function(e){
