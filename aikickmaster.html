@@ -4089,7 +4089,7 @@ function beginAutoDrillStage(index, announce=true){
   drillScores=[];
   lastScore=null; lastGrade=''; lastColor='var(--gold)';
   kicking=false; aboveFrames=0; belowFrames=0; nearPeak=0; nearAboveN=0; nearProj=0; kickFoot=null; peakPct=0; kickTopFootY=null; kickRefTorso=null; rearmNeeded=false;  
-  trajX=[]; trajY=[]; trajHipX=[]; trajTorso=[]; trajHipW=[]; trajKneeX=[]; trajKneeAngle=[]; trajHipVis=[]; trajKneeVis=[]; trajKneeAngle3D=[]; trajShoulderW=[]; trajFootAng=[]; trajFootAngVis=[]; trajKneeMark=[]; kmPeakY=null; kmHitBefore=false; kneeMarkFlashArmed=false; trajActive=false; drillSide=0; resetPreRoll();
+  trajX=[]; trajY=[]; trajHipX=[]; trajTorso=[]; trajHipW=[]; trajKneeX=[]; trajKneeAngle=[]; trajHipVis=[]; trajKneeVis=[]; trajKneeAngle3D=[]; trajShoulderW=[]; trajFootAng=[]; trajFootAngVis=[]; trajKneeMark=[]; trajFootBlade=[]; kmPeakY=null; kmHitBefore=false; kneeMarkFlashArmed=false; trajActive=false; drillSide=0; resetPreRoll();
   updateSelectedKickButtons();
   updateModeBadge();
   renderStats();
@@ -4164,6 +4164,7 @@ function pushPreTraj(m){
     shoulderW:shoulderRatioNow(m),
     footAng:Number.isFinite(m.footAng)?m.footAng:null,          
     footAngVis:Number.isFinite(m.footAngVis)?m.footAngVis:0,
+    footBlade:m.footBlade||null,                                 
 
     kneeMark:(function(){ const q=kneeMarkProbe(m); return q?q.hit:null; })()
   });
@@ -4186,10 +4187,11 @@ function seedTrajFromPreroll(){
     trajKneeAngle3D.push(p.kneeAngle3D); trajShoulderW.push(p.shoulderW);
     trajFootAng.push(p.footAng ?? null); trajFootAngVis.push(p.footAngVis ?? 0);   
     trajKneeMark.push(p.kneeMark ?? null);                                          
+    trajFootBlade.push(p.footBlade ?? null);                                        
   }
 }
 
-let trajKneeAngle3D=[], trajShoulderW=[], trajFootAng=[], trajFootAngVis=[];
+let trajKneeAngle3D=[], trajShoulderW=[], trajFootAng=[], trajFootAngVis=[], trajFootBlade=[];   
 
 let trajKneeMark=[];
 
@@ -5297,8 +5299,7 @@ function scoreMeasureOnly(f,want){
     
     return {ok:false,score:null,reason:'wrong_kind_yeop',msg:'몸을 옆으로 돌려서 차보세요'};
 
-  if(want==='yeop' && !f.kneeMarkPre && f.kneeMarkSeen>0)
-    return {ok:false,score:null,reason:'no_knee_mark_yeop',msg:'무릎으로 옆선을 찍고 차세요!'};
+  const yeopNoMark = (want==='yeop' && !f.kneeMarkPre && f.kneeMarkSeen>0);
 
   if(want==='dwi' && sw!==null && sw>MEASURE_GATE.DWI_SW)
     return {ok:false,score:null,reason:'wrong_kind_dwi',msg:'등을 보이며 뒤로 차보세요'};
@@ -5307,18 +5308,20 @@ function scoreMeasureOnly(f,want){
   if(want==='dwi' && dch!==null && dch<DWI_KNEE.REJECT)
     return {ok:false,score:null,reason:'no_chamber_dwi',msg:'무릎을 접었다 펴며 차보세요!'};
 
-  const hScore=c01((f.riseTFront-B.H_LO)/(B.H_HI-B.H_LO));
+  const hSpan=(B.H_HI-B.H_LO)*((want==='yeop' && kickLevel==='easy')?YEOP_SCORE.H_STRETCH:1);
+  const hScore=c01((f.riseTFront-B.H_LO)/hSpan);
   const rot = (sw===null) ? 0.5 : c01(1 - sw/0.85);
-  let factor = 0.70 + 0.30*rot;
+  let factor = (want==='yeop') ? (YEOP_SCORE.ROT_BASE + (1-YEOP_SCORE.ROT_BASE)*rot) : (0.70 + 0.30*rot);
   let kneeMarkGrade=0;   
   let hfC=null, hfK=null;   
   if(want==='yeop'){
     const ch=Number.isFinite(f.kneeChamber3D)?f.kneeChamber3D:null;
     const cScore=(ch===null)?0.5:c01((ch-20)/(75-20)); 
     hfC=cScore;
-    factor *= (0.78 + 0.22*cScore);
+    factor *= (YEOP_SCORE.CH_BASE + (1-YEOP_SCORE.CH_BASE)*cScore);
+    if(yeopNoMark) factor *= f.kneeMarkPost ? YEOP_SCORE.POST_ONLY : YEOP_SCORE.NO_MARK;   
 
-    if(f.kneeMarkPre && f.kneeMarkPost){ factor *= KNEE_MARK.BONUS_BOTH; kneeMarkGrade=2; }
+    if(f.kneeMarkPre && f.kneeMarkPost){ factor *= YEOP_SCORE.BONUS_BOTH; kneeMarkGrade=2; }   
     else if(f.kneeMarkPre)             { factor *= KNEE_MARK.BONUS_PRE;  kneeMarkGrade=1; }
   }
 
@@ -5340,6 +5343,7 @@ function scoreMeasureOnly(f,want){
   else if(score>=85) msg='아주 좋아요!';
   else if(score>=72) msg='좋아요!';
 
+  else if(yeopNoMark) msg='무릎으로 옆선을 찍고 차세요!';   
   else if(want==='yeop' && kneeMarkGrade===1) msg='내리면서 무릎을 한 번 더 찍어보세요!';
   else if(rot<0.45)  msg=(want==='dwi')?'등을 더 보이며 차보세요!':'몸을 더 옆으로 돌려보세요!';
   
@@ -5357,6 +5361,8 @@ function scoreMeasureOnly(f,want){
 
 const KNEE_MARK={ BONUS_PRE:1.05, BONUS_BOTH:1.15 };
 
+const YEOP_SCORE={ H_STRETCH:1.25, ROT_BASE:0.60, CH_BASE:0.65, BONUS_BOTH:1.10, POST_ONLY:0.70, NO_MARK:0.55 };
+
 const MEASURE_GATE={};
 
 const DWI_FOOT={};
@@ -5372,7 +5378,7 @@ function measureHFor(want){
   return t[want] || null;
 }
 
-const SPARRING_LIVE_RELIEF=10, SPARRING_LIVE_FLOOR=8;   
+const SPARRING_LIVE_RELIEF=15, SPARRING_LIVE_FLOOR=8;   
 
 let JUDGE=JUDGE_HARD;
 let kickLevel='hard';
@@ -5385,7 +5391,9 @@ function effThreshPct(){
 
   const sparLive=(typeof currentMode!=='undefined' && currentMode==='sparring' && typeof sparringMode!=='undefined' && sparringMode!=='speed');
   const sparRelief=sparLive?SPARRING_LIVE_RELIEF:0;
-  return Math.max(sparLive?SPARRING_LIVE_FLOOR:12, Math.min(100, threshPct + (JUDGE.THRESH_OFFSET||0) + p2Offset - lowFps - sparRelief));
+
+  const pOff=sparLive?-5:p2Offset;
+  return Math.max(sparLive?SPARRING_LIVE_FLOOR:12, Math.min(100, threshPct + (JUDGE.THRESH_OFFSET||0) + pOff - lowFps - sparRelief));
 }
 function applyThreshUi(){
   const eff=effThreshPct();
@@ -5516,7 +5524,7 @@ function analyzeTrajShort(peakPctValue=null){
   const measure=isMeasureOnlyMode();
   
   const B=measure ? (measureHFor(want) || {H_LO:P.H_LO,H_HI:P.H_HI}) : {H_LO:P.H_LO,H_HI:P.H_HI};
-  const hScore=c01((riseTFront-B.H_LO)/(B.H_HI-B.H_LO));
+  const hScore=c01((riseTFront-B.H_LO)/((B.H_HI-B.H_LO)*((measure && want==='yeop' && kickLevel==='easy')?YEOP_SCORE.H_STRETCH:1)));   
   const cScore=(kneeChamber3D===null) ? 0.5
              : measure ? c01((kneeChamber3D-20)/(75-20))          
                        : c01((kneeChamber3D-P.C_LO)/(P.C_HI-P.C_LO)); 
@@ -5526,7 +5534,7 @@ function analyzeTrajShort(peakPctValue=null){
   const shortKneeMark=trajKneeMark.some(v=>v===true);
   let factor, worst;
   if(want==='dwi'){        factor=0.70+0.30*rot;                              worst=(rot<0.45)?'rot':'height'; }
-  else if(want==='yeop'){  factor=(0.70+0.30*rot)*(0.78+0.22*cScore)*(shortKneeMark?KNEE_MARK.BONUS_PRE:1);
+  else if(want==='yeop'){  factor=(YEOP_SCORE.ROT_BASE+(1-YEOP_SCORE.ROT_BASE)*rot)*(YEOP_SCORE.CH_BASE+(1-YEOP_SCORE.CH_BASE)*cScore)*(shortKneeMark?KNEE_MARK.BONUS_PRE:1);   
                                                                              worst=(rot<0.45)?'rot':'height'; }
   else if(want==='dollo'){ factor=(0.70+0.30*cScore)*(0.62+0.38*hipScore);    worst=(hipScore<0.35)?'hip':((cScore<0.35)?'knee':'height'); }
   else {                   factor=0.62+0.38*cScore;                           worst=(cScore<0.35)?'knee':'height'; }
@@ -5730,6 +5738,16 @@ function analyzeTraj(peakPctValue=null){
       footAngPeak=(v.length%2)?v[mid]:(v[mid-1]+v[mid])/2;
     }
   }
+  
+  let blade=null, bladeFrames=0;
+  {
+    const lo=Math.max(0,peakIndex-2), hi=Math.min(trajFootBlade.length-1,peakIndex+2);
+    const fx=[], ld=[], up=[];
+    for(let i=lo;i<=hi;i++){ const b=trajFootBlade[i]; if(b){ fx.push(b.flex); ld.push(b.lead); up.push(b.up); } }
+    bladeFrames=fx.length;
+    const med=(a)=>{ a.sort((x,y)=>x-y); const k=a.length>>1; return (a.length%2)?a[k]:(a[k-1]+a[k])/2; };
+    if(fx.length>=2) blade={flex:Math.round(med(fx)), lead:+med(ld).toFixed(2), up:+med(up).toFixed(2)};
+  }
 
   const avgOf=(arr)=>{ const v=arr.slice(0,peakIndex+1).filter(Number.isFinite); return v.length?v.reduce((a,b)=>a+b,0)/v.length:0; };
   const preFrames=preT.filter(t=>t>=(kickStartT||0)-PRE_LOOKBACK_MS && (!kickStartT||t<=kickStartT)).length;
@@ -5758,6 +5776,8 @@ function analyzeTraj(peakPctValue=null){
 
     footAng:(footAngPeak==null)?null:Math.round(footAngPeak),
     footAngFrames,
+    
+    bladeFlex:blade?blade.flex:null, bladeLead:blade?blade.lead:null, bladeUp:blade?blade.up:null, bladeFrames,
     peakPct:(typeof peakPctValue==='number' && Number.isFinite(peakPctValue))?Math.round(peakPctValue):null,
     frames:trajX.length, preFrames, peakIndex,
     torsoRef:+T.toFixed(4),
@@ -6334,12 +6354,12 @@ function onDrillKick(peak, traj){
     sndFail();
     
     popup(result.msg,'#FFB14A');
-    trajX=[]; trajY=[]; trajHipX=[]; trajTorso=[]; trajHipW=[]; trajKneeX=[]; trajKneeAngle=[]; trajHipVis=[]; trajKneeVis=[]; trajKneeAngle3D=[]; trajShoulderW=[]; trajFootAng=[]; trajFootAngVis=[]; trajKneeMark=[]; kmPeakY=null; kmHitBefore=false; kneeMarkFlashArmed=false; trajActive=false; drillSide=0; resetPreRoll();
+    trajX=[]; trajY=[]; trajHipX=[]; trajTorso=[]; trajHipW=[]; trajKneeX=[]; trajKneeAngle=[]; trajHipVis=[]; trajKneeVis=[]; trajKneeAngle3D=[]; trajShoulderW=[]; trajFootAng=[]; trajFootAngVis=[]; trajKneeMark=[]; trajFootBlade=[]; kmPeakY=null; kmHitBefore=false; kneeMarkFlashArmed=false; trajActive=false; drillSide=0; resetPreRoll();
     return;
   }
 
   if(!twoPlayerMode && (autoDrillTransitioning || drillDone>=drillTarget)){
-    trajX=[]; trajY=[]; trajHipX=[]; trajTorso=[]; trajHipW=[]; trajKneeX=[]; trajKneeAngle=[]; trajHipVis=[]; trajKneeVis=[]; trajKneeAngle3D=[]; trajShoulderW=[]; trajFootAng=[]; trajFootAngVis=[]; trajKneeMark=[]; kmPeakY=null; kmHitBefore=false; kneeMarkFlashArmed=false; trajActive=false; drillSide=0; resetPreRoll();
+    trajX=[]; trajY=[]; trajHipX=[]; trajTorso=[]; trajHipW=[]; trajKneeX=[]; trajKneeAngle=[]; trajHipVis=[]; trajKneeVis=[]; trajKneeAngle3D=[]; trajShoulderW=[]; trajFootAng=[]; trajFootAngVis=[]; trajKneeMark=[]; trajFootBlade=[]; kmPeakY=null; kmHitBefore=false; kneeMarkFlashArmed=false; trajActive=false; drillSide=0; resetPreRoll();
     return;
   }
   drillDone++;
@@ -6356,7 +6376,7 @@ function onDrillKick(peak, traj){
   popup(result.score+'점','#4caf50');
   if(!twoPlayerMode) renderStats();
 
-  trajX=[]; trajY=[]; trajHipX=[]; trajTorso=[]; trajHipW=[]; trajKneeX=[]; trajKneeAngle=[]; trajHipVis=[]; trajKneeVis=[]; trajKneeAngle3D=[]; trajShoulderW=[]; trajFootAng=[]; trajFootAngVis=[]; trajKneeMark=[]; kmPeakY=null; kmHitBefore=false; kneeMarkFlashArmed=false; trajActive=false; drillSide=0; resetPreRoll();
+  trajX=[]; trajY=[]; trajHipX=[]; trajTorso=[]; trajHipW=[]; trajKneeX=[]; trajKneeAngle=[]; trajHipVis=[]; trajKneeVis=[]; trajKneeAngle3D=[]; trajShoulderW=[]; trajFootAng=[]; trajFootAngVis=[]; trajKneeMark=[]; trajFootBlade=[]; kmPeakY=null; kmHitBefore=false; kneeMarkFlashArmed=false; trajActive=false; drillSide=0; resetPreRoll();
 
   if(drillDone>=drillTarget){
     if(twoPlayerMode){  }
@@ -6486,7 +6506,7 @@ function handleSparringPracticeKick(peak){
   sndScore(score);
   flashEdge(null);
   nextSparringMission();
-  trajX=[]; trajY=[]; trajHipX=[]; trajTorso=[]; trajHipW=[]; trajKneeX=[]; trajKneeAngle=[]; trajHipVis=[]; trajKneeVis=[]; trajKneeAngle3D=[]; trajShoulderW=[]; trajFootAng=[]; trajFootAngVis=[]; trajKneeMark=[]; kmPeakY=null; kmHitBefore=false; kneeMarkFlashArmed=false; trajActive=false; drillSide=0; resetPreRoll();
+  trajX=[]; trajY=[]; trajHipX=[]; trajTorso=[]; trajHipW=[]; trajKneeX=[]; trajKneeAngle=[]; trajHipVis=[]; trajKneeVis=[]; trajKneeAngle3D=[]; trajShoulderW=[]; trajFootAng=[]; trajFootAngVis=[]; trajKneeMark=[]; trajFootBlade=[]; kmPeakY=null; kmHitBefore=false; kneeMarkFlashArmed=false; trajActive=false; drillSide=0; resetPreRoll();
 }
 function updateSparringHud(){
   if(enemyHpFill) enemyHpFill.style.width=Math.max(0,(sparringHp/250)*100)+'%';
@@ -6594,7 +6614,7 @@ function handleSparringKick(peak){
 
   sndHit(zone, sparringCombo, dmg);
   
-  trajX=[]; trajY=[]; trajHipX=[]; trajTorso=[]; trajHipW=[]; trajKneeX=[]; trajKneeAngle=[]; trajHipVis=[]; trajKneeVis=[]; trajKneeAngle3D=[]; trajShoulderW=[]; trajFootAng=[]; trajFootAngVis=[]; trajKneeMark=[]; kmPeakY=null; kmHitBefore=false; kneeMarkFlashArmed=false; trajActive=false; drillSide=0; resetPreRoll();
+  trajX=[]; trajY=[]; trajHipX=[]; trajTorso=[]; trajHipW=[]; trajKneeX=[]; trajKneeAngle=[]; trajHipVis=[]; trajKneeVis=[]; trajKneeAngle3D=[]; trajShoulderW=[]; trajFootAng=[]; trajFootAngVis=[]; trajKneeMark=[]; trajFootBlade=[]; kmPeakY=null; kmHitBefore=false; kneeMarkFlashArmed=false; trajActive=false; drillSide=0; resetPreRoll();
   if(sparringHp<=0){ sndKO(); setTimeout(finishSparring,500); }   
 }
 function startSparring(){
@@ -6906,7 +6926,7 @@ function resetCounters(){
   sparringHp=250; sparringDamage=0; sparringCombo=0; sparringMaxCombo=0; sparringLastHitT=0;
   updateSparringHud();
   kicking=false; aboveFrames=0; belowFrames=0; nearPeak=0; nearAboveN=0; nearProj=0; kickFoot=null; peakPct=0; lastRankTs=null; kickTopFootY=null; kickRefTorso=null; rearmNeeded=false;  
-  trajX=[]; trajY=[]; trajHipX=[]; trajTorso=[]; trajHipW=[]; trajKneeX=[]; trajKneeAngle=[]; trajHipVis=[]; trajKneeVis=[]; trajKneeAngle3D=[]; trajShoulderW=[]; trajFootAng=[]; trajFootAngVis=[]; trajKneeMark=[]; kmPeakY=null; kmHitBefore=false; kneeMarkFlashArmed=false; trajActive=false; drillSide=0; resetPreRoll();
+  trajX=[]; trajY=[]; trajHipX=[]; trajTorso=[]; trajHipW=[]; trajKneeX=[]; trajKneeAngle=[]; trajHipVis=[]; trajKneeVis=[]; trajKneeAngle3D=[]; trajShoulderW=[]; trajFootAng=[]; trajFootAngVis=[]; trajKneeMark=[]; trajFootBlade=[]; kmPeakY=null; kmHitBefore=false; kneeMarkFlashArmed=false; trajActive=false; drillSide=0; resetPreRoll();
   popOverlay.classList.remove('show');
   if(typeof clearP2Popups==='function') clearP2Popups(); 
   drillResult.classList.remove('show','auto-summary','final-result'); sparringHud?.classList.remove('show');
@@ -7668,7 +7688,7 @@ function runKick(pct,m=null){
         if(m){
           kickFoot=m.side||null;  
           drillSide=(m.footX < m.hipX)?-1:1;
-          trajX=[]; trajY=[]; trajHipX=[]; trajTorso=[]; trajHipW=[]; trajKneeX=[]; trajKneeAngle=[]; trajHipVis=[]; trajKneeVis=[]; trajKneeAngle3D=[]; trajShoulderW=[]; trajFootAng=[]; trajFootAngVis=[]; trajKneeMark=[]; kmPeakY=null; kmHitBefore=false; kneeMarkFlashArmed=false;
+          trajX=[]; trajY=[]; trajHipX=[]; trajTorso=[]; trajHipW=[]; trajKneeX=[]; trajKneeAngle=[]; trajHipVis=[]; trajKneeVis=[]; trajKneeAngle3D=[]; trajShoulderW=[]; trajFootAng=[]; trajFootAngVis=[]; trajKneeMark=[]; trajFootBlade=[]; kmPeakY=null; kmHitBefore=false; kneeMarkFlashArmed=false;
           
           if(isMeasureOnlyMode()) seedTrajFromPreroll();
         }
@@ -7739,6 +7759,23 @@ function footAngleDeg(lm,side,torso){
   return {ang:Math.atan2(dy,dx)*180/Math.PI, vis};
 }
 
+function footBlade3D(wlm,side){
+  if(!wlm) return null;
+  const ids=side==='left'?{hip:23,knee:25,ankle:27,heel:29,toe:31}:{hip:24,knee:26,ankle:28,heel:30,toe:32};
+  const h=wlm[ids.hip], k=wlm[ids.knee], a=wlm[ids.ankle], he=wlm[ids.heel], t=wlm[ids.toe];
+  if(!h||!k||!a||!he||!t) return null;
+  const v=(p,q)=>[q.x-p.x, q.y-p.y, (q.z??0)-(p.z??0)];
+  const dot=(u,w)=>u[0]*w[0]+u[1]*w[1]+u[2]*w[2];
+  const len=(u)=>Math.hypot(u[0],u[1],u[2]);
+  const foot=v(he,t), fl=len(foot);
+  const ak=v(a,k), at=v(a,t), dir=v(h,a), dl=len(dir);
+  if(!(fl>0.04) || !(dl>0) || !(len(ak)>0) || !(len(at)>0)) return null;
+  const flex=Math.acos(Math.max(-1,Math.min(1,dot(ak,at)/(len(ak)*len(at)))))*180/Math.PI;
+  const lead=dot([-foot[0],-foot[1],-foot[2]],dir)/(dl*fl);   
+  const up=-foot[1]/fl;
+  return {flex,lead,up};
+}
+
 function kneeAngle3D(wlm,side){
   if(!wlm) return null;
   const ids=side==='left'?{hip:23,knee:25,ankle:27}:{hip:24,knee:26,ankle:28};
@@ -7782,6 +7819,7 @@ function computeMetrics(lm,wlm=null){
     if(m){
       m.hipW=hipW; m.hipVis=hipVis; m.shoulderW=shoulderW;
       m.kneeAngle3D=kneeAngle3D(wlm,m.side); 
+      m.footBlade=footBlade3D(wlm,m.side);   
 
       const other = (m.side==='left') ? R : L;
       m.otherFootY   = other ? other.footY : null;
@@ -8054,7 +8092,7 @@ function makeKickSlot(key){
 
     preT:[], preFootY:[], preKneeAngle:[], preKneeVis:[], preKneeAngle3D:[], preTraj:[],
 
-    trajFootAng:[], trajFootAngVis:[], trajKneeMark:[],
+    trajFootAng:[], trajFootAngVis:[], trajKneeMark:[], trajFootBlade:[],   
     kmPeakY:null, kmHitBefore:false, kneeMarkFlashArmed:false,
     prevFoot:{left:null,right:null},
     smHipY:null, smTorso:null, smHipX:null, smHipW:null, shoulderSamples:[],
@@ -8079,6 +8117,7 @@ function saveToSlot(slot){
   slot.trajKneeAngle3D=trajKneeAngle3D; slot.trajShoulderW=trajShoulderW;
   
   slot.trajFootAng=trajFootAng; slot.trajFootAngVis=trajFootAngVis; slot.trajKneeMark=trajKneeMark;
+  slot.trajFootBlade=trajFootBlade;   
   slot.kmPeakY=kmPeakY; slot.kmHitBefore=kmHitBefore; slot.kneeMarkFlashArmed=kneeMarkFlashArmed;
   slot.preT=preT; slot.preFootY=preFootY; slot.preKneeAngle=preKneeAngle; slot.preKneeVis=preKneeVis;
   slot.preKneeAngle3D=preKneeAngle3D; slot.preTraj=preTraj;
@@ -8101,6 +8140,7 @@ function loadFromSlot(slot){
   trajKneeAngle3D=slot.trajKneeAngle3D; trajShoulderW=slot.trajShoulderW;
   
   trajFootAng=slot.trajFootAng||[]; trajFootAngVis=slot.trajFootAngVis||[]; trajKneeMark=slot.trajKneeMark||[];
+  trajFootBlade=slot.trajFootBlade||[];   
   kmPeakY=(slot.kmPeakY===undefined?null:slot.kmPeakY);
   kmHitBefore=!!slot.kmHitBefore; kneeMarkFlashArmed=!!slot.kneeMarkFlashArmed;
   preT=slot.preT; preFootY=slot.preFootY; preKneeAngle=slot.preKneeAngle; preKneeVis=slot.preKneeVis;
@@ -8642,7 +8682,7 @@ function handleSparringPracticeKick2p(peak){
   popup(String(score), lastColor);
   newMissionFor(key); 
   render2pScoreSparringPractice(key);
-  trajX=[]; trajY=[]; trajHipX=[]; trajTorso=[]; trajHipW=[]; trajKneeX=[]; trajKneeAngle=[]; trajHipVis=[]; trajKneeVis=[]; trajKneeAngle3D=[]; trajShoulderW=[]; trajFootAng=[]; trajFootAngVis=[]; trajKneeMark=[]; kmPeakY=null; kmHitBefore=false; kneeMarkFlashArmed=false; trajActive=false; drillSide=0; resetPreRoll();
+  trajX=[]; trajY=[]; trajHipX=[]; trajTorso=[]; trajHipW=[]; trajKneeX=[]; trajKneeAngle=[]; trajHipVis=[]; trajKneeVis=[]; trajKneeAngle3D=[]; trajShoulderW=[]; trajFootAng=[]; trajFootAngVis=[]; trajKneeMark=[]; trajFootBlade=[]; kmPeakY=null; kmHitBefore=false; kneeMarkFlashArmed=false; trajActive=false; drillSide=0; resetPreRoll();
 }
 function handleSparringKick2p(peak){
   if(sparringMode==='speed') return;   
@@ -8826,6 +8866,7 @@ function processPersonFrame(lm, wlm){
         trajShoulderW.push(shoulderRatioNow(m));
         trajFootAng.push(Number.isFinite(m.footAng)?m.footAng:null);          
         trajFootAngVis.push(Number.isFinite(m.footAngVis)?m.footAngVis:0);
+        trajFootBlade.push(m.footBlade||null);                                 
 
         {
           const q=kneeMarkProbe(m);
@@ -8838,7 +8879,7 @@ function processPersonFrame(lm, wlm){
             if(kmHitBefore && !kneeMarkFlashArmed && m.footY > kmPeakY + 0.15*T) kneeMarkFlashArmed=true;
           }
         }
-        if(trajX.length>MAX_TRAJ){ trajX.shift(); trajY.shift(); trajHipX.shift(); trajTorso.shift(); trajHipW.shift(); trajKneeX.shift(); trajKneeAngle.shift(); trajHipVis.shift(); trajKneeVis.shift(); trajKneeAngle3D.shift(); trajShoulderW.shift(); trajFootAng.shift(); trajFootAngVis.shift(); trajKneeMark.shift(); }
+        if(trajX.length>MAX_TRAJ){ trajX.shift(); trajY.shift(); trajHipX.shift(); trajTorso.shift(); trajHipW.shift(); trajKneeX.shift(); trajKneeAngle.shift(); trajHipVis.shift(); trajKneeVis.shift(); trajKneeAngle3D.shift(); trajShoulderW.shift(); trajFootAng.shift(); trajFootAngVis.shift(); trajKneeMark.shift(); trajFootBlade.shift(); }
       }
 
       if((isDrillMode() || (currentMode==='sparring' && sparringMode==='practice')) && drillKickType()==='apcha') drawApchaGuide();
@@ -9621,7 +9662,7 @@ function resetRecoveryMotion(){
     kicking=false; aboveFrames=0; belowFrames=0; nearPeak=0; nearAboveN=0; nearProj=0; kickFoot=null;
     trajActive=false; trajX=[]; trajY=[]; trajHipX=[]; trajTorso=[]; trajHipW=[]; trajKneeX=[];
     trajKneeAngle=[]; trajHipVis=[]; trajKneeVis=[]; trajKneeAngle3D=[]; trajShoulderW=[];
-    trajFootAng=[]; trajFootAngVis=[]; trajKneeMark=[]; kmPeakY=null; kmHitBefore=false; kneeMarkFlashArmed=false;
+    trajFootAng=[]; trajFootAngVis=[]; trajKneeMark=[]; trajFootBlade=[]; kmPeakY=null; kmHitBefore=false; kneeMarkFlashArmed=false;
     smHipY=null; smTorso=null; smHipX=null; smHipW=null; shoulderSamples=[];
     kickTopFootY=null; kickRefTorso=null; prevFoot={left:null,right:null}; groundSince=0; rearmNeeded=true;
     resetPreRoll();
@@ -10384,7 +10425,7 @@ const _AKM_CACHE_DAYS  = 7;
 const _AKM_TRIAL_CACHE_DAYS = 1;   
 const _AKM_FETCH_TIMEOUT_MS = 8 * 1000;   
 
-const _AKM_VERSION     = '3.5.1';   
+const _AKM_VERSION     = '3.5.2';   
 try{ window.__NL_VER = _AKM_VERSION; }catch(e){}   
 
 let _akmFailCount = 0;
