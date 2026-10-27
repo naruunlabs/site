@@ -163,7 +163,7 @@ body.recording #status, body.recording .tb-btns, body.recording #lobbyStats{disp
 .c-dots{display:grid;grid-template-columns:repeat(6,18px);justify-content:end;gap:4px;margin-top:8px}
 .c-dots i{width:18px;height:18px;border-radius:4px;background:rgba(28,49,73,.72);font-style:normal;font-size:9px;font-weight:900;display:flex;align-items:center;justify-content:center;color:#9bb0c8;font-family:var(--num);text-shadow:none}
 .c-dots i.cur{outline:2px solid #fff}
-.c-dots i.ok{background:#1f6f4a;color:#d9ffe9} .c-dots i.sf{background:#6b5a14;color:#fff1b8} .c-last .sf,.t .sf{color:#FFD166;font-weight:900} .c-dots i.ng{background:#7b2737;color:#ffe0e6} .c-dots i.miss{background:#4b3a12;color:#ffe9b3}
+.c-dots i.ok{background:#1f6f4a;color:#d9ffe9} .c-dots i.pt,.c-dots i.sf{background:#bbf7d0;color:#14532d} .c-last .sf,.t .sf{color:#bbf7d0;font-weight:900} .c-dots i.ng{background:#b9384b;color:#fff1f2} .c-dots i.miss{background:#facc15;color:#422006}
 #meter{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
 #meter > div{width:min(220px,100%)}
 #meter .m-lbl{font-size:11px;font-weight:800;color:rgba(255,255,255,.6);margin-bottom:4px}
@@ -229,8 +229,8 @@ body.group-running #lobby, body.group-running .tb-btns{display:none}
 .sc-strip{display:flex;flex-wrap:wrap;justify-content:center;gap:4px;margin:12px auto 0;max-width:480px}
 .sc-strip i{width:20px;height:20px;border-radius:5px;font-style:normal;font-size:10px;font-weight:800;line-height:20px;font-family:var(--num);
   background:rgba(255,255,255,.07);color:#6b819c;opacity:0;animation:scDot .25s ease forwards}
-.sc-strip i.ok{background:rgba(134,239,172,.9);color:#062a14} .sc-strip i.sf{background:rgba(255,209,102,.9);color:#2a1c00}
-.sc-strip i.ng{background:rgba(251,146,60,.85);color:#2a1300}
+.sc-strip i.ok{background:#1f6f4a;color:#d9ffe9} .sc-strip i.pt,.sc-strip i.sf{background:#bbf7d0;color:#14532d}
+.sc-strip i.ng{background:#b9384b;color:#fff1f2} .sc-strip i.miss{background:#facc15;color:#422006}
 @keyframes scDot{to{opacity:1}}
 .sc-sync{margin-top:12px;font-size:15px;font-weight:900;color:var(--teal-lit)}
 .sc-who{font-size:clamp(22px,3vw,32px) !important;letter-spacing:.1em} .sc-who.k0{color:#4CA3FF} .sc-who.k1{color:#FF5A6E}
@@ -503,7 +503,7 @@ body.group-running #groupLesson{display:block}
 <script id="psm-core">
 
 var PSM = (function(){
-  var VERSION = '1.1.9';   
+  var VERSION = '1.2.1';   
 
   var DEFAULT_CFG = {
     SMOOTH: 0.5,        
@@ -535,9 +535,11 @@ var PSM = (function(){
   };
 
   var DIR_NAME = {F:'정면', L:'왼쪽', R:'오른쪽', B:'뒤'};
-  var TECHS = ['준비','아래막기','몸통지르기','몸통안막기','얼굴막기','손날목치기','손날바깥막기'];
+  var TECHS = ['준비','아래막기','몸통지르기','몸통안막기','얼굴막기','손날목치기','손날바깥막기','손날거들어막기','편손끝찌르기','제비품목치기','몸통바깥막기','등주먹앞치기'];
 
-  var TECH_OK = {'손날목치기':['몸통안막기','몸통지르기'], '손날바깥막기':['몸통안막기','몸통지르기']};
+  var TECH_OK = {'손날목치기':['몸통안막기','몸통지르기'], '손날바깥막기':['몸통안막기','몸통지르기'],
+    '손날거들어막기':['몸통안막기','몸통지르기'], '편손끝찌르기':['몸통지르기','몸통안막기'], '몸통바깥막기':['몸통안막기','몸통지르기'],
+    '제비품목치기':['얼굴막기','몸통지르기','몸통안막기'], '등주먹앞치기':['얼굴막기','몸통지르기','몸통안막기']};
   var STANCES = ['준비','앞서기','앞굽이','뒷굽이'];
 
   var KEY_TG1 = [
@@ -610,8 +612,30 @@ var PSM = (function(){
     {n:20, dir:'B', stance:'앞서기', tech:'몸통지르기', name:'오른발 앞차기 → 오른앞서기 아래막기 → 몸통바로지르기 (기합)', hand:'오른팔·왼주먹', chk:true},
     {n:21, dir:'F', stance:'준비',  tech:'준비',      name:'바로 (나란히서기)', hand:'', opt:true}
   ];
-  var KEYS = {tg1:KEY_TG1, tg2:KEY_TG2, tg3:KEY_TG3};
-  var POOMSAE_NAME = {tg1:'태극 1장', tg2:'태극 2장', tg3:'태극 3장'};
+
+  var KEY_TG4 = [
+    {n:0,  dir:'F', stance:'준비',  tech:'준비',        name:'나란히서기 기본준비', hand:''},
+    {n:1,  dir:'L', dirs:['L','F'], stance:'뒷굽이', tech:'손날거들어막기', name:'오른뒷굽이 손날거들어몸통막기', hand:'왼손날'},
+    {n:2,  dir:'L', stance:'앞굽이', tech:'편손끝찌르기', name:'오른앞굽이 편손끝세워찌르기', hand:'오른손끝'},
+    {n:3,  dir:'R', dirs:['R','F'], stance:'뒷굽이', tech:'손날거들어막기', name:'왼뒷굽이 손날거들어몸통막기', hand:'오른손날'},
+    {n:4,  dir:'R', stance:'앞굽이', tech:'편손끝찌르기', name:'왼앞굽이 편손끝세워찌르기', hand:'왼손끝'},
+    {n:5,  dir:'F', stance:'앞굽이', tech:'제비품목치기', name:'왼앞굽이 제비품목치기', hand:'오른손날'},
+    {n:6,  dir:'F', stance:'앞굽이', tech:'몸통지르기',   name:'오른발 앞차기 → 오른앞굽이 몸통바로지르기', hand:'왼주먹'},
+    {n:7,  dir:'F', dirs:['F','L'], stance:'뒷굽이', tech:'손날거들어막기', name:'왼발 옆차기 → 오른발 옆차기 → 왼뒷굽이 손날거들어몸통막기', hand:'오른손날', chk:true},
+    {n:8,  dir:'R', dirs:['R','B'], stance:'뒷굽이', tech:'몸통바깥막기', name:'오른뒷굽이 몸통바깥막기', hand:'왼팔', chk:true},
+    {n:9,  dir:'R', dirs:['R','B'], stance:'뒷굽이', tech:'몸통안막기',   name:'오른발 앞차기 → 오른뒷굽이 몸통안막기', hand:'오른팔', chk:true},
+    {n:10, dir:'L', dirs:['L','B'], stance:'뒷굽이', tech:'몸통바깥막기', name:'왼뒷굽이 몸통바깥막기', hand:'오른팔', chk:true},
+    {n:11, dir:'L', dirs:['L','B'], stance:'뒷굽이', tech:'몸통안막기',   name:'왼발 앞차기 → 왼뒷굽이 몸통안막기', hand:'왼팔', chk:true},
+    {n:12, dir:'B', stance:'앞굽이', tech:'제비품목치기', name:'왼앞굽이 제비품목치기', hand:'오른손날'},
+    {n:13, dir:'B', stance:'앞굽이', tech:'등주먹앞치기', name:'오른발 앞차기 → 오른앞굽이 등주먹앞치기', hand:'오른주먹'},
+    {n:14, dir:'R', stance:'앞서기', tech:'몸통지르기',   name:'왼앞서기 몸통안막기 → 몸통바로지르기', hand:'왼팔·오른주먹'},
+    {n:15, dir:'L', stance:'앞서기', tech:'몸통지르기',   name:'오른앞서기 몸통안막기 → 몸통바로지르기', hand:'오른팔·왼주먹'},
+    {n:16, dir:'B', stance:'앞굽이', tech:'몸통지르기',   name:'왼앞굽이 몸통안막기 → 몸통두번지르기', hand:'왼팔·오른·왼주먹'},
+    {n:17, dir:'B', stance:'앞굽이', tech:'몸통지르기',   name:'오른앞굽이 몸통안막기 → 몸통두번지르기 (기합)', hand:'오른팔·왼·오른주먹'},
+    {n:18, dir:'F', stance:'준비',  tech:'준비',        name:'바로 (나란히서기)', hand:'', opt:true}
+  ];
+  var KEYS = {tg1:KEY_TG1, tg2:KEY_TG2, tg3:KEY_TG3, tg4:KEY_TG4};
+  var POOMSAE_NAME = {tg1:'태극 1장', tg2:'태극 2장', tg3:'태극 3장', tg4:'태극 4장'};
 
   var KP = [11,12,13,14,15,16,23,24,25,26,27,28];
   var G_CORE = [0,1,6,7], G_ARM = [2,3,4,5], G_LEG = [8,9,10,11];
@@ -1957,6 +1981,11 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   }
 
   var LIVE_AHEAD=3;
+  function moveMark(jd){
+    if(jd.soft)return 'sf';
+    if(jd.ok.dir && jd.ok.tech)return 'ok';
+    return jd.ok.dir || jd.ok.tech ? 'pt' : 'ng';
+  }
   function lastMove(key){ var i=key.length-1; while(i>0 && key[i].opt) i--; return i; }
   function onLiveEvent(k, ev){
     if(live.phase!=='perform' || ev.type!=='stop') return;
@@ -1989,7 +2018,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
       for(var m=from;m<took;m++) live.marks[k][m]='miss';
       var jd=lj(took);
       dOk[took]=jd.ok.dir;
-      live.marks[k][took]= (jd.ok.dir && jd.ok.tech) ? (jd.soft ? 'sf' : 'ok') : 'ng';
+      live.marks[k][took]=moveMark(jd);
       live.ptr[k]=took+1;
       txt='<b>'+key[took].n+'번</b> '+(jd.soft ? '방향 <span class="sf">△</span> '+esc(PSM.DIR_NAME[key[took].dir])+' <span class="dim">(몸을 덜 비틀어요)</span>' : mk(jd.ok.dir,'방향',shownDir(jd,cls,key[took])))+' · '+mk(jd.ok.stance,'서기',cls.stance)+' · '+mk(jd.ok.tech,'기술',shownTech(jd,cls,key[took]))+(took>from?' <span class="x">('+missText(key,from,took-1)+' 놓침)</span>':'');
       if(rec.role!=='master' && pref.feedback==='on') beep(jd.ok.dir&&jd.ok.tech?1500:520,60,0.08);
@@ -2221,7 +2250,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     var strip='', d=0;
     t.sum.rows.forEach(function(row){
       if(row.k.n===0 || row.k.opt) return;
-      var c= !row.stop ? '' : ((row.jd.ok.dir && row.jd.ok.tech) ? (row.jd.soft ? 'sf' : 'ok') : 'ng');
+      var c= !row.stop ? 'miss' : moveMark(row.jd);
       strip+='<i class="'+c+'" style="animation-delay:'+(0.25+d*0.05).toFixed(2)+'s">'+row.k.n+'</i>'; d++;
     });
     return '<div class="sc-p">'+who
