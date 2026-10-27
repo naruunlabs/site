@@ -1,23 +1,6 @@
 <!DOCTYPE html>
-<html lang="ko">
-<head>
+<html lang="ko"><head>
 <meta charset="UTF-8">
-
-<script>
-!function(f,b,e,v,n,t,s)
-{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-n.queue=[];t=b.createElement(e);t.async=!0;
-t.src=v;s=b.getElementsByTagName(e)[0];
-s.parentNode.insertBefore(t,s)}(window, document,'script',
-'https://connect.facebook.net/en_US/fbevents.js');
-fbq('init', '1364933702413818');
-fbq('track', 'PageView');
-</script>
-<noscript><img height="1" width="1" style="display:none"
-src="https://www.facebook.com/tr?id=1364933702413818&ev=PageView&noscript=1"
-/></noscript>
 
 <script>
 (function () {
@@ -219,15 +202,44 @@ src="https://www.facebook.com/tr?id=1364933702413818&ev=PageView&noscript=1"
 <link rel="icon" href="icon-jumpmaster.svg" type="image/svg+xml">
 <link rel="icon" href="icon-jumpmaster-192.png" sizes="192x192" type="image/png">
 <link rel="apple-touch-icon" href="apple-touch-icon-jumpmaster.png">
-<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-<link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin="">
+<link rel="stylesheet" crossorigin="" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css">
 <link rel="stylesheet" href="nl-site.css">
 <link rel="stylesheet" href="group-site.css">
+<style>
+.showcase-nav{background:#07101d;color:#93a4ba;display:flex;align-items:center;justify-content:space-between;padding:10px max(20px,calc((100vw - 1180px)/2));gap:16px;font-size:12px;border-bottom:1px solid #243044}
+.showcase-nav div{display:flex;gap:7px}.showcase-nav a{padding:7px 15px;border-radius:30px;color:#d9e5f5;text-decoration:none;border:1px solid #344357}.showcase-nav a.active{background:#e9f3ed;color:#11231f;border-color:transparent;font-weight:800}
+.hero{padding:66px 0 72px}.hero-in{grid-template-columns:minmax(0,.85fr) minmax(0,1.2fr);gap:44px}.hero h1{font-size:clamp(40px,4.6vw,65px);line-height:1.1}.hero .lead{max-width:470px}
+.hero-media{position:relative}.hero-media .screen{aspect-ratio:16/10;border:1px solid #ffffff24;box-shadow:0 30px 90px -35px color-mix(in srgb,var(--c) 55%,transparent)}
+.hero-media video{object-fit:contain}.media-label{position:absolute;left:15px;top:15px;padding:7px 11px;border-radius:30px;background:#07101de8;color:#fff;font-size:11px;letter-spacing:.02em;border:1px solid #ffffff38}.media-label i{display:inline-block;background:var(--c);width:6px;height:6px;border-radius:50%;margin-right:6px}
+.media-toggle{position:absolute;right:14px;bottom:14px;background:#07101dd9;color:white;border:1px solid #ffffff55;border-radius:30px;padding:8px 13px;font:inherit;font-size:11px;cursor:pointer;z-index:3}
+.hero-proof{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;margin-top:20px;border:1px solid #ffffff15;border-radius:14px;overflow:hidden;background:#ffffff10}.hero-proof span{background:#101b2b;padding:14px 10px;text-align:center;font-size:11px;color:#9eafc4}.hero-proof b{display:block;font-size:15px;color:#eef5ff;margin-bottom:4px;letter-spacing:-.04em}
+.class-film{position:relative;aspect-ratio:16/10;border-radius:20px;overflow:hidden;background:#07101d;border:1px solid #ffffff24}.class-film video,.class-film iframe{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;border:0}.group-shot{margin:0}.group-shot figcaption{padding:12px 0;color:#9baac1;font-size:12px}.sig-grid{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:44px}
+.proof-gallery{background:#f4f7fa;padding:70px 0 80px}.proof-gallery .sec-head{margin-bottom:28px}.proof-grid{display:grid;grid-template-columns:1.3fr 1fr;gap:24px}.proof-card{border:1px solid #dce4ed;border-radius:20px;background:white;overflow:hidden;margin:0;box-shadow:0 15px 40px #17375208}.proof-card .film{aspect-ratio:16/10;background:#08111f;position:relative}.proof-card video,.proof-card img{width:100%;height:100%;object-fit:contain;display:block}.proof-card figcaption{padding:22px 24px}.proof-card b{font-size:21px;color:#142438;display:block;margin-bottom:8px}.proof-card p{font-size:14px;color:#5b6b7e;line-height:1.8;margin:0}.proof-card .tag{color:#6b7f93;font-size:11px;letter-spacing:.06em;margin-bottom:10px;display:block}
+@media(max-width:960px){.hero-in{grid-template-columns:1fr;gap:32px}.hero-media{max-width:760px;width:100%;margin:auto;order:-1}.hero h1{font-size:clamp(42px,7vw,64px)}.hero{padding:38px 0 55px}.sig-grid,.proof-grid{grid-template-columns:1fr}.showcase-nav{padding:9px 16px}.hero-proof{margin-top:14px}.proof-gallery{padding:48px 0}}
+@media(prefers-reduced-motion:reduce){video{animation:none}}
+</style>
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '1364933702413818');
+fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=1364933702413818&ev=PageView&noscript=1"
+/></noscript>
+
 </head>
 <body class="p-jump has-mbar" data-product="AI JUMP MASTER" data-trial-next="실제 AI JUMP MASTER는 이 다음부터 줄넘기 횟수와 착지 리듬을 실시간으로 세어 줍니다.">
 
 <header class="hd"><div class="hd-in">
-  <a class="hd-home" href="/" aria-label="나른랩스 메인으로" title="나른랩스 메인"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M3 10.5 12 3l9 7.5M5.5 9v11h4.5v-6h4v6h4.5V9"/></svg></a>
+  <a class="hd-home" href="/" aria-label="나른랩스 메인으로" title="나른랩스 메인"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M3 10.5 12 3l9 7.5M5.5 9v11h4.5v-6h4v6h4.5V9"></path></svg></a>
   <a class="hd-logo" href="/" aria-label="나른랩스 홈"><img src="jump1w.svg" alt="AI JUMP MASTER" width="160" height="26"></a>
   <nav class="switch" aria-label="제품">
     <a href="/kickmaster" style="--sc:#E3172E"><i>K</i><span>킥</span></a>
@@ -236,7 +248,7 @@ src="https://www.facebook.com/tr?id=1364933702413818&ev=PageView&noscript=1"
     <a href="/poomsaemaster" style="--sc:#F5B829"><i>P</i><span>품새</span></a>
     <a class="web" href="/academyweb"><i>W</i><span>홈페이지<em class="sw-x"> 제작</em></span></a>
   </nav>
-  <div class="hd-act"><a class="btn btn-line hd-run" href="/aijumpmaster"><span class="run-l">프로그램</span>실행</a><a class="btn btn-kakao hd-talk js-kakao" href="#contact"><svg class="kk" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3C6.5 3 2 6.6 2 11c0 2.8 1.8 5.3 4.6 6.7L5.6 21l4-2.6c.8.1 1.6.2 2.4.2 5.5 0 10-3.6 10-8S17.5 3 12 3z"/></svg>카톡 상담</a></div>
+  <div class="hd-act"><a class="btn btn-line hd-run" href="/aijumpmaster"><span class="run-l">프로그램</span>실행</a><a class="btn btn-kakao hd-talk js-kakao" href="/jumpmaster#contact"><svg class="kk" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3C6.5 3 2 6.6 2 11c0 2.8 1.8 5.3 4.6 6.7L5.6 21l4-2.6c.8.1 1.6.2 2.4.2 5.5 0 10-3.6 10-8S17.5 3 12 3z"></path></svg>카톡 상담</a></div>
 </div></header>
 
 <main>
@@ -248,28 +260,25 @@ src="https://www.facebook.com/tr?id=1364933702413818&ev=PageView&noscript=1"
       <h1>줄넘기가<br><em>게임이 되는 순간.</em></h1>
       <p class="lead">카메라로 줄넘기 횟수와 착지 리듬을 보여 주고, 카메라 없이 반 전체가 리듬게임과 속도게임을 즐깁니다.</p>
       <div class="hero-cta">
-        <a class="btn btn-kakao js-kakao" href="#contact"><svg class="kk" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3C6.5 3 2 6.6 2 11c0 2.8 1.8 5.3 4.6 6.7L5.6 21l4-2.6c.8.1 1.6.2 2.4.2 5.5 0 10-3.6 10-8S17.5 3 12 3z"/></svg>카톡으로 도입 상담</a>
-        <button class="btn btn-line" type="button" data-trial><span class="dot"></span>카메라 인식 체험</button>
+        <a class="btn btn-kakao js-kakao" href="/jumpmaster#contact"><svg class="kk" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3C6.5 3 2 6.6 2 11c0 2.8 1.8 5.3 4.6 6.7L5.6 21l4-2.6c.8.1 1.6.2 2.4.2 5.5 0 10-3.6 10-8S17.5 3 12 3z"></path></svg>카톡으로 도입 상담</a>
+        <button class="btn btn-line" type="button" data-trial=""><span class="dot"></span>카메라 인식 체험</button>
       </div>
       <p class="trial-scope">30초 동안 관절 인식과 손 들기 시작을 확인합니다. 점수·게임은 체험 라이선스로 이용해 주세요.</p>
       <div class="hero-price"><b>369,000원</b><span>부가세 포함 · 1회 구매 · 월 구독료 없음</span></div>
     </div>
-    <div>
-      <div class="screen">
-        <canvas data-pose="jump" data-counter="heroJumpN" data-cx=".42" data-color="#5EEAD4" data-rope="#A3E635" aria-hidden="true"></canvas><div class="hud-tl"><b>AI JUMP MASTER</b><span>1P · 자유 측정</span></div><div class="hud-tr"><b id="heroJumpN">124</b><span>JUMPS</span></div><div class="hud-live"><i></i>RHYTHM GOOD</div>
-        <span class="corner a"></span><span class="corner b"></span><span class="corner c"></span><span class="corner d"></span>
-      </div>
-      <div class="screen-cap"><span>화면 예시</span><span>점프 동작을 인식해 횟수 표시</span></div>
-    </div>
+    <div class="hero-media">
+      <div class="screen"><video src="assets/homepage/jump-hero.mp4?v=20261027" poster="assets/homepage/jump-hero.jpg?v=20261027" autoplay="" muted="" loop="" playsinline="" preload="metadata" data-preview="" aria-label="실제 수업 영상"></video><span class="media-label"><i></i>실제 도장 · 단체 줄넘기 수업</span><button class="media-toggle" type="button">영상 멈춤</button></div>
+      <div class="screen-cap"><span>화면을 보고, 같은 박자로.</span><span>단체 수업 실제 촬영</span></div>
+    <div class="hero-proof"><span><b>혼자 도전</b>횟수와 리듬 확인</span><span><b>둘이 함께</b>착지 싱크 · 대결</span><span><b>반 전체가</b>화면 보고 함께 점프</span></div></div>
   </div>
 </section>
 
-<section class="sig dark public-group-intro" id="group-class"><div class="wrap"><div class="sec-head rv"><span class="kicker">GROUP CLASS</span><h2>리듬도, 속도도.<br>반 전체가 함께.</h2><p>단체모드를 누르면 카메라가 꺼집니다. 리듬게임과 속도게임 중 오늘 수업에 맞는 운동을 골라 시작하세요.</p></div><div class="sig-grid"><figure class="rv group-shot"><img src="assets/group-jump-class.webp" alt="AI JUMP MASTER 단체모드의 루틴 선택 화면" loading="lazy" width="1366" height="768"><figcaption>프로그램 화면 · 단체 수업 선택</figcaption></figure><div class="sig-list rv"><div class="sig-item"><i>리</i><b>리듬게임 · 발판형과 레인형</b><span>발 위치와 다가오는 노트를 보며 여러 줄넘기 동작을 박자에 맞춰 익힙니다.</span></div><div class="sig-item"><i>속</i><b>속도게임 · 선수와 함께</b><span>30·60·120초 중 시간을 고르고, 줄넘기 선수의 착지에 맞춰 일정한 속도로 뛰어요.</span></div><div class="sig-item"><i>루</i><b>우리 수업에 맞는 목표와 루틴</b><span>속도게임은 수업용 50~160개와 재미용 10·200·300·600개. 리듬게임은 동작 순서와 박 수를 직접 구성합니다.</span></div></div></div><p class="group-measure-note">카메라 없이 화면과 소리에 맞춰 따라 하는 수업입니다. 학생의 실제 성공 횟수는 자동 측정하지 않습니다.</p></div></section>
+<section class="sig dark public-group-intro" id="group-class"><div class="wrap"><div class="sec-head rv"><span class="kicker">GROUP CLASS</span><h2>리듬도, 속도도.<br>반 전체가 함께.</h2><p>단체모드를 누르면 카메라가 꺼집니다. 리듬게임과 속도게임 중 오늘 수업에 맞는 운동을 골라 시작하세요.</p></div><div class="sig-grid"><figure class="rv group-shot"><div class="class-film"><video data-src="assets/homepage/jump-class.mp4?v=20261027" poster="assets/homepage/jump-class.jpg?v=20261027" muted="" loop="" playsinline="" preload="none" data-preview="" aria-label="실제 수업 영상"></video><span class="media-label">실제 수업 장면</span><button class="media-toggle" type="button">영상 멈춤</button></div><figcaption>프로젝터 한 화면에 맞춰, 반 전체가 함께 뛰는 수업</figcaption></figure><div class="sig-list rv"><div class="sig-item"><i>리</i><b>리듬게임 · 발판형과 레인형</b><span>발 위치와 다가오는 노트를 보며 여러 줄넘기 동작을 박자에 맞춰 익힙니다.</span></div><div class="sig-item"><i>속</i><b>속도게임 · 선수와 함께</b><span>30·60·120초 중 시간을 고르고, 줄넘기 선수의 착지에 맞춰 일정한 속도로 뛰어요.</span></div><div class="sig-item"><i>루</i><b>우리 수업에 맞는 목표와 루틴</b><span>속도게임은 수업용 50~160개와 재미용 10·200·300·600개. 리듬게임은 동작 순서와 박 수를 직접 구성합니다.</span></div></div></div><p class="group-measure-note">카메라 없이 화면과 소리에 맞춰 따라 하는 수업입니다. 학생의 실제 성공 횟수는 자동 측정하지 않습니다.</p></div></section>
 
 <section class="sec" id="modes">
   <div class="wrap">
     <div class="sec-head rv"><span class="kicker">IN CLASS</span><h2>수업에서 이렇게 씁니다</h2><p>개인 기록부터 반 전체 리듬 수업까지, 수업 목적에 맞게 고릅니다.</p></div>
-    <div class="modes" data-tabs>
+    <div class="modes" data-tabs="">
       <div class="mode-tabs" role="tablist" aria-label="훈련 모드">
 <button class="mode-tab" type="button" role="tab" id="t-solo" aria-controls="p-solo" aria-selected="true" tabindex="0" data-name="solo"><span class="n">01</span><b>1인 측정</b><span>자유 측정·시간 도전·목표 도전. 횟수와 착지 리듬이 바로 보입니다.</span></button>
 <button class="mode-tab" type="button" role="tab" id="t-duo" aria-controls="p-duo" aria-selected="false" tabindex="-1" data-name="duo"><span class="n">02</span><b>2인 협동·대결</b><span>협동은 두 사람의 착지 싱크를 PERFECT·GOOD으로, 대결은 각자의 기록과 승부를 보여 줍니다.</span></button>
@@ -280,13 +289,13 @@ src="https://www.facebook.com/tr?id=1364933702413818&ev=PageView&noscript=1"
 <div class="mode-pane on" id="p-solo" role="tabpanel" aria-labelledby="t-solo"><div class="screen"><div class="pane-ui"><div><div class="big">128</div><div class="lab">JUMPS</div><div class="row"><div>TIME<b>01:24</b></div><div>RHYTHM<b>GOOD</b></div><div>COMBO<b>24</b></div></div></div></div><span class="corner a"></span><span class="corner d"></span></div><p class="cap">화면 예시 · 1인 측정</p></div>
 <div class="mode-pane" id="p-duo" role="tabpanel" aria-labelledby="t-duo"><div class="screen"><div class="pane-ui"><div><div class="big">PERFECT</div><div class="lab">LANDING SYNC</div><div class="row"><div>BLUE<b>46</b></div><div>TEAM<b>1,280</b></div><div>RED<b>45</b></div></div></div></div><span class="corner a"></span><span class="corner d"></span></div><p class="cap">화면 예시 · 2인 착지 싱크</p></div>
 <div class="mode-pane" id="p-relay" role="tabpanel" aria-labelledby="t-relay"><div class="screen"><div class="pane-ui"><div><div class="big">3 / 5</div><div class="lab">RELAY · NEXT RUNNER</div><div class="row"><div>TARGET<b>30</b></div><div>TEAM<b>92</b></div><div>TIME<b>02:10</b></div></div></div></div><span class="corner a"></span><span class="corner d"></span></div><p class="cap">화면 예시 · 릴레이</p></div>
-<div class="mode-pane" id="p-group" role="tabpanel" aria-labelledby="t-group"><div class="screen group-mode-screen"><img src="assets/group-jump-class.webp" alt="리듬게임과 속도게임을 고르는 점프 단체모드 화면" loading="lazy"></div><p class="cap">단체모드 · 리듬게임과 속도게임 선택</p></div>
+<div class="mode-pane" id="p-group" role="tabpanel" aria-labelledby="t-group"><div class="screen group-mode-screen"><img src="assets/homepage/group-jump-class.webp" alt="리듬게임과 속도게임을 고르는 점프 단체모드 화면" loading="lazy"></div><p class="cap">단체모드 · 리듬게임과 속도게임 선택</p></div>
       </div>
     </div>
     <div class="points rv"><div><b>스스로 목표에 집중합니다</b><span>화면에 보이는 기록과 콤보가 다음 도전을 만듭니다.</span></div><div><b>함께 뛰는 재미</b><span>2인 싱크와 릴레이로 기다리는 시간을 참여하는 시간으로 바꿉니다.</span></div><div><b>기존 수업에 바로</b><span>줄넘기 수업 흐름은 그대로 두고 기록과 리듬만 더합니다.</span></div><div><b>카메라 하나로 시작</b><span>별도 동작 센서 없이 카메라와 화면만 있으면 됩니다.</span></div></div>
     <div class="fits rv"><b>이런 곳에서 씁니다</b><span>태권도장 기초체력 수업</span><span>줄넘기 교실</span><span>방과후 체육</span><span>단체 시범·리듬 훈련</span></div>
   </div>
-</section>
+</section><section class="proof-gallery"><div class="wrap"><div class="sec-head rv"><span class="kicker">TOGETHER IN CLASS</span><h2>설명은 짧게.<br>참여하는 시간은 길게.</h2><p>화면의 박자를 보고 바로 시작하고, 같은 수업 안에서 도전을 이어갑니다.</p></div><div class="proof-grid"><figure class="proof-card rv"><div class="film"><video data-src="assets/homepage/jump-class.mp4?v=20261027" poster="assets/homepage/jump-class.jpg?v=20261027" muted="" loop="" playsinline="" preload="none" data-preview="" aria-label="실제 수업 영상"></video></div><figcaption><span class="tag">REAL CLASS</span><b>한 명씩 기다리지 않고, 다 같이.</b><p>기초 동작을 익히는 시간부터 리듬 수업까지. 화면과 소리가 수업의 흐름을 함께 잡아 줍니다.</p></figcaption></figure><figure class="proof-card rv"><div class="film"><img src="assets/homepage/group-jump-class.webp" alt="단체 줄넘기 수업 선택 화면" loading="lazy"></div><figcaption><span class="tag">YOUR CLASS, YOUR ROUTINE</span><b>오늘 수업에 맞게 고르세요.</b><p>리듬게임과 속도게임, 수업에 맞는 루틴을 고릅니다. 단체 수업은 카메라 없이 함께 따라 합니다.</p></figcaption></figure></div></div></section>
 
 <section class="sec soft" id="price">
   <div class="wrap">
@@ -297,7 +306,7 @@ src="https://www.facebook.com/tr?id=1364933702413818&ev=PageView&noscript=1"
         <div class="price"><b>369,000</b><span>원</span></div>
         <p class="price-note">부가세 포함 · 추가 결제 없는 1회 구매</p>
         <ul class="inc"><li>1인·2인·릴레이·단체모드 전체</li><li>최대 2대 기기에서 사용</li><li>설치 없이 웹브라우저에서 실행</li><li>업데이트는 추가 비용 없이 자동 적용</li></ul>
-        <a class="btn btn-kakao js-kakao" href="#contact"><svg class="kk" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3C6.5 3 2 6.6 2 11c0 2.8 1.8 5.3 4.6 6.7L5.6 21l4-2.6c.8.1 1.6.2 2.4.2 5.5 0 10-3.6 10-8S17.5 3 12 3z"/></svg>카카오톡으로 도입 상담</a>
+        <a class="btn btn-kakao js-kakao" href="/jumpmaster#contact"><svg class="kk" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3C6.5 3 2 6.6 2 11c0 2.8 1.8 5.3 4.6 6.7L5.6 21l4-2.6c.8.1 1.6.2 2.4.2 5.5 0 10-3.6 10-8S17.5 3 12 3z"></path></svg>카카오톡으로 도입 상담</a>
       </div>
       <div class="buy-steps">
         <h3>구매부터 첫 수업까지</h3>
@@ -344,8 +353,8 @@ src="https://www.facebook.com/tr?id=1364933702413818&ev=PageView&noscript=1"
     <h2>AI JUMP MASTER로<br>줄넘기 수업을 시작해 보세요</h2>
     <p>도장 수업 중에는 답변이 늦어질 수 있습니다. 확인하는 대로 순차적으로 답변드리겠습니다.</p>
     <div class="row">
-      <a class="btn btn-kakao js-kakao" href="#contact"><svg class="kk" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3C6.5 3 2 6.6 2 11c0 2.8 1.8 5.3 4.6 6.7L5.6 21l4-2.6c.8.1 1.6.2 2.4.2 5.5 0 10-3.6 10-8S17.5 3 12 3z"/></svg>카카오톡 1:1 상담</a>
-      <button class="btn btn-line" type="button" data-trial>카메라 인식 체험</button>
+      <a class="btn btn-kakao js-kakao" href="/jumpmaster#contact"><svg class="kk" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3C6.5 3 2 6.6 2 11c0 2.8 1.8 5.3 4.6 6.7L5.6 21l4-2.6c.8.1 1.6.2 2.4.2 5.5 0 10-3.6 10-8S17.5 3 12 3z"></path></svg>카카오톡 1:1 상담</a>
+      <button class="btn btn-line" type="button" data-trial="">카메라 인식 체험</button>
     </div>
     <a class="tel js-tel" data-tel="full" href="tel:01076573579">전화 문의 010-7657-3579</a>
   </div>
@@ -365,18 +374,25 @@ src="https://www.facebook.com/tr?id=1364933702413818&ev=PageView&noscript=1"
     <div class="ft-links" style="margin-top:8px"><a href="/kickmaster">AI KICK MASTER</a><a href="/jumpmaster">AI JUMP MASTER</a><a href="/strikemaster">AI STRIKE MASTER</a><a href="/poomsaemaster">AI POOMSAE MASTER</a><a href="/academyweb">아카데미웹</a></div>
   </div>
   <div><b>안내</b>
-    <div class="ft-links" style="margin-top:8px"><a href="/terms">이용약관</a><a href="/privacy">개인정보처리방침</a><a href="/license">라이선스 정책</a><a href="/refund-policy">환불 정책</a><a class="js-kakao" href="#contact">카카오톡 문의</a></div>
+    <div class="ft-links" style="margin-top:8px"><a href="/terms">이용약관</a><a href="/privacy">개인정보처리방침</a><a href="/license">라이선스 정책</a><a href="/refund-policy">환불 정책</a><a class="js-kakao" href="/jumpmaster#contact">카카오톡 문의</a></div>
   </div>
   <div class="ft-copy"><span>© 2026 NARUUN LABS. All rights reserved.</span><span>Learn with Joy. Grow with AI.</span></div>
 </div></footer>
 
 <div class="mbar" aria-label="빠른 메뉴">
   <div class="pr">369,000원<small>1회 구매 · 부가세 포함</small></div>
-  <button class="btn btn-line" type="button" data-trial>인식 체험</button>
-  <a class="btn btn-kakao js-kakao" href="#contact"><svg class="kk" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3C6.5 3 2 6.6 2 11c0 2.8 1.8 5.3 4.6 6.7L5.6 21l4-2.6c.8.1 1.6.2 2.4.2 5.5 0 10-3.6 10-8S17.5 3 12 3z"/></svg>카톡 상담</a>
+  <button class="btn btn-line" type="button" data-trial="">인식 체험</button>
+  <a class="btn btn-kakao js-kakao" href="/jumpmaster#contact"><svg class="kk" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3C6.5 3 2 6.6 2 11c0 2.8 1.8 5.3 4.6 6.7L5.6 21l4-2.6c.8.1 1.6.2 2.4.2 5.5 0 10-3.6 10-8S17.5 3 12 3z"></path></svg>카톡 상담</a>
 </div>
 
-<script src="nl-site.js" defer></script>
+<script src="nl-site.js" defer=""></script>
 <script>if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}</script>
-</body>
-</html>
+
+<script>
+(function(){
+ const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+ document.querySelectorAll('.media-toggle').forEach(b=>{const v=b.parentElement.querySelector('video');b.onclick=()=>{if(v.paused){v.play();b.textContent='영상 멈춤';b.dataset.stopped='';}else{v.pause();b.textContent='영상 재생';b.dataset.stopped='1';}};});
+ const io=new IntersectionObserver(es=>es.forEach(e=>{const v=e.target;if(e.isIntersecting){if(v.dataset.src&&!v.src)v.src=v.dataset.src;if(!reduced && !v.parentElement.querySelector('[data-stopped="1"]'))v.play().catch(()=>{});}else v.pause();}),{threshold:.15});
+ document.querySelectorAll('video[data-preview]').forEach(v=>{if(reduced)v.removeAttribute('autoplay');io.observe(v);});
+ const f=document.querySelector('iframe[data-robot]');if(f){f.addEventListener('load',()=>{const r=f.contentWindow.__robot;if(r){r.sound(false);r.view('back');r.guidance(false);r.rate(1.2);r.loop(1,7);r.playLoop();}});new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting&&!f.src)f.src=f.dataset.src;}),{rootMargin:'100px'}).observe(f);}
+})();</script></body></html>

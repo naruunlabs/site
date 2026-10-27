@@ -72,7 +72,7 @@ html.embed #call{top:240px;bottom:auto;right:28px;font-size:clamp(28px,4vw,60px)
 #gate{position:fixed;inset:0;z-index:50;background:#08111F;display:flex;align-items:center;justify-content:center;padding:16px}
 #gate[hidden]{display:none}
 #gate .gb{width:min(380px,100%);background:#101E33;border:1px solid #2A3E5C;border-radius:16px;padding:26px 22px;text-align:center}
-#gate .gt{font-size:22px;font-weight:900;margin:4px 0 6px}
+#gate .gate-logo{display:block;width:100%;max-width:320px;height:auto;margin:0 auto 22px}
 #gate .gs{font-size:13px;color:#E9D49A;margin:0 0 16px;line-height:1.6}
 #gate input{width:100%;font:inherit;font-size:16px;padding:12px;border-radius:10px;border:1px solid #2A3E5C;background:#08111F;color:#E8EEF6;text-align:center;letter-spacing:.04em}
 #gate button{width:100%;margin-top:10px;font:inherit;font-weight:900;font-size:16px;padding:12px;border-radius:10px;border:0;background:#F5B829;color:#2A1C00;cursor:pointer}
@@ -267,9 +267,8 @@ html.embed #call{top:240px;bottom:auto;right:28px;font-size:clamp(28px,4vw,60px)
 </head>
 <body>
 <div id="gate" hidden><div class="gb">
-  <div style="font-size:12px;letter-spacing:.14em;color:#E9D49A">NARUUN LABS · POOMSAE</div>
-  <div class="gt">품새마스터 · 로봇</div>
-  <p class="gs">품새마스터 라이선스(PMS-)로 열립니다.</p>
+  <img class="gate-logo" src="poomsae1w.svg" alt="AI POOMSAE MASTER">
+  <p class="gs">품새마스터 라이선스 키를 입력해 주세요.</p>
   <input id="gateKey" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="PMS-0000-XXXX-0000" aria-label="라이선스 키">
   <button id="gateBtn" type="button">인증하기</button>
   <div class="ge" id="gateErr" role="alert"></div>
