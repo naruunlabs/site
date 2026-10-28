@@ -2668,7 +2668,8 @@ function licenseIssueMsg(d) {
   const prod = productOfKey(d.license_key);
   const productName = prod.name;
   const loginUrl = prod.url;
-  if (prod.key === 'poomsae') return `[${productName} 시험 이용 안내]\n\n안녕하세요, ${d.dojang_name} 관장님!\n품새마스터는 현재 출시 준비 중이며 마스터 시험 권한이 확인된 키로만 실행됩니다. 일반 판매·체험은 아직 시작하지 않았습니다.\n\n• 라이선스 키: ${d.license_key}\n• 안내: ${loginUrl}\n\n마스터 시험 권한과 이용 조건을 나른랩스에 확인한 뒤 실행해 주세요.`;
+
+  const noPrice = prod.key === 'poomsae';
   const actionLabel = '프로그램 실행';
   const isTrial = d.license_type === 'trial';
   const trialDays = Number(d.trial_days) || 3;
@@ -2676,12 +2677,13 @@ function licenseIssueMsg(d) {
                   : (d.license_type === 'package' ? '태블릿 패키지' : '정식 라이선스');
   const maxDevices = Number(d.max_devices) || 2;
   const payAmount = Number(d.pay_amount) || 0;
-  const paymentLine = payAmount > 0 ? `• 결제금액: ${payAmount.toLocaleString('ko-KR')}원\n` : '';
+  const paymentLine = (!noPrice && payAmount > 0) ? `• 결제금액: ${payAmount.toLocaleString('ko-KR')}원\n` : '';
+  const subscribeLine = noPrice ? '' : '• 월 구독료: 없음\n';
   const expireLine = (!isTrial && d.expire_date) ? `• 만료일: ${d.expire_date}\n` : '';
 
   const msg = isTrial
     ? `[${productName} ${trialDays}일 체험판 안내]\n\n안녕하세요, ${d.dojang_name} 관장님!\n${productName}를 직접 써보실 수 있는 체험판 키를 보내드립니다.\n\n체험판 라이선스 키\n${d.license_key}\n\n체험 기간: 처음 인증하신 시점부터 ${trialDays}일\n   (키를 받은 날이 아니라, 처음 여신 날부터 계산됩니다)\n사용 가능 기기: 최대 ${maxDevices}대\n\n접속 링크: ${loginUrl}\n\n사용 방법\n1. 위 홈페이지로 접속하세요\n2. [${actionLabel}] 버튼을 누르세요\n3. 체험판 키를 입력하세요\n4. 최초 1회 입력 후 자동으로 실행됩니다\n\n편하실 때 여셔도 ${trialDays}일이 그대로 보장되니 부담 없이 사용해보세요.\n체험 후 궁금한 점은 카카오톡으로 편하게 문의 주세요!`
-    : `[${productName} 구매 완료 안내]\n\n안녕하세요, ${d.dojang_name} 관장님!\n${productName} 구매 및 정식 라이선스 발급이 완료되었습니다.\n\n■ 라이선스 키\n${d.license_key}\n\n■ 구매 정보\n• 라이선스 종류: ${typeLabel}\n${paymentLine}• 사용 가능 기기: 최대 ${maxDevices}대\n• 월 구독료: 없음\n${expireLine}\n■ 접속 방법\n1. ${loginUrl}에 접속해 주세요.\n2. [${actionLabel}] 버튼을 눌러주세요.\n3. 위 라이선스 키를 입력해 주세요.\n4. 최초 인증 후에는 자동으로 실행됩니다.\n\n첫 수업 전 실제 사용하실 기기에서 카메라와 동작 인식을 한 번 확인해 주세요.\n\n라이선스 키는 소중히 보관해 주세요.\n사용 중 궁금한 점은 카카오톡으로 편하게 문의해 주세요.`;
+    : `[${productName} 구매 완료 안내]\n\n안녕하세요, ${d.dojang_name} 관장님!\n${productName} 구매 및 정식 라이선스 발급이 완료되었습니다.\n\n■ 라이선스 키\n${d.license_key}\n\n■ 구매 정보\n• 라이선스 종류: ${typeLabel}\n${paymentLine}• 사용 가능 기기: 최대 ${maxDevices}대\n${subscribeLine}${expireLine}\n■ 접속 방법\n1. ${loginUrl}에 접속해 주세요.\n2. [${actionLabel}] 버튼을 눌러주세요.\n3. 위 라이선스 키를 입력해 주세요.\n4. 최초 인증 후에는 자동으로 실행됩니다.\n\n첫 수업 전 실제 사용하실 기기에서 카메라와 동작 인식을 한 번 확인해 주세요.\n\n라이선스 키는 소중히 보관해 주세요.\n사용 중 궁금한 점은 카카오톡으로 편하게 문의해 주세요.`;
   return msg;
 }
 async function copyLicenseMsg(encoded) {
@@ -3883,8 +3885,9 @@ let msgPickData = null, msgPickKind = 'issue';
 function buildMsg(kind, d){
   const P = productOfKey(d.license_key), name = d.dojang_name || '';
   const days = Number(d.trial_days) || 3;
-  if (P.key === 'poomsae' && ['nudge','trial_end','trial_extend'].includes(kind)) return `[${P.name} 출시 준비 안내]\n\n안녕하세요, ${name} 관장님!\n현재 마스터 시험을 진행 중이며 일반 고객용 체험 기간과 판매 가격은 확정 후 안내합니다.\n\n자세히 보기: ${P.url}`;
   if (kind === 'issue') return licenseIssueMsg(d);
+  
+  if (kind === 'trial_end' && P.key === 'poomsae') return `[${P.name} 체험 종료 안내]\n\n안녕하세요, ${name} 관장님!\n${P.name}를 체험해 주셔서 감사합니다.\n\n아이들 반응은 어떠셨나요? 불편하셨던 점이나 궁금한 점이 있으면 편하게 말씀해 주세요.\n\n계속 사용을 원하시면 카카오톡으로 말씀해 주세요. 확인되면 바로 정식으로 전환해 드립니다.\n자세히 보기: ${P.url}`;
   if (kind === 'nudge') return `안녕하세요, ${name} 관장님! 나른랩스입니다.\n보내 드린 ${P.name} 체험판 키가 아직 사용 전이라 연락드렸습니다.\n\n체험 기간은 키를 받은 날이 아니라 처음 여신 날부터 ${days}일이라, 편하실 때 시작하셔도 됩니다.\n\n• 체험 키: ${d.license_key}\n• 접속: ${P.url} → [프로그램 실행] → 키 입력\n\n기기 준비나 사용 방법이 어려우시면 편하게 말씀해 주세요.`;
   if (kind === 'trial_end') return `[${P.name} 체험 종료 안내]\n\n안녕하세요, ${name} 관장님!\n${P.name}를 체험해 주셔서 감사합니다.\n\n아이들 반응은 어떠셨나요? 불편하셨던 점이나 궁금한 점이 있으면 편하게 말씀해 주세요.\n\n■ 정식 구매 안내\n• 가격: ${DEFAULT_PRICE.toLocaleString('ko-KR')}원 (부가세 포함 · 1회 구매)\n• 월 구독료 없음 · 최대 2대 기기\n• 업데이트는 추가 비용 없이 자동 적용\n\n구매가 확인되면 바로 정식으로 전환해 드립니다.\n자세히 보기: ${P.url}`;
   if (kind === 'trial_extend') {
