@@ -408,14 +408,10 @@ body.group-running #groupLesson{display:block}
       <button type="button" data-v="on">켜기<small>학생 · 2인</small></button>
     </div>
 
-    <div class="lb-label">카메라 · 인식 모델</div>
+    <div class="lb-label">카메라</div>
     <div class="seg c2" id="segCam">
       <button type="button" data-v="user">앞 카메라</button>
       <button type="button" data-v="environment">뒤 카메라</button>
-    </div>
-    <div class="seg c2" id="segModel" style="margin-top:3px">
-      <button type="button" data-v="full">정확하게<small>full</small></button>
-      <button type="button" data-v="lite">빠르게<small>lite</small></button>
     </div>
 
     <div class="lb-tip">
@@ -507,7 +503,7 @@ body.group-running #groupLesson{display:block}
 <script id="psm-core">
 
 var PSM = (function(){
-  var VERSION = '1.2.4';   
+  var VERSION = '1.2.5';   
 
   var DEFAULT_CFG = {
     SMOOTH: 0.5,        
@@ -1303,7 +1299,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   setInterval(authAfterRound, 3000);
 
   var video=$('video'), canvas=$('canvas'), ctx=canvas.getContext('2d');
-  var landmarker=null, poses=0, stream=null, srcW=1280, srcH=720, fake=null;
+  var landmarker=null, poses=0, loadedModel='', stream=null, srcW=1280, srcH=720, fake=null;
   var lastPoses=[], tracks=[null,null];
   var rec=null;           
   var live=null;          
@@ -1318,7 +1314,6 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
       var b=e.target.closest('button'); if(!b || b.disabled) return;
       var old=pref[key]; pref[key]=b.dataset.v; lsSet(LS_PREF,pref); paint();
       if(key==='cam' && old!==pref.cam) startCamera();
-      if(key==='model' && old!==pref.model) loadModel();
       if(key==='role'){ if(pref.role==='group') enterGroup(); else { if(old==='group') leaveGroup(); ensurePoses(); } }
       if(key==='poomsae'){ KEY=getKey(); if(pref.role==='group' && old!==pref.poomsae) loadGroupFrame(); }
       if(/^g[A-Z]/.test(key)) applyRobot();
@@ -1331,7 +1326,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   function setRole(role){
     var old=pref.role; if(old===role) return;
     pref.role=role; lsSet(LS_PREF,pref);
-    if(role==='group') enterGroup(); else { if(old==='group') leaveGroup(); if(role!=='game') ensurePoses(); }
+    if(role==='group') enterGroup(); else { if(old==='group') leaveGroup(); ensurePoses(); }   
     paintMode(); updateModeUi(); readyCheck();
   }
   function paintMode(){
@@ -1482,7 +1477,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
 
   function boot(){
     if(booted) return; booted=true;
-    segInit('segFeedback','feedback'); modeInit(); wallInit(); segInit('segCam','cam'); segInit('segModel','model');
+    segInit('segFeedback','feedback'); modeInit(); wallInit(); segInit('segCam','cam');
     segInit('segGLevel','gLevel'); segInit('segGSpeed','gSpeed'); segInit('segGFoot','gFoot'); segInit('segGSound','gSound'); segInit('segGLoop','gLoop');
     ['selGKiai','selGKiaiLive'].forEach(function(id){$(id).addEventListener('change',function(){pref.gKiai=this.value;lsSet(LS_PREF,pref);updateModeUi();applyRobot();});});
     $('selGLevelLive').addEventListener('change',function(){pref.gLevel=this.value;lsSet(LS_PREF,pref);Array.prototype.forEach.call($('segGLevel').querySelectorAll('button'),function(b){b.classList.toggle('on',b.dataset.v===pref.gLevel);});applyRobot();});
@@ -1582,15 +1577,15 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     setStatus('AI 모델 불러오는 중…');
     var old=landmarker; landmarker=null; if(old){ try{ old.close(); }catch(e){} }
     readyCheck();
-    var want=peopleNow();
+    var want=peopleNow(), mdl=modelNow();
     import(MP_BASE+'/vision_bundle.mjs').then(function(vision){
       return vision.FilesetResolver.forVisionTasks(MP_BASE+'/wasm').then(function(fs){
         function make(dlg){ return vision.PoseLandmarker.createFromOptions(fs,{
-          baseOptions:{modelAssetPath:MODELS[pref.model], delegate:dlg}, runningMode:'VIDEO', numPoses:want,
+          baseOptions:{modelAssetPath:MODELS[mdl], delegate:dlg}, runningMode:'VIDEO', numPoses:want,
           minPoseDetectionConfidence:0.5, minPosePresenceConfidence:0.5, minTrackingConfidence:0.5}); }
         return make('GPU').catch(function(){ return make('CPU'); });
       });
-    }).then(function(lmk){ if(my!==modelGen){ try{ lmk.close(); }catch(e){} return; } landmarker=lmk; poses=want; readyCheck(); })
+    }).then(function(lmk){ if(my!==modelGen){ try{ lmk.close(); }catch(e){} return; } landmarker=lmk; poses=want; loadedModel=mdl; readyCheck(); ensurePoses();  })
       .catch(function(e){ if(my!==modelGen) return; setStatus('AI 모델을 불러오지 못했습니다. 새로고침해 주세요.'); });
   }
 
@@ -1608,9 +1603,13 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     if(pref.role==='game'){ startWall(); return; }
     if(pref.role==='group') startGroup(); else startSession();
   }
+
+  function modelNow(){ return peopleNow()===2 ? 'lite' : 'full'; }
   function ensurePoses(){
     var want=peopleNow();
-    if(fake || !landmarker || poses===want) return;
+    if(fake || !landmarker) return;
+    if(loadedModel!==modelNow()){ loadModel(); return; }   
+    if(poses===want) return;
     landmarker.setOptions({numPoses:want}).then(function(){ poses=want; }).catch(function(){ loadModel(); });
   }
   function readyCheck(){
@@ -1887,7 +1886,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   function uploadWall(W){
     if(!W || !W.log || !W.log.length) return;
     var rec={id:'psw-'+Date.now().toString(36), app:'psm-wall', ver:PSM.VERSION, created:W.startedAt, kind:W.kindKey, speed:pref.wallSpeed||'normal',
-      bpm:W.bpm, approach:W.approach, music:!!W.src, cam:pref.cam, model:pref.model, W:srcW, H:srcH, ua:navigator.userAgent,
+      bpm:W.bpm, approach:W.approach, music:!!W.src, cam:pref.cam, model:loadedModel||modelNow(), W:srcW, H:srcH, ua:navigator.userAgent,
       tol:WALL.SHAPE_TOL, judgeMs:W.kind.judgeMs, ratio:W.kind.ratio, recMs:WALL_REC_MS, pass:W.P[0].pass, total:W.total, best:W.P[0].best, walls:W.log,
       players:W.np, pass2:W.np===2?W.P.map(function(q){ return q.pass; }):null};   
     if(TEST){ window.__wallRec=rec; return; }   
@@ -2229,7 +2228,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     ensurePoses();
     tracks=[null,null];
     rec={id:'psm-'+Date.now().toString(36), app:'psm-lab', ver:PSM.VERSION, created:new Date().toISOString(),
-      role:pref.role, label:($('inLabel').value||'').trim(), poomsae:pref.poomsae, mode:mode, cam:pref.cam, model:pref.model,
+      role:pref.role, label:($('inLabel').value||'').trim(), poomsae:pref.poomsae, mode:mode, cam:pref.cam, model:loadedModel||modelNow(),
       W:srcW, H:srcH, ua:navigator.userAgent, screen:innerWidth+'x'+innerHeight, cfg:Object.assign({},cfg), key:KEY, frames:[], running:false};
     live={det:[], ptr:[0,0], marks:[[],[]], last:['',''], seen:[0,0], miss:[0,0], both:0, frames:0, lastMove:0, lastStop:0, events:[], phase:'countdown', readySince:[null,null], dirOk:[[],[]]};
     for(var k=0;k<mode;k++) live.det.push(PSM.makeDetector(cfg));
