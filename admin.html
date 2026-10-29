@@ -664,7 +664,6 @@ table.cg tfoot td.num{text-align:right}
       <button class="btn-add" id="licenseAddBtn" onclick="openAddModal()">+ 라이선스 발급</button>
     </div>
 
-    <p id="licenseProductNotice" class="product-notice" hidden>품새마스터는 출시 준비 중입니다. 현재 프로그램은 마스터 시험 라이선스만 실행할 수 있습니다. 일반 고객용 인증·체험은 공개 전 별도로 점검해야 합니다.</p>
     <div id="licenseIpSummary" class="license-ip-summary" hidden></div>
 
     <div class="stats-row six">
@@ -950,7 +949,6 @@ table.cg tfoot td.num{text-align:right}
   <div class="modal">
     <h3 id="modalTitle">라이선스 <span>발급</span></h3>
     <input type="hidden" id="editId" />
-    <p class="product-notice" id="issueProductNotice" hidden>품새마스터 출시 준비용 관리입니다. 키를 발급해도 현재 마스터 권한이 없는 키는 프로그램을 실행할 수 없습니다. 일반 판매 가격과 체험 기간은 아직 확정하지 않았습니다.</p>
 
     <div class="mem-pick" id="memPickBox">
       <label>기존 회원에서 불러오기 <span style="font-weight:700;opacity:.75">— 도장명을 치면 목록이 뜹니다</span></label>
@@ -1444,7 +1442,6 @@ function switchLicenseSubtab(p){
     const btn = document.getElementById('license-subtab-' + id + '-btn');
     if (btn) btn.classList.toggle('active', id === currentLicenseProduct);
   }
-  document.getElementById('licenseProductNotice').hidden = currentLicenseProduct !== 'poomsae';
   document.getElementById('licenseAddBtn').textContent = '+ ' + curProduct().short + ' 라이선스 발급';
   updateStats(); renderTable();
 }
@@ -1729,7 +1726,6 @@ function renderTable() {
 function onTypeChange(fromUser) {
   const type = document.getElementById('mLicenseType').value;
   const product = productOfKey(document.getElementById('mKey').value);
-  document.getElementById('issueProductNotice').hidden = product.key !== 'poomsae';
   const price = product.key === 'poomsae' ? null : DEFAULT_PRICE;
   document.getElementById('expireSection').style.display = type === 'package' ? 'block' : 'none';
   document.getElementById('trialSection').style.display = type === 'trial' ? 'block' : 'none';
