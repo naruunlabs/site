@@ -503,7 +503,7 @@ body.group-running #groupLesson{display:block}
 <script id="psm-core">
 
 var PSM = (function(){
-  var VERSION = '1.2.5';   
+  var VERSION = '1.2.6';   
 
   var DEFAULT_CFG = {
     SMOOTH: 0.5,        
@@ -665,6 +665,14 @@ var PSM = (function(){
     "tech": "메주먹내려치기",
     "name": "왼서기 메주먹내려치기",
     "hand": "왼주먹",
+    "dirs": [
+      "L",
+      "F"
+    ],
+    "bodyYaw": {
+      "target": 15,
+      "tolerance": 25
+    },
     "chk": true
   },
   {
@@ -683,6 +691,14 @@ var PSM = (function(){
     "tech": "메주먹내려치기",
     "name": "오른서기 메주먹내려치기",
     "hand": "오른주먹",
+    "dirs": [
+      "R",
+      "F"
+    ],
+    "bodyYaw": {
+      "target": -15,
+      "tolerance": 25
+    },
     "chk": true
   },
   {
@@ -957,7 +973,7 @@ var PSM = (function(){
            : (dir!=='B' && fw!=null && fw >= cfg.PUNCH_FWD) ? '몸통지르기' : '아래막기';
       if(tech==='준비') stance='준비';
     }
-    return {dir:dir, stance:stance, tech:tech, arm:act};
+    return {dir:dir, stance:stance, tech:tech, arm:act, bodyYaw:a.bodyYaw};
   }
 
   function noTech(k){ return !!k && k.dir==='B' && k.tech==='몸통지르기'; }
@@ -965,6 +981,11 @@ var PSM = (function(){
     if(!cls || !k) return {score:0, ok:{dir:false,stance:false,tech:false}};
 
     var dirOk = cls.dir===k.dir || (!!k.dirs && k.dirs.indexOf(cls.dir)>=0);
+    
+    if(k.bodyYaw && Number.isFinite(cls.bodyYaw)){
+      var bodyDelta=(cls.bodyYaw-k.bodyYaw.target)*Math.PI/180;
+      dirOk=Math.abs(Math.atan2(Math.sin(bodyDelta),Math.cos(bodyDelta))*180/Math.PI)<=k.bodyYaw.tolerance;
+    }
     
     var techOk = noTech(k) ? dirOk : (cls.tech===k.tech || (!!TECH_OK[k.tech] && TECH_OK[k.tech].indexOf(cls.tech)>=0));
     var ok={dir: dirOk, stance: cls.stance===k.stance, tech: techOk};
@@ -1187,7 +1208,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     var saved=lsGet(lsKey(),null), base=baseKey();
     if(saved && saved.length===base.length){
       
-      saved.forEach(function(k,i){ var b=base[i]; if(b && PSM.TECH_OK[b.tech] && k.tech!==b.tech && (k.tech==='몸통지르기'||k.tech==='몸통안막기')) k.tech=b.tech; if(b && b.dirs && !k.dirs && k.dir===b.dir) k.dirs=b.dirs; });
+      saved.forEach(function(k,i){ var b=base[i]; if(b && PSM.TECH_OK[b.tech] && k.tech!==b.tech && (k.tech==='몸통지르기'||k.tech==='몸통안막기')) k.tech=b.tech; if(b && b.dirs && !k.dirs && k.dir===b.dir) k.dirs=b.dirs; if(b && b.bodyYaw && k.dir===b.dir && k.tech===b.tech && (!k.bodyYaw || (Math.abs(k.bodyYaw.target)===10 && k.bodyYaw.tolerance===15))) k.bodyYaw=b.bodyYaw; });
       return saved;
     }
     return JSON.parse(JSON.stringify(base));
@@ -2831,6 +2852,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   function renderKey(){
     var h='<div class="m-head"><h3>정답지 · '+PSM.POOMSAE_NAME[pref.poomsae]+'</h3><button class="m-x" data-act="close">닫기</button></div>';
     h+='<p class="m-note">국기원 기준으로 넣었습니다. <b>방향은 학생 기준</b>입니다 (정면 = 카메라, 왼쪽 = 학생의 왼쪽). AI 는 방향 · 서기 · 기술만 비교합니다. 손(팔)은 아직 판정하지 않고 참고로만 둡니다.<br><span style="color:var(--amber)">노란 칸</span>은 도장에서 가르치는 방식과 같은지 확인해 주세요.</p>';
+    if(pref.poomsae==='tg5')h+='<p class="m-note">2·4번 메주먹 내려치기: 방향 칸은 치는 쪽입니다. 몸통은 도장 정면에 가까운 대각선으로 두며, 시안은 정면에서 좌우 약 15°이며 아이들 판정은 그 기준에서 ±25°까지 넓게 인정합니다.</p>';
     h+='<table class="t"><thead><tr><th>#</th><th>방향</th><th>서기</th><th>기술 분류</th><th>동작 이름</th><th>손</th></tr></thead><tbody>';
     KEY.forEach(function(k,i){
       h+='<tr'+(k.chk?' style="background:rgba(251,191,36,.08)"':'')+'><td class="n">'+k.n+'</td>';

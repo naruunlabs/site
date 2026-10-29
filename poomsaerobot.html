@@ -1715,7 +1715,7 @@ function tg5ElbowContacts(FR){
       const pole=side.clone().addScaledVector(YV,mi.block==='elbowTarget'?.2:-1).normalize();
       let from=J['wr'+o].clone();
       if(mi.block==='elbowTarget'){
-        const wait=J.hip.clone().addScaledVector(YV,.64).addScaledVector(fw,.42).addScaledVector(side,.08);
+        const wait=J.hip.clone().addScaledVector(YV,.43).addScaledVector(fw,.48).addScaledVector(side,.20);
         from.lerp(wait,sm3((u-.55)/.17));
       }
       const r=ik2(J['sh'+o],from.lerp(target,weight),DIM.up,DIM.fo,pole);
@@ -1737,15 +1737,82 @@ function tg5ElbowContacts(FR){
           back=fw.clone().addScaledVector(dir,-fw.dot(dir)).normalize();
           const W=candidate.mid.clone().addScaledVector(dir,DIM.fo),elbow=candidate.mid.clone().sub(J.hip).applyAxisAngle(YV,-yaw);
           if(elbow.z<.14&&Math.abs(elbow.x)<.24)continue;
+          if(candidate.mid.y>Sh.y-.005)continue;
           if(u>.98&&(candidate.mid.y-J['wr'+s].y<.08||candidate.mid.y-J['wr'+s].y>.15))continue;
           J['el'+o]=candidate.mid;J['wr'+o]=W;
-          const clearance=armClearance(J,s),value=Math.min(clearance,.105)*10-candidate.mid.distanceTo(previousOther||natural)*.05-candidate.mid.distanceTo(natural)*.01;
+          const clearance=armClearance(J,s),value=Math.min(clearance,.105)*10-candidate.mid.distanceTo(previousOther||natural)*.05-candidate.mid.distanceTo(natural)*.01-Math.abs(candidate.mid.y-(Sh.y-.05))*2;
           if(value>score){score=value;best={E:candidate.mid.clone(),W,dir,back};}
         }
         if(best){J['el'+o]=best.E;J['wr'+o]=best.W;J['hd'+o]=handFromBack(best.dir,best.back,-sd);previousOther=best.E.clone();}
         else {J['el'+o]=natural;J['hd'+o]=alignHand(J['hd'+o],dirTo(J['el'+o],J['wr'+o]));}
       }
     }
+  }
+}
+
+function tg5SideBody(FR){
+  for(let j=1;j<D.moves.length;j++){
+    const mi=MINFO[j];if(!mi.side)continue;
+    const m=D.moves[j],pv=D.moves[j-1],next=D.moves[j+1],sd=mi.side==='L'?1:-1;
+    for(let i=0;i<FR.length;i++){
+      const t=D.t[i];if(t<=pv.t1||t>=next.t0)continue;
+      const w=t<m.t0?sm3((t-pv.t1)/(m.t0-pv.t1)):t<=m.t1?1:1-sm3((t-m.t1)/(next.t0-m.t1));
+      const J=FR[i],ang=-sd*THREE.MathUtils.degToRad(75)*w,fw=DIRV[mi.dir];
+      for(const k of ['hipL','hipR','chest','shL','shR','elL','elR','wrL','wrR'])J[k].sub(J.hip).applyAxisAngle(YV,ang).add(J.hip);
+      for(const k of ['pel','che'])for(const q of ['x','y','z'])J[k][q].applyAxisAngle(YV,ang);
+      for(const k of ['hdL','hdR'])for(const q of ['d','s'])J[k][q].applyAxisAngle(YV,ang);
+      if(w>0){
+        
+        const H=J.hipL,A=J.anL,L=(DIM.th+DIM.sh)*.9998;
+        const dy=A.y+Math.sqrt(Math.max(0,L*L-Math.pow(H.x-A.x,2)-Math.pow(H.z-A.z,2)))-H.y;
+        for(const k of ['hip','hipL','hipR','chest','shL','shR','elL','elR','wrL','wrR'])J[k].y+=dy*w;
+      }
+      for(const leg of ['L','R']){const r=ik2(J['hip'+leg],J['an'+leg],DIM.th,DIM.sh,J['ft'+leg]);J['kn'+leg]=r.mid;J['an'+leg]=r.end;}
+      
+      const arm=mi.arm,Sh=J['sh'+arm],target=Sh.clone().addScaledVector(fw,(DIM.up+DIM.fo)*.9998);
+      const finish=sm3((w-.60)/.40);
+      const r=ik2(Sh,J['wr'+arm].clone().lerp(target,finish),DIM.up,DIM.fo,blendPole(poleOf(Sh,J['el'+arm],J['wr'+arm]),YV.clone().negate(),finish));
+      J['el'+arm]=r.mid;J['wr'+arm]=r.end;
+      const back=new THREE.Vector3().crossVectors(YV,fw).multiplyScalar(sd);
+      const phase=HAND_PHASE.get(J)?.[arm],rising=phase&&phase.isMain&&phase.stroke!=null&&phase.stroke<.5;
+      J['hd'+arm]=interpolateHand(alignHand(J['hd'+arm],dirTo(r.mid,r.end)),handFromBack(dirTo(r.mid,r.end),rising?J.che.z.clone().negate():back,sd),finish);
+    }
+  }
+}
+
+function extendSideKickLegs(FR,root){
+  if(!D.synth)return;
+  for(let i=0;i<FR.length;i++){
+    const k=kickState(D.t[i]);if(!k||!k.mi.yeop)continue;
+    const J=FR[i],s=k.mi.kick,o=s==='L'?'R':'L',u=k.u,L=DIM.th+DIM.sh;
+    const kickW=sm3((u-.20)/.14)*(1-sm3((u-.38)/.17));
+    const supportW=sm3((u-.03)/.27)*(1-sm3((u-.58)/.24));
+    const old=J['an'+o].clone();
+    for(const [leg,w,reach] of [[s,kickW,.9998],[o,supportW,.995]]){
+      const H=J['hip'+leg],K=J['kn'+leg],A=J['an'+leg],ray=A.clone().sub(H).normalize();
+      const target=A.clone().lerp(H.clone().addScaledVector(ray,L*reach),w),r=ik2(H,target,DIM.th,DIM.sh,poleOf(H,K,A));
+      J['kn'+leg]=r.mid;J['an'+leg]=r.end;
+    }
+    
+    root[i][0]+=old.x-J['an'+o].x;root[i][1]+=old.z-J['an'+o].z;
+    J.floor+=J['an'+o].y-old.y;
+  }
+
+  const source=FR.map(J=>({L:J.anL.clone().sub(J.hipL),R:J.anR.clone().sub(J.hipR)}));
+  const filtered={};
+  for(const leg of ['L','R']){
+    const axes=['x','y','z'].map(k=>gauss1(source.map(v=>v[leg][k]),1.3));
+    filtered[leg]=source.map((v,i)=>new THREE.Vector3(axes[0][i],axes[1][i],axes[2][i]));
+  }
+  for(let i=0;i<FR.length;i++){
+    const k=kickState(D.t[i]);if(!k||!k.mi.yeop)continue;
+    const J=FR[i],leg=k.mi.kick,H=J['hip'+leg],K=J['kn'+leg],A=J['an'+leg],u=k.u;
+    const w=sm3((u-.10)/.12)*(1-sm3((u-.58)/.16));
+    const v=source[i][leg].clone().lerp(filtered[leg][i],w);
+    const peak=sm3((u-.30)/.04)*(1-sm3((u-.38)/.04));
+    v.setLength(v.length()+((DIM.th+DIM.sh)*.9998-v.length())*peak);
+    const r=ik2(H,H.clone().add(v),DIM.th,DIM.sh,poleOf(H,K,A));
+    J['kn'+leg]=r.mid;J['an'+leg]=r.end;
   }
 }
 function tg5KickArmRoll(FR){
@@ -1795,7 +1862,8 @@ function computeSet(smX,clean,fix,path=true){
   if(fix && path && D.synth){naturalAirborneFeet(FR,planted);naturalArmTargets(FR);naturalElbows(FR);separateCrossingArms(FR);sagittalKicks(FR);naturalHands(FR);authoredHands(FR);smoothAssistingRolls(FR);settleBlockHands(FR);lockUnchangedStances(FR,planted);}
   if(fix&&path&&D.id==='synth-tg5')tg5SettleConnections(FR);
   if(planted&&D.id==='synth-tg5')tg5StampLanding(FR,planted);
-  if(fix&&path&&D.id==='synth-tg5'){tg5FootDetails(FR);tg5KickHandRoll(FR);tg5ElbowContacts(FR);}
+  if(fix&&path&&D.id==='synth-tg5'){tg5FootDetails(FR);tg5KickHandRoll(FR);tg5SideBody(FR);tg5ElbowContacts(FR);}
+  if(fix&&path&&D.synth)extendSideKickLegs(FR,planted);
   armOutAll(FR);
   if(fix&&path&&D.id==='synth-tg5')tg5KickArmRoll(FR);
   
