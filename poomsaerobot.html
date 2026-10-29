@@ -729,8 +729,8 @@ function rotY(J,ang){ if(!ang) return; const c=J.hip.clone();
 const TG5_HAND={FIST_TIP:.085*1.2*1.05*(.55+.63),PALM_CENTER:.085*1.2*1.05*(.55+.50),PALM_HALF:.085*1.2*.85*.18};
 function tg5ElbowPose(J,mi){
   const s=mi.arm,sd=s==='L'?1:-1,fw=DIRV[mi.dir],side=new THREE.Vector3().crossVectors(YV,fw).multiplyScalar(sd),Sh=J['sh'+s];
-  const elbow=Sh.clone().addScaledVector(fw.clone().addScaledVector(side,.04).addScaledVector(YV,mi.block==='elbowTarget'?-.45:.05).normalize(),DIM.up);
-  const wrist=elbow.clone().addScaledVector(side.clone().negate().addScaledVector(fw,mi.block==='elbowTarget'?-.35:-.18).addScaledVector(YV,mi.block==='elbowTarget'?-.25:0).normalize(),DIM.fo);
+  const elbow=Sh.clone().addScaledVector(fw.clone().addScaledVector(side,.04).addScaledVector(YV,mi.block==='elbowTarget'?-.45:.48).normalize(),DIM.up);
+  const wrist=elbow.clone().addScaledVector(side.clone().negate().addScaledVector(fw,mi.block==='elbowTarget'?-.35:-.48).addScaledVector(YV,mi.block==='elbowTarget'?-.25:-.90).normalize(),DIM.fo);
   return {mid:elbow,end:wrist,pole:poleOf(Sh,elbow,wrist)};
 }
 function correct(J,f){
@@ -818,7 +818,7 @@ function correct(J,f){
     J['ft'+front]=J['ft'+front].clone().lerp(fwd,w).normalize(); J['ft'+back]=J['ft'+back].clone().lerp(tb,w).normalize(); }
   
   if(D.id==='synth-tg5' && (mi.side||mi.cross) && w>0){
-    const front=mi.side||mi.cross,other=front==='L'?'R':'L',yh=mi.cross?(DIM.th+DIM.sh)*.87:Math.sqrt(Math.pow((DIM.th+DIM.sh)*.98,2)-Math.pow(FOOT*.55,2));
+    const front=mi.side||mi.cross,other=front==='L'?'R':'L',yh=mi.cross?(DIM.th+DIM.sh)*.87:Math.sqrt(Math.pow((DIM.th+DIM.sh)*.9998,2)-Math.pow(FOOT*.55,2)-Math.pow(.075-DIM.hipHalf,2));
     for(const s of ['L','R']){
       const cross=!!mi.cross,along=cross?(s===front?.13:-.13):(s===front?1:-1)*FOOT*.55;
       const lateral=cross?(s===front?-.025:.025):sgn(s)*.075;
@@ -896,7 +896,7 @@ function correct(J,f){
           const b=D0.dot(fwd), d=-b+Math.sqrt(Math.max(0,b*b-(D0.lengthSq()-R2*R2))); T=C.addScaledVector(fwd,d);
           pole=YV.clone().negate().addScaledVector(side,.5).normalize(); hd={d:YV.clone().multiplyScalar(.85).addScaledVector(fwd,.5).normalize(), s:side.clone()}; }   
         else if(mi.block==='hammer'){
-          T=Sh.clone().addScaledVector(fwd,(DIM.up+DIM.fo)*.92);
+          T=Sh.clone().addScaledVector(fwd,(DIM.up+DIM.fo)*.9998);
           pole=YV.clone().negate().addScaledVector(side,.2).normalize();
           hd={d:fwd.clone(),s:side.clone()};
         }
@@ -918,7 +918,7 @@ function correct(J,f){
         const side=left.clone().multiplyScalar(sgn(s));
         const main=tg5ElbowPose(J,mi);
         const mainFore=dirTo(main.mid,main.end);
-        const palmDir=mi.block==='elbowRound'?YV.clone():YV.clone().addScaledVector(side,-1).normalize();
+        const palmDir=mi.block==='elbowRound'?YV.clone().addScaledVector(mainFore,-mainFore.y).normalize():YV.clone().addScaledVector(side,-1).normalize();
         T=(mi.block==='elbowRound'?main.end.clone().addScaledVector(mainFore,TG5_HAND.FIST_TIP+TG5_HAND.PALM_HALF):main.mid.clone().addScaledVector(fwd,.048+TG5_HAND.PALM_HALF)).addScaledVector(palmDir,-TG5_HAND.PALM_CENTER);
         pole=side.clone().addScaledVector(YV,mi.block==='elbowTarget'?.2:-1).normalize();
         hd=handFromBack(palmDir,mi.block==='elbowRound'?mainFore:fwd,sgn(s));
@@ -1710,7 +1710,7 @@ function tg5ElbowContacts(FR){
       const fore=dirTo(J['el'+s],J['wr'+s]),normal=mi.block==='elbowRound'?fore:fw;
       const gap=mi.block==='elbowRound'?.10*(1-sm3(u/.50)):0;
       const center=mi.block==='elbowRound'?J['wr'+s].clone().addScaledVector(fore,TG5_HAND.FIST_TIP+TG5_HAND.PALM_HALF+gap):J['el'+s].clone().addScaledVector(fw,.048+TG5_HAND.PALM_HALF);
-      const side=J.che.x.clone().multiplyScalar(-sd),palmDir=mi.block==='elbowRound'?YV.clone():YV.clone().addScaledVector(new THREE.Vector3().crossVectors(YV,fw),sd).normalize();
+      const side=J.che.x.clone().multiplyScalar(-sd),palmDir=mi.block==='elbowRound'?YV.clone().addScaledVector(normal,-normal.y).normalize():YV.clone().addScaledVector(new THREE.Vector3().crossVectors(YV,fw),sd).normalize();
       const target=center.addScaledVector(palmDir,-TG5_HAND.PALM_CENTER);
       const pole=side.clone().addScaledVector(YV,mi.block==='elbowTarget'?.2:-1).normalize();
       let from=J['wr'+o].clone();
