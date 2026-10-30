@@ -3343,8 +3343,8 @@ body.akm-group-open.akm-group-running .stage>.panel>.mode-row *{visibility:hidde
     </div>
 
     <div id="kickLevelPanel" class="difficulty-panel kick-level-panel" aria-label="발차기 판정 난이도 선택">
-      <button type="button" class="diff-btn kick-level-btn" data-kick-level="easy" onclick="setKickLevel('easy')">쉬움</button>
-      <button type="button" class="diff-btn kick-level-btn active" data-kick-level="hard" onclick="setKickLevel('hard')">어려움</button>
+      <button type="button" class="diff-btn kick-level-btn active" data-kick-level="easy" onclick="setKickLevel('easy')">쉬움</button>
+      <button type="button" class="diff-btn kick-level-btn" data-kick-level="hard" onclick="setKickLevel('hard')">어려움</button>
     </div>
 
     <div id="difficultyPanel" class="difficulty-panel" aria-label="격파 난이도 선택">
@@ -5380,8 +5380,8 @@ function measureHFor(want){
 
 const SPARRING_LIVE_RELIEF=15, SPARRING_LIVE_FLOOR=8;   
 
-let JUDGE=JUDGE_HARD;
-let kickLevel='hard';
+let JUDGE=JUDGE_EASY;   
+let kickLevel='easy';
 
 function effThreshPct(){
 
@@ -5424,9 +5424,9 @@ window.setKickLevel=(level)=>{
   if(typeof updateModeBadge==='function') updateModeBadge();
 };
 function initKickLevel(){
-  let saved='hard';
-  try{ saved=localStorage.getItem('akm_kick_level') || 'hard'; }catch(e){}
-  if(saved!=='easy' && saved!=='hard') saved='hard';
+  let saved='easy';   
+  try{ saved=localStorage.getItem('akm_kick_level') || 'easy'; }catch(e){}
+  if(saved!=='easy' && saved!=='hard') saved='easy';
   kickLevel=saved;
   JUDGE=(saved==='easy')?JUDGE_EASY:JUDGE_HARD;
   document.querySelectorAll('.kick-level-btn').forEach(btn=>{
@@ -10425,7 +10425,7 @@ const _AKM_CACHE_DAYS  = 7;
 const _AKM_TRIAL_CACHE_DAYS = 1;   
 const _AKM_FETCH_TIMEOUT_MS = 8 * 1000;   
 
-const _AKM_VERSION     = '3.5.2';   
+const _AKM_VERSION     = '3.5.3';   
 try{ window.__NL_VER = _AKM_VERSION; }catch(e){}   
 
 let _akmFailCount = 0;

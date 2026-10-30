@@ -52,7 +52,7 @@ var PRODUCT = {
   code    : 'S',                    
   name    : 'AI STRIKE MASTER',
   short   : 'STRIKE',
-  version : '0.9.15',   
+  version : '0.9.16',   
   built   : '2026-10-14'
 };
 try{ window.PRODUCT = PRODUCT; }catch(e){}
@@ -3366,8 +3366,8 @@ body.akm-group-open.akm-group-running .stage>.panel>.mode-row *{visibility:hidde
     </div>
 
     <div id="kickLevelPanel" class="difficulty-panel kick-level-panel" aria-label="킥 판정 난이도 선택">
-      <button type="button" class="diff-btn kick-level-btn" data-kick-level="easy" onclick="setKickLevel('easy')">쉬움</button>
-      <button type="button" class="diff-btn kick-level-btn active" data-kick-level="hard" onclick="setKickLevel('hard')">어려움</button>
+      <button type="button" class="diff-btn kick-level-btn active" data-kick-level="easy" onclick="setKickLevel('easy')">쉬움</button>
+      <button type="button" class="diff-btn kick-level-btn" data-kick-level="hard" onclick="setKickLevel('hard')">어려움</button>
     </div>
 
     <div id="difficultyPanel" class="difficulty-panel" aria-label="격파 난이도 선택">
@@ -5791,8 +5791,8 @@ function measureHFor(want){
   return t[want] || null;
 }
 
-let JUDGE=JUDGE_HARD;
-let kickLevel='hard';
+let JUDGE=JUDGE_EASY;   
+let kickLevel='easy';
 
 function effThreshPct(){
 
@@ -5831,9 +5831,9 @@ window.setKickLevel=(level)=>{
   if(typeof updateModeBadge==='function') updateModeBadge();
 };
 function initKickLevel(){
-  let saved='hard';
-  try{ saved=localStorage.getItem('asm_kick_level') || 'hard'; }catch(e){}
-  if(saved!=='easy' && saved!=='hard') saved='hard';
+  let saved='easy';   
+  try{ saved=localStorage.getItem('asm_kick_level') || 'easy'; }catch(e){}
+  if(saved!=='easy' && saved!=='hard') saved='easy';
   kickLevel=saved;
   JUDGE=(saved==='easy')?JUDGE_EASY:JUDGE_HARD;
   document.querySelectorAll('.kick-level-btn').forEach(btn=>{
