@@ -1184,13 +1184,13 @@ const STRIKE_LOGIN_URL = 'https://naruunlabs.kr/strikemaster';
 
 const PRODUCTS = {
   kick:   { key:'kick',   prefix:'AKM-', gen:'AKM', name:'AI KICK MASTER',
-            short:'킥마스터',        url:KICK_LOGIN_URL },
+            short:'킥마스터',        price:369000, url:KICK_LOGIN_URL },
   jump:   { key:'jump',   prefix:'JMP-', gen:'JMP', name:'AI JUMP MASTER',
-            short:'점프마스터',      url:JUMP_LOGIN_URL },
+            short:'점프마스터',      price:339000, url:JUMP_LOGIN_URL },
   strike: { key:'strike', prefix:'STR-', gen:'STR', name:'AI STRIKE MASTER',
-            short:'스트라이크마스터', url:STRIKE_LOGIN_URL },
+            short:'스트라이크마스터', price:369000, url:STRIKE_LOGIN_URL },
   poomsae:{ key:'poomsae', prefix:'PMS-', gen:'PMS', name:'AI POOMSAE MASTER',
-            short:'품새마스터', url:POOMSAE_LOGIN_URL }
+            short:'품새마스터', price:null, url:POOMSAE_LOGIN_URL }
 };
 const PRODUCT_ORDER = ['kick','jump','strike','poomsae'];
 
@@ -1745,7 +1745,7 @@ function renderTable() {
 function onTypeChange(fromUser) {
   const type = document.getElementById('mLicenseType').value;
   const product = productOfKey(document.getElementById('mKey').value);
-  const price = product.key === 'poomsae' ? null : DEFAULT_PRICE;
+  const price = product.price;
   document.getElementById('expireSection').style.display = type === 'package' ? 'block' : 'none';
   document.getElementById('trialSection').style.display = type === 'trial' ? 'block' : 'none';
 
@@ -1758,7 +1758,7 @@ function onTypeChange(fromUser) {
   if (!currentEditLicenseId) {
     const pay = document.getElementById('mPayAmount');
     if (type === 'lifetime' && !pay.value && price != null) pay.value = price;
-    else if (type !== 'lifetime' && Number(pay.value) === DEFAULT_PRICE) pay.value = '';
+    else if (type !== 'lifetime' && price != null && Number(pay.value) === price) pay.value = '';
   }
   
   if (type === 'trial') {
@@ -3758,7 +3758,6 @@ if (savedToken) {
 
 <script id="naruun-admin-convenience-20260925">
 
-const DEFAULT_PRICE = 369000;          
 const COLD_DAYS     = 14;              
 const NUDGE_DAYS    = 2;               
 
@@ -3870,7 +3869,7 @@ function convertToLifetime(){
   t.value = 'lifetime';
   onTypeChange(true);
   const pay = document.getElementById('mPayAmount'), date = document.getElementById('mPayDate');
-  const price = productOfKey(document.getElementById('mKey').value).key === 'poomsae' ? null : DEFAULT_PRICE;
+  const price = productOfKey(document.getElementById('mKey').value).price;
   if (!pay.value && price != null) pay.value = price;
   if (!date.value) date.value = todayStr();
   if (document.getElementById('deviceSlotSection').style.display === 'block') renderDeviceSlotsUI();
@@ -3904,7 +3903,7 @@ function buildMsg(kind, d){
   
   if (kind === 'trial_end' && P.key === 'poomsae') return `[${P.name} 체험 종료 안내]\n\n안녕하세요, ${name} 관장님!\n${P.name}를 체험해 주셔서 감사합니다.\n\n아이들 반응은 어떠셨나요? 불편하셨던 점이나 궁금한 점이 있으면 편하게 말씀해 주세요.\n\n계속 사용을 원하시면 카카오톡으로 말씀해 주세요. 확인되면 바로 정식으로 전환해 드립니다.\n자세히 보기: ${P.url}`;
   if (kind === 'nudge') return `안녕하세요, ${name} 관장님! 나른랩스입니다.\n보내 드린 ${P.name} 체험판 키가 아직 사용 전이라 연락드렸습니다.\n\n체험 기간은 키를 받은 날이 아니라 처음 여신 날부터 ${days}일이라, 편하실 때 시작하셔도 됩니다.\n\n• 체험 키: ${d.license_key}\n• 접속: ${P.url} → [프로그램 실행] → 키 입력\n\n기기 준비나 사용 방법이 어려우시면 편하게 말씀해 주세요.`;
-  if (kind === 'trial_end') return `[${P.name} 체험 종료 안내]\n\n안녕하세요, ${name} 관장님!\n${P.name}를 체험해 주셔서 감사합니다.\n\n아이들 반응은 어떠셨나요? 불편하셨던 점이나 궁금한 점이 있으면 편하게 말씀해 주세요.\n\n■ 정식 구매 안내\n• 가격: ${DEFAULT_PRICE.toLocaleString('ko-KR')}원 (부가세 포함 · 1회 구매)\n• 월 구독료 없음 · 최대 2대 기기\n• 업데이트는 추가 비용 없이 자동 적용\n\n구매가 확인되면 바로 정식으로 전환해 드립니다.\n자세히 보기: ${P.url}`;
+  if (kind === 'trial_end') return `[${P.name} 체험 종료 안내]\n\n안녕하세요, ${name} 관장님!\n${P.name}를 체험해 주셔서 감사합니다.\n\n아이들 반응은 어떠셨나요? 불편하셨던 점이나 궁금한 점이 있으면 편하게 말씀해 주세요.\n\n■ 정식 구매 안내\n• 가격: ${P.price.toLocaleString('ko-KR')}원 (부가세 포함 · 1회 구매)\n• 월 구독료 없음 · 최대 2대 기기\n• 업데이트는 추가 비용 없이 자동 적용\n\n구매가 확인되면 바로 정식으로 전환해 드립니다.\n자세히 보기: ${P.url}`;
   if (kind === 'trial_extend') {
     const ends = trialEndsAt(d);
     const when = ends ? `${ends.toLocaleString('ko-KR',{month:'long',day:'numeric',hour:'numeric'})}까지` : `처음 여신 날부터 ${days}일`;
