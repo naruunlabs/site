@@ -654,14 +654,17 @@ table.cg tfoot td.num{text-align:right}
       <div class="today-views" id="todayViews" role="group" aria-label="할 일 보기"></div>
       <div class="today-body" id="todayBody"></div>
     </div>
-    <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
-      <button class="home-subtab-btn active" id="license-subtab-kick-btn" onclick="switchLicenseSubtab('kick')">킥마스터 라이선스</button>
-      <button class="home-subtab-btn" id="license-subtab-jump-btn" onclick="switchLicenseSubtab('jump')">점프마스터 라이선스</button>
-      <button class="home-subtab-btn" id="license-subtab-strike-btn" onclick="switchLicenseSubtab('strike')">스트라이크 라이선스</button>
-      <button class="home-subtab-btn" id="license-subtab-poomsae-btn" onclick="switchLicenseSubtab('poomsae')">품새마스터 라이선스</button>
-      <div style="flex:1"></div>
+    <div class="license-controls">
+      <div class="license-products" role="group" aria-label="라이선스 제품 선택">
+      <button class="home-subtab-btn active" aria-pressed="true" id="license-subtab-kick-btn" onclick="switchLicenseSubtab('kick')">킥마스터 라이선스</button>
+      <button class="home-subtab-btn" aria-pressed="false" id="license-subtab-jump-btn" onclick="switchLicenseSubtab('jump')">점프마스터 라이선스</button>
+      <button class="home-subtab-btn" aria-pressed="false" id="license-subtab-strike-btn" onclick="switchLicenseSubtab('strike')">스트라이크 라이선스</button>
+      <button class="home-subtab-btn" aria-pressed="false" id="license-subtab-poomsae-btn" onclick="switchLicenseSubtab('poomsae')">품새마스터 라이선스</button>
+      </div>
+      <div class="license-actions">
       <button class="btn-add btn-ghost" onclick="loadLicenses()">↻ 새로고침</button>
       <button class="btn-add" id="licenseAddBtn" onclick="openAddModal()">+ 라이선스 발급</button>
+      </div>
     </div>
 
     <div id="licenseIpSummary" class="license-ip-summary" hidden></div>
@@ -676,8 +679,8 @@ table.cg tfoot td.num{text-align:right}
     </div>
 
     <div class="toolbar">
-      <input id="searchInput" class="f-input" type="search" placeholder="도장명, 라이선스 키, 연락처 검색" oninput="renderTable()" />
-      <select id="statusFilter" class="select-filter" onchange="onFilterChange()">
+      <input id="searchInput" aria-label="라이선스 검색" class="f-input" type="search" placeholder="도장명, 라이선스 키, 연락처 검색" oninput="renderTable()" />
+      <select id="statusFilter" aria-label="라이선스 상태" class="select-filter" onchange="onFilterChange()">
         <option value="all">전체</option>
         <option value="live">정식 사용중</option>
         <option value="trial">체험 진행중</option>
@@ -686,15 +689,16 @@ table.cg tfoot td.num{text-align:right}
         <option value="off">중지</option>
         <option value="cold">2주 넘게 안 씀</option>
       </select>
-      <select id="sortSelect" class="select-filter" onchange="renderTable()">
+      <select id="sortSelect" aria-label="라이선스 정렬" class="select-filter" onchange="renderTable()">
         <option value="expire">만료 임박순</option>
         <option value="name">도장명순</option>
         <option value="created">최근 등록순</option>
         <option value="verified">최근 인증순</option>
       </select>
       <button class="btn-add btn-ghost" onclick="clearFilters()">초기화</button>
-      <button class="btn-add btn-ghost" onclick="exportLicensesCsv()" title="킥·점프·스트 라이선스 전체를 엑셀 파일로 받습니다">엑셀로 저장</button>
+      <button class="btn-add btn-ghost" onclick="exportLicensesCsv()" title="네 제품의 라이선스 전체를 엑셀 파일로 받습니다">엑셀로 저장</button>
     </div>
+    <div id="licenseResultCount" class="license-result-count" role="status" aria-live="polite"></div>
     <button class="btn-add btn-ghost" id="repairExpiryBtn" style="display:none;margin:8px 0" onclick="repairLifetimeExpiry()"></button>
     <div class="cross-hint" id="crossHint"></div>
 
@@ -1440,7 +1444,10 @@ function switchLicenseSubtab(p){
   currentLicenseProduct = PRODUCTS[p] ? p : 'kick';
   for (const id of PRODUCT_ORDER) {
     const btn = document.getElementById('license-subtab-' + id + '-btn');
-    if (btn) btn.classList.toggle('active', id === currentLicenseProduct);
+    if (btn) {
+      btn.classList.toggle('active', id === currentLicenseProduct);
+      btn.setAttribute('aria-pressed', String(id === currentLicenseProduct));
+    }
   }
   document.getElementById('licenseAddBtn').textContent = '+ ' + curProduct().short + ' 라이선스 발급';
   updateStats(); renderTable();
@@ -1649,6 +1656,7 @@ function renderTable() {
     return qHit && statusMatch;
   });
   rows = sortRows(rows, document.getElementById('sortSelect').value);
+  document.getElementById('licenseResultCount').textContent = curProduct().short + ' · ' + licensesForCurrentProduct().length + '건 중 ' + rows.length + '건 표시';
   renderCrossHint(q, qd);
   renderToday();
   if (!rows.length) { tbody.innerHTML = '<tr><td colspan="8" class="empty-msg">표시할 라이선스가 없습니다.</td></tr>'; return; }
@@ -4940,6 +4948,37 @@ async function loadDeviceEvents(detail,seq,cursor) {
 }
 
 </script>
+
+<style id="admin-responsive-controls-20261102">
+.license-controls{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:20px}
+.license-products{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;flex:1 1 650px;min-width:0}
+.license-products .home-subtab-btn{width:100%;min-width:0;height:auto;min-height:44px;padding:10px 8px!important;line-height:1.35;word-break:keep-all}
+.license-actions{display:flex;gap:8px;align-items:center;margin-left:auto}
+.license-actions .btn-add{min-height:44px;height:auto;padding:10px 16px}
+.license-result-count{padding:9px 14px;background:#fff;border-inline:1px solid var(--hair);font-size:12px;color:#667085}
+button:focus-visible,[role="button"]:focus-visible,summary:focus-visible{outline:3px solid #1265e8;outline-offset:3px}
+@media(min-width:701px) and (max-width:1450px){
+ #tab-license .toolbar{grid-template-columns:minmax(0,1fr) repeat(2,minmax(125px,155px))}
+ #tab-license .toolbar .f-input{grid-column:1/-1}
+}
+@media(max-width:700px){
+ .license-controls{display:block}
+ .license-products{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ .license-products .home-subtab-btn{min-height:46px;height:auto!important;font-size:13px!important;padding:10px 5px!important}
+ .license-actions{display:grid;grid-template-columns:auto minmax(0,1fr);margin-top:10px;gap:8px}
+ .license-actions #licenseAddBtn{width:100%;margin-top:0;min-width:0;white-space:normal}
+ #tab-license .stats-row.six{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;overflow:visible;padding-bottom:0}
+ #tab-license .stats-row.six .stat-card{min-width:0;min-height:76px;padding:11px 8px}
+ #tab-license .stats-row.six .stat-card .label{font-size:11px;line-height:1.35}
+ #tab-license .toolbar{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #tab-license .toolbar .f-input{grid-column:1/-1;font-size:16px}
+ #tab-license .toolbar select{min-width:0;width:100%;min-height:44px;font-size:14px}
+ #tab-license .toolbar button{min-height:44px}
+ .license-result-count{padding:9px 12px}
+ .license-ip-summary-list button{max-width:100%;min-height:40px;text-align:left;overflow-wrap:anywhere;line-height:1.5}
+ .modal .f-input,.modal .f-textarea,.modal select{font-size:16px}
+}
+</style>
 
 </body>
 </html>
