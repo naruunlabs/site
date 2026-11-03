@@ -3503,6 +3503,7 @@ body.akm-group-open.akm-group-running .stage>.panel>.mode-row *{visibility:hidde
     <div id="p2Result">
       <div id="p2ResultKicker">MATCH RESULT</div>
       <div id="p2ResultTitle"></div>
+      <div id="p2ResultKo"></div>
       <div id="p2ResultScores"></div>
       
       <div id="p2ResultBreakdown"></div>
@@ -4008,6 +4009,7 @@ function kickHoldAlive(slot){
 
 let currentMode='apcha_r';
 let running=false, gameTimer=null, gameRemain=0, popTimer=null;
+let sparringKoRemain=null;   
 let readyTimer=null, readyToken=0;
 
 const DIFFICULTY_CFG={
@@ -6443,6 +6445,10 @@ function finishAutoDrill(){
   clearHudScores();
 }
 
+function drillAvgHtml(line,avg){
+  drillResultSub.className='';
+  return '<div class="dr-avg"><small>평균</small><b>'+avg+'</b><small>점</small></div><div class="dr-line">'+line+'</div>';
+}
 function finishDrill(){
   running=false; setPlayingUi(false);
   const avg=avgOf(drillScores)||0;
@@ -6454,7 +6460,7 @@ function finishDrill(){
     drillResultIcon.textContent=icon;
     drillResultText.textContent=txt;
     drillResultText.style.color=avg>=90?'#FF6A1A':'#2ecc71';
-    drillResultSub.textContent=cfg.label+' '+drillDone+'회 · 평균 '+avg+'점';
+    drillResultSub.innerHTML=drillAvgHtml(cfg.label+' '+drillDone+'회',avg);
     drillResult.classList.add('final-result','show');
     confetti(avg>=90);
     sndRecord();
@@ -6463,7 +6469,7 @@ function finishDrill(){
     drillResultIcon.textContent='완료';
     drillResultText.textContent='수고했어요!';
     drillResultText.style.color='#fff';
-    drillResultSub.textContent=cfg.label+' '+drillDone+'회 · 평균 '+avg+'점';
+    drillResultSub.innerHTML=drillAvgHtml(cfg.label+' '+drillDone+'회',avg);
     drillResult.classList.add('final-result','show');
     sndScore(avg);
   }
@@ -6615,8 +6621,9 @@ function handleSparringKick(peak){
   sndHit(zone, sparringCombo, dmg);
   
   trajX=[]; trajY=[]; trajHipX=[]; trajTorso=[]; trajHipW=[]; trajKneeX=[]; trajKneeAngle=[]; trajHipVis=[]; trajKneeVis=[]; trajKneeAngle3D=[]; trajShoulderW=[]; trajFootAng=[]; trajFootAngVis=[]; trajKneeMark=[]; trajFootBlade=[]; kmPeakY=null; kmHitBefore=false; kneeMarkFlashArmed=false; trajActive=false; drillSide=0; resetPreRoll();
-  if(sparringHp<=0){ sndKO(); setTimeout(finishSparring,500); }   
+  if(sparringHp<=0){ if(sparringKoRemain==null) sparringKoRemain=gameRemain; sndKO(); setTimeout(finishSparring,500); }   
 }
+function koTimeText(){ return Math.max(0,sparringKoRemain||0)+'초 남기고 K.O.!'; }
 function startSparring(){
   if(sparringMode==='speed'){ startSpeed(); return; }
   if(sparringMode==='practice'){
@@ -6628,7 +6635,7 @@ function startSparring(){
     startTimed(sec,finishSparring);
     return;
   }
-  sparringHp=250; sparringDamage=0; sparringCombo=0; sparringMaxCombo=0; sparringLastHitT=0;
+  sparringHp=250; sparringDamage=0; sparringCombo=0; sparringMaxCombo=0; sparringLastHitT=0; sparringKoRemain=null;
   setSparringTargetVisible(true);
   updateSparringHud();
   sparringHud?.classList.add('show');
@@ -6659,7 +6666,7 @@ function finishSparring(){
   setGrResult('결과: 총 데미지 '+sparringDamage+' · 최고 '+sparringMaxCombo+'콤보');
   setStartBtn(false,'다시!');
   drillResultIcon.textContent=sparringHp<=0?'K.O.':'완료';
-  drillResultText.textContent=sparringHp<=0?'K.O.!':'수련 완료!';
+  drillResultText.textContent=sparringHp<=0?koTimeText():'수련 완료!';
   drillResultText.style.color=sparringHp<=0?'#FF6A1A':'#4ca3ff';
   drillResultSub.textContent='총 데미지 '+sparringDamage+' · 최고 '+sparringMaxCombo+'콤보';
   drillResult.classList.add('final-result','show');
@@ -8379,6 +8386,7 @@ function setP2ResultContent(kicker,title,cLabel,cVal,hLabel,hVal,winnerKey,reaso
   const titleEl=document.getElementById('p2ResultTitle');
   const scoresEl=document.getElementById('p2ResultScores');
   const reasonEl=document.getElementById('p2ResultReason');
+  document.getElementById('p2ResultKo')?.classList.remove('show');
   if(kickerEl) kickerEl.textContent=kicker;
   if(titleEl){
     titleEl.textContent=title;
@@ -8709,7 +8717,7 @@ function handleSparringKick2p(peak){
   render2pScoreSparring('c'); render2pScoreSparring('h');
   sndHit(zone, st.combo, dmg, key);   
 
-  if(oppSt.hp<=0) sndKO();
+  if(oppSt.hp<=0){ if(sparringKoRemain==null) sparringKoRemain=gameRemain; sndKO(); }
   flashEdge(key);
 
   showP2Float(key, '-'+dmg, zone,
@@ -8737,7 +8745,7 @@ function startSparring2p(){
     render2pScoreSparringPractice('c'); render2pScoreSparringPractice('h');
     return;
   }
-  sparringState2p={c:makeSparringSlot(), h:makeSparringSlot()};
+  sparringState2p={c:makeSparringSlot(), h:makeSparringSlot()}; sparringKoRemain=null;
   render2pScoreSparring('c'); render2pScoreSparring('h');
 }
 function render2pScoreSparringPractice(key){
@@ -8790,9 +8798,12 @@ function finishSparring2p(){
   else if(h.hp<=0) winner='c';
   else winner = c.hp===h.hp ? null : (c.hp>h.hp?'c':'h');
 
-  showP2Result('남은 체력',(c.hp<=0?'K.O. 패':c.hp),'남은 체력',(h.hp<=0?'K.O. 패':h.hp),winner,'체력이 더 많이 남은 쪽이 승리',
+  const ko=winner!=null && (c.hp<=0 || h.hp<=0);
+  showP2Result('남은 체력',(c.hp<=0?'K.O. 패':c.hp),'남은 체력',(h.hp<=0?'K.O. 패':h.hp),winner,ko?'상대 체력을 모두 깎았습니다':'체력이 더 많이 남은 쪽이 승리',
     
-    winner!=null && (c.hp<=0 || h.hp<=0));
+    ko);
+  
+  if(ko){ const koEl=document.getElementById('p2ResultKo'); if(koEl){ koEl.textContent=koTimeText(); koEl.classList.add('show'); } }
 }
 
 function processPersonFrame(lm, wlm){
@@ -9524,17 +9535,22 @@ function handStartObserve(lms){
 }
 
 const HAND_NEXT={ RESULT_MS:3000 };
-let hnArmed=false, hnPhase='off', hnT0=0, hnEl=null;
-function hnPrompt(on){
+let hnArmed=false, hnPhase='off', hnT0=0, hnEl=null, hnKind='', hnQuietUntil=0;
+
+function hnPrompt(on,kind){
   try{
     if(!hnEl){
       holoCss();   
       hnEl=document.createElement('div'); hnEl.id='handNextPrompt'; hnEl.className='holo';
       hnEl.style.top='56%';
-      hnEl.innerHTML='<div class="h-frame"><div class="h-tag">NEXT PLAYER</div>'
-        +'<div class="h-main" style="margin-top:6px">다음 선수 입장</div>'
-        +'<div class="h-sub">한 손을 머리 위로 2초 들면 시작해요</div></div>';
       document.body.appendChild(hnEl);
+    }
+    const two=!!twoPlayerMode;
+    if(on && kind && kind+two!==hnKind){
+      hnKind=kind+two;
+      hnEl.innerHTML='<div class="h-frame"><div class="h-tag">'+(kind==='next'?'NEXT PLAYER':'HAND SIGNAL')+'</div>'
+        +'<div class="h-main" style="margin-top:6px">'+(kind==='next'?(two?'다음 선수들 입장':'다음 선수 입장'):(two?'두 사람 자리에 서기':'화면 앞에 서기'))+'</div>'
+        +'<div class="h-sub">'+(two?'한 사람이 ':'')+'한 손을 머리 위로 2초 들면 시작해요</div></div>';
     }
     hnEl.classList.toggle('on',!!on);
   }catch(e){}
@@ -9553,24 +9569,23 @@ function handNextTick(){
     if(hnPhase!=='off'){ hnPhase='off'; hnPrompt(false); }
     return;
   }
-  if(autoDrillTransitioning || auto2pTransitioning || p2StageResultTimer) return;
+  if(autoDrillTransitioning || auto2pTransitioning || p2StageResultTimer){ hnPrompt(false); return; }
   const now=performance.now();
-  if(hnPhase==='off'){
-    if(!hnArmed) return;
+  if(hnPhase==='off' && hnArmed){
     hnArmed=false;
-    if(autoNextManualStop) return;       
-    hnPhase='result'; hnT0=now; return;
+    if(!autoNextManualStop){ hnPhase='result'; hnT0=now; return; }   
   }
-  if(hnPhase==='result' && now-hnT0>=HAND_NEXT.RESULT_MS){
+  if(hnPhase==='result'){
+    if(now-hnT0<HAND_NEXT.RESULT_MS) return;
     hnCloseResult(); hnPhase='wait';
   }
-  if(hnPhase==='wait'){
-    
-    hnPrompt(!(typeof hsT0!=='undefined' && hsT0));
-  }
+  
+  const resultOpen=document.getElementById('drillResult')?.classList.contains('show') || document.getElementById('p2Result')?.classList.contains('show');
+  const quiet=hnPhase!=='wait' && now<hnQuietUntil;
+  hnPrompt(stream && poseLandmarker && !trainingClock.paused && !resultOpen && !hsT0 && !quiet && hsCanStart(), hnPhase==='wait'?'next':'first');
 }
 
-document.addEventListener('pointerdown',()=>{ if(hnPhase==='wait'){ hnPhase='off'; hnPrompt(false); } },true);
+document.addEventListener('pointerdown',()=>{ if(hnPhase==='wait') hnPhase='off'; hnQuietUntil=performance.now()+8000; hnPrompt(false); },true);
 function hsCanStart(){
   if(running || readyTimer || modelLoading || modelPreparing) return false;
   if(document.hidden) return false;
@@ -9588,7 +9603,7 @@ function hsDoStart(){ if(!running) window.startGame(); }
 
 function loop(){
   requestAnimationFrame(loop);
-  if(window.__groupOverlayOpen) return;   
+  if(window.__groupOverlayOpen){ hnPrompt(false); return; }   
   watchRuntimeCamera();
 
   try{ handNextTick(); }catch(e){}
@@ -10425,7 +10440,7 @@ const _AKM_CACHE_DAYS  = 7;
 const _AKM_TRIAL_CACHE_DAYS = 1;   
 const _AKM_FETCH_TIMEOUT_MS = 8 * 1000;   
 
-const _AKM_VERSION     = '3.5.3';   
+const _AKM_VERSION     = '3.5.4';   
 try{ window.__NL_VER = _AKM_VERSION; }catch(e){}   
 
 let _akmFailCount = 0;
@@ -11551,6 +11566,23 @@ html body #handNextPrompt .h-main{font-size:min(48px,9vw) !important;margin-top:
 html body #handNextPrompt .h-sub{font-size:min(26px,5vw) !important;margin-top:8px !important}
 html body #handNextPrompt .h-frame{padding:24px 52px 28px !important}
 html body #handNextPrompt .h-frame::before,html body #handNextPrompt .h-frame::after{width:32px !important;height:32px !important;border-width:3px !important}
+
+html body.hud-v21.akm-ui:not(.sparring-mode):not(.balloon-mode) .score-box .stat-num,
+html body.hud-v21.akm-ui:not(.sparring-mode):not(.balloon-mode) .avg-box .stat-num{font-size:78px !important}
+@media (orientation:landscape) and (max-width:1220px){
+  html body.hud-v21.akm-ui:not(.sparring-mode):not(.balloon-mode) .score-box .stat-num,
+  html body.hud-v21.akm-ui:not(.sparring-mode):not(.balloon-mode) .avg-box .stat-num{font-size:64px !important}
+}
+html body.two-player-mode:not(.sparring-mode):not(.balloon-mode) .p2-line b{font-size:46px}
+@media (max-width:1220px){ html body.two-player-mode:not(.sparring-mode):not(.balloon-mode) .p2-line b{font-size:38px} }
+.dr-avg{display:flex;align-items:baseline;justify-content:center;gap:10px;color:#ffd15a;line-height:1;text-shadow:0 4px 18px rgba(0,0,0,.9)}
+.dr-avg b{font-size:clamp(84px,11vw,132px);font-weight:1000;font-variant-numeric:tabular-nums}
+.dr-avg small{font-size:clamp(26px,3.2vw,40px);font-weight:900;color:#fff}
+.dr-line{margin-top:10px;font-size:22px;font-weight:800;color:#cdd8e8}
+#drillResultSub.auto-result-summary .result-average{font-size:clamp(46px,6vw,68px)}
+
+#p2ResultKo{display:none;margin:0 0 14px;font-size:clamp(38px,5.6vw,76px);font-weight:1000;line-height:1.05;color:#ffd15a;white-space:nowrap;text-shadow:0 5px 20px rgba(0,0,0,.95)}
+#p2ResultKo.show{display:block}
 
 #readyOverlay #readyNum.word,body.hud-v21.akm-ui #readyOverlay #readyNum.word{font-size:min(120px,12vw) !important;white-space:nowrap !important;letter-spacing:-.02em}
 </style>
