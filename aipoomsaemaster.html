@@ -343,7 +343,7 @@ body.group-running #groupLesson{display:block}
   
   <div class="modelist" id="segMode">
     <button type="button" class="choice" data-m="solo">1인 모드<small>품새 점수 · 동작마다 판정</small></button>
-    <button type="button" class="choice" data-m="pair">2인 모드<small>두 사람 점수 + 싱크율</small></button>
+    <button type="button" class="choice" data-m="pair">2인 페어<small>함께 품새 · 각자 정확도와 두 사람의 호흡</small></button>
     <button type="button" class="choice" data-m="game">게임 모드<small>벽 통과 · 동작 모양 구멍</small></button>
     <button type="button" class="choice" data-m="group">단체 모드<small>로봇 구령 따라하기 · 카메라 안 씀</small></button>
   </div>
@@ -1369,7 +1369,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     paintMode();
   }
 
-  var ROLE_NAME={master:'1인 · 관장 시범', student:'1인 · 학생 시험', pair:'2인 모드', group:'단체 모드', game:'게임 · 벽 통과'};
+  var ROLE_NAME={master:'1인 · 관장 시범', student:'1인 · 학생 시험', pair:'2인 페어', group:'단체 모드', game:'게임 · 벽 통과'};
   function updateModeUi(){
     var pName=PSM.POOMSAE_NAME[pref.poomsae]||'', moves=lastMove(baseKey());
     $('mbTitle').textContent=ROLE_NAME[pref.role]||''; if($('selPoomsae').value!==pref.poomsae) $('selPoomsae').value=pref.poomsae;
@@ -2621,7 +2621,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   function showScore(r, res, saved){
     scoreData={r:r, res:res, saved:saved};
     var name=(PSM.POOMSAE_NAME&&PSM.POOMSAE_NAME[r.poomsae])||'';
-    var roleName={master:'관장 시범', student:'학생 시험', pair:'2인 모드'}[r.role]||'';
+    var roleName={master:'관장 시범', student:'학생 시험', pair:'2인 페어'}[r.role]||'';
     var h='<div class="sc-box'+(r.mode===2?' two':'')+'"><div class="sc-tag">POOMSAE SCORE</div><div class="sc-title">'+esc(name)+(roleName?' · '+roleName:'')+'</div><div class="sc-cols">';
     if(r.mode===2){
       
@@ -2667,7 +2667,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   }
   function renderResult(saved){
     var r=curRes.r, res=curRes.res, tab=curRes.tab, box=$('resultBox');
-    var roleName={master:'관장 시범', student:'학생 시험', pair:'2인 동시'}[r.role]||r.role;
+    var roleName={master:'관장 시범', student:'학생 시험', pair:'2인 페어'}[r.role]||r.role;
     var h='<div class="m-head"><h3>결과 · '+roleName+(r.label?' · '+esc(r.label):'')+'</h3><button class="m-x" data-act="close">닫기</button></div>';
     h+='<p class="m-note">'+new Date(r.created).toLocaleString('ko-KR')+' · 길이 '+fmtT(r.dur||0)+' · '+(saved===false?'<span class="x">이 기기에 저장 실패 — 지금 내려받아 두세요</span>':'이 기기에 저장됨')+' · <span id="cloudSt">'+cloudText(r.cloud||'')+'</span></p>';
     if(r.mode===2){
@@ -2844,7 +2844,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   }
   function renderRecs(list){
     list.sort(function(a,b){ return a.created<b.created?1:-1; });
-    var roleName={master:'관장 시범', student:'학생 시험', pair:'2인 동시'};
+    var roleName={master:'관장 시범', student:'학생 시험', pair:'2인 페어'};
     var h='<div class="m-head"><h3>저장 기록 ('+list.length+')</h3><button class="m-x" data-act="close">닫기</button></div>';
     h+='<p class="m-note">결과 보기는 지금의 판정 기준값으로 <b>다시 채점</b>합니다. 측정이 끝나면 서버에 자동으로 올라가(10일 보관) 따로 옮기지 않아도 됩니다. 서버 ×인 기록은 인터넷이 되면 다시 올립니다.</p>';
     if(!list.length) h+='<p class="dim">아직 기록이 없습니다.</p>';
