@@ -503,7 +503,7 @@ body.group-running #groupLesson{display:block}
 <script id="psm-core">
 
 var PSM = (function(){
-  var VERSION = '1.2.6';   
+  var VERSION = '1.2.7';   
 
   var DEFAULT_CFG = {
     SMOOTH: 0.5,        
@@ -2242,6 +2242,9 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     }catch(e){}
   }
 
+  var JUDGE_BEEP={MS:170, VOL:0.45, OK:[1500,1000], NG:[520,390]};
+  function judgeBeep(k, good){ beep((good?JUDGE_BEEP.OK:JUDGE_BEEP.NG)[k?1:0], JUDGE_BEEP.MS, JUDGE_BEEP.VOL); }
+
   function startSession(){
     $('cdN').style.fontSize='';
     beep(660,60,0.05);
@@ -2347,7 +2350,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
       live.marks[k][took]=moveMark(jd);
       live.ptr[k]=took+1;
       txt='<b>'+key[took].n+'번</b> '+(jd.soft ? '방향 <span class="sf">△</span> '+esc(PSM.DIR_NAME[key[took].dir])+' <span class="dim">(몸을 덜 비틀어요)</span>' : mk(jd.ok.dir,'방향',shownDir(jd,cls,key[took])))+' · '+mk(jd.ok.stance,'서기',cls.stance)+' · '+mk(jd.ok.tech,'기술',shownTech(jd,cls,key[took]))+(took>from?' <span class="x">('+missText(key,from,took-1)+' 놓침)</span>':'');
-      if(rec.role!=='master' && pref.feedback==='on') beep(jd.ok.dir&&jd.ok.tech?1500:520,60,0.08);
+      if(rec.role!=='master' && pref.feedback==='on') judgeBeep(k, jd.ok.dir&&jd.ok.tech);
       live.lastStop=performance.now();
     }
     live.last[k]=txt;
@@ -2775,28 +2778,45 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   document.addEventListener('visibilitychange', function(){ if(document.visibilityState==='visible') refreshCollection(); });
   function uploadRec(r, res){
     if(TEST || !authKey) return Promise.resolve(false);
-    if(!canUpload()){ if(r.cloud!=='ok'){ r.cloud='off'; setCloud(r,'off'); return dbPut(r).then(function(){ return false; }, function(){ return false; }); } return Promise.resolve(false); }
+    if(!canUpload()){ markCloudDone(r.id); if(r.cloud!=='ok'){ r.cloud='off'; setCloud(r,'off'); return dbPut(r).then(function(){ return false; }, function(){ return false; }); } return Promise.resolve(false); }
     var text=JSON.stringify(exportObj(r, res||analyze(r,cfg)));
     var meta={id:r.id, kind:'poomsae-session', role:r.role, label:r.label, created:r.created, raw_bytes:text.length};
     setCloud(r,'up');
     return gzip(text).then(function(buf){
       return fetch(LAB_URL+'?action=upload',{method:'POST', headers:{'Content-Type':'application/gzip','x-lab-key':authKey,'x-lab-device':deviceId(authKey),'x-lab-meta':b64(JSON.stringify(meta))}, body:buf});
     }).then(function(resp){ return resp.json(); })
-      .then(function(j){ if(!j || !j.ok) throw new Error(j&&j.error||'fail'); r.cloud='ok'; r.cloudBytes=j.bytes; setCloud(r,'ok'); return dbPut(r).then(function(){ return true; }); })
+      .then(function(j){ if(!j || !j.ok) throw new Error(j&&j.error||'fail'); r.cloud='ok'; r.cloudBytes=j.bytes; setCloud(r,'ok'); markCloudDone(r.id); return dbPut(r).then(function(){ return true; }); })
       .catch(function(){ r.cloud='fail'; setCloud(r,'fail'); return dbPut(r).then(function(){ return false; }, function(){ return false; }); });
   }
   function cloudText(st){ return {up:'서버에 올리는 중…', ok:'서버에 올림 (10일 보관)', off:'서버 보관 안 함', fail:'<span class="x">서버 올리기 실패 — 다음에 다시 올립니다</span>', wait:'서버에 올리는 중…'}[st]||''; }
   function setCloud(r, st){
     if(curRes && curRes.r && curRes.r.id===r.id){ var el=document.getElementById('cloudSt'); if(el) el.innerHTML=cloudText(st); }
   }
+
+  var CLOUD_DONE_KEY='psm_cloud_done_v1', cloudDone={}, retryBusy=false;
+  try{ cloudDone=JSON.parse(localStorage.getItem(CLOUD_DONE_KEY))||{}; }catch(e){ cloudDone={}; }
+  function saveCloudDone(){ try{ localStorage.setItem(CLOUD_DONE_KEY, JSON.stringify(cloudDone)); }catch(e){} }
+  function markCloudDone(id){ if(cloudDone[id]) return; cloudDone[id]=1; saveCloudDone(); }
+  function roundActive(){ return !!(wall.on || (rec && rec.running)); }
   function retryUploads(){
     if(TEST || !canUpload()) return;
     flushWall();
-    dbAll().then(function(list){
-      var lim=Date.now()-9*86400000;
-      var todo=list.filter(function(r){ return r.cloud!=='ok' && r.cloud!=='off' && Date.parse(r.created)>lim; });
-      todo.reduce(function(p,r){ return p.then(function(){ return uploadRec(r); }); }, Promise.resolve());
-    }).catch(function(){});
+    if(retryBusy || roundActive()) return;
+    retryBusy=true;
+    dbKeys().then(function(ids){
+      var lim=Date.now()-9*86400000, keep={}, changed=false;
+      ids.forEach(function(id){ if(cloudDone[id]) keep[id]=1; });
+      for(var old in cloudDone){ if(!keep[old]) changed=true; }
+      if(changed){ cloudDone=keep; saveCloudDone(); }
+      return ids.filter(function(id){ return !cloudDone[id]; }).reduce(function(p,id){ return p.then(function(){
+        if(!canUpload() || roundActive()) return;
+        return dbGet(id).then(function(r){
+          if(!r) return;
+          if(r.cloud==='ok' || r.cloud==='off' || !(Date.parse(r.created)>lim)){ markCloudDone(id); return; }
+          return uploadRec(r);
+        });
+      }); }, Promise.resolve());
+    }).catch(function(){}).then(function(){ retryBusy=false; });
   }
 
   var dbP=null;
@@ -2812,6 +2832,8 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   function tx(mode, fn){ return db().then(function(d){ return new Promise(function(res,rej){ var t=d.transaction('sessions',mode), s=t.objectStore('sessions'), out=fn(s); t.oncomplete=function(){ res(out && out.result!==undefined ? out.result : out); }; t.onerror=function(){ rej(t.error); }; }); }); }
   function dbPut(r){ var o=Object.assign({},r); delete o.running; return tx('readwrite', function(s){ return s.put(o); }); }
   function dbAll(){ return tx('readonly', function(s){ return s.getAll(); }); }
+  function dbKeys(){ return tx('readonly', function(s){ return s.getAllKeys(); }); }
+  function dbGet(id){ return tx('readonly', function(s){ return s.get(id); }).then(function(r){ return r && r.id ? r : null; }); }
   function dbDel(id){ return tx('readwrite', function(s){ return s.delete(id); }); }
 
   var delArm=null;
