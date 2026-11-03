@@ -3922,6 +3922,15 @@ let gGround=0;
 
 let gndGapLast=null;
 
+const DOLLO_STUCK_MS=1000, DOLLO_ESCAPE_MS=600, GROUND_JUMP_T=1.0, DOLLO_STILL_MS=300, DOLLO_STILL_T=0.2;
+let kickCutN=null, groundPrevFootY=null, footStillY=null, footStillSince=0;
+function isDolloDrill(){ return isDrillMode() && MODE_CFG[currentMode]?.kick==='dollo'; }
+function groundRuleMode(){ return isMeasureOnlyMode() || isDolloDrill(); }
+function trimTrajTo(n){
+  [trajX,trajY,trajHipX,trajTorso,trajHipW,trajKneeX,trajKneeAngle,trajHipVis,trajKneeVis,trajKneeAngle3D,trajShoulderW,trajFootAng,trajFootAngVis,trajKneeMark,trajFootBlade]
+    .forEach(a=>{ if(a.length>n) a.length=n; });
+}
+
 const BODY_GATE_ON=false;      
 const BODY_LOW_MIN=0.55;       
 let gBody=0, gVis=0, gVisHi=0; 
@@ -6925,7 +6934,7 @@ function resetCounters(){
   altFootReset();    
   holdSaveCount=0;   
   lastKickCompleteT=0;
-  groundSince=0;     
+  groundSince=0; kickCutN=null; groundPrevFootY=null; footStillY=null; footStillSince=0;     
   lastScore=null; lastGrade=''; lastColor='var(--gold)';
   balloonCount=0;
   drillDone=0; drillScores=[];
@@ -7655,21 +7664,28 @@ function runKick(pct,m=null){
   const fastEnough = !m || m.speed==null || m.speed>minSpeed || pct>TH+8;
 
   let trulyGrounded=false;
-  if(isMeasureOnlyMode()){
+  if(groundRuleMode()){
     const gNow=footOnGround(m);
-    if(gNow===true){ if(!groundSince) groundSince=now; }
+    const jumped=isDolloDrill() && Number.isFinite(groundPrevFootY) && Number.isFinite(m?.footY) && m.torso>0
+      && Math.abs(m.footY-groundPrevFootY)>GROUND_JUMP_T*m.torso;
+    if(Number.isFinite(m?.footY)) groundPrevFootY=m.footY;
+    if(gNow===true){ if(!groundSince && !jumped) groundSince=now; }
     else if(gNow===false) groundSince=0;      
     trulyGrounded = !!groundSince && (now-groundSince)>=GROUND_HOLD_MS;
+    if(isDolloDrill() && Number.isFinite(m?.footY) && m.torso>0){
+      if(footStillY==null || Math.abs(m.footY-footStillY)>DOLLO_STILL_T*m.torso){ footStillY=m.footY; footStillSince=now; }
+      if(pct<REARM_PCT && now-footStillSince>=DOLLO_STILL_MS) trulyGrounded=true;
+    }
   } else groundSince=0;
   if(!kicking){
 
     if(pct>nearPeak) nearPeak=pct;
     if(pct>=TH) nearAboveN++;
 
-    if(isMeasureOnlyMode()){
+    if(groundRuleMode()){
       if(trulyGrounded) rearmNeeded=false;
       else if(footOnGround(m)===null && pct<REARM_PCT) rearmNeeded=false;   
-      else if(rearmNeeded && (now-lastKickCompleteT)>=GROUND_ESCAPE_MS) rearmNeeded=false; 
+      else if(rearmNeeded && (now-lastKickCompleteT)>=(isDolloDrill()?DOLLO_ESCAPE_MS:GROUND_ESCAPE_MS)) rearmNeeded=false; 
       if(rearmNeeded && !trulyGrounded) gGround++;                          
     }
     else if(pct<REARM_PCT) rearmNeeded=false;   
@@ -7686,7 +7702,7 @@ function runKick(pct,m=null){
       const strong = gatePct >= TH + effStrongMargin();
       if(strong || now-aboveFrames>=ABOVE_MS){
 
-        kicking=true; peakPct=pct; belowFrames=0; trajActive=true;
+        kicking=true; peakPct=pct; belowFrames=0; trajActive=true; kickCutN=null;
 
         kickTopFootY = m ? m.footY : null;
         kickRefTorso = m ? ((smTorso!=null && smTorso>0) ? smTorso : m.torso) : null;
@@ -7708,7 +7724,8 @@ function runKick(pct,m=null){
       aboveFrames=0;
       
       if(pct<RESET_PCT){
-        if(nearPeak>=TH-NEAR_MISS_MARGIN) diagLogMiss(nearPeak, nearAboveN, TH);
+        
+        if(nearPeak>=Math.max(TH-NEAR_MISS_MARGIN,4)) diagLogMiss(nearPeak, nearAboveN, TH);
         nearPeak=0; nearAboveN=0; nearProj=0;
       }
     }
@@ -7724,23 +7741,26 @@ function runKick(pct,m=null){
         ? true
         : ((m.footY - kickTopFootY) >= SPLIT_DROP_RATIO*kickRefTorso);
 
-      if(isMeasureOnlyMode()){
+      if(kickCutN==null && isDolloDrill() && footDown && held>=effBelowMs()) kickCutN=trajX.length;   
+      if(groundRuleMode()){
         if(footOnGround(m)!==null) footDown=trulyGrounded;   
         if(Number.isFinite(m?.otherFootY)&&Number.isFinite(m?.footY)&&m.torso>0)
           gndGapLast=+((m.otherFootY-m.footY)/m.torso).toFixed(2);   
       }
       if(!footDown) gSplit++;   
 
-      const stuckMs=isMeasureOnlyMode()?MEASURE_STUCK_MS:SPLIT_STUCK_MS;
+      const stuckMs=isDolloDrill()?DOLLO_STUCK_MS:(isMeasureOnlyMode()?MEASURE_STUCK_MS:SPLIT_STUCK_MS);
       if((footDown && held>=effBelowMs()) || held>=stuckMs){   
         lastKickFoot=kickFoot;   
         kicking=false; aboveFrames=0; belowFrames=0; nearPeak=0; nearAboveN=0; nearProj=0; kickFoot=null; trajActive=false;
         kickFoot=null;
         kickTopFootY=null; kickRefTorso=null;
+        if(kickCutN!=null) trimTrajTo(kickCutN);
+        kickCutN=null;
         onKickComplete(peakPct);
       }
     }
-    else belowFrames=0;
+    else { belowFrames=0; kickCutN=null; }   
   }
 }
 
@@ -8092,7 +8112,7 @@ function makeKickSlot(key){
     lastSeenT:0,   
     kicking:false, peakPct:0, aboveFrames:0, belowFrames:0, trajActive:false, kickStartT:0, drillSide:0,
     
-    kickTopFootY:null, kickRefTorso:null, rearmNeeded:false, groundSince:0,   
+    kickTopFootY:null, kickRefTorso:null, rearmNeeded:false, groundSince:0, kickCutN:null, groundPrevFootY:null, footStillY:null, footStillSince:0,   
     nearPeak:0, nearAboveN:0, nearProj:0, kickFoot:null,   
     altFoot:'right',   
     trajX:[], trajY:[], trajHipX:[], trajTorso:[], trajHipW:[], trajKneeX:[], trajKneeAngle:[], trajHipVis:[], trajKneeVis:[], trajKneeAngle3D:[], trajShoulderW:[],
@@ -8117,6 +8137,7 @@ function saveToSlot(slot){
   slot.trajActive=trajActive; slot.kickStartT=kickStartT; slot.drillSide=drillSide;
   slot.kickTopFootY=kickTopFootY; slot.kickRefTorso=kickRefTorso; slot.rearmNeeded=rearmNeeded;  
   slot.groundSince=groundSince;   
+  slot.kickCutN=kickCutN; slot.groundPrevFootY=groundPrevFootY; slot.footStillY=footStillY; slot.footStillSince=footStillSince;   
   slot.nearPeak=nearPeak; slot.nearAboveN=nearAboveN; slot.nearProj=nearProj; slot.kickFoot=kickFoot;
   slot.altFoot=altFoot;   
   slot.trajX=trajX; slot.trajY=trajY; slot.trajHipX=trajHipX; slot.trajTorso=trajTorso; slot.trajHipW=trajHipW;
@@ -8140,6 +8161,7 @@ function loadFromSlot(slot){
   kickRefTorso=(slot.kickRefTorso===undefined?null:slot.kickRefTorso);
   rearmNeeded=!!slot.rearmNeeded;
   groundSince=slot.groundSince||0;   
+  kickCutN=slot.kickCutN??null; groundPrevFootY=slot.groundPrevFootY??null; footStillY=slot.footStillY??null; footStillSince=slot.footStillSince||0;   
   nearPeak=slot.nearPeak||0; nearAboveN=slot.nearAboveN||0; nearProj=slot.nearProj||0; kickFoot=slot.kickFoot||null;
   altFoot=slot.altFoot||'right';   
   trajX=slot.trajX; trajY=slot.trajY; trajHipX=slot.trajHipX; trajTorso=slot.trajTorso; trajHipW=slot.trajHipW;
@@ -8865,7 +8887,7 @@ function processPersonFrame(lm, wlm){
 
       if((isDrillMode()||currentMode==='sparring')&&running&&trajActive){
 
-        const MAX_TRAJ=isMeasureOnlyMode()?120:40;
+        const MAX_TRAJ=groundRuleMode()?120:40;
         trajX.push(m.footX); trajY.push(m.footY); trajHipX.push(m.hipX);
         trajTorso.push(m.torso);
         trajHipW.push((smHipW && smHipW>0.005 && typeof m.hipW==='number' && (m.hipVis??0)>=JUDGE.ROUND.HIP_VIS_MIN) ? m.hipW/smHipW : 1);
@@ -10440,7 +10462,7 @@ const _AKM_CACHE_DAYS  = 7;
 const _AKM_TRIAL_CACHE_DAYS = 1;   
 const _AKM_FETCH_TIMEOUT_MS = 8 * 1000;   
 
-const _AKM_VERSION     = '3.5.4';   
+const _AKM_VERSION     = '3.5.5';   
 try{ window.__NL_VER = _AKM_VERSION; }catch(e){}   
 
 let _akmFailCount = 0;
