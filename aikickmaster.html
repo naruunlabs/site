@@ -3337,6 +3337,12 @@ body.akm-group-open.akm-group-running .stage>.panel>.mode-row *{visibility:hidde
       </div>
     </div>
 
+    <div id="p2PlayerToggle" class="show">
+      <button class="active" id="m_p1" onclick="setPlayerCount(1)">1인</button>
+      <button id="m_p2" onclick="setPlayerCount(2)">2인</button>
+    </div>
+
+    <div id="leftSettings">
     <div id="drillModePanel" class="difficulty-panel drill-mode-panel" aria-label="발차기 훈련 방식 선택">
       <button type="button" class="diff-btn drill-mode-btn active" data-drill-run-mode="manual" onclick="setDrillRunMode('manual')">수동모드</button>
       <button type="button" class="diff-btn drill-mode-btn" data-drill-run-mode="auto" onclick="setDrillRunMode('auto')">자동모드</button>
@@ -3357,10 +3363,6 @@ body.akm-group-open.akm-group-running .stage>.panel>.mode-row *{visibility:hidde
       <button type="button" class="diff-btn sparring-type-btn active" data-sparring-type="speed" onclick="setSparringMode('speed')">스피드</button>
       <button type="button" class="diff-btn sparring-type-btn" data-sparring-type="live" onclick="setSparringMode('live')">실전</button>
     </div>
-
-    <div id="p2PlayerToggle" class="show">
-      <button class="active" id="m_p1" onclick="setPlayerCount(1)">1인</button>
-      <button id="m_p2" onclick="setPlayerCount(2)">2인</button>
     </div>
 
     <div class="section-label">— 연습 모드</div>
@@ -4228,7 +4230,8 @@ function shoulderRatioNow(m){
   return Math.max(0, Math.min(1.5, m.shoulderW/base));
 }
 
-let drillTarget=10, drillDone=0, drillScores=[], drillResultTimer=null;
+let drillTarget=parseInt(drillCountSel.value)||8, drillDone=0, drillScores=[], drillResultTimer=null;   
+drillCountSel.addEventListener('change',()=>{ if(running) return; drillTarget=parseInt(drillCountSel.value)||8; renderStats(); });
 let drillRunMode='manual';
 
 let AUTO_DRILL_SEQUENCE=autoDrillModes();
@@ -7522,7 +7525,7 @@ window.setMode=(mode)=>{
   resetCounters(); renderStats();
   statusEl.style.opacity='1';
   if(isDrill) statusEl.textContent='시작 버튼을 눌러 '+MODE_CFG[mode].label+' 연습을 시작하세요';
-  else if(mode==='sparring') statusEl.textContent=sparringMode==='practice'?'연습모드: 랜덤 화살표 미션을 시작하세요':'실전모드: 키에 맞춘 타겟을 공격하세요';
+  else if(mode==='sparring') statusEl.textContent=sparringMode==='speed'?'스피드: 삐 소리가 나면 최대한 빨리 차세요':'실전모드: 키에 맞춰 나오는 타겟을 공격하세요';
   else statusEl.textContent='시작 버튼을 누르세요';
 };
 
@@ -10462,7 +10465,7 @@ const _AKM_CACHE_DAYS  = 7;
 const _AKM_TRIAL_CACHE_DAYS = 1;   
 const _AKM_FETCH_TIMEOUT_MS = 8 * 1000;   
 
-const _AKM_VERSION     = '3.5.5';   
+const _AKM_VERSION     = '3.5.6';   
 try{ window.__NL_VER = _AKM_VERSION; }catch(e){}   
 
 let _akmFailCount = 0;
@@ -11607,7 +11610,87 @@ html body.two-player-mode:not(.sparring-mode):not(.balloon-mode) .p2-line b{font
 #p2ResultKo.show{display:block}
 
 #readyOverlay #readyNum.word,body.hud-v21.akm-ui #readyOverlay #readyNum.word{font-size:min(120px,12vw) !important;white-space:nowrap !important;letter-spacing:-.02em}
+
+html body.hud-v21.akm-ui #leftSettings{
+  position:absolute; left:22px; width:220px; top:352px;
+  display:flex; flex-direction:column; gap:12px;
+  z-index:60; pointer-events:auto;
+}
+html body.hud-v21.akm-ui.playing-ui #leftSettings{display:none !important}
+html body.hud-v21.akm-ui #leftSettings .difficulty-panel{
+  position:static !important; right:auto !important; left:auto !important; top:auto !important; bottom:auto !important;
+  transform:none !important; width:100% !important; max-width:none !important; height:auto !important; min-height:0 !important;
+  flex-wrap:wrap !important; justify-content:flex-start !important; align-items:stretch !important;
+  gap:6px !important; margin:0 !important; padding:0 !important;
+  background:none !important; border:0 !important; box-shadow:none !important; opacity:1 !important;
+}
+html body.hud-v21.akm-ui #leftSettings .difficulty-panel::before{
+  flex:0 0 100% !important; display:block !important; margin:0 !important; padding:0 !important;
+  align-self:auto !important; text-align:left !important; transform:none !important;
+  font-size:13px !important; line-height:1.2 !important; font-weight:800 !important; letter-spacing:0 !important;
+  color:rgba(255,255,255,.72) !important; text-shadow:0 1px 3px rgba(0,0,0,.8) !important;
+}
+html body.hud-v21.akm-ui #leftSettings #drillModePanel::before{content:"방식" !important}
+html body.hud-v21.akm-ui #leftSettings #kickLevelPanel::before{content:"난이도" !important}
+html body.hud-v21.akm-ui #leftSettings #difficultyPanel::before{content:"난이도" !important}
+html body.hud-v21.akm-ui #leftSettings #sparringTypePanel::before{content:"겨루기 방식" !important}
+html body.hud-v21.akm-ui #leftSettings .diff-btn{
+  flex:1 1 0 !important; width:auto !important; min-width:0 !important; height:38px !important; min-height:38px !important;
+  margin:0 !important; padding:0 4px !important; transform:none !important; clip-path:none !important;
+  border:1.5px solid rgba(255,255,255,.34) !important; border-radius:8px !important;
+  background:rgba(0,0,0,.42) !important; box-shadow:none !important;
+  font-size:14px !important; line-height:1 !important; font-weight:800 !important; letter-spacing:0 !important;
+  color:#fff !important; text-shadow:none !important; opacity:1 !important; white-space:nowrap !important;
+}
+html body.hud-v21.akm-ui #leftSettings .diff-btn::before,
+html body.hud-v21.akm-ui #leftSettings .diff-btn::after{display:none !important}
+html body.hud-v21.akm-ui #leftSettings .diff-btn.active{
+  background:#FF6A1A !important; border-color:#FF6A1A !important; color:#fff !important;
+}
+
+html body.hud-v21.akm-ui #leftSettings.ls-side{gap:7px; width:190px}
+html body.hud-v21.akm-ui #leftSettings.ls-side .diff-btn{height:32px !important; min-height:32px !important; font-size:13px !important}
+html body.hud-v21.akm-ui #leftSettings.ls-side .difficulty-panel{gap:3px !important}
+html body.hud-v21.akm-ui #leftSettings.ls-side .difficulty-panel::before{font-size:11px !important}
+html.akm-portrait body.hud-v21.akm-ui #leftSettings{width:200px}
 </style>
+<script id="akm-left-settings">
+
+(function(){
+  var box=document.getElementById('leftSettings'), toggle=document.getElementById('p2PlayerToggle');
+  if(!box||!toggle) return;
+  function shown(el){ return !!el && el.getClientRects().length>0 && getComputedStyle(el).display!=='none'; }
+  function place(){
+    var r=toggle.getBoundingClientRect();
+    if(!r.height || !shown(box)) return;
+    var p=box.offsetParent?box.offsetParent.getBoundingClientRect():{top:0,left:0};
+    box.classList.remove('ls-side');
+    box.style.top=(r.bottom-p.top+14)+'px';
+    box.style.left=(r.left-p.left)+'px';
+    var area=['drillCountArea','gameArea'].map(function(id){return document.getElementById(id);}).filter(shown)[0];
+    if(area && box.getBoundingClientRect().bottom+8>area.getBoundingClientRect().top){
+      var m=document.querySelector('.hud-drill-row'), mr=m?m.getBoundingClientRect():r;
+      box.classList.add('ls-side');
+      box.style.top=(mr.top-p.top)+'px';
+      box.style.left=(Math.max(r.right,mr.right)-p.left+16)+'px';
+      
+      var br=box.getBoundingClientRect(), low=br.top;
+      document.querySelectorAll('#p2Hud *').forEach(function(e){
+        if(e.children.length || !e.textContent.trim() || !shown(e)) return;
+        var c=getComputedStyle(e); if(c.visibility==='hidden' || +c.opacity===0) return;
+        var q=e.getBoundingClientRect();
+        var mid=(q.left+q.right)/2;   
+        if(q.height<160 && q.right>br.left && q.left<br.right && mid>br.left-60 && mid<br.right && q.bottom>low) low=q.bottom;
+      });
+      if(low>br.top) box.style.top=(low-p.top+6)+'px';
+    }
+  }
+  addEventListener('resize',function(){ place(); setTimeout(place,350); });   
+  if(window.MutationObserver){ var mo=new MutationObserver(place); mo.observe(document.body,{attributes:true,attributeFilter:['class']}); mo.observe(document.documentElement,{attributes:true,attributeFilter:['class']}); }
+  if(document.fonts&&document.fonts.ready) document.fonts.ready.then(place);
+  place(); setTimeout(place,600); setTimeout(place,1500);
+})();
+</script>
 <script>
 
 (function(){
