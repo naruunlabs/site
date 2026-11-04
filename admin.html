@@ -806,7 +806,7 @@ table.cg tfoot td.num{text-align:right}
         <button class="cg-btn" onclick="loadAcademyProjects()">새로고침</button>
         <button class="cg-btn primary" onclick="openAcademyAddModal()">+ 제작 고객 추가</button>
       </div>
-      <div class="cg-scroll"><table class="cg aw-table"><thead><tr><th>고객</th><th>진행 상태</th><th>견적</th><th>받은 금액</th><th>시작일</th><th>공개 예정</th><th>공개일</th><th>도메인</th><th>홈페이지 주소</th><th>다음 할 일</th><th>다음 할 일 날짜</th><th>메모</th><th>관리</th></tr></thead><tbody id="awBody"><tr><td colspan="13" class="cg-empty">불러오는 중…</td></tr></tbody></table></div>
+      <div class="cg-scroll"><table class="cg aw-table"><thead><tr><th>고객</th><th>진행 상태</th><th>3D 옵션</th><th>견적</th><th>받은 금액</th><th>시작일</th><th>공개 예정</th><th>공개일</th><th>도메인</th><th>홈페이지 주소</th><th>다음 할 일</th><th>다음 할 일 날짜</th><th>메모</th><th>관리</th></tr></thead><tbody id="awBody"><tr><td colspan="14" class="cg-empty">불러오는 중…</td></tr></tbody></table></div>
     </div>
     <div class="footer-note">기존 고객을 선택해 홈페이지 제작 건을 연결합니다 · 라이선스와 기존 고객 장부는 그대로 유지됩니다</div>
   </div>
@@ -3568,17 +3568,18 @@ const ACADEMY_STATUS = [
   ['building','제작 중'],['review','확인 중'],['launched','공개 완료'],
   ['maintenance','유지관리'],['cancelled','취소']
 ];
+const ACADEMY_3D = [['none','없음'],['consulting','상담 중'],['contracted','계약'],['launched','공개 완료']];
 
 async function loadAcademyProjects() {
   const body = document.getElementById('awBody');
   if (!body || !ADMIN_TOKEN) return;
-  body.innerHTML = '<tr><td colspan="13" class="cg-empty">불러오는 중…</td></tr>';
+  body.innerHTML = '<tr><td colspan="14" class="cg-empty">불러오는 중…</td></tr>';
   try {
     ACADEMY_PROJECTS = await edgeCall('GET_ACADEMY_PROJECTS', {}) || [];
     refreshAcademyCustomerPicker();
     renderAcademyProjects();
   } catch(err) {
-    body.innerHTML = `<tr><td colspan="13" class="cg-empty">불러오기 실패: ${escapeHtml(err.message)}</td></tr>`;
+    body.innerHTML = `<tr><td colspan="14" class="cg-empty">불러오기 실패:${escapeHtml(err.message)}</td></tr>`;
   }
 }
 
@@ -3613,7 +3614,7 @@ function renderAcademyProjects() {
   const revenue = ACADEMY_PROJECTS.reduce((s,p) => s + (Number(p.paid_amount)||0), 0);
   document.getElementById('awRevenue').textContent = revenue ? (revenue/10000).toLocaleString('ko-KR')+'만' : '0';
   if (!rows.length) {
-    body.innerHTML = `<tr><td colspan="13" class="cg-empty">${ACADEMY_PROJECTS.length?'검색 결과가 없습니다.':'아직 제작 건이 없습니다. 오른쪽 위 제작 고객 추가를 눌러보세요.'}</td></tr>`;
+    body.innerHTML = `<tr><td colspan="14" class="cg-empty">${ACADEMY_PROJECTS.length?'검색 결과가 없습니다.':'아직 제작 건이 없습니다. 오른쪽 위 제작 고객 추가를 눌러보세요.'}</td></tr>`;
     return;
   }
   const statusOptions = v => ACADEMY_STATUS.map(x => `<option value="${x[0]}" ${x[0]===v?'selected':''}>${x[1]}</option>`).join('');
@@ -3622,6 +3623,7 @@ function renderAcademyProjects() {
   body.innerHTML = rows.map(p => `<tr class="aw-row s-${p.status}${academyDue(p)?' due':''}" data-id="${p.id}">
     <td data-field="customer_id" data-label="고객"><select class="aw-in aw-customer" data-id="${p.id}" data-f="customer_id" onchange="saveAcademyCell(this)">${customerOptions(p.customer_id)}</select><button type="button" class="mobile-expand" onclick="toggleMobileCard(this)" aria-expanded="false">상세 보기</button></td>
     <td data-field="status" data-label="진행 상태"><select class="aw-in" data-id="${p.id}" data-f="status" onchange="saveAcademyCell(this)">${statusOptions(p.status)}</select></td>
+    <td data-field="option_3d" data-label="3D 옵션"><select class="aw-in" data-id="${p.id}" data-f="option_3d" onchange="saveAcademyCell(this)">${ACADEMY_3D.map(x => `<option value="${x[0]}" ${x[0]===(p.option_3d||'none')?'selected':''}>${x[1]}</option>`).join('')}</select></td>
     <td data-field="quoted_amount" data-label="견적">${inp(p,'quoted_amount','number')}</td><td data-field="paid_amount" data-label="받은 금액">${inp(p,'paid_amount','number')}</td>
     <td data-field="started_at" data-label="시작일">${inp(p,'started_at','date')}</td><td data-field="due_at" data-label="공개 예정">${inp(p,'due_at','date')}</td><td data-field="launched_at" data-label="공개일">${inp(p,'launched_at','date')}</td>
     <td data-field="domain" data-label="도메인">${inp(p,'domain','','aw-wide')}</td><td data-field="site_url" data-label="홈페이지 주소">${inp(p,'site_url','url','aw-url')}</td>
