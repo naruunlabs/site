@@ -658,7 +658,6 @@ table.cg tfoot td.num{text-align:right}
       <div class="license-products" role="group" aria-label="라이선스 제품 선택">
       <button class="home-subtab-btn active" aria-pressed="true" id="license-subtab-kick-btn" onclick="switchLicenseSubtab('kick')">킥마스터 라이선스</button>
       <button class="home-subtab-btn" aria-pressed="false" id="license-subtab-jump-btn" onclick="switchLicenseSubtab('jump')">점프마스터 라이선스</button>
-      <button class="home-subtab-btn" aria-pressed="false" id="license-subtab-strike-btn" onclick="switchLicenseSubtab('strike')">스트라이크 라이선스</button>
       <button class="home-subtab-btn" aria-pressed="false" id="license-subtab-poomsae-btn" onclick="switchLicenseSubtab('poomsae')">품새마스터 라이선스</button>
       </div>
       <div class="license-actions">
@@ -822,7 +821,7 @@ table.cg tfoot td.num{text-align:right}
       <div class="cg-top">
         <div class="cg-title">프로그램 오류 기록</div><div class="cg-sub" id="erSub">불러오는 중…</div>
         <select class="cg-search er-sel" id="erProduct" onchange="renderErrors()" aria-label="제품 고르기">
-          <option value="">전체 제품</option><option value="K">킥마스터</option><option value="J">점프마스터</option><option value="S">스트라이크마스터</option><option value="P">품새마스터</option>
+          <option value="">전체 제품</option><option value="K">킥마스터</option><option value="J">점프마스터</option><option value="P">품새마스터</option>
         </select>
         <input class="cg-search" id="erSearch" aria-label="오류 검색" placeholder="도장·오류 내용 검색" oninput="renderErrors()">
         <div class="cg-spacer"></div>
@@ -1186,17 +1185,18 @@ const PRODUCTS = {
   kick:   { key:'kick',   prefix:'AKM-', gen:'AKM', name:'AI KICK MASTER',
             short:'킥마스터',        price:369000, url:KICK_LOGIN_URL },
   jump:   { key:'jump',   prefix:'JMP-', gen:'JMP', name:'AI JUMP MASTER',
-            short:'점프마스터',      price:339000, url:JUMP_LOGIN_URL },
+            short:'점프마스터',      price:299000, url:JUMP_LOGIN_URL },
   strike: { key:'strike', prefix:'STR-', gen:'STR', name:'AI STRIKE MASTER',
             short:'스트라이크마스터', price:369000, url:STRIKE_LOGIN_URL },
   poomsae:{ key:'poomsae', prefix:'PMS-', gen:'PMS', name:'AI POOMSAE MASTER',
             short:'품새마스터', price:null, url:POOMSAE_LOGIN_URL }
 };
-const PRODUCT_ORDER = ['kick','jump','strike','poomsae'];
+
+const PRODUCT_ORDER = ['kick','jump','poomsae'];
 
 function productOfKey(licenseKey){
   const k = String(licenseKey||'');
-  for (const id of PRODUCT_ORDER) if (k.startsWith(PRODUCTS[id].prefix)) return PRODUCTS[id];
+  for (const id of Object.keys(PRODUCTS)) if (k.startsWith(PRODUCTS[id].prefix)) return PRODUCTS[id];
   return PRODUCTS.kick;
 }
 function curProduct(){ return PRODUCTS[currentLicenseProduct] || PRODUCTS.kick; }
@@ -2990,7 +2990,7 @@ function derivedCust(c, f) {
   if (f === 'created_at') return customerRegisteredAt(c);
   const ls = licensesOfCustomer(c);
   if (f === '_products') {
-    return PRODUCT_ORDER.flatMap(id => ls.filter(l => productOfKey(l.license_key).key === id))
+    return Object.keys(PRODUCTS).flatMap(id => ls.filter(l => productOfKey(l.license_key).key === id))
       .map(l => `${productOfKey(l.license_key).short.replace('마스터','')} ${memberTypeLabel(l.license_type)}`).join(' · ');
   }
   if (f === '_expire') {
@@ -3177,7 +3177,7 @@ function custCell(c, col) {
   if (f === '_products') {
     const ls = licensesOfCustomer(c);
     if (!ls.length) return `<div class="cg-ro none">—</div>`;
-    return `<div class="cg-prods">` + PRODUCT_ORDER.flatMap(id => ls.filter(l => productOfKey(l.license_key).key === id)).map(l => {
+    return `<div class="cg-prods">` + Object.keys(PRODUCTS).flatMap(id => ls.filter(l => productOfKey(l.license_key).key === id)).map(l => {
       const id = productOfKey(l.license_key).key, st = licenseState(l);
       return `<span class="cg-prod st-${st}" title="${escapeHtml(l.license_key)} · ${escapeHtml(licenseStateText(l, st))}"><i class="pb p-${id}${l.license_type==='trial'?' trial':''}">${PRODUCT_TAG[id]||'?'}</i>${escapeHtml(memberTypeLabel(l.license_type))}</span>`;
     }).join('') + `</div>`;
@@ -3423,7 +3423,7 @@ function licSaleCell(l, col){
   return `<input type="text" value="${escapeHtml(v||'')}" ${at}>`;
 }
 function custLicensesHtml(c){
-  const ls = PRODUCT_ORDER.flatMap(id => licensesOfCustomer(c).filter(l => productOfKey(l.license_key).key === id)
+  const ls = Object.keys(PRODUCTS).flatMap(id => licensesOfCustomer(c).filter(l => productOfKey(l.license_key).key === id)
     .sort((a,b) => String(a.created_at||'').localeCompare(String(b.created_at||''))));
   const have = new Set(ls.map(l => productOfKey(l.license_key).key));
   const head = `<div class="cg-note-head"><b>${escapeHtml(c.dojang_name||'')}</b> 라이선스 <span>${ls.length}개</span>`
@@ -4963,7 +4963,7 @@ async function loadDeviceEvents(detail,seq,cursor) {
 
 <style id="admin-responsive-controls-20261102">
 .license-controls{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:20px}
-.license-products{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;flex:1 1 650px;min-width:0}
+.license-products{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;flex:1 1 650px;min-width:0}
 .license-products .home-subtab-btn{width:100%;min-width:0;height:auto;min-height:44px;padding:10px 8px!important;line-height:1.35;word-break:keep-all}
 .license-actions{display:flex;gap:8px;align-items:center;margin-left:auto}
 .license-actions .btn-add{min-height:44px;height:auto;padding:10px 16px}

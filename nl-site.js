@@ -212,13 +212,13 @@
       };
     }
     else if(kind==='morph'){
-      var seq=[[P.kick,'#FF4D5E','kick'],[P.air,'#5EEAD4','jump'],[P.cross,'#D8A8FF','strike']];
+      var seq=[[P.kick,'#FF4D5E','kick'],[P.air,'#5EEAD4','jump'],[P.cross,'#F5B829','poomsae']];
       var doors=document.querySelectorAll('[data-door]');
       var idx=0, tt=0, from=P.guard, to=seq[0][0], c=seq[0][1], hold=false, paused=false;
       function mark(k){ [].forEach.call(doors,function(d){ d.classList.toggle('lit',d.dataset.door===k); }); }
       mark('kick');
       [].forEach.call(doors,function(d){
-        d.addEventListener('mouseenter',function(){ var j=['kick','jump','strike'].indexOf(d.dataset.door); if(j<0) return; paused=true; from=lerpPose(from,to,1); idx=j; to=seq[j][0]; c=seq[j][1]; tt=0; mark(seq[j][2]); });
+        d.addEventListener('mouseenter',function(){ var j=['kick','jump','poomsae'].indexOf(d.dataset.door); if(j<0) return; paused=true; from=lerpPose(from,to,1); idx=j; to=seq[j][0]; c=seq[j][1]; tt=0; mark(seq[j][2]); });
         d.addEventListener('mouseleave',function(){ paused=false; });
       });
       var cur=P.guard;
