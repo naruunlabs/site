@@ -2879,7 +2879,6 @@ body.hud-v21.akm-ui .cam-wrap::after{
 
 button{transition:transform .14s ease, filter .14s ease, background .14s ease}button:hover{filter:brightness(1.06)}.mode-btn,.game-btn,.drill-btn,.start-btn,#startBtn,.btns button{border-radius:14px!important}.panel{box-shadow:inset 1px 0 0 rgba(255,255,255,.04)}#modeBadge,#timerBadge,#status,.stat-box{backdrop-filter:blur(12px)}
 
-#drillModePanel{display:flex;}
 #difficultyPanel{display:none;}
 #sparringTypePanel{display:none;}
 #drillResult{pointer-events:auto !important; overflow:auto; padding:24px;}
@@ -3343,11 +3342,6 @@ body.akm-group-open.akm-group-running .stage>.panel>.mode-row *{visibility:hidde
     </div>
 
     <div id="leftSettings">
-    <div id="drillModePanel" class="difficulty-panel drill-mode-panel" aria-label="발차기 훈련 방식 선택">
-      <button type="button" class="diff-btn drill-mode-btn active" data-drill-run-mode="manual" onclick="setDrillRunMode('manual')">수동모드</button>
-      <button type="button" class="diff-btn drill-mode-btn" data-drill-run-mode="auto" onclick="setDrillRunMode('auto')">자동모드</button>
-    </div>
-
     <div id="kickLevelPanel" class="difficulty-panel kick-level-panel" aria-label="발차기 판정 난이도 선택">
       <button type="button" class="diff-btn kick-level-btn active" data-kick-level="easy" onclick="setKickLevel('easy')">쉬움</button>
       <button type="button" class="diff-btn kick-level-btn" data-kick-level="hard" onclick="setKickLevel('hard')">어려움</button>
@@ -4047,40 +4041,11 @@ function initDifficulty(){
   document.querySelectorAll('#difficultyPanel .diff-btn').forEach(btn=>btn.classList.toggle('active',btn.dataset.diff===saved));
 }
 
-window.setDrillRunMode=(mode)=>{
-  if(mode!=='manual' && mode!=='auto') return;
-
-  if(running) stopGame();
-  drillRunMode=mode;
-  try{ localStorage.setItem('akm_drill_run_mode',mode); }catch(e){}
-  document.querySelectorAll('.drill-mode-btn').forEach(btn=>{
-    btn.classList.toggle('active',btn.dataset.drillRunMode===mode);
-  });
-  document.body.classList.toggle('auto-drill-selected',mode==='auto');
-  if(mode==='auto'){
-    autoDrillIndex=0;
-    autoDrillResults={};
-
-    if(isDrillMode()) currentMode=AUTO_DRILL_SEQUENCE[0];
-    updateSelectedKickButtons();
-    statusEl.style.opacity='1';
-    statusEl.textContent='자동모드: 고른 '+AUTO_DRILL_SEQUENCE.length+'가지를 순서대로 연결합니다.';
-  }else{
-    statusEl.style.opacity='1';
-    statusEl.textContent='수동모드: 원하는 발차기를 선택해 연습하세요.';
-  }
-  updateModeBadge();
-  renderStats();
-};
 function initDrillRunMode(){
-  let saved='manual';
-  try{ saved=localStorage.getItem('akm_drill_run_mode') || 'manual'; }catch(e){}
-  if(saved!=='manual' && saved!=='auto') saved='manual';
-  drillRunMode=saved;
-  document.querySelectorAll('.drill-mode-btn').forEach(btn=>{
-    btn.classList.toggle('active',btn.dataset.drillRunMode===saved);
-  });
-  document.body.classList.toggle('auto-drill-selected',saved==='auto');
+
+  document.body.classList.add('auto-drill-selected');
+  autoDrillIndex=0;
+  if(isDrillMode()) currentMode=AUTO_DRILL_SEQUENCE[0];
 }
 function updateSelectedKickButtons(){
 
@@ -4110,7 +4075,7 @@ function beginAutoDrillStage(index, announce=true){
     statusEl.style.opacity='1';
     statusEl.textContent='다음 동작: '+MODE_CFG[currentMode].label+' · '+autoDrillStageLabel();
     setTimeout(()=>{
-      if(running && drillRunMode==='auto'){
+      if(running){
         statusEl.textContent='';
         statusEl.style.opacity='0';
       }
@@ -4122,7 +4087,7 @@ window.returnToTrainingSelection=()=>{
   drillResultSub.classList.remove('auto-result-summary');
   autoDrillIndex=0; autoDrillResults={}; autoDrillTransitioning=false;
 
-  if(isDrillMode() && drillRunMode==='auto'){
+  if(isDrillMode()){
     currentMode=AUTO_DRILL_SEQUENCE[0];
   }
   updateSelectedKickButtons();
@@ -4138,9 +4103,7 @@ window.returnToTrainingSelection=()=>{
       ?'시작 버튼을 눌러 랜덤 미션을 다시 시작하세요'
       :'시작 버튼을 눌러 겨루기를 다시 시작하세요';
   } else {
-    statusEl.textContent=drillRunMode==='auto'
-      ?'시작 버튼을 눌러 자동 발차기 훈련을 시작하세요'
-      :'시작 버튼을 눌러 '+MODE_CFG[currentMode].label+' 연습을 시작하세요';
+    statusEl.textContent='시작 버튼을 눌러 발차기 훈련을 시작하세요';
   }
 };
 window.restartDrillFromResult=window.returnToTrainingSelection;
@@ -4232,7 +4195,6 @@ function shoulderRatioNow(m){
 
 let drillTarget=parseInt(drillCountSel.value)||8, drillDone=0, drillScores=[], drillResultTimer=null;   
 drillCountSel.addEventListener('change',()=>{ if(running) return; drillTarget=parseInt(drillCountSel.value)||8; renderStats(); });
-let drillRunMode='manual';
 
 let AUTO_DRILL_SEQUENCE=autoDrillModes();
 let autoDrillIndex=0;
@@ -5078,7 +5040,7 @@ function modeTitleText(){
     }
     return ['겨루기 실전모드','키에 맞춰 나오는 머리/몸통 타겟 공격'];
   }
-  const autoPrefix=(drillRunMode==='auto' ? '자동 '+autoDrillStageLabel()+' · ' : '');
+  const autoPrefix=autoDrillStageLabel()+' · ';
 
   const cfgX=MODE_CFG[currentMode];
   if(cfgX && cfgX.foot==='alt'){
@@ -6394,13 +6356,12 @@ function onDrillKick(peak, traj){
 
   if(drillDone>=drillTarget){
     if(twoPlayerMode){  }
-    else if(drillRunMode==='auto') scheduleDrillFinish(finishAutoDrillStage,700);
-    else scheduleDrillFinish(finishDrill,700);
+    else scheduleDrillFinish(finishAutoDrillStage,700);
   }
 }
 
 function finishAutoDrillStage(){
-  if(!running || drillRunMode!=='auto' || autoDrillTransitioning) return;
+  if(!running || autoDrillTransitioning) return;
   autoDrillTransitioning=true;
   const finishedMode=currentMode;
   const scores=drillScores.slice();
@@ -6441,7 +6402,7 @@ function finishAutoDrill(){
   const allScores=AUTO_DRILL_SEQUENCE.flatMap(mode=>(autoDrillResults[mode]?.scores||[]));
   const totalAvg=avgOf(allScores)||0;
   drillResultIcon.textContent='훈련 완료';
-  drillResultText.textContent='자동 발차기 훈련 완료';
+  drillResultText.textContent='발차기 훈련 완료';
   drillResultText.style.color='#fff';
   drillResultSub.className='auto-result-summary';
 
@@ -6452,7 +6413,7 @@ function finishAutoDrill(){
   confetti(totalAvg>=90);
   sndRecord();
   setStartBtn(false,'다시 시작');
-  setGrResult('자동훈련 완료 · 평균 '+totalAvg+'점');
+  setGrResult('발차기 훈련 완료 · 평균 '+totalAvg+'점');
 
   clearHudScores();
 }
@@ -6861,7 +6822,7 @@ window.startGame=()=>{
   }
   ensureAudio();
   resetCounters(); setGrResult('');
-  if(isDrillMode() && drillRunMode==='auto'){
+  if(isDrillMode()){
     autoDrillIndex=0;
     currentMode=AUTO_DRILL_SEQUENCE[0];
     updateSelectedKickButtons();
@@ -6908,18 +6869,14 @@ window.startGame=()=>{
         resetSlot2p(slot2p.c); resetSlot2p(slot2p.h);
         auto2pTransitioning=false;
         auto2pStageStartT=performance.now();
-        if(drillRunMode==='auto'){
-          autoDrillIndex=0;
-          currentMode=AUTO_DRILL_SEQUENCE[0];
-          updateSelectedKickButtons(); updateModeBadge();
-        }
+        autoDrillIndex=0;
+        currentMode=AUTO_DRILL_SEQUENCE[0];
+        updateSelectedKickButtons(); updateModeBadge();
         document.getElementById('p2cSuffix').textContent='/'+drillTarget;
         document.getElementById('p2hSuffix').textContent='/'+drillTarget;
         render2pScore('c'); render2pScore('h');
-        render2pStatus(drillRunMode==='auto'
-          ?'자동훈련 1 / '+AUTO_DRILL_SEQUENCE.length+' · '+MODE_CFG[currentMode].label
-          :'경기 진행 중');
-      }else if(drillRunMode==='auto'){
+        render2pStatus('발차기 훈련 1 / '+AUTO_DRILL_SEQUENCE.length+' · '+MODE_CFG[currentMode].label);
+      }else{
         autoDrillIndex=0;
         autoDrillResults={};
         autoDrillTransitioning=false;
@@ -7489,9 +7446,9 @@ window.goDrillHome=()=>setMode(activeKickModes()[0]);
 
 window.setMode=(mode)=>{
   
-  if(drillRunMode==='auto' && isDrillMode() && MODE_CFG[mode]?.isDrill && mode!==currentMode){
+  if(isDrillMode() && MODE_CFG[mode]?.isDrill && mode!==currentMode){
     statusEl.style.opacity='1';
-    statusEl.textContent='자동모드에서는 발차기가 순서대로 전환됩니다.';
+    statusEl.textContent='발차기는 설정에서 고른 순서대로 이어집니다.';
     return;
   }
   try{
@@ -7504,12 +7461,10 @@ window.setMode=(mode)=>{
   ensureAudio(); stopGame(); currentMode=mode; altFootReset(); updateModeBadge(); updateKickButtonVisibility();
   
   if(typeof twoPlayerMode!=='undefined' && twoPlayerMode) reset2pAll();
-  const drillPanel=document.getElementById('drillModePanel');
   const diffPanel=document.getElementById('difficultyPanel');
   const sparPanel=document.getElementById('sparringTypePanel');
   const drillSelected=MODE_CFG[mode]?.isDrill===true;
   
-  if(drillPanel) drillPanel.style.setProperty('display',drillSelected?'flex':'none','important');
   const levelPanel=document.getElementById('kickLevelPanel');
   if(levelPanel) levelPanel.style.setProperty('display',drillSelected?'flex':'none','important');
   if(diffPanel) diffPanel.style.setProperty('display',(mode==='balloon')?'flex':'none','important');
@@ -7573,7 +7528,7 @@ function drillPickSentence(){
 function applyDrillPickChange(){
   saveDrillPick();
   syncAutoDrillSequence();
-  if(!running && isDrillMode() && drillRunMode==='auto'){
+  if(!running && isDrillMode()){
     autoDrillIndex=0;
     currentMode=AUTO_DRILL_SEQUENCE[0];
     altFootReset();
@@ -8438,7 +8393,7 @@ function showP2AutoFinal(rows,cAvg,hAvg,winnerKey,reason){
 
   const title = twoPlayerShowResult
     ? (winnerKey==null ? '종합 무승부' : (winnerKey==='c' ? '청 종합 우승' : '홍 종합 우승'))
-    : '자동훈련 완료';
+    : '발차기 훈련 완료';
   render2pStatus(title);
   setP2ResultContent('AUTO TRAINING · 종합 결과',title,'종합 평균',cAvg+'점','종합 평균',hAvg+'점',winnerKey,reason);
 
@@ -8515,64 +8470,58 @@ function check2pFinish(){
   if(c.drillDone>=drillTarget && !c.finished){ c.finished=true; c.stageFinished=true; c.stageFinishMs=Math.max(0,performance.now()-auto2pStageStartT); showP2Notice('청 완료 · 홍 대기'); }
   if(h.drillDone>=drillTarget && !h.finished){ h.finished=true; h.stageFinished=true; h.stageFinishMs=Math.max(0,performance.now()-auto2pStageStartT); showP2Notice('홍 완료 · 청 대기'); }
   if(c.finished && h.finished){
-    if(drillRunMode==='auto'){
-      if(auto2pTransitioning) return;
-      auto2pTransitioning=true;
-      [c,h].forEach(slot=>{
-        slot.autoResults[currentMode]={
-          scores:slot.drillScores.slice(), avg:avgOf(slot.drillScores)||0,
-          best:slot.drillScores.length?Math.max(...slot.drillScores):0,
-          finishMs:slot.stageFinishMs
-        };
-      });
-      const finishedLabel=MODE_CFG[currentMode].label;
-      const cStageAvg=c.autoResults[currentMode].avg;
-      const hStageAvg=h.autoResults[currentMode].avg;
-      const stageWinner=cStageAvg===hStageAvg?null:(cStageAvg>hStageAvg?'c':'h');
-      if(autoDrillIndex<AUTO_DRILL_SEQUENCE.length-1){
-        const nextIndex=autoDrillIndex+1;
-        render2pStatus(finishedLabel+' 완료 · 다음 종목 준비');
-        showP2StageResult(finishedLabel,cStageAvg,hStageAvg,stageWinner,()=>{
-          autoDrillIndex=nextIndex;
-          currentMode=AUTO_DRILL_SEQUENCE[nextIndex];
-          resetSlot2pStage(c); resetSlot2pStage(h);
-          auto2pStageStartT=performance.now();
-          updateSelectedKickButtons(); updateModeBadge();
-          render2pScore('c'); render2pScore('h');
-          render2pStatus('자동훈련 '+(nextIndex+1)+' / '+AUTO_DRILL_SEQUENCE.length+' · '+MODE_CFG[currentMode].label);
-          showP2Notice('다음 종목 · '+MODE_CFG[currentMode].label);
-          auto2pTransitioning=false;
-        });
-        return;
-      }
-      const summary=slot=>{
-        const all=AUTO_DRILL_SEQUENCE.flatMap(mode=>slot.autoResults[mode]?.scores||[]);
-        const time=AUTO_DRILL_SEQUENCE.reduce((sum,mode)=>sum+(slot.autoResults[mode]?.finishMs||0),0);
-        return {avg:avgOf(all)||0,time};
+    if(auto2pTransitioning) return;
+    auto2pTransitioning=true;
+    [c,h].forEach(slot=>{
+      slot.autoResults[currentMode]={
+        scores:slot.drillScores.slice(), avg:avgOf(slot.drillScores)||0,
+        best:slot.drillScores.length?Math.max(...slot.drillScores):0,
+        finishMs:slot.stageFinishMs
       };
-      const cs=summary(c), hs=summary(h);
-      let winner=cs.avg===hs.avg?(cs.time===hs.time?null:(cs.time<hs.time?'c':'h')):(cs.avg>hs.avg?'c':'h');
-
-      const reason=(cs.avg===hs.avg&&winner)?'평균 동점 · 완주시간이 빨랐습니다':'';
-      render2pStatus(finishedLabel+' 완료 · 최종 결과 집계');
-
-      const rows=AUTO_DRILL_SEQUENCE.map(mode=>({
-        label:(MODE_CFG[mode]?.label)||mode,   
-        c:(c.autoResults[mode]?.avg)||0,
-        h:(h.autoResults[mode]?.avg)||0
-      }));
+    });
+    const finishedLabel=MODE_CFG[currentMode].label;
+    const cStageAvg=c.autoResults[currentMode].avg;
+    const hStageAvg=h.autoResults[currentMode].avg;
+    const stageWinner=cStageAvg===hStageAvg?null:(cStageAvg>hStageAvg?'c':'h');
+    if(autoDrillIndex<AUTO_DRILL_SEQUENCE.length-1){
+      const nextIndex=autoDrillIndex+1;
+      render2pStatus(finishedLabel+' 완료 · 다음 종목 준비');
       showP2StageResult(finishedLabel,cStageAvg,hStageAvg,stageWinner,()=>{
-
-        setTimeout(()=>{
-          showP2AutoFinal(rows,cs.avg,hs.avg,winner,reason);
-          auto2pTransitioning=false;
-        },AUTO_FINAL.GAP_MS);
-      },true);
+        autoDrillIndex=nextIndex;
+        currentMode=AUTO_DRILL_SEQUENCE[nextIndex];
+        resetSlot2pStage(c); resetSlot2pStage(h);
+        auto2pStageStartT=performance.now();
+        updateSelectedKickButtons(); updateModeBadge();
+        render2pScore('c'); render2pScore('h');
+        render2pStatus('발차기 훈련 '+(nextIndex+1)+' / '+AUTO_DRILL_SEQUENCE.length+' · '+MODE_CFG[currentMode].label);
+        showP2Notice('다음 종목 · '+MODE_CFG[currentMode].label);
+        auto2pTransitioning=false;
+      });
       return;
     }
-    const cAvg=avgOf(c.drillScores)||0, hAvg=avgOf(h.drillScores)||0;
-    const winner = cAvg===hAvg ? null : (cAvg>hAvg?'c':'h');
-    showP2Result('평균',cAvg+'점','평균',hAvg+'점',winner,'발차기 정확도 평균');
+    const summary=slot=>{
+      const all=AUTO_DRILL_SEQUENCE.flatMap(mode=>slot.autoResults[mode]?.scores||[]);
+      const time=AUTO_DRILL_SEQUENCE.reduce((sum,mode)=>sum+(slot.autoResults[mode]?.finishMs||0),0);
+      return {avg:avgOf(all)||0,time};
+    };
+    const cs=summary(c), hs=summary(h);
+    let winner=cs.avg===hs.avg?(cs.time===hs.time?null:(cs.time<hs.time?'c':'h')):(cs.avg>hs.avg?'c':'h');
+
+    const reason=(cs.avg===hs.avg&&winner)?'평균 동점 · 완주시간이 빨랐습니다':'';
+    render2pStatus(finishedLabel+' 완료 · 최종 결과 집계');
+
+    const rows=AUTO_DRILL_SEQUENCE.map(mode=>({
+      label:(MODE_CFG[mode]?.label)||mode,   
+      c:(c.autoResults[mode]?.avg)||0,
+      h:(h.autoResults[mode]?.avg)||0
+    }));
+    showP2StageResult(finishedLabel,cStageAvg,hStageAvg,stageWinner,()=>{
+
+      setTimeout(()=>{
+        showP2AutoFinal(rows,cs.avg,hs.avg,winner,reason);
+        auto2pTransitioning=false;
+      },AUTO_FINAL.GAP_MS);
+    },true);
   }
 }
 
@@ -9152,8 +9101,8 @@ function run2pFrame(result){
     const cOn=document.getElementById('p2cPresence')?.classList.contains('on');
     const hOn=document.getElementById('p2hPresence')?.classList.contains('on');
     if(!auto2pTransitioning){
-      const base=(drillRunMode==='auto'&&isDrillMode())
-        ?'자동훈련 '+(autoDrillIndex+1)+' / '+AUTO_DRILL_SEQUENCE.length+' · '+MODE_CFG[currentMode].label
+      const base=isDrillMode()
+        ?'발차기 훈련 '+(autoDrillIndex+1)+' / '+AUTO_DRILL_SEQUENCE.length+' · '+MODE_CFG[currentMode].label
         :'경기 진행 중';
       render2pStatus(crop2pTooClose ? '두 선수가 너무 가까워요 — 조금 떨어져 주세요'
                      : (cOn&&hOn) ? p2RunningStatusText(base) : '두 선수 인식 대기');
@@ -9837,7 +9786,6 @@ initSparringMode();
 })();
 document.getElementById('sparringTypePanel')?.style.setProperty('display','none','important');
 document.getElementById('difficultyPanel')?.style.setProperty('display','none','important');
-document.getElementById('drillModePanel')?.style.setProperty('display','flex','important');
 document.getElementById('kickLevelPanel')?.style.setProperty('display','flex','important');
 updateModeBadge();
 updateKickButtonVisibility();
@@ -10465,7 +10413,7 @@ const _AKM_CACHE_DAYS  = 7;
 const _AKM_TRIAL_CACHE_DAYS = 1;   
 const _AKM_FETCH_TIMEOUT_MS = 8 * 1000;   
 
-const _AKM_VERSION     = '3.5.6';   
+const _AKM_VERSION     = '3.5.7';   
 try{ window.__NL_VER = _AKM_VERSION; }catch(e){}   
 
 let _akmFailCount = 0;
@@ -11571,8 +11519,6 @@ html body.akm-lite-fx .enemy-target .chromeFighterImg{
 </style>
 <style id="akm-clean-v1">
 
-html body.hud-v21.akm-ui #drillModePanel::before{content:"방식" !important}
-
 html body.hud-v21.akm-ui:not(.playing-ui) #valB,
 html body.hud-v21.akm-ui:not(.playing-ui) #valC{opacity:.16 !important;text-shadow:none !important;filter:none !important}
 
@@ -11630,7 +11576,6 @@ html body.hud-v21.akm-ui #leftSettings .difficulty-panel::before{
   font-size:13px !important; line-height:1.2 !important; font-weight:800 !important; letter-spacing:0 !important;
   color:rgba(255,255,255,.72) !important; text-shadow:0 1px 3px rgba(0,0,0,.8) !important;
 }
-html body.hud-v21.akm-ui #leftSettings #drillModePanel::before{content:"방식" !important}
 html body.hud-v21.akm-ui #leftSettings #kickLevelPanel::before{content:"난이도" !important}
 html body.hud-v21.akm-ui #leftSettings #difficultyPanel::before{content:"난이도" !important}
 html body.hud-v21.akm-ui #leftSettings #sparringTypePanel::before{content:"겨루기 방식" !important}
@@ -11653,6 +11598,14 @@ html body.hud-v21.akm-ui #leftSettings.ls-side .diff-btn{height:32px !important;
 html body.hud-v21.akm-ui #leftSettings.ls-side .difficulty-panel{gap:3px !important}
 html body.hud-v21.akm-ui #leftSettings.ls-side .difficulty-panel::before{font-size:11px !important}
 html.akm-portrait body.hud-v21.akm-ui #leftSettings{width:200px}
+
+#p2RotateHint{display:none;position:fixed;left:50%;top:max(54%,552px);transform:translateX(-50%);z-index:99970;pointer-events:none;
+  width:min(88vw,620px);text-align:center;color:#fff;text-shadow:0 2px 6px rgba(0,0,0,.95),0 0 18px rgba(0,0,0,.75)}
+#p2RotateHint .t{display:block;font-size:12px;font-weight:800;letter-spacing:.32em;color:#ffb36b}
+#p2RotateHint b{display:block;margin:6px 0 8px;font-size:clamp(26px,5.2vw,42px);font-weight:1000;line-height:1.2;color:#ff8a3d}
+#p2RotateHint small{display:block;font-size:clamp(14px,2.5vw,20px);font-weight:700;line-height:1.45}
+html.akm-portrait body.two-player-mode:not(.playing-ui):not(.ready-ui):not(.akm-group-open) #p2RotateHint{display:block}
+html.akm-portrait body.two-player-mode:not(.playing-ui):not(.ready-ui):not(.akm-group-open) #handNextPrompt{top:max(66%,672px) !important}
 </style>
 <script id="akm-left-settings">
 
@@ -12298,5 +12251,6 @@ html.akm-portrait body.hud-v21.akm-ui #leftSettings{width:200px}
   document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible') refresh(); });
 })();
 </script>
+<div id="p2RotateHint" role="status"><span class="t">ROTATE</span><b>2인은 화면을 가로로 돌려 주세요</b><small>세로로는 두 사람이 작게 잡혀 인식이 약해집니다<br>화면이 안 돌아가면 기기의 자동 회전을 켜 주세요</small></div>
 </body>
 </html>

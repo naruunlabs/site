@@ -17,7 +17,7 @@
 //    그러면 예전 캐시가 통째로 비워집니다.
 // =========================================================
 
-const CACHE_NAME = 'naruunlabs-2026-11-05-academyweb-demos';
+const CACHE_NAME = 'naruunlabs-2026-11-09-kick357-auto-rotate';
 
 const APP_SHELL = [
   './',
