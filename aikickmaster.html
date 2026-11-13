@@ -3363,6 +3363,11 @@ body.akm-group-open.akm-group-running .stage>.panel>.mode-row *{visibility:hidde
       <button type="button" class="diff-btn kick-level-btn active" data-kick-level="easy" onclick="setKickLevel('easy')">쉬움</button>
       <button type="button" class="diff-btn kick-level-btn" data-kick-level="hard" onclick="setKickLevel('hard')">어려움</button>
     </div>
+    
+    <div id="huPracticePanel" class="difficulty-panel hu-practice-panel" aria-label="뒤후려차기 연습">
+      <button type="button" class="diff-btn hu-practice-btn active" data-hu-practice="off" onclick="setHuPractice(false)">끄기</button>
+      <button type="button" class="diff-btn hu-practice-btn" data-hu-practice="on" onclick="setHuPractice(true)">켜기</button>
+    </div>
 
     <div id="difficultyPanel" class="difficulty-panel" aria-label="격파 난이도 선택">
       <button type="button" class="diff-btn" data-diff="easy" onclick="setDifficulty('easy')">쉬움</button>
@@ -3889,7 +3894,13 @@ function cleanDrillSeq(arr){
 (function loadDrillSeq(){
   try{
     const raw=localStorage.getItem(DRILL_SEQ_LS_KEY);
-    if(raw){ const s=cleanDrillSeq(JSON.parse(raw).seq); if(s.length) drillSeq=s; }
+    if(raw){
+      let s=cleanDrillSeq(JSON.parse(raw).seq);
+      
+      const plain=s.filter(m=>!m.startsWith('hu_'));
+      if(plain.length && plain.length<s.length) s=plain;
+      if(s.length) drillSeq=s;
+    }
   }catch(e){}
   if(!drillSeq.length) drillSeq=['apcha_r','apcha_l','dollo_r','dollo_l'];
 })();
@@ -7519,6 +7530,8 @@ window.setMode=(mode)=>{
   if(levelPanel) levelPanel.style.setProperty('display',drillSelected?'flex':'none','important');
   const pickPanel=document.getElementById('drillPickPanel');
   if(pickPanel) pickPanel.style.display=drillSelected?'':'none';
+  const huPanel=document.getElementById('huPracticePanel');
+  if(huPanel) huPanel.style.setProperty('display',drillSelected?'flex':'none','important');
   if(diffPanel) diffPanel.style.setProperty('display',(mode==='balloon')?'flex':'none','important');
   if(sparPanel) sparPanel.style.setProperty('display',(mode==='sparring')?'flex':'none','important');
   const all=activeKickModes().concat(['balloon','sparring']);
@@ -7547,6 +7560,7 @@ function syncAutoDrillSequence(){
 
   const cnt=document.getElementById('drillPickSum');
   if(cnt) cnt.textContent=drillPickSentence();
+  syncHuPanel();
 
   EVERY_KICK_MODE.forEach(m=>{
     const btn=document.getElementById('m_'+m);
@@ -7573,6 +7587,29 @@ function drillPickSentence(){
   const s=activeKickModes();
   if(s.length<=4) return s.map(drillShort).join(' → ');
   return s.slice(0,3).map(drillShort).join(' → ')+' … '+s.length+'개';
+}
+
+const HU_PREV_LS_KEY='akm_hu_prev_v1';
+function isHuPracticeOn(){ return drillSeq.length>0 && drillSeq.every(m=>m.startsWith('hu_')); }
+function huPrevSeq(){
+  try{ const s=cleanDrillSeq(JSON.parse(localStorage.getItem(HU_PREV_LS_KEY)||'{}').seq).filter(m=>!m.startsWith('hu_')); if(s.length) return s; }catch(e){}
+  return ['apcha_r','apcha_l','dollo_r','dollo_l'];
+}
+window.setHuPractice=function(on){
+  if(running) return;
+  if(on===isHuPracticeOn()) return;
+  if(on){
+    try{ localStorage.setItem(HU_PREV_LS_KEY, JSON.stringify({seq:drillSeq})); }catch(e){}
+    const f=drillDraftFromSeq(drillSeq).foot;
+    drillSeq = f==='x'?['hu_x'] : f==='r'?['hu_r'] : f==='l'?['hu_l'] : ['hu_r','hu_l'];
+  }else{
+    drillSeq=huPrevSeq();
+  }
+  altFootReset(); applyDrillPickChange();
+};
+function syncHuPanel(){
+  const on=isHuPracticeOn();
+  document.querySelectorAll('#huPracticePanel .hu-practice-btn').forEach(b=>b.classList.toggle('active',(b.dataset.huPractice==='on')===on));
 }
 
 function applyDrillPickChange(){
@@ -7616,9 +7653,9 @@ function renderDrillPick(){
   const d=drillDraft||{kinds:[],foot:'rl'};
   const kinds=document.getElementById('dpKinds'), feet=document.getElementById('dpFeet'), prev=document.getElementById('dpPreview');
   if(!kinds||!feet||!prev) return;
-  kinds.innerHTML=KICK_KINDS.map(k=>{
+  kinds.innerHTML=KICK_KINDS.filter(k=>k!=='hu').map(k=>{
     const i=d.kinds.indexOf(k);
-    return '<button type="button" class="dp-kind-btn'+(i>=0?' on':'')+'" data-dp-kind="'+k+'">'+(i>=0?'<b>'+(i+1)+'</b>':'')+DRILL_KIND_NAME[k]+(k==='hu'?'<small>연습용 · 점수 없음</small>':'')+'</button>';
+    return '<button type="button" class="dp-kind-btn'+(i>=0?' on':'')+'" data-dp-kind="'+k+'">'+(i>=0?'<b>'+(i+1)+'</b>':'')+DRILL_KIND_NAME[k]+'</button>';
   }).join('');
   feet.innerHTML=DRILL_FEET.map(([v,lab,sub])=>'<button type="button" class="dp-foot-btn'+(d.foot===v?' on':'')+'" data-dp-foot="'+v+'">'+lab+(sub?'<small>'+sub+'</small>':'')+'</button>').join('');
   const seq=drillSeqFromDraft(d);
@@ -7629,7 +7666,9 @@ function renderDrillPick(){
 }
 window.openDrillPick=function(){
   if(running) return;
-  drillDraft=drillDraftFromSeq(activeKickModes());
+  
+  drillDraft=drillDraftFromSeq(isHuPracticeOn()?huPrevSeq():activeKickModes());
+  drillDraft.kinds=drillDraft.kinds.filter(k=>k!=='hu');
   renderDrillPick();
   const m=document.getElementById('drillPickModal'); if(m) m.hidden=false;
 };
@@ -10516,7 +10555,7 @@ const _AKM_CACHE_DAYS  = 7;
 const _AKM_TRIAL_CACHE_DAYS = 1;   
 const _AKM_FETCH_TIMEOUT_MS = 8 * 1000;   
 
-const _AKM_VERSION     = '3.5.9';   
+const _AKM_VERSION     = '3.5.10';   
 try{ window.__NL_VER = _AKM_VERSION; }catch(e){}   
 
 let _akmFailCount = 0;
@@ -11680,6 +11719,7 @@ html body.hud-v21.akm-ui #leftSettings .difficulty-panel::before{
   color:rgba(255,255,255,.72) !important; text-shadow:0 1px 3px rgba(0,0,0,.8) !important;
 }
 html body.hud-v21.akm-ui #leftSettings #kickLevelPanel::before{content:"난이도" !important}
+html body.hud-v21.akm-ui #leftSettings #huPracticePanel::before{content:"뒤후려차기 연습 · 점수 없음" !important}
 html body.hud-v21.akm-ui #leftSettings #difficultyPanel::before{content:"난이도" !important}
 html body.hud-v21.akm-ui #leftSettings #sparringTypePanel::before{content:"겨루기 방식" !important}
 html body.hud-v21.akm-ui #leftSettings .diff-btn{
@@ -11702,13 +11742,13 @@ html body.hud-v21.akm-ui #leftSettings.ls-side .difficulty-panel{gap:3px !import
 html body.hud-v21.akm-ui #leftSettings.ls-side .difficulty-panel::before{font-size:11px !important}
 html.akm-portrait body.hud-v21.akm-ui #leftSettings{width:200px}
 
-#p2RotateHint{display:none;position:fixed;left:50%;top:max(54%,552px);transform:translateX(-50%);z-index:99970;pointer-events:none;
+#p2RotateHint{display:none;position:fixed;left:50%;top:max(61%,612px);transform:translateX(-50%);z-index:99970;pointer-events:none;
   width:min(88vw,620px);text-align:center;color:#fff;text-shadow:0 2px 6px rgba(0,0,0,.95),0 0 18px rgba(0,0,0,.75)}
 #p2RotateHint .t{display:block;font-size:12px;font-weight:800;letter-spacing:.32em;color:#ffb36b}
 #p2RotateHint b{display:block;margin:6px 0 8px;font-size:clamp(26px,5.2vw,42px);font-weight:1000;line-height:1.2;color:#ff8a3d}
 #p2RotateHint small{display:block;font-size:clamp(14px,2.5vw,20px);font-weight:700;line-height:1.45}
 html.akm-portrait body.two-player-mode:not(.playing-ui):not(.ready-ui):not(.akm-group-open) #p2RotateHint{display:block}
-html.akm-portrait body.two-player-mode:not(.playing-ui):not(.ready-ui):not(.akm-group-open) #handNextPrompt{top:max(66%,672px) !important}
+html.akm-portrait body.two-player-mode:not(.playing-ui):not(.ready-ui):not(.akm-group-open) #handNextPrompt{top:max(73%,742px) !important}
 
 html body.hud-v21.akm-ui{font-family:var(--kr)}
 html.akm-portrait{--nl-col:200px}   
@@ -11761,6 +11801,10 @@ html body #p2PlayerToggle.show.ls-side::before{font-size:11px}
 html body.hud-v21.akm-ui #leftSettings.ls-side #drillPickPanel .dpp-row,html body.hud-v21.akm-ui #leftSettings.ls-side #drillPickPanel #drillPickBtn{min-height:32px;height:32px}
 html body.hud-v21.akm-ui #leftSettings.ls-side #drillPickPanel .dpp-label{font-size:11px;margin-bottom:2px}
 
+html body.hud-v21.akm-ui #leftSettings.ls-side{gap:4px !important}
+html body.hud-v21.akm-ui #leftSettings.ls-side .diff-btn{height:30px !important;min-height:30px !important}
+html body.hud-v21.akm-ui #leftSettings.ls-side #drillPickPanel .dpp-row,html body.hud-v21.akm-ui #leftSettings.ls-side #drillPickPanel #drillPickBtn{min-height:30px;height:30px}
+
 .dp-modal{position:fixed;inset:0;z-index:99985;display:flex;align-items:center;justify-content:center;padding:max(12px,2vh) 16px;background:rgba(0,0,0,.66);font-family:var(--kr)}
 .dp-modal[hidden]{display:none !important}
 .dp-box{width:min(940px,100%);max-height:100%;display:flex;flex-direction:column;overflow:hidden;background:var(--s-bg);color:var(--s-txt);border-radius:16px;box-shadow:0 24px 70px rgba(0,0,0,.6)}
@@ -11773,7 +11817,7 @@ html body.hud-v21.akm-ui #leftSettings.ls-side #drillPickPanel .dpp-label{font-s
 .dp-body h4:first-child{margin-top:4px}
 .dp-body h4 span{font-size:12px;font-weight:700;color:var(--s-dim)}
 .dp-step{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--orange);color:#fff;font-family:var(--num);font-size:13px}
-.dp-kinds{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.dp-kinds{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
 .dp-kind-btn small{display:block;margin-top:3px;font-size:10.5px;font-weight:700;color:var(--s-dim)}
 .dp-kind-btn.on small{color:#FFB27A}
 .dp-feet{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
@@ -11806,7 +11850,7 @@ html body.hud-v21.akm-ui #leftSettings.ls-side #drillPickPanel .dpp-label{font-s
   .dp-foot-btn small{display:none}
   .dp-foot{padding:8px 16px 10px}.dp-foot button{height:38px;padding:0 12px}
 }
-@media (max-width:620px){ .dp-kinds{grid-template-columns:repeat(3,1fr)} .dp-feet{grid-template-columns:repeat(2,1fr)} }
+@media (max-width:620px){ .dp-kinds,.dp-feet{grid-template-columns:repeat(2,1fr)} }
 
 html body #drillResult.show,html body #p2Result.show{
   inset:auto !important;left:50% !important;top:50% !important;transform:translate(-50%,-50%) !important;
