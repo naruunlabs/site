@@ -46,6 +46,17 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);font-family
 #ctl label{display:flex;align-items:center;gap:6px;color:var(--dim)}
 #seek{flex:1 1 220px;accent-color:var(--glow)}
 #ctl input[type=range]{accent-color:var(--glow)}
+#poseEdit:not([hidden]){display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+#poseStatus{min-width:9em}
+#poseAutoStatus{position:fixed;top:120px;left:16px;z-index:2;padding:5px 9px;border-radius:6px;background:var(--panel);font-size:13px;pointer-events:none}
+#ctl #poseEdit button:disabled{opacity:.45}
+@media(max-width:720px){
+  html.pose-paused #main{height:calc(100% - var(--pose-controls-height,150px))}
+  html.pose-paused #mirrorBox,html.pose-paused #footBox,html.pose-paused #mv{visibility:hidden}
+  html.pose-paused #ctl{gap:5px;padding:7px}
+  html.pose-paused #ctl button{padding:4px 7px}
+  html.pose-paused #ctl > :not(#play,#seek,#view,#speed,#poseEdit){display:none}
+}
 
 @media (max-width:1100px){#footBox{right:28px;top:324px;width:230px;height:190px}}
 @media (max-width:700px){#footBox{right:12px;top:200px;width:140px;height:128px;border-radius:14px}#footBox .lb{display:none}#fiSpec{display:none}#fiName{font-size:13px}#footInfo{padding:2px 6px 6px}
@@ -376,7 +387,34 @@ html.embed #call{top:240px;bottom:auto;right:28px;font-size:clamp(28px,4vw,60px)
       {n:17, name:'오른앞굽이 몸통안막기', label:'오른앞굽이 몸통안막기 → 몸통두번지르기 (기합)', hand:'오른팔', dir:'B'},
       {n:17, name:'오른앞굽이 몸통두번지르기', hand:'왼주먹', dir:'B'},
       {n:17, name:'오른앞굽이 몸통두번지르기 (기합)', hand:'오른주먹', dir:'B'},
-      {n:18, name:'바로 (나란히서기)', hand:'', dir:'F', turn:180} ] }
+      {n:18, name:'바로 (나란히서기)', hand:'', dir:'F', turn:180} ] },
+
+    tg6:{ title:'태극 6장', moves:[
+      {n:0,  name:'나란히서기 기본준비', hand:'', dir:'F'},
+      {n:1,  name:'왼앞굽이 아래막기', hand:'왼팔', dir:'L'},
+      {n:2,  name:'오른발 앞차기 → 오른뒷굽이 몸통바깥막기', hand:'왼팔', dir:'L', step:'R'},
+      {n:3,  name:'오른앞굽이 아래막기', hand:'오른팔', dir:'R', turn:-180},
+      {n:4,  name:'왼발 앞차기 → 왼뒷굽이 몸통바깥막기', hand:'오른팔', dir:'R', step:'L'},
+      {n:5,  name:'왼앞굽이 한손날 얼굴비틀어막기', hand:'오른손날', dir:'F'},
+      {n:6,  name:'오른발 얼굴돌려차기 → 왼앞굽이 얼굴바깥막기', label:'오른발 얼굴돌려차기 → 왼앞굽이 얼굴바깥막기 → 몸통지르기', hand:'왼팔', dir:'L', turn:90, step:'R'},
+      {n:6,  name:'왼앞굽이 몸통지르기', hand:'오른주먹', dir:'L'},
+      {n:7,  name:'오른발 앞차기 → 오른앞굽이 몸통지르기', hand:'왼주먹', dir:'L'},
+      {n:8,  name:'오른앞굽이 얼굴바깥막기', label:'오른앞굽이 얼굴바깥막기 → 몸통지르기', hand:'오른팔', dir:'R', turn:-180},
+      {n:8,  name:'오른앞굽이 몸통지르기', hand:'왼주먹', dir:'R'},
+      {n:9,  name:'왼발 앞차기 → 왼앞굽이 몸통지르기', hand:'오른주먹', dir:'R'},
+      {n:10, name:'나란히서기 아래헤쳐막기', hand:'두 팔', dir:'F', slowMs:5000, prepMs:950, step:'L'},
+      {n:11, name:'오른앞굽이 한손날 얼굴비틀어막기', hand:'왼손날', dir:'F'},
+      {n:12, name:'왼발 얼굴돌려차기 (기합) → 오른앞굽이 아래막기', hand:'오른팔', dir:'L', turn:-270, step:'L'},
+      {n:13, name:'왼발 앞차기 → 왼뒷굽이 몸통바깥막기', hand:'오른팔', dir:'L', step:'L'},
+      {n:14, name:'왼앞굽이 아래막기', hand:'왼팔', dir:'R', turn:180},
+      {n:15, name:'오른발 앞차기 → 오른뒷굽이 몸통바깥막기', hand:'왼팔', dir:'R', step:'R'},
+      {n:16, name:'오른뒷굽이 손날거들어막기', hand:'왼손날', dir:'F', turn:90, step:'R'},
+      {n:17, name:'왼뒷굽이 손날거들어막기', hand:'오른손날', dir:'F', step:'L'},
+      {n:18, name:'왼앞굽이 바탕손안막기', label:'왼앞굽이 바탕손안막기 → 몸통지르기', hand:'왼손', dir:'F', step:'R'},
+      {n:18, name:'왼앞굽이 몸통지르기', hand:'오른주먹', dir:'F'},
+      {n:19, name:'오른앞굽이 바탕손안막기', label:'오른앞굽이 바탕손안막기 → 몸통지르기', hand:'오른손', dir:'F', step:'L'},
+      {n:19, name:'오른앞굽이 몸통지르기', hand:'왼주먹', dir:'F'},
+      {n:20, name:'바로 (나란히서기)', hand:'', dir:'F', step:'R'} ] }
   };
   const spec=SPECS[P]; if(!spec) return;
   const TIME={SUB:420, SUB_HOLD:140,     ATTN:3600, ATTN_TO_READY:2400, READY:2600, TRANS:950, TURN_BIG:1150, KICK:1800, HOLD:1150, LAST_HOLD:2500,    BARO:2000, END_HOLD:1500, FPS:30};
@@ -385,11 +423,11 @@ html.embed #call{top:240px;bottom:auto;right:28px;font-size:clamp(28px,4vw,60px)
   const mv=spec.moves.map(m=>Object.assign({},m)); let t=0, yaw=0;
   
   mv.forEach((m,j)=>{ if(j===0){ m.t0=TIME.ATTN+TIME.ATTN_TO_READY; m.t1=m.t0+TIME.READY; m.yaw=0; t=m.t1; return; }
-    const pv=mv[j-1], kick=/앞차기|옆차기/.test(m.name);
+    const pv=mv[j-1], round=P==='tg6'&&/^(왼|오른)발 얼굴돌려차기/.test(m.name), kick=/앞차기|옆차기/.test(m.name)||round; m.round=round;
     let d=YAW[m.dir]-pv.yaw%(2*Math.PI); d=Math.atan2(Math.sin(d),Math.cos(d));
     if(m.turn!=null) d=m.turn*Math.PI/180; m.yaw=pv.yaw+d; m.kick=kick; m.yeop= /^(왼|오른)발 옆차기/.test(m.name) ? (/^오른발/.test(m.name)?-1:1) : 0;
     const sub= pv.n===m.n, nextSub= j+1<mv.length && mv[j+1].n===m.n;   
-    const tr= kick?TIME.KICK : sub?TIME.SUB : j===mv.length-1?TIME.BARO : Math.abs(d)>Math.PI*.75?TIME.TURN_BIG : TIME.TRANS;   
+    const tr= m.slowMs?m.slowMs+(m.prepMs||0) : round?TIME.KICK+800 : kick?TIME.KICK : sub?TIME.SUB : j===mv.length-1?TIME.BARO : Math.abs(d)>Math.PI*.75?TIME.TURN_BIG : TIME.TRANS;   
     m.t0=t+tr; m.t1=m.t0+(nextSub?TIME.SUB_HOLD: j===mv.length-1?TIME.END_HOLD: j===mv.length-2?TIME.LAST_HOLD: TIME.HOLD); t=m.t1; });
   
   const outro={a0:t, a1:t+700, b0:t+800, b1:t+1400, b2:t+1900, b3:t+2500};
@@ -424,25 +462,47 @@ html.embed #call{top:240px;bottom:auto;right:28px;font-size:clamp(28px,4vw,60px)
     const bz=(a,b,c,u)=>{ const m=b.map((v,i)=>2*v-(a[i]+c[i])/2); return a.map((v,i)=>(1-u)*(1-u)*v+2*(1-u)*u*m[i]+u*u*c[i]); };
     const tk=sm(Math.min(1,s/KICK_KNEE_LEAD)), ta=sm(Math.min(1,s));
     return {K:bz(K0,K1,K2,tk), A:bz(A0,A1,A2,ta)}; }
+  
+  const ROUND_HIP=80;
+  function roundLeg(side,s){
+    const hip=[side*.10,0,0], thighLength=.42, shinLength=.38;
+    const unit=v=>{const length=Math.hypot(...v);return v.map(x=>x/length);};
+    const turn=(from,to,u)=>{
+      const a=unit(from),b=unit(to),dot=Math.max(-1,Math.min(1,a.reduce((sum,x,i)=>sum+x*b[i],0)));
+      const angle=Math.acos(dot),sin=Math.sin(angle);
+      if(angle<1e-5)return a;
+      return a.map((x,i)=>(x*Math.sin((1-u)*angle)+b[i]*Math.sin(u*angle))/sin);
+    };
+    const chamber=[side*.025,.06,.40];
+    const thigh=s<.45 ? turn([0,-.42,.02],chamber,sm(s/.45)) : turn(chamber,[side*.28,.26,.10],sm((s-.45)/.55));
+    const folded=[0,-.30,-.22], extended=[side*.36,.22,.04];
+    const shin=s<.45 ? turn([0,-.38,-.02],folded,sm(s/.45)) : turn(folded,extended,sm((s-.45)/.55));
+    const K=hip.map((x,i)=>x+thigh[i]*thighLength);
+    return {K,A:K.map((x,i)=>x+shin[i]*shinLength)};
+  }
   const T=[], WL=[];
   for(let tm=0; tm<=dur; tm+=1000/TIME.FPS){
     let j=mv.findIndex(m=>tm<=m.t1); if(j<0) j=mv.length-1;
     const m=mv[j], hold= tm>=m.t0 || j===0; let yw=m.yaw, pose=JSON.parse(JSON.stringify(B));
     if(j===0 && tm<m.t0){ const u=sm((tm-TIME.ATTN)/TIME.ATTN_TO_READY); for(let i=0;i<33;i++) pose[i]=lerp(ATT[i],B[i],u); }
     if(!hold){ const pv=mv[j-1], fr=(tm-pv.t1)/(m.t0-pv.t1);
-      yw=pv.yaw+(m.yaw-pv.yaw)*sm(Math.min(1,fr/.7));                     
+      const turnFraction=m.prepMs?Math.min(1,(tm-pv.t1)/m.prepMs):fr;
+      yw=pv.yaw+(m.yaw-pv.yaw)*sm(Math.min(1,turnFraction/.7));                     
+      if(m.round){ const d=m.yaw-pv.yaw, Pq=Math.sign(d)*Math.min(Math.abs(d),ROUND_HIP*Math.PI/180);   
+        const turnStart=m.n===12?.64:.60;
+        yw=pv.yaw+Pq*sm((fr/KICK_PEAK-.35)/.65)+(d-Pq)*sm((fr-turnStart)/(1-turnStart)); }
       if(m.kick){ const side=/^오른발/.test(m.name)?-1:1, s=fr/KICK_PEAK;      
         if(m.yeop){ yw+= -m.yeop*Math.PI/2*yeopBump(fr);   
           
           const th=m.yeop*YEOP_LEAN*Math.PI/180*yeopBump(fr), c2=Math.cos(th), s2=Math.sin(th);
           for(let i=0;i<=22;i++){ const p=pose[i]; pose[i]=[p[0]*c2-p[1]*s2, p[0]*s2+p[1]*c2, p[2]]; } }
-        const kl=(m.yeop?yeopLeg:kickLeg)(side,Math.min(1,s)); const k=side>0?25:26, a=side>0?27:28;
+        const kl=(m.yeop?yeopLeg:m.round?roundLeg:kickLeg)(side,Math.min(1,s)); const k=side>0?25:26, a=side>0?27:28;
         pose[k]=kl.K; pose[a]=kl.A; pose[a+2]=[kl.A[0],kl.A[1]-.05,kl.A[2]-.05]; pose[a+4]=[kl.A[0],kl.A[1]+.02,kl.A[2]+.13]; } }
     const c=Math.cos(yw), sn=Math.sin(yw), w=[];
     for(let i=0;i<33;i++){ const p=pose[i]; const X=p[0]*c+p[2]*sn, Z=-p[0]*sn+p[2]*c; w.push(+X.toFixed(4), +(-p[1]).toFixed(4), +(-Z).toFixed(4)); }   
     T.push(Math.round(tm)); WL.push(w); }
   window.PSM_SAMPLE={ id:'synth-'+P, title:spec.title, synth:true, dur, t:T, wl:WL, root:T.map(()=>[0,0]),
-    attn:TIME.ATTN, outro, moves:mv.map(m=>({n:m.n,name:m.name,label:m.label,hand:m.hand,dir:m.dir,yaw:m.yaw,yeop:m.yeop||0,t0:m.t0,t1:m.t1})) };
+    attn:TIME.ATTN, outro, moves:mv.map(m=>{ const o={n:m.n,name:m.name,label:m.label,hand:m.hand,dir:m.dir,yaw:m.yaw,yeop:m.yeop||0,t0:m.t0,t1:m.t1}; if(P==='tg6'){ o.step=m.step; o.round=m.round; o.slowMs=m.slowMs; o.prepMs=m.prepMs; } return o; }) };
 })();
 
 </script>
@@ -513,7 +573,7 @@ html.embed #call{top:240px;bottom:auto;right:28px;font-size:clamp(28px,4vw,60px)
 <div id="ctl">
   <button id="play">⏸ 멈춤</button>
   <input id="seek" type="range" min="0" max="1000" value="0">
-  <select id="pick" aria-label="품새"><option value="tg1">태극 1장</option><option value="tg2">태극 2장</option><option value="tg3">태극 3장</option><option value="tg4">태극 4장</option><option value="tg5">태극 5장</option></select>
+  <select id="pick" aria-label="품새"><option value="tg1">태극 1장</option><option value="tg2">태극 2장</option><option value="tg3">태극 3장</option><option value="tg4">태극 4장</option><option value="tg5">태극 5장</option><option value="tg6">태극 6장</option></select>
   <select id="speed"><option value="0.5">0.5배</option><option value="0.75">0.75배</option><option value="1" selected>1배</option><option value="1.2">1.2배</option><option value="1.5">1.5배</option><option value="2">2배</option></select>
   <select id="view"><option value="back" selected>뒷모습</option><option value="front">앞모습</option><option value="side">옆모습</option><option value="free">자유 시점 (끌어서 돌리기)</option></select>
   <button id="fix" class="on">자세 보정 켬</button>
@@ -525,11 +585,24 @@ html.embed #call{top:240px;bottom:auto;right:28px;font-size:clamp(28px,4vw,60px)
   <label>머리 <input id="head" type="range" min="0.6" max="1.4" step="0.05" value="1"></label>
   <label>주먹·발 <input id="hand" type="range" min="0.8" max="1.6" step="0.05" value="1.2"></label>
   <select id="belt"><option value="#1B1F27">검은띠</option><option value="#D62839">빨간띠</option><option value="#2F7BEA">파란띠</option><option value="#F2C230">노란띠</option></select>
+  <span id="poseEdit" hidden>
+    <button id="posePrev" title="이전 프레임">◀</button>
+    <button id="poseNext" title="다음 프레임">▶</button>
+    <span id="poseStatus" role="status"></span>
+    <button id="poseAxis" disabled>회전 손잡이</button>
+    <button id="poseDelete" disabled>저장 자세 삭제</button>
+    <button id="poseExport" disabled>자세 파일 내려받기</button>
+  </span>
 </div>
+<span id="poseAutoStatus" role="status" hidden></span>
 <script type="module">
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+function createPoseEditor(){
+  const edits={};
+  return {apply:()=>edits,roll:axis=>axis,turn(){},update(){}};
+}
 
 await window.__psmGate;
 const D = window.PSM_SAMPLE;
@@ -687,11 +760,11 @@ const MINFO=D.moves.map((m,j)=>({ dir:m.dir||KEYDIR[m.n]||'F', ap: m.name.includ
   punch: m.name.includes('지르기')||m.name.includes('찌르기'), face: /얼굴[가-힣]*지르기/.test(m.name),   
   spear: m.name.includes('편손끝'),   
   
-  block: m.name.includes('아래막기')?'down': m.name.includes('손날바깥막기')?'kout': m.name.includes('손날거들어')?'kgeo': m.name.includes('바깥막기')?'out':
+  block: D.id==='synth-tg6'&&m.name.includes('아래헤쳐막기')?'spread': D.id==='synth-tg6'&&m.name.includes('얼굴바깥막기')?'faceOut': D.id==='synth-tg6'&&m.name.includes('얼굴비틀어막기')?'twist': D.id==='synth-tg6'&&m.name.includes('바탕손안막기')?'palmIn': m.name.includes('아래막기')?'down': m.name.includes('손날바깥막기')?'kout': m.name.includes('손날거들어')?'kgeo': m.name.includes('바깥막기')?'out':
          m.name.includes('제비품')?'jebi': m.name.includes('손날목치기')?'kneck': m.name.includes('등주먹')?'back': m.name.includes('안막기')?'in': m.name.includes('얼굴막기')?'face':
          D.id==='synth-tg5' && m.name.includes('메주먹')?'hammer': D.id==='synth-tg5' && m.name.includes('팔굽돌려')?'elbowRound': D.id==='synth-tg5' && m.name.includes('팔굽표적')?'elbowTarget':null,
   arm: m.hand.startsWith('왼')?'L': m.hand.startsWith('오른')?'R':null,
-  kick: /^오른발 (앞|옆)차기/.test(m.name)?'R': /^왼발 (앞|옆)차기/.test(m.name)?'L':null, yeop: /^(왼|오른)발 옆차기/.test(m.name), ready: m.n===0||j===D.moves.length-1 }));
+  kick: /^오른발 (앞|옆)차기/.test(m.name)||(D.id==='synth-tg6'&&/^오른발 얼굴돌려차기/.test(m.name))?'R': /^왼발 (앞|옆)차기/.test(m.name)||(D.id==='synth-tg6'&&/^왼발 얼굴돌려차기/.test(m.name))?'L':null, round: D.id==='synth-tg6'&&/^(왼|오른)발 얼굴돌려차기/.test(m.name), par: D.id==='synth-tg6'&&m.name.startsWith('나란히서기 아래헤쳐'), yeop: /^(왼|오른)발 옆차기/.test(m.name), ready: m.n===0||j===D.moves.length-1 }));
 MINFO.forEach(mi=>{ mi.front= mi.ap||mi.seo||mi.side||mi.cross||(mi.dwi?(mi.dwi==='L'?'R':'L'):null); });   
 const NLAST=D.moves[D.moves.length-1].n, NCNT=NLAST-1;   
 function corrW(f){ const t=D.t[f]; let best=0, idx=-1;
@@ -746,7 +819,8 @@ function correct(J,f){
     if(nx>0 && MINFO[nx].kick){ const pv=D.moves[nx-1], nm=D.moves[nx];
       if(t>pv.t1-SUPPORT_EDGE) kws=smooth3(Math.min(1,(t-(pv.t1-SUPPORT_EDGE))/SUPPORT_EDGE))*smooth3(Math.min(1,(nm.t0+SUPPORT_EDGE-t)/SUPPORT_EDGE)); } }
   
-  const wf=Math.max(w, kw, kws), fwd=DIRV[(kw>0||kws>0)&&kmi?kmi.dir:mi.dir].clone();
+  const roundK= D.id==='synth-tg6' && kmi && kmi.round && (kw>0||kws>0);   
+  const wf=roundK? w : Math.max(w, kw, kws), fwd=DIRV[(kw>0||kws>0)&&kmi&&!roundK?kmi.dir:mi.dir].clone();
   const ya= (kws>0||kw>0)&&kmi&&kmi.yeop ? yeopAng(D.t[f]) : 0; if(ya) fwd.applyAxisAngle(YV,ya);   
   const kdir= ya ? DIRV[kmi.dir].clone() : null;   
   if(wf>0){ const cur=J.pel.z.clone().add(J.che.z); cur.y=0; if(cur.lengthSq()>1e-6){
@@ -784,7 +858,7 @@ function correct(J,f){
   const left=new THREE.Vector3().crossVectors(YV,fwd);   
   const sgn=s=>s==='L'?1:-1;
   
-  if(mi.ready && j>=0 && w>0){ const Lg=(DIM.th+DIM.sh)*AP.STRAIGHT;
+  if((mi.ready||mi.par) && j>=0 && w>0){ const Lg=(DIM.th+DIM.sh)*AP.STRAIGHT;
     for(const s of ['L','R']){ const H=J['hip'+s], A0=J['an'+s], K0=J['kn'+s];
       const tgt=J.hip.clone().addScaledVector(left,sgn(s)*READY.HALF).addScaledVector(YV,-Math.sqrt(Math.max(0,Lg*Lg-Math.pow(READY.HALF-DIM.hipHalf,2))));
       const r=ik2(H,A0.clone().lerp(tgt,w),DIM.th,DIM.sh,poleOf(H,K0,A0).lerp(fwd,w).normalize()); J['kn'+s]=r.mid; J['an'+s]=r.end;
@@ -891,6 +965,19 @@ function correct(J,f){
           T=J.hip.clone().addScaledVector(YV,DIM.torso*KOUT_END.H).addScaledVector(side,SH_W+KOUT_END.OUT).addScaledVector(fwd,KOUT_END.FWD);
           pole=YV.clone().negate().addScaledVector(side,.25).addScaledVector(fwd,KOUT_END.ELBOW_FWD).normalize();
           hd={d:YV.clone().multiplyScalar(.85).addScaledVector(fwd,.45).normalize(), s:side.clone().multiplyScalar(-.82).addScaledVector(fwd,-.57)}; }
+        else if(mi.block==='faceOut'){   
+          T=J.hip.clone().addScaledVector(YV,DIM.torso*1.34).addScaledVector(side,SH_W+KOUT_END.OUT).addScaledVector(fwd,KOUT_END.FWD);
+          pole=YV.clone().negate().addScaledVector(side,.25).addScaledVector(fwd,KOUT_END.ELBOW_FWD).normalize();
+          hd={d:YV.clone().multiplyScalar(.85).addScaledVector(fwd,.45).normalize(), s:side.clone().multiplyScalar(-.82).addScaledVector(fwd,-.57)}; }
+        else if(mi.block==='twist'){     
+          T=J.hip.clone().addScaledVector(YV,DIM.torso*1.28).addScaledVector(side,-.02).addScaledVector(fwd,.42);
+          pole=YV.clone().negate().addScaledVector(side,.35).normalize();
+          hd={d:YV.clone().multiplyScalar(.8).addScaledVector(fwd,.6).normalize(), s:side.clone().multiplyScalar(-1)}; }
+        else if(mi.block==='palmIn'){    
+          T=J.hip.clone().addScaledVector(YV,DIM.torso*.78).addScaledVector(side,.02).addScaledVector(fwd,.38);
+          pole=YV.clone().negate().addScaledVector(side,.45).addScaledVector(fwd,.25).normalize();
+          { const d=YV.clone().multiplyScalar(.9).addScaledVector(fwd,.42).normalize();   
+            hd={d, s:side.clone().multiplyScalar(-.5).addScaledVector(d.clone().cross(left),.87).normalize()}; } }
         else if(mi.block==='back'){   
           const R2=(DIM.up+DIM.fo)*BACKFIST.REACH, C=J.hip.clone().addScaledVector(YV,DIM.torso*BACKFIST.H), D0=C.clone().sub(Sh);
           const b=D0.dot(fwd), d=-b+Math.sqrt(Math.max(0,b*b-(D0.lengthSq()-R2*R2))); T=C.addScaledVector(fwd,d);
@@ -935,6 +1022,10 @@ function correct(J,f){
           const B=BLOCK.FACE, uDir=YV.clone().multiplyScalar(B.UP_Y).addScaledVector(side,B.UP_OUT).addScaledVector(fwd,B.UP_FWD).normalize();
           const fDir=side.clone().multiplyScalar(-B.FO_IN).addScaledVector(YV,B.FO_Y).addScaledVector(fwd,B.FO_FWD).normalize();
           const E=Sh.clone().addScaledVector(uDir,DIM.up); T=E.clone().addScaledVector(fDir,DIM.fo); pole=poleOf(Sh,E,T); hd={d:fDir.clone(), s:YV.clone().negate()}; } }
+      else if(D.id==='synth-tg6' && mi.block==='spread'){   
+        const B=TG6_SPREAD_END, side=left.clone().multiplyScalar(sgn(s));   
+        T=J.hip.clone().addScaledVector(fwd,B.FWD).addScaledVector(YV,-B.DOWN).addScaledVector(side,DIM.hipHalf+B.OUT);
+        pole=side.clone().addScaledVector(fwd,.3).normalize(); hd={d:dirTo(Sh,T),s:fwd.clone()}; }
       else if(s!==mi.arm && !mi.arm && MINFO[j] && MINFO[j].yeop){   
         const side=left.clone().multiplyScalar(sgn(s)), G=KICK_GUARD.POS(sgn(s));
         T=J.hip.clone().addScaledVector(left,G[0]).addScaledVector(YV,G[1]).addScaledVector(fwd,G[2]);
@@ -950,9 +1041,11 @@ function correct(J,f){
       if(!T) continue;
       const Tw=W0.clone().lerp(T,w), pw=poleOf(Sh,E0,W0).lerp(pole,w).normalize();
       const r=ik2(Sh,Tw,DIM.up,DIM.fo,pw); J['el'+s]=r.mid; J['wr'+s]=r.end;
+      if(D.id==='synth-tg6' && mi.block==='spread')hd={d:dirTo(r.mid,r.end),s:fwd.clone()};
       if(D.id==='synth-tg5' && s===mi.arm && (mi.block==='hammer'||mi.block==='elbowRound'))hd=handFromBack(dirTo(r.mid,r.end),mi.block==='hammer'?left.clone().multiplyScalar(sgn(s)):YV,sgn(s));
-      if(s===mi.arm && (mi.block==='kout'||mi.block==='kgeo'||mi.block==='out'||mi.block==='jebi')) hd.d=dirTo(r.mid,r.end);   
-      if(D.synth && s===mi.arm && mi.block==='out')hd=handFromBack(hd.d,left.clone().multiplyScalar(sgn(s)).add(YV).normalize(),sgn(s));
+      if(s===mi.arm && (mi.block==='kout'||mi.block==='kgeo'||mi.block==='out'||mi.block==='jebi'||mi.block==='faceOut')) hd.d=dirTo(r.mid,r.end);   
+      if(D.synth && s===mi.arm && (mi.block==='out'||mi.block==='faceOut'))hd=handFromBack(hd.d,left.clone().multiplyScalar(sgn(s)).add(YV).normalize(),sgn(s));
+      if(s===mi.arm && mi.block==='twist')hd=handFromBack(dirTo(r.mid,r.end),YV,sgn(s));
       const H=J['hd'+s]; H.d=H.d.clone().lerp(hd.d,w).normalize(); H.s=H.s.clone().lerp(hd.s,w).normalize(); } }
   
   if(kmi && kmi.yeop && !kmi.arm && kws>0){ const ww=kws*(1-w);
@@ -969,7 +1062,7 @@ function correct(J,f){
         const ref=KREF[nx]; const T= ref ? A0.clone().lerp(J.hip.clone().add(ref),ws) : A0.clone();
         const r=ik2(H,T,DIM.th,DIM.sh,poleOf(H,K0,A0)); J['kn'+s]=r.mid; J['an'+s]=r.end; } } }
   
-  if(kickSide && kw>0 && !(kmi&&kmi.yeop)){ const s=kickSide, H=J['hip'+s], A0=J['an'+s], K0=J['kn'+s];   
+  if(kickSide && kw>0 && !(kmi&&(kmi.yeop||kmi.round))){ const s=kickSide, H=J['hip'+s], A0=J['an'+s], K0=J['kn'+s];   
     
     const off=A0.clone().sub(J.hip).dot(left), T=A0.clone().addScaledVector(left,-off*kw*KICK_CENTER);
     const r=ik2(H,T,DIM.th,DIM.sh,poleOf(H,K0,A0).lerp(fwd.clone().add(YV),kw).normalize()); J['kn'+s]=r.mid; J['an'+s]=r.end; }
@@ -1003,6 +1096,10 @@ const PREP={
          pull:sd=>[-sd*.16, DIM.torso*.20, .18], pullPole:sd=>[sd*.25,-1,.3]},  
   back: {main:sd=>[-sd*.20, DIM.torso*.66, .10], mainPole:sd=>[sd*.6,-1,-.2],
          pull:sd=>[ sd*.16, DIM.torso*.96, .52], pullPole:sd=>[sd*.5,-1,.2]}, 
+  
+  faceOut:{main:sd=>[-sd*.16, DIM.torso*.70, .18], mainPole:sd=>[sd*.5,-1,0], pull:sd=>[sd*.18, DIM.torso*.85, .52], pullPole:sd=>[sd*.5,-1,.2]},
+  twist:{main:sd=>[-sd*.14, DIM.torso*.32, .12], mainPole:sd=>[sd*.5,-1,0], pull:sd=>[sd*.10, DIM.torso*.85, .42], pullPole:sd=>[sd*.3,-1,0]},
+  palmIn:{main:sd=>[sd*.30, DIM.torso*.80, -.10], mainPole:sd=>[sd*.3,-1,-.3], pull:sd=>[sd*.03, DIM.torso*.80, .48], pullPole:sd=>[sd*.3,-1,0]},
   punch:{main:'waist',                                                         
          pull:sd=>[ sd*.02, DIM.torso*.78, .48], pullPole:sd=>[sd*.3,-1,0]} };
 const WAIST_L=sd=>[sd*(WAIST_W+CHAMBER.OUT), CHAMBER.UP, -CHAMBER.BACK], WAIST_POLE=sd=>[sd*.35,0,-1];
@@ -1020,6 +1117,52 @@ const BACKFIST={H:1.22, REACH:.93};
 
 const KICK_GUARD={AT:.18, HOLD:.50, PREP_AT:.40, POS:sd=>[sd*.075, DIM.torso*.80, .24], POLE:sd=>[sd*.6,-1,-.2]};
 function yawOf(J){ const v=J.pel.z.clone().add(J.che.z); return Math.atan2(v.x,v.z); }
+
+function tg6SpreadPhase(time,previous,move){
+  const elapsed=Math.max(0,time-previous.t1), prep=move.prepMs||950;
+  return elapsed<prep ? .30*elapsed/prep : .30+.70*Math.min(1,(elapsed-prep)/(move.slowMs||5000));
+}
+
+const TG6_SPREAD_END={FWD:.26, DOWN:.06, OUT:.16};
+function tg6SpreadPath(FR){
+  const j=D.moves.findIndex(m=>m.name.startsWith('나란히서기 아래헤쳐')); if(j<1) return;
+  const pv=D.moves[j-1], nm=D.moves[j]; let fa=0; while(fa<NF-1&&D.t[fa+1]<=pv.t1) fa++; let fb=fa; while(fb<NF-1&&D.t[fb]<nm.t0) fb++;
+  if(fb-fa<3) return;
+  const V=a=>new THREE.Vector3(a[0],a[1],a[2]), Ja=FR[fa], Jb=FR[fb], ya=yawOf(Ja), yb=yawOf(Jb), toL=(v,y)=>v.clone().applyAxisAngle(YV,-y);
+  for(const s of ['L','R']){ const sd=s==='L'?1:-1;
+    const S0=toL(Ja['wr'+s].clone().sub(Ja.hip),ya), B=toL(Jb['wr'+s].clone().sub(Jb.hip),yb);
+
+    const X=V([-sd*.05,s==='L'?.42:.40,s==='L'?.30:.15]);      
+    const M=V([-sd*.03,s==='L'?.235:.36,s==='L'?.31:.25]);      
+    const low=V([sd*.04,s==='L'?.07:.16,s==='L'?.28:.23]);     
+    
+    const G=V([sd*(s==='L'?.13:.06),s==='L'?.30:.41,s==='L'?.27:.22]);
+    const points=[S0,G,X,M,low,B], duration=nm.t0-pv.t1, prep=nm.prepMs||950;
+    const knots=[0,prep*.55/duration,prep/duration,(prep+(nm.slowMs||5000)*.20)/duration,(prep+(nm.slowMs||5000)*(.48/.70))/duration,1];
+    const tangents=points.map((p,i)=>i===0||i===points.length-1?V([0,0,0]):points[i+1].clone().sub(points[i-1]).multiplyScalar(.65/(knots[i+1]-knots[i-1])));
+    const pB=toL(poleOf(Jb['sh'+s],Jb['el'+s],Jb['wr'+s]),yb), pX=V([sd*.7,-1,s==='L'?.7:-.3]).normalize();
+    const pLow=V([sd*.7,-1,s==='L'?.4:-.3]).normalize();
+    const p0=toL(poleOf(Ja['sh'+s],Ja['el'+s],Ja['wr'+s]),ya);
+
+    const hB={d:toL(Jb['hd'+s].d,yb), s:toL(Jb['hd'+s].s,yb)}, h0={d:toL(Ja['hd'+s].d,ya), s:toL(Ja['hd'+s].s,ya)};
+    const backOf=h=>h.s.clone().cross(h.d).multiplyScalar(sd).normalize();
+    const b0=backOf(h0), bB=backOf(hB), bX=V([0,.12,1]).normalize(), bM=V([0,1,.15]).normalize(), bLow=V([sd*.7,.6,.25]).normalize();
+    const mixB=(a,b,k)=>a.clone().lerp(b,k).normalize();
+    for(let f=fa+1;f<fb;f++){ const g=tg6SpreadPhase(D.t[f],pv,nm), J=FR[f], y=yawOf(J); let P,pole,h;
+      const clock=(D.t[f]-pv.t1)/duration; let segment=0; while(segment<knots.length-2&&clock>=knots[segment+1]) segment++;
+      const span=knots[segment+1]-knots[segment], u0=THREE.MathUtils.clamp((clock-knots[segment])/span,0,1);
+      
+      const u=u0, u2=u*u, u3=u2*u;
+      P=points[segment].clone().multiplyScalar(2*u3-3*u2+1)
+        .addScaledVector(tangents[segment],span*(u3-2*u2+u))
+        .addScaledVector(points[segment+1],-2*u3+3*u2)
+        .addScaledVector(tangents[segment+1],span*(u3-u2));
+      let back;
+      if(g<.30){const v=sm3(g/.30);pole=blendPole(p0,pX,v);back=mixB(b0,bX,v);}
+      else if(g<.44){pole=pX;back=mixB(bX,bM,sm3((g-.30)/.14));}
+      else {pole=blendPole(blendPole(pX,pLow,sm3((g-.44)/.25)),pB,sm3((g-.78)/.22));back=g<.70?mixB(bM,bLow,sm3((g-.44)/.26)):mixB(bLow,bB,sm3((g-.70)/.30));}
+      const T=P.clone().applyAxisAngle(YV,y).add(J.hip), r=ik2(J['sh'+s],T,DIM.up,DIM.fo,pole.clone().applyAxisAngle(YV,y));
+      J['el'+s]=r.mid; J['wr'+s]=r.end; const hand=handFromBack(dirTo(r.mid,r.end).applyAxisAngle(YV,-y),back,sd); J['hd'+s]={d:hand.d.applyAxisAngle(YV,y), s:hand.s.applyAxisAngle(YV,y)}; } } }
 function straightenArms(FR,rawRel){
   const V=a=>new THREE.Vector3(a[0],a[1],a[2]);
   for(let j=1;j<D.moves.length;j++){ const pv=D.moves[j-1], nm=D.moves[j], mi=MINFO[j]; if(pv.t1==null||nm.t0==null||mi.ready||!mi.arm) continue;
@@ -1033,7 +1176,8 @@ function straightenArms(FR,rawRel){
     const lo=fa+Math.round((fb-fa)*PREP_AT[0]), hi=fa+Math.round((fb-fa)*PREP_AT[1]); fA=Math.min(hi,Math.max(lo,fA));
     for(const s of ['L','R']){ const sd=s==='L'?1:-1, isMain=s===ms, P=PREP[tech];
       const spec= isMain ? P.main : P.pull;
-      const Aw = isMain && mi.spear ? V(SPEAR_PREP(sd)) : spec==='waist' ? V(WAIST_L(sd)) : V(spec(sd));   
+      
+      const Aw = isMain && mi.spear ? V(SPEAR_PREP(sd)) : (isMain && tech==='out' && D.id==='synth-tg6') ? V([-sd*.14, DIM.torso*.32, .12]) : spec==='waist' ? V(WAIST_L(sd)) : V(spec(sd));   
       const Ap = isMain ? (P.main==='waist'? V(WAIST_POLE(sd)) : V(P.mainPole(sd))) : V(P.pullPole(sd));
       const S0=toL(Ja['wr'+s].clone().sub(Ja.hip),ya), B=toL(Jb['wr'+s].clone().sub(Jb.hip),yb);
       const p0=toL(poleOf(Ja['sh'+s],Ja['el'+s],Ja['wr'+s]),ya), pB=toL(poleOf(Jb['sh'+s],Jb['el'+s],Jb['wr'+s]),yb); Ap.normalize();
@@ -1060,11 +1204,11 @@ function straightenArms(FR,rawRel){
         arc.hUp={d:YV.clone().addScaledVector(hB.d,-.15).normalize(), s:hB.s.clone()};
         hA={d:arc.hUp.d.clone().applyAxisAngle(YV,-da), s:arc.hUp.s.clone().applyAxisAngle(YV,-da)}; }
       if(!isMain && tech==='kgeo'){ hA={d:YV.clone(), s:ZV.clone()}; via=V(KGEO_PULL_VIA(sd)); }   
-      if(isMain && (tech==='kout'||tech==='out'||tech==='kgeo')){    
+      if(isMain && (tech==='kout'||tech==='out'||tech==='kgeo'||tech==='faceOut')){    
         via=V(KOUT_VIA(sd));
         hA={d:new THREE.Vector3(-sd*.89,0,.45), s:new THREE.Vector3(sd*.45,0,.89)}; }
       let hMid=null;
-      if(isMain && tech==='out'){   
+      if(isMain && (tech==='out'||tech==='faceOut')){   
         hA={d:new THREE.Vector3(0,-.3,1).normalize(), s:new THREE.Vector3(0,-1,0)}; hMid={d:new THREE.Vector3(0,.3,1).normalize(), s:new THREE.Vector3(-sd,0,0)}; }
       if(isMain && tech==='back'){  
         via=V(BACK_VIA(sd)); hA={d:new THREE.Vector3(-sd,0,0), s:new THREE.Vector3(0,0,-1)}; }
@@ -1133,6 +1277,21 @@ function handFromBack(d,back,sd){
 }
 function techniqueHand(tech,main,sd,fore,end,stroke,prep,start){
   const X=new THREE.Vector3(sd,0,0), up=new THREE.Vector3(0,1,0), back=new THREE.Vector3(0,0,-1);
+  if(!main && tech==='down'){
+    const initial=handFromBack(fore,up,sd);
+    if(stroke===null)return interpolateHand(alignHand(start,fore),initial,sm3(prep));
+    const angle=Math.PI*sm3(stroke);
+    const desired=up.clone().multiplyScalar(Math.cos(angle)).addScaledVector(X,Math.sin(angle));
+    return handFromBack(fore,desired,sd);
+  }
+  if(main && tech==='out' && D.id==='synth-tg6'){
+    const down=up.clone().negate(), initial=handFromBack(fore,down,sd);
+    if(stroke===null)return interpolateHand(alignHand(start,fore),initial,sm3(prep));
+    const outward=X.clone().add(new THREE.Vector3(0,0,1)).normalize();
+    const diagonal=X.clone().add(up).normalize();
+    const desired=stroke<.60 ? blendPole(down,outward,stroke/.60) : blendPole(outward,diagonal,(stroke-.60)/.40);
+    return handFromBack(fore,desired,sd);
+  }
   if(main && tech==='hammer'){
     const turn=stroke===null?0:sm3((stroke-.50)/.50),desired=back.clone().applyAxisAngle(up,-sd*Math.PI/2*turn),hand=handFromBack(fore,desired,sd);
     return stroke===null?interpolateHand(alignHand(start,fore),hand,sm3(prep)):hand;
@@ -1309,7 +1468,7 @@ function knifeOpenAt(j){
 }
 function sagittalKicks(FR){
   for(let j=1;j<D.moves.length;j++){
-    const mi=MINFO[j];if(!mi.kick||mi.yeop)continue;
+    const mi=MINFO[j];if(!mi.kick||mi.yeop||mi.round)continue;
     const pv=D.moves[j-1],m=D.moves[j],s=mi.kick,fw=DIRV[mi.dir].clone();let a=0,b=0;
     while(a<NF-1&&D.t[a+1]<=pv.t1)a++;b=a;while(b<NF-1&&D.t[b]<m.t0)b++;
     const start=FR[a],up0=dirTo(start['hip'+s],start['kn'+s]),low0=dirTo(start['kn'+s],start['an'+s]);
@@ -1338,7 +1497,19 @@ function sagittalKicks(FR){
 }
 function sideKickFootFrame(J,s,t){
   if(!D.synth)return null;
-  const k=kickState(t);if(!k||!k.mi.yeop)return null;
+  const k=kickState(t);if(!k||!(k.mi.yeop||k.mi.round))return null;
+  if(k.mi.round && s===k.mi.kick){
+    if(k.m.n===6 || k.m.n===12) return null;
+    const weight=sm3((k.u-.03)/.15)*(1-sm3((k.u-.40)/(ROUND_LAND.LAND-.40)));
+    const shank=dirTo(J['kn'+s],J['an'+s]);
+    const z=shank.clone().setY(0).addScaledVector(J.pel.x,k.sd*.25).setY(0).normalize();
+    z.y=Math.max(-.12,Math.min(.28,shank.y*.6)); z.normalize();
+    const roll=sm3((k.u-.13)/.20);
+    const outside=J.pel.z.clone().multiplyScalar(-k.sd);
+    const up=YV.clone().multiplyScalar(-Math.cos(roll*Math.PI/2)).addScaledVector(outside,Math.sin(roll*Math.PI/2));
+    up.addScaledVector(z,-up.dot(z)).normalize();
+    return {up,z,weight};
+  }
   const rise=sm3((k.u-.03)/.12),fall=1-sm3((k.u-YEOP_TURN.HOLD)/(KICK_LAND.AT-YEOP_TURN.HOLD)),weight=rise*fall;
   if(s===k.mi.kick){
     const up=dirTo(J['an'+s],J['kn'+s]);
@@ -1470,8 +1641,10 @@ const KICK_RISE=.55;
 const KICK_FOLD={Q:.45, DOWN:.92, BACK:.38};   
 const KNEE_FWD_KEEP=.55;   
 const KICK_DWI_TOE=.45;   
+const ROUND_LAND={RET:.50, LAND:.62, STEP:.64, END:.95};   
 const KICK_LAND={AT:.85, CHAMBER_H:.42, CHAMBER_FWD:.30,    REACH_H:.12, REACH_BACK:.10, KNEE_UP:.6};   
 function stepFoot(j){ const mi=MINFO[j], pv=MINFO[j-1];
+  if(D.id==='synth-tg6'&&D.moves[j].step) return D.moves[j].step;   
   if(mi.ready) return j===D.moves.length-1 ? 'L' : null;          
   const fr=mi.front, pf=pv.front;
   if(fr===pf && mi.dir===pv.dir && !!mi.ap===!!pv.ap && !!mi.dwi===!!pv.dwi) return null;  
@@ -1506,7 +1679,14 @@ function plantFeet(FR){
     else { const pv=s==='L'?'R':'L'; root[j]=foot[j-1][pv].clone().sub(rel[j][pv]); }
     foot[j]={L:root[j].clone().add(rel[j].L), R:root[j].clone().add(rel[j].R)};
     if(s){ const pv=s==='L'?'R':'L'; foot[j][pv]=foot[j-1][pv].clone(); }       
-    else foot[j]={L:foot[j-1].L.clone(), R:foot[j-1].R.clone()}; }   
+    else foot[j]={L:foot[j-1].L.clone(), R:foot[j-1].R.clone()};
+    if(D.id==='synth-tg6' && MINFO[j].round){   
+
+      const K=MINFO[j].kick, fp=DIRV[MINFO[j-1].dir], fv=new THREE.Vector2(fp.x,fp.z), side=new THREE.Vector2(fv.y,-fv.x).multiplyScalar(K==='L'?1:-1);
+      const dn=DIRV[MINFO[j].dir], dd=rel[j].L.clone().sub(rel[j].R), long=Math.abs(dd.x*dn.x+dd.y*dn.z), w=Math.abs(dd.x*dn.z-dd.y*dn.x);
+      const P=foot[j-1][K==='L'?'R':'L'].clone().addScaledVector(fv,long).addScaledVector(side,w);
+      root[j]=P.clone().sub(rel[j][K]); foot[j]={L:root[j].clone().add(rel[j].L), R:root[j].clone().add(rel[j].R)}; foot[j][K]=P; }
+  }   
   
   const stanceFootAim=mid.map(f=>({L:FR[f].ftL.clone(),R:FR[f].ftR.clone()}));
   function dwiDirection(j,k,u){
@@ -1551,7 +1731,7 @@ function plantFeet(FR){
         const ft=J['ft'+k].clone(); ft.y=0; legTo(J,k,w2,gy, ft.lengthSq()>1e-6 ? ft.normalize() : null); }
       J.floor=Math.min(J.anL.y,J.anR.y); continue; }
     
-    const pv=D.moves[j-1], nm=D.moves[j], frac=Math.min(1,Math.max(0,(t-pv.t1)/(nm.t0-pv.t1)));
+    const pv=D.moves[j-1], nm=D.moves[j], frac=Math.min(1,Math.max(0,(t-pv.t1)/(D.id==='synth-tg6' && MINFO[j].par ? nm.prepMs||950 : nm.t0-pv.t1)));
     const kick=MINFO[j].kick, landingEnd=D.synth && MINFO[j].yeop ? KICK_LAND.AT : 1;
     let u= kick ? sm3((frac-STEP.KICK_FROM)/(landingEnd-STEP.KICK_FROM)) : smooth3(frac);
     if(D.id==='synth-tg5' && MINFO[j].dwi && !kick && Math.abs(nm.yaw-pv.yaw)>.5){
@@ -1565,9 +1745,12 @@ function plantFeet(FR){
     }
     
     let R=root[j-1].clone();
-    if(kick){ const sup=(stepS[j]||kick)==='L'?'R':'L', fv=new THREE.Vector2(DIRV[MINFO[j].dir].x,DIRV[MINFO[j].dir].z);
+    const round=D.id==='synth-tg6' && MINFO[j].round;
+    if(round) u=sm3((frac-ROUND_LAND.STEP)/(ROUND_LAND.END-ROUND_LAND.STEP));   
+    if(kick){ const sup=(stepS[j]||kick)==='L'?'R':'L', dk=DIRV[MINFO[round?j-1:j].dir], fv=new THREE.Vector2(dk.x,dk.z);
       const C=root[j-1].clone().lerp(foot[j-1][sup],KICK_SHIFT.OVER).addScaledVector(fv,KICK_SHIFT.FWD);
-      R.lerp(C,smooth3(Math.min(1,frac/KICK_SHIFT.IN))); }
+      R.lerp(C,smooth3(Math.min(1,frac/KICK_SHIFT.IN)));
+      if(round) R.lerp(foot[j-1][sup].clone().lerp(foot[j][kick],.5),sm3((frac-.40)/(ROUND_LAND.LAND-.40))); }   
     R.lerp(root[j],u);
     const moving=stepS[j],turning=!kick && moving && Math.abs(nm.yaw-pv.yaw)>.5;
     if(turning){const support=moving==='L'?'R':'L',q=MINFO[j].dwi?u:smooth3(Math.min(1,Math.max(0,(frac-STEP.LIFT_LEAD)/(1-2*STEP.LIFT_LEAD))));
@@ -1593,14 +1776,45 @@ function plantFeet(FR){
       if(k===s && kick){                                              
         const cur=J['an'+k].clone().sub(J.hip), kp=kickPeak[j];
         if(!kp || f<kp.fp){                                           
+          if(round && kp){
+            const start=FR[bs(pv.t1)], turn=yawOf(J)-yawOf(start), weight=Math.min(1,Math.max(0,(t-pv.t1)/Math.max(1,(D.t[kp.fp]-pv.t1)*.40)));
+            const thigh0=dirTo(start['hip'+k],start['kn'+k]).applyAxisAngle(YV,turn);
+            const shin0=dirTo(start['kn'+k],start['an'+k]).applyAxisAngle(YV,turn);
+            const thigh=blendPole(thigh0,dirTo(J['hip'+k],J['kn'+k]),weight);
+            const shin=blendPole(shin0,dirTo(J['kn'+k],J['an'+k]),weight);
+            J['kn'+k]=J['hip'+k].clone().addScaledVector(thigh,DIM.th);
+            J['an'+k]=J['kn'+k].clone().addScaledVector(shin,DIM.sh);
+            continue;
+          }
           let pw=Math.min(1,Math.max(0,1-(cur.y-gy-.01)/.05));
           
           if(D.synth && kp) pw=Math.max(pw,1-sm3((t-pv.t1)/Math.max(1,(D.t[kp.fp]-pv.t1)*KICK_RISE)));
           if(pw>0){ const old=foot[j-1][k].clone().sub(R); legTo(J,k,new THREE.Vector2(cur.x,cur.z).lerp(old,pw), cur.y+(gy-cur.y)*pw); } continue; }
         if(f===kp.fp){ kp.P0=new THREE.Vector2(cur.x,cur.z).add(R); kp.h0=cur.y-gy; kp.R0=R.clone();
+          if(round) kp.pole=poleOf(J['hip'+k],J['kn'+k],J['an'+k]);
           kp.KN=J['kn'+k].clone().sub(J.hip); kp.E=J['an'+k].clone().sub(J['kn'+k]).normalize(); continue; }   
         
         const fw=new THREE.Vector2(DIRV[MINFO[j].dir].x,DIRV[MINFO[j].dir].z), Lg=DIM.th+DIM.sh, tp=D.t[kp.fp];
+        if(round){   
+          const T=x=>pv.t1+(nm.t0-pv.t1)*x, P3=foot[j][k], CH=kp.R0.clone().lerp(P3,.45), cH=KICK_LAND.CHAMBER_H*Lg; let px,pz,hh;
+          if(t<T(ROUND_LAND.RET)){ const q=sm3((t-tp)/Math.max(1,T(ROUND_LAND.RET)-tp)); px=kp.P0.x+(CH.x-kp.P0.x)*q; pz=kp.P0.y+(CH.y-kp.P0.y)*q; hh=kp.h0+(cH-kp.h0)*q; }
+          else { const q=sm3((t-T(ROUND_LAND.RET))/Math.max(1,T(ROUND_LAND.LAND)-T(ROUND_LAND.RET))); px=CH.x+(P3.x-CH.x)*q; pz=CH.y+(P3.y-CH.y)*q; hh=cH*(1-q); }
+          const refinedRound=nm.n===6 || nm.n===12;
+          const toeSet=refinedRound?ROUND_LAND.LAND:ROUND_LAND.END;
+          J['ft'+k]=dwiDirection(j,k,sm3((frac-ROUND_LAND.RET)/(toeSet-ROUND_LAND.RET)));
+          if(nm.n===12){
+            const finalAim=stanceFootAim[j][k];
+            const offset=Math.atan2(Math.sin(Math.atan2(finalAim.x,finalAim.z)-nm.yaw),Math.cos(Math.atan2(finalAim.x,finalAim.z)-nm.yaw));
+            J['ft'+k]=J.pel.z.clone().setY(0).normalize().applyAxisAngle(YV,offset*sm3((frac-ROUND_LAND.STEP)/(1-ROUND_LAND.STEP)));
+          }
+          const w2=new THREE.Vector2(px,pz).sub(R), yy=gy+Math.max(0,hh);
+          let pole=hh>.01?kneeFwd(J,k,w2,yy):ftPole(J,k);
+          if(refinedRound){
+            const landing=sm3((frac-ROUND_LAND.RET)/(ROUND_LAND.LAND-ROUND_LAND.RET));
+            pole=blendPole(kp.pole,kneeFwd(J,k,w2,yy),sm3((t-tp)/Math.max(1,T(ROUND_LAND.RET)-tp)));
+            pole=blendPole(pole,ftPole(J,k),landing);
+          }
+          legTo(J,k,w2,yy,pole); continue; }
         if(MINFO[j].yeop){   
           const T=x=>pv.t1+(nm.t0-pv.t1)*x, tE=pv.t1+(nm.t0-pv.t1)*KICK_LAND.AT, CH=kp.R0.clone().addScaledVector(fw,KICK_LAND.CHAMBER_FWD), cH=KICK_LAND.CHAMBER_H*Lg;
           let px,pz,hh;
@@ -1630,6 +1844,14 @@ function plantFeet(FR){
         const support=k==='L'?'R':'L';
         const W=(Math.abs(nm.yaw-pv.yaw)>.5 ? previewFootRoute(foot[j-1][k],foot[j][k],foot[j-1][support],uh,j) : foot[j-1][k].clone().lerp(foot[j][k],uh)).sub(R);
         legTo(J,k,W,gy+STEP.LIFT*Math.sin(Math.PI*us),syncDwi?dwiDirection(j,k,u):ftPole(J,k)); }
+      else if(round){   
+        const kf=kick, yw=nm.yaw-pv.yaw, W=Math.abs(yw)>Math.PI ? previewFootRoute(foot[j-1][k],foot[j][k],foot[j][kf],u,j) : foot[j-1][k].clone().lerp(foot[j][k],u);
+        const base=dwiDirection(j,k,u);
+        const pivot=sm3((frac/YEOP_PEAK-.35)/.65)*(1-sm3((frac-ROUND_LAND.LAND)/(ROUND_LAND.END-ROUND_LAND.LAND)));
+        const aim=base.clone().applyAxisAngle(YV,Math.sign(yw)*Math.PI*.44*pivot);
+        J['ft'+k]=aim;
+        W.add(new THREE.Vector2(base.x-aim.x,base.z-aim.z).multiplyScalar(DIM.ft*.42));
+        legTo(J,k,W.sub(R),gy+STEP.LIFT*Math.sin(Math.PI*u),ftPole(J,k)); }
       else {
         const W=foot[j-1][k].clone().lerp(foot[j][k],u);
         if(D.synth && MINFO[j].yeop){
@@ -1848,6 +2070,35 @@ function tg5StampLanding(FR,root){
     if(lift>0)for(const k of ['hip','chest','hipL','hipR','shL','shR','elL','elR','wrL','wrR','knL','knR','anL','anR'])J[k].y+=lift;
   }
 }
+function finishTg6Arms(FR){
+  const j=D.moves.findIndex(m=>m.n===3), start=D.moves[j-1].t1, end=D.moves[j].t0;
+  FR.forEach((J,f)=>{
+    const u=(D.t[f]-start)/(end-start);
+    if(u>0 && u<1){
+      const s=MINFO[j].arm, sh=J['sh'+s], el=J['el'+s], wr=J['wr'+s], fw=J.che.z;
+      const weight=sm3(u/.20)*(1-sm3((u-.78)/.22));
+      const clearance=Math.max(0,.28-wr.clone().sub(J.hip).dot(fw));
+      const target=wr.clone().addScaledVector(fw,clearance*weight);
+      const pole=poleOf(sh,el,wr).addScaledVector(fw,.5*weight).normalize();
+      const r=ik2(sh,target,DIM.up,DIM.fo,pole);
+      J['el'+s]=r.mid; J['wr'+s]=r.end;
+    }
+    for(const s of ['L','R']){
+      const p=HAND_PHASE.get(J)?.[s];
+      if(!p?.isMain || p.tech!=='twist')continue;
+      const d=dirTo(J['el'+s],J['wr'+s]), sd=p.sd;
+      const down=handFromBack(d,YV.clone().negate(),sd);
+      const out=handFromBack(d,J.che.x.clone().multiplyScalar(sd),sd);
+      const up=handFromBack(d,YV,sd);
+      if(p.stroke===null){
+        const startHand={d:p.h0.d.clone().applyAxisAngle(YV,yawOf(J)),s:p.h0.s.clone().applyAxisAngle(YV,yawOf(J))};
+        J['hd'+s]=blendHand(startHand,down,sm3(p.preparation/.75));
+      }else{
+        J['hd'+s]=p.stroke<.5 ? blendHand(down,out,sm3(p.stroke*2)) : blendHand(out,up,sm3(p.stroke*2-1));
+      }
+    }
+  });
+}
 function computeSet(smX,clean,fix,path=true){
   const FR=smX.map(p=>build(p,clean));
   if(fix){
@@ -1864,6 +2115,8 @@ function computeSet(smX,clean,fix,path=true){
   if(planted&&D.id==='synth-tg5')tg5StampLanding(FR,planted);
   if(fix&&path&&D.id==='synth-tg5'){tg5FootDetails(FR);tg5KickHandRoll(FR);tg5SideBody(FR);tg5ElbowContacts(FR);}
   if(fix&&path&&D.synth)extendSideKickLegs(FR,planted);
+  if(fix&&path&&D.id==='synth-tg6')finishTg6Arms(FR);
+  if(fix&&path&&D.id==='synth-tg6')tg6SpreadPath(FR);
   armOutAll(FR);
   if(fix&&path&&D.id==='synth-tg5')tg5KickArmRoll(FR);
   
@@ -2107,6 +2360,7 @@ let headScale=1, handScale=1.2, useMove=true;
 const glowNow={aL:0,aR:0,lL:0,lR:0};
 function pose(t){
   const J=interp(t);
+  const edits=editor.apply(J,t);
   
   robot.position.set(useMove?J.root[0]:0, -J.fl+ANKLE_H, useMove?J.root[1]:0);
   const pz=J.pel.z, cz=J.che.z;
@@ -2118,7 +2372,24 @@ function pose(t){
   const fwdDown=J.pel.z.clone().addScaledVector(J.pel.y,-LEG_SIDE_DOWN).normalize();
   const legX=(a,b)=>{ const ld=dirTo(a,b), k=Math.min(1,Math.max(0,(Math.abs(ld.dot(J.pel.x))-.45)/.3)); if(k<=0) return pr;
     const x=new THREE.Vector3().crossVectors(ld,fwdDown); if(x.lengthSq()<1e-6) return pr; return pr.clone().lerp(x.normalize(),k).normalize(); };
-  const xTL=tg5LegAxis(J,'L',t,legX(J.hipL,J.knL)), xTR=tg5LegAxis(J,'R',t,legX(J.hipR,J.knR)), xSL=tg5LegAxis(J,'L',t,legX(J.knL,J.anL)), xSR=tg5LegAxis(J,'R',t,legX(J.knR,J.anR));
+  const round=kickState(t);
+  const refinedRound=round?.mi.round && (round.m.n===6 || round.m.n===12);
+  const strike=refinedRound?sm3((round.u/YEOP_PEAK-.35)/.65)*(1-sm3((round.u-.43)/(ROUND_LAND.LAND-.43))):0;
+  
+  const roundAxis=base=>strike?base.clone().lerp(YV.clone().multiplyScalar(-round.sd),strike).normalize():base;
+  const shinAxis=(s)=>{
+    const a=J['kn'+s], b=J['an'+s], base=tg5LegAxis(J,s,t,legX(a,b));
+    if(!round?.mi.round || s!==round.mi.kick)return base;
+    if(refinedRound)return roundAxis(base);
+    const weight=sm3((round.u-.09)/.17)*(1-sm3((round.u-.40)/(ROUND_LAND.LAND-.40)));
+    const d=dirTo(a,b), from=base.clone().addScaledVector(d,-base.dot(d)).normalize();
+    const to=YV.clone().addScaledVector(d,-d.y).normalize().multiplyScalar(-round.sd);
+    const angle=Math.atan2(from.clone().cross(to).dot(d),from.dot(to));
+    return from.applyAxisAngle(d,angle*weight);
+  };
+  const thighAxis=s=>{const base=tg5LegAxis(J,s,t,legX(J['hip'+s],J['kn'+s]));return refinedRound && s===round.mi.kick?roundAxis(base):base;};
+  const xTL=thighAxis('L'), xTR=thighAxis('R');
+  const xSL=editor.roll(shinAxis('L'),J.knL,J.anL,edits.knL), xSR=editor.roll(shinAxis('R'),J.knR,J.anR,edits.knR);
   placeSegX(P.thL,J.hipL,J.knL,xTL); placeSegX(P.thR,J.hipR,J.knR,xTR);
   placeSegX(P.sgL,J.knL,J.anL,xSL); placeSegX(P.sgR,J.knR,J.anR,xSR);
   placeHinge(P.knL,J.knL,dirTo(J.hipL,J.knL),dirTo(J.knL,J.anL),xTL.clone().negate()); placeHinge(P.knR,J.knR,dirTo(J.hipR,J.knR),dirTo(J.knR,J.anR),xTR.clone().negate());
@@ -2134,22 +2405,95 @@ function pose(t){
     
     const fdh=new THREE.Vector3(fd.x,0,fd.z), front2= fdh.lengthSq()>1e-6 ? front.clone().lerp(fdh.normalize(),plant*(1-p)) : front;
     let z=front2.clone().lerp(u.clone().negate(),p); z.addScaledVector(up,-z.dot(up)).normalize();
-    const sideFrame=sideKickFootFrame(J,s,t);
+    let sideFrame=sideKickFootFrame(J,s,t);
+    if(refinedRound && s===round.mi.kick){
+      const settle=sm3((round.u-.44)/(ROUND_LAND.LAND-.44));
+      const release=1-sm3((round.u-ROUND_LAND.LAND)/(1-ROUND_LAND.LAND));
+      const toe=fd.clone().setY(0).normalize();
+      const extended=u.clone().negate();
+      const targetInstep=new THREE.Vector3().crossVectors(xs,extended).normalize();
+      const instep=YV.clone().negate().addScaledVector(extended,extended.y);
+      if(instep.lengthSq()<1e-5)instep.copy(targetInstep);else instep.normalize();
+      const roll=sm3((round.u/YEOP_PEAK-.35)/.65);
+      const angle=Math.atan2(instep.clone().cross(targetInstep).dot(extended),instep.dot(targetInstep));
+      instep.applyAxisAngle(extended,angle*roll);
+      const kickFoot=new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(
+        new THREE.Vector3().crossVectors(instep,extended),instep,extended));
+      const groundFoot=new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(
+        new THREE.Vector3().crossVectors(YV,toe),YV,toe));
+      kickFoot.slerp(groundFoot,settle);
+      sideFrame={
+        up:YV.clone().applyQuaternion(kickFoot),
+        z:new THREE.Vector3(0,0,1).applyQuaternion(kickFoot),
+        weight:sm3((round.u-.03)/.12)*release
+      };
+    }
     if(sideFrame){
       const a=new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(new THREE.Vector3().crossVectors(up,z),up,z));
       const b=new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(new THREE.Vector3().crossVectors(sideFrame.up,sideFrame.z),sideFrame.up,sideFrame.z));a.slerp(b,sideFrame.weight);
       up=new THREE.Vector3(0,1,0).applyQuaternion(a);z=new THREE.Vector3(0,0,1).applyQuaternion(a);
     }
     const heelFrame=tg5HeelFrame(s,t);if(heelFrame){up=heelFrame.up;z=heelFrame.z;}
+    editor.turn(up,z,edits['an'+s]);
     const x=new THREE.Vector3().crossVectors(up,z);
+    if(refinedRound && s===round.mi.kick){
+      const axle=x.clone().multiplyScalar(x.dot(xs)<0?-1:1);
+      P['an'+s].quaternion.setFromUnitVectors(Y,axle);
+    }
     const len=DIM.ft*1.25*handScale/1.2*1.1, h=.075*handScale, w=.095*handScale;
     f.scale.set(w,h,len); placeBasis(f,an.clone().addScaledVector(up,-.04).addScaledVector(z,len*.28),x,up,z); }
 
-  for(const s of ['L','R']){ placeSegX(P['ua'+s],J['sh'+s],J['el'+s],J['ao'+s]); placeSegX(P['fa'+s],J['el'+s],J['wr'+s],J['ao'+s]); }
+  const mk=moveAt(t), mki=MV.indexOf(mk);
+  const spreadWeight=MINFO[mki]?.par ? sm3(tg6SpreadPhase(t,MV[mki-1],mk)/.30)
+    : MINFO[mki-1]?.par ? 1-sm3((t-MV[mki-1].t1)/(mk.t0-MV[mki-1].t1)/.30) : 0;
+  for(const s of ['L','R']){
+    const axis=J['ao'+s];
+    const finish=MINFO[mki]?.par ? sm3((tg6SpreadPhase(t,MV[mki-1],mk)-.65)/.35) : 1;
+    let upperAxis=axis;
+    if(spreadWeight>0){
+      const d=dirTo(J['sh'+s],J['el'+s]), outward=J.che.x.clone().multiplyScalar(s==='L'?1:-1);
+      outward.addScaledVector(d,-outward.dot(d)).normalize();
+      const base=axis.clone().addScaledVector(d,-axis.dot(d)).normalize();
+      const angle=Math.atan2(base.clone().cross(outward).dot(d),base.dot(outward));
+      upperAxis=base.applyAxisAngle(d,angle*spreadWeight*finish);
+    }
+    placeSegX(P['ua'+s],J['sh'+s],J['el'+s],upperAxis);
+    let foreAxis=axis;
+    if(spreadWeight>0){
+      const d=dirTo(J['el'+s],J['wr'+s]), h=J['hd'+s];
+      const back=h.s.clone().cross(h.d).multiplyScalar(HAND_BACK[s]);
+      const rolled=handFromBack(d,back,HAND_BACK[s]).s;
+      const outward=J.che.x.clone().multiplyScalar(s==='L'?1:-1);
+      outward.addScaledVector(d,-outward.dot(d)).normalize();
+      const rollOut=Math.atan2(rolled.clone().cross(outward).dot(d),rolled.dot(outward));
+      rolled.applyAxisAngle(d,rollOut*finish);
+      const base=axis.clone().addScaledVector(d,-axis.dot(d)).normalize();
+      const angle=Math.atan2(base.clone().cross(rolled).dot(d),base.dot(rolled));
+      foreAxis=base.applyAxisAngle(d,angle*spreadWeight);
+    }
+    const phase=HAND_PHASE.get(S.FR[bs(t)])?.[s];
+    const downNow=MINFO[mki]?.block==='down' && MINFO[mki].arm===s;
+    const downBefore=MINFO[mki-1]?.block==='down' && MINFO[mki-1].arm===s;
+    const downWeight=downNow ? (t>=mk.t0 ? 1 : phase?.tech==='down' && phase.isMain ? phase.stroke!==null ? 1 : sm3(phase.preparation) : 0)
+      : downBefore ? 1-sm3((t-MV[mki-1].t1)/Math.max(1,(mk.t0-MV[mki-1].t1)*.30)) : 0;
+    if(D.synth && downWeight>0){
+      const d=dirTo(J['el'+s],J['wr'+s]),h=J['hd'+s];
+      const back=h.s.clone().cross(h.d).multiplyScalar(HAND_BACK[s]);
+      const rolled=handFromBack(d,back,HAND_BACK[s]).s;
+      const aligned=upperAxis.clone().addScaledVector(d,-upperAxis.dot(d)).normalize();
+      const finish=downNow && t<mk.t0 ? phase?.stroke!=null ? sm3((phase.stroke-.55)/.45) : 0 : 1;
+      const settle=Math.atan2(rolled.clone().cross(aligned).dot(d),rolled.dot(aligned));
+      rolled.applyAxisAngle(d,settle*finish);
+      const base=foreAxis.clone().addScaledVector(d,-foreAxis.dot(d)).normalize();
+      const angle=Math.atan2(base.clone().cross(rolled).dot(d),base.dot(rolled));
+      foreAxis=base.applyAxisAngle(d,angle*downWeight);
+    }
+    placeSegX(P['fa'+s],J['el'+s],J['wr'+s],editor.roll(foreAxis,J['el'+s],J['wr'+s],edits['el'+s]));
+  }
   placeHinge(P.elL,J.elL,dirTo(J.shL,J.elL),dirTo(J.elL,J.wrL),J.che.x); placeHinge(P.elR,J.elR,dirTo(J.shR,J.elR),dirTo(J.elR,J.wrR),J.che.x);
   placeBasis(P.soL,J.shL,J.che.y,J.che.x.clone().negate(),J.che.z); placeBasis(P.soR,J.shR,J.che.y,J.che.x.clone().negate(),J.che.z);
-  const mk=moveAt(t), knifeArm=/손날/.test(mk.name)?MINFO[MV.indexOf(mk)].arm:null;   
-  const mki=MV.indexOf(mk), kickOpenAt=knifeOpenAt(mki);
+  const knifeArm=/손날/.test(mk.name)||(D.id==='synth-tg6'&&/바탕손/.test(mk.name))?MINFO[mki].arm:null;
+  const kickOpenAt=knifeOpenAt(mki);
   const kickAir= MINFO[mki] && MINFO[mki].kick && t<kickOpenAt; 
   const bothOpen=/손날거들어|제비품|편손끝/.test(mk.name) && !kickAir;   
   for(const [s,wr,hd] of [['L',J.wrL,J.hdL],['R',J.wrR,J.hdR]]){
@@ -2163,7 +2507,11 @@ function pose(t){
   const nb=J.chest.clone(), hu=J.headUp;
   P.neck.position.copy(nb.clone().addScaledVector(hu,DIM.neck*.5)); P.neck.quaternion.setFromUnitVectors(Y,hu);
   const hh=HEAD_BASE*headScale;
-  const hf=J.headF.clone().addScaledVector(hu,-J.headF.dot(hu)).normalize(); const hx=new THREE.Vector3().crossVectors(hu,hf);
+  const kick=kickState(t);
+  const gaze=kick?.mi.round
+    ? DIRV[MINFO[kick.j-1].dir].clone().lerp(J.headF,sm3((kick.u-.40)/(ROUND_LAND.LAND-.40))).normalize()
+    : J.headF;
+  const hf=gaze.clone().addScaledVector(hu,-gaze.dot(hu)).normalize(); const hx=new THREE.Vector3().crossVectors(hu,hf);
   P.head.scale.setScalar(hh); placeBasis(P.head,nb.clone().addScaledVector(hu,DIM.neck*.75+hh*HEAD_HW[1]),hx,hu,hf);
   return J;
 }
@@ -2196,7 +2544,7 @@ function buildCalls(){
   ev.push([D.attn ? Math.max(0,D.attn-CALL_LEAD) : 0, '준비']);
   ev.push([first.t1-CALL_LEAD-CALL_START_GAP, '시작']);
   for(let j=1;j<MV.length;j++){ const m=MV[j], pv=MV[j-1]; if(m.n===pv.n) continue;
-    ev.push([pv.t1-CALL_LEAD, m===last ? '바로' : COUNT[m.n]+(m.n===NCNT?'! 기합!':'!')]); }
+    ev.push([pv.t1-CALL_LEAD, m===last ? '바로' : COUNT[m.n]+(m.n===NCNT&&D.id!=='synth-tg6'?'! 기합!':'!')]); }
   ev.push([D.outro ? D.outro.a0-CALL_LEAD : last.t1-450, '쉬어']);
   return ev.sort((a,b)=>a[0]-b[0]); }
 function callAt(t){
@@ -2253,7 +2601,7 @@ function ui(t){
     const done=Math.min(NCNT,Math.max(0,m.n===NLAST?NCNT:m.n-1)); el('pn').textContent=(m.n===NLAST?NCNT:Math.max(0,m.n))+' / '+NCNT; el('pb').style.width=(done/NCNT*100)+'%'; }
   
   const m18=MV.filter(x=>x.n===NCNT).pop(), m19=MV[MV.length-1];
-  drawFace(t>=m18.t0-150&&t<=m18.t1+300?'kiai': (m19&&t>=m19.t0)?'smile':'serious');
+  drawFace(D.id!=='synth-tg6'&&t>=m18.t0-150&&t<=m18.t1+300?'kiai': (m19&&t>=m19.t0)?'smile':'serious');
   return m;
 }
 function glow(m,J,dt){
@@ -2271,7 +2619,7 @@ let view='back';
 function aim(cam,which,tgt){
   const d= which==='front'? new THREE.Vector3(0,.3,3.6) : which==='side'? new THREE.Vector3(3.6,.3,0) : new THREE.Vector3(0,.5,-3.5);
   cam.position.copy(tgt).add(d); cam.lookAt(tgt.x,tgt.y,tgt.z); }
-function resize(){ const w=innerWidth,h=innerHeight; R1.setSize(w,h,false); cam1.aspect=w/h; cam1.updateProjectionMatrix();
+function resize(){ const w=cvs.clientWidth,h=Math.max(1,cvs.clientHeight); R1.setSize(w,h,false); cam1.aspect=w/h; cam1.updateProjectionMatrix();
   const b=el('mirrorBox'); R2.setSize(b.clientWidth,b.clientHeight,false); cam2.aspect=b.clientWidth/b.clientHeight; cam2.updateProjectionMatrix(); }
 addEventListener('resize',resize); resize();
 
@@ -2338,8 +2686,9 @@ function tick(now){
   const want=new THREE.Vector3(robot.position.x, .95, robot.position.z); tgt.lerp(want,Math.min(1,dt*2));
   if(view==='free'){ cam1.position.add(tgt.clone().sub(orbit.target)); orbit.target.copy(tgt); orbit.update(); }   
   else aim(cam1,view,tgt);
+  editor.update(J,tt,playing);
   R1.render(scene,cam1);
-  if(mirrorOn){ aim(cam2,'front',tgt); R2.render(scene,cam2); }
+  if(mirrorOn){ aim(cam2,'front',tgt); cam2.layers.disable(1); R2.render(scene,cam2); }
   if(footOn) drawFootPanel(m,dt);
   if(!seeking) el('seek').value=Math.round(tt/D.dur*1000);
   requestAnimationFrame(tick);
@@ -2361,6 +2710,17 @@ if(EMBED){ let pd=null;
     if(moved<10 && dt<400){ try{ parent.__psmGroupTap && parent.__psmGroupTap(); }catch(_){} } }); }
 orbit.minDistance=1.2; orbit.maxDistance=8; orbit.maxPolarAngle=Math.PI*.49; orbit.target.copy(tgt);
 orbit.addEventListener('start',()=>{ if(view!=='free'){ view='free'; el('view').value='free'; orbit.target.copy(tgt); } });
+const editor=createPoseEditor({
+  enabled:!EMBED && D.id==='synth-tg6' && !new URLSearchParams(location.search).has('clean'), data:D, scene, robot, camera:cam1, canvas:cvs, orbit,
+  ik:ik2, poleOf, dimensions:DIM, frameAt:bs, moveAt:moveIndexAt,
+  seek(ms){ t=ms; scrubDir=0; stopAt=null; }
+});
+if(!EMBED && D.id==='synth-tg6'){
+  new ResizeObserver(resize).observe(cvs);
+  new ResizeObserver(()=>{
+    document.documentElement.style.setProperty('--pose-controls-height',el('ctl').offsetHeight+'px');
+  }).observe(el('ctl'));
+}
 el('move').onclick=e=>{ useMove=!useMove; e.target.classList.toggle('on',useMove); e.target.textContent=useMove?'이동':'제자리'; };
 el('sideBtn').onclick=e=>{ applySideColor(!sideColorOn); e.target.classList.toggle('on',sideColorOn); e.target.textContent=sideColorOn?'좌우 색 켜짐':'좌우 색 꺼짐'; };
 el('footBtn').onclick=e=>{ footOn=!footOn; el('footBox').style.display=footOn?'':'none'; e.target.classList.toggle('on',footOn); e.target.textContent=footOn?'발 위치 켜짐':'발 위치 꺼짐'; if(footOn) sizeFoot(); };
@@ -2372,7 +2732,7 @@ el('fix').onclick=e=>{ fixOn=!fixOn; pickSet(); e.target.classList.toggle('on',f
 el('head').oninput=e=>headScale=+e.target.value;
 el('hand').oninput=e=>handScale=+e.target.value;
 el('belt').onchange=e=>beltMat.color.set(e.target.value);
-addEventListener('keydown',e=>{ if(e.code==='Space'){ e.preventDefault(); el('play').click(); } });
+addEventListener('keydown',e=>{ if(e.code==='Space'&&!e.target.closest?.('#poseEdit')){ e.preventDefault(); el('play').click(); } });
 
 function moveIndexAt(tt){ for(let i=0;i<MV.length;i++){ if(tt<=MV[i].t1) return i; } return MV.length-1; }
 window.__robot={
@@ -2468,12 +2828,18 @@ function playGuideKiai(){
  try{speechSynthesis.cancel();}catch(e){}
  localKiai.pause();localKiai.currentTime=0;localKiai.volume=.85;localKiai.play().catch(()=>{});
 }
+const guideKiaiTimes=MV.flatMap((m,j)=>{
+ if(!/기합/.test(m.name))return [];
+ if(D.id!=='synth-tg6' || !MINFO[j].round)return [m.t0];
+ const peak=MV[j-1].t1+(m.t0-MV[j-1].t1)*YEOP_PEAK;
+ return [D.t.find(time=>time>=peak)??peak];
+});
 function updateGroupGuides(tt){
  const j=guideTurns.find(j=>tt>=MV[j-1].t1-900 && tt<=MV[j].t0+350);
  if(j!==undefined && activeGuide!==j)loadGuideTurn(j);
  demoRoot.visible=guidanceOn && j!==undefined;
  if(playing && soundOn && tt>=previousGuideTime && tt-previousGuideTime<350){
-  for(const m of MV)if(/기합/.test(m.name) && previousGuideTime<m.t0 && tt>=m.t0)playGuideKiai();
+  for(const time of guideKiaiTimes)if(previousGuideTime<time && tt>=time)playGuideKiai();
  }
  previousGuideTime=tt;
 }

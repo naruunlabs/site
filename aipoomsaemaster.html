@@ -512,7 +512,7 @@ body.group-running #groupLesson{display:block}
 <script id="psm-core">
 
 var PSM = (function(){
-  var VERSION = '1.2.7';   
+  var VERSION = '1.2.8';   
 
   var DEFAULT_CFG = {
     SMOOTH: 0.5,        
@@ -554,6 +554,12 @@ var PSM = (function(){
   TECH_OK['팔굽돌려치기']=['몸통안막기','얼굴막기'];
   TECH_OK['팔굽표적치기']=['몸통안막기'];
   TECHS.push('메주먹내려치기','팔굽돌려치기','팔굽표적치기');
+
+  TECH_OK['얼굴비틀어막기']=['몸통안막기','얼굴막기','몸통지르기'];
+  TECH_OK['아래헤쳐막기']=['준비','아래막기'];
+  TECH_OK['얼굴바깥막기']=['얼굴막기','몸통안막기'];
+  TECH_OK['바탕손안막기']=['몸통안막기','몸통지르기'];
+  TECHS.push('얼굴비틀어막기','아래헤쳐막기','얼굴바깥막기','바탕손안막기');
   var STANCES = ['준비','앞서기','앞굽이','뒷굽이','왼서기','오른서기','뒤꼬아서기'];
 
   var KEY_TG1 = [
@@ -872,9 +878,224 @@ var PSM = (function(){
     "opt": true
   }
 ];
+
+  var KEY_TG6 = [
+  {
+    "n": 0,
+    "dir": "F",
+    "stance": "준비",
+    "tech": "준비",
+    "name": "나란히서기 기본준비",
+    "hand": ""
+  },
+  {
+    "n": 1,
+    "dir": "L",
+    "stance": "앞굽이",
+    "tech": "아래막기",
+    "name": "왼앞굽이 아래막기",
+    "hand": "왼팔",
+    "chk": true
+  },
+  {
+    "n": 2,
+    "dir": "L",
+    "stance": "뒷굽이",
+    "tech": "몸통바깥막기",
+    "name": "오른발 앞차기 → 오른뒷굽이 몸통바깥막기",
+    "hand": "왼팔",
+    "dirs": [
+      "L",
+      "F"
+    ],
+    "chk": true
+  },
+  {
+    "n": 3,
+    "dir": "R",
+    "stance": "앞굽이",
+    "tech": "아래막기",
+    "name": "오른앞굽이 아래막기",
+    "hand": "오른팔",
+    "chk": true
+  },
+  {
+    "n": 4,
+    "dir": "R",
+    "stance": "뒷굽이",
+    "tech": "몸통바깥막기",
+    "name": "왼발 앞차기 → 왼뒷굽이 몸통바깥막기",
+    "hand": "오른팔",
+    "dirs": [
+      "R",
+      "F"
+    ],
+    "chk": true
+  },
+  {
+    "n": 5,
+    "dir": "F",
+    "stance": "앞굽이",
+    "tech": "얼굴비틀어막기",
+    "name": "왼앞굽이 한손날 얼굴비틀어막기",
+    "hand": "오른손날",
+    "chk": true
+  },
+  {
+    "n": 6,
+    "dir": "L",
+    "stance": "앞굽이",
+    "tech": "몸통지르기",
+    "name": "오른발 얼굴돌려차기 → 왼앞굽이 얼굴바깥막기 → 몸통지르기",
+    "hand": "왼팔·오른주먹",
+    "chk": true
+  },
+  {
+    "n": 7,
+    "dir": "L",
+    "stance": "앞굽이",
+    "tech": "몸통지르기",
+    "name": "오른발 앞차기 → 오른앞굽이 몸통지르기",
+    "hand": "왼주먹",
+    "chk": true
+  },
+  {
+    "n": 8,
+    "dir": "R",
+    "stance": "앞굽이",
+    "tech": "몸통지르기",
+    "name": "오른앞굽이 얼굴바깥막기 → 몸통지르기",
+    "hand": "오른팔·왼주먹",
+    "chk": true
+  },
+  {
+    "n": 9,
+    "dir": "R",
+    "stance": "앞굽이",
+    "tech": "몸통지르기",
+    "name": "왼발 앞차기 → 왼앞굽이 몸통지르기",
+    "hand": "오른주먹",
+    "chk": true
+  },
+  {
+    "n": 10,
+    "dir": "F",
+    "stance": "준비",
+    "tech": "아래헤쳐막기",
+    "name": "나란히서기 아래헤쳐막기",
+    "hand": "두 팔",
+    "chk": true
+  },
+  {
+    "n": 11,
+    "dir": "F",
+    "stance": "앞굽이",
+    "tech": "얼굴비틀어막기",
+    "name": "오른앞굽이 한손날 얼굴비틀어막기",
+    "hand": "왼손날",
+    "chk": true
+  },
+  {
+    "n": 12,
+    "dir": "L",
+    "stance": "앞굽이",
+    "tech": "아래막기",
+    "name": "왼발 얼굴돌려차기 (기합) → 오른앞굽이 아래막기",
+    "hand": "오른팔",
+    "chk": true
+  },
+  {
+    "n": 13,
+    "dir": "L",
+    "stance": "뒷굽이",
+    "tech": "몸통바깥막기",
+    "name": "왼발 앞차기 → 왼뒷굽이 몸통바깥막기",
+    "hand": "오른팔",
+    "dirs": [
+      "L",
+      "B"
+    ],
+    "chk": true
+  },
+  {
+    "n": 14,
+    "dir": "R",
+    "stance": "앞굽이",
+    "tech": "아래막기",
+    "name": "왼앞굽이 아래막기",
+    "hand": "왼팔",
+    "chk": true
+  },
+  {
+    "n": 15,
+    "dir": "R",
+    "stance": "뒷굽이",
+    "tech": "몸통바깥막기",
+    "name": "오른발 앞차기 → 오른뒷굽이 몸통바깥막기",
+    "hand": "왼팔",
+    "dirs": [
+      "R",
+      "B"
+    ],
+    "chk": true
+  },
+  {
+    "n": 16,
+    "dir": "F",
+    "stance": "뒷굽이",
+    "tech": "손날거들어막기",
+    "name": "오른뒷굽이 손날거들어막기",
+    "hand": "왼손날",
+    "dirs": [
+      "F",
+      "R"
+    ],
+    "chk": true
+  },
+  {
+    "n": 17,
+    "dir": "F",
+    "stance": "뒷굽이",
+    "tech": "손날거들어막기",
+    "name": "왼뒷굽이 손날거들어막기",
+    "hand": "오른손날",
+    "dirs": [
+      "F",
+      "L"
+    ],
+    "chk": true
+  },
+  {
+    "n": 18,
+    "dir": "F",
+    "stance": "앞굽이",
+    "tech": "몸통지르기",
+    "name": "왼앞굽이 바탕손안막기 → 몸통지르기",
+    "hand": "왼손·오른주먹",
+    "chk": true
+  },
+  {
+    "n": 19,
+    "dir": "F",
+    "stance": "앞굽이",
+    "tech": "몸통지르기",
+    "name": "오른앞굽이 바탕손안막기 → 몸통지르기",
+    "hand": "오른손·왼주먹",
+    "chk": true
+  },
+  {
+    "n": 20,
+    "dir": "F",
+    "stance": "준비",
+    "tech": "준비",
+    "name": "바로 (나란히서기)",
+    "hand": "",
+    "opt": true
+  }
+];
   
-  var KEYS = {tg1:KEY_TG1, tg2:KEY_TG2, tg3:KEY_TG3, tg4:KEY_TG4, tg5:KEY_TG5};
-  var POOMSAE_NAME = {tg1:'태극 1장', tg2:'태극 2장', tg3:'태극 3장', tg4:'태극 4장', tg5:'태극 5장'};
+  var KEYS = {tg1:KEY_TG1, tg2:KEY_TG2, tg3:KEY_TG3, tg4:KEY_TG4, tg5:KEY_TG5, tg6:KEY_TG6};
+  var POOMSAE_NAME = {tg1:'태극 1장', tg2:'태극 2장', tg3:'태극 3장', tg4:'태극 4장', tg5:'태극 5장', tg6:'태극 6장'};
 
   var KP = [11,12,13,14,15,16,23,24,25,26,27,28];
   var G_CORE = [0,1,6,7], G_ARM = [2,3,4,5], G_LEG = [8,9,10,11];
@@ -985,6 +1206,7 @@ var PSM = (function(){
     return {dir:dir, stance:stance, tech:tech, arm:act, bodyYaw:a.bodyYaw};
   }
 
+  var STANCE_SEEN = {'준비':1, '앞서기':1, '앞굽이':1};   
   function noTech(k){ return !!k && k.dir==='B' && k.tech==='몸통지르기'; }
   function judge(cls, k){
     if(!cls || !k) return {score:0, ok:{dir:false,stance:false,tech:false}};
@@ -997,7 +1219,8 @@ var PSM = (function(){
     }
     
     var techOk = noTech(k) ? dirOk : (cls.tech===k.tech || (!!TECH_OK[k.tech] && TECH_OK[k.tech].indexOf(cls.tech)>=0));
-    var ok={dir: dirOk, stance: cls.stance===k.stance, tech: techOk};
+
+    var ok={dir: dirOk, stance: STANCE_SEEN[k.stance] ? cls.stance===k.stance : null, tech: techOk};
     
     return {score: (ok.dir?0.55:0)+(ok.tech?0.45:0), ok:ok};
   }
@@ -1123,7 +1346,7 @@ var PSM = (function(){
   }
 
   function summarize(stops, key){
-    var al=align(stops,key), rows=[], st={n:0,match:0,dir:0,stance:0,tech:0,full:0,soft:0,
+    var al=align(stops,key), rows=[], st={n:0,match:0,dir:0,stance:0,stanceN:0,tech:0,full:0,soft:0,
       byDir:{F:[0,0],S:[0,0],B:[0,0]}};
     for(var j=0;j<key.length;j++){
       var k=key[j], si=al.map[j], s= si>=0 ? stops[si] : null;
@@ -1138,6 +1361,7 @@ var PSM = (function(){
       st.match++;
       if(jd.ok.dir){ st.dir++; st.byDir[cl][0]++; }
       if(jd.ok.stance) st.stance++;
+      if(jd.ok.stance!==null) st.stanceN++;   
       if(jd.ok.tech) st.tech++;
       if(jd.ok.dir && jd.ok.tech){ st.full++; if(jd.soft) st.soft++; }
     }
@@ -2361,7 +2585,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
       dOk[took]=jd.ok.dir;
       live.marks[k][took]=moveMark(jd);
       live.ptr[k]=took+1;
-      txt='<b>'+key[took].n+'번</b> '+(jd.soft ? '방향 <span class="sf">△</span> '+esc(PSM.DIR_NAME[key[took].dir])+' <span class="dim">(몸을 덜 비틀어요)</span>' : mk(jd.ok.dir,'방향',shownDir(jd,cls,key[took])))+' · '+mk(jd.ok.stance,'서기',cls.stance)+' · '+mk(jd.ok.tech,'기술',shownTech(jd,cls,key[took]))+(took>from?' <span class="x">('+missText(key,from,took-1)+' 놓침)</span>':'');
+      txt='<b>'+key[took].n+'번</b> '+(jd.soft ? '방향 <span class="sf">△</span> '+esc(PSM.DIR_NAME[key[took].dir])+' <span class="dim">(몸을 덜 비틀어요)</span>' : mk(jd.ok.dir,'방향',shownDir(jd,cls,key[took])))+' · '+(jd.ok.stance===null ? '서기 <span class="dim">–</span>' : mk(jd.ok.stance,'서기',cls.stance))+' · '+mk(jd.ok.tech,'기술',shownTech(jd,cls,key[took]))+(took>from?' <span class="x">('+missText(key,from,took-1)+' 놓침)</span>':'');
       if(rec.role!=='master' && pref.feedback==='on') judgeBeep(k, jd.ok.dir&&jd.ok.tech);
       live.lastStop=performance.now();
     }
@@ -2699,7 +2923,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     h+='<div class="r-k"><div class="l">방향 · 정면</div><div class="v num">'+pct(s.byDir.F[0],s.byDir.F[1])+'</div><div class="s">'+s.byDir.F[0]+'/'+s.byDir.F[1]+'</div></div>';
     h+='<div class="r-k"><div class="l">방향 · 옆모습</div><div class="v num">'+pct(s.byDir.S[0],s.byDir.S[1])+'</div><div class="s">'+s.byDir.S[0]+'/'+s.byDir.S[1]+'</div></div>';
     h+='<div class="r-k"><div class="l">방향 · 뒷모습</div><div class="v num">'+pct(s.byDir.B[0],s.byDir.B[1])+'</div><div class="s">'+s.byDir.B[0]+'/'+s.byDir.B[1]+' · 가장 중요한 숫자</div></div>';
-    h+='<div class="r-k"><div class="l">서기 (참고 · 점수 제외)</div><div class="v num">'+pct(s.stance,s.match)+'</div><div class="s">'+s.stance+'/'+s.match+'</div></div>';
+    h+='<div class="r-k"><div class="l">서기 (참고 · 점수 제외)</div><div class="v num">'+pct(s.stance,s.stanceN!=null?s.stanceN:s.match)+'</div><div class="s">'+s.stance+'/'+(s.stanceN!=null?s.stanceN:s.match)+(s.stanceN!=null&&s.stanceN<s.match?' · 뒷굽이 등 '+(s.match-s.stanceN)+'개 판정 안 함':'')+'</div></div>';
     h+='<div class="r-k"><div class="l">기술</div><div class="v num">'+pct(s.tech,s.match)+'</div><div class="s">'+s.tech+'/'+s.match+'</div></div>';
     h+='<div class="r-k"><div class="l">찾은 동작 / 남는 멈춤</div><div class="v num">'+s.match+'/'+s.n+'</div><div class="s">남는 멈춤 '+s.extra+'개 · 사람 보임 '+pct(t.seen,tot)+'</div></div>';
     h+='</div>';
@@ -2710,7 +2934,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
       if(!s0){ h+='<td colspan="3" class="x">못 찾음 (멈춤 없음)</td><td class="dim">-</td></tr>'; return; }
       var c=s0.cls||{};
       h+='<td>'+(jd.soft ? '<span class="sf">△</span> '+esc(PSM.DIR_NAME[k.dir])+' <span class="dim">(인정 · 본 방향 '+esc(PSM.DIR_NAME[c.dir])+' · '+Math.round(PSM.SOFT_DIR_PTS*100)+'%)</span>' : cell(jd.ok.dir, shownDir(jd,c,k), PSM.DIR_NAME[k.dir]))+'</td>';
-      h+='<td>'+cell(jd.ok.stance, c.stance, k.stance)+'</td>';
+      h+='<td>'+(jd.ok.stance===null ? '<span class="dim">판정 안 함 ('+esc(k.stance)+')</span>' : cell(jd.ok.stance, c.stance, k.stance))+'</td>';
       h+='<td>'+(PSM.noTech(k) ? '<span class="dim">판정 안 함 (뒤라 손이 안 보임)</span>' : cell(jd.ok.tech, shownTech(jd,c,k), k.tech))+'</td>';
       h+='<td class="num dim">'+(s0.t0/1000).toFixed(1)+'s</td></tr>';
     });
