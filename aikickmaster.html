@@ -3388,10 +3388,14 @@ body.akm-group-open.akm-group-running .stage>.panel>.mode-row *{visibility:hidde
       <button class="drill-btn" id="m_dwi_r" onclick="setMode('dwi_r')">뒤R</button>
       <button class="drill-btn" id="m_dwi_l" onclick="setMode('dwi_l')">뒤L</button>
       
+      <button class="drill-btn" id="m_hu_r" onclick="setMode('hu_r')" style="display:none !important">뒤후R</button>
+      <button class="drill-btn" id="m_hu_l" onclick="setMode('hu_l')" style="display:none !important">뒤후L</button>
+      
       <button class="drill-btn" id="m_apcha_x" onclick="setMode('apcha_x')" style="display:none !important">앞↔</button>
       <button class="drill-btn" id="m_dollo_x" onclick="setMode('dollo_x')" style="display:none !important">돌↔</button>
       <button class="drill-btn" id="m_yeop_x"  onclick="setMode('yeop_x')"  style="display:none !important">옆↔</button>
       <button class="drill-btn" id="m_dwi_x"   onclick="setMode('dwi_x')"   style="display:none !important">뒤↔</button>
+      <button class="drill-btn" id="m_hu_x"    onclick="setMode('hu_x')"    style="display:none !important">뒤후↔</button>
     </div>
     <div class="game-area" id="drillCountArea">
       <div class="drill-count-row">
@@ -3626,25 +3630,20 @@ body.akm-group-open.akm-group-running .stage>.panel>.mode-row *{visibility:hidde
 
 <div id="drillPickModal" class="dp-modal" role="dialog" aria-modal="true" aria-labelledby="dpTitle" hidden>
   <div class="dp-box">
-    <div class="dp-head"><h3 id="dpTitle">연습할 발차기 선택</h3><p>누른 순서대로 이어서 찹니다. 같은 발차기는 한 번씩, 8개까지.</p></div>
+    <div class="dp-head"><h3 id="dpTitle">연습할 발차기 선택</h3></div>
+    
     <div class="dp-body">
-      <div class="dp-col">
-        <h4>발차기 고르기</h4>
-        <div class="dp-grid" id="dpPick"></div>
-        <h4 class="dp-h-pre">한 번에 채우기</h4>
-        <div class="dp-presets" id="dpPresets"></div>
-      </div>
-      <div class="dp-col">
-        <h4>차는 순서 <span id="dpSum"></span></h4>
-        <div class="dp-order" id="dpOrder"></div>
-        <div class="dp-note"><b>번갈아</b>는 한 종목 안에서 오른발·왼발을 한 번씩 교대로 찹니다.</div>
-      </div>
+      <h4><b class="dp-step">1</b>무엇을 찰까요? <span>누른 순서대로 찹니다</span></h4>
+      <div class="dp-kinds" id="dpKinds"></div>
+      <h4><b class="dp-step">2</b>발은 어떻게?</h4>
+      <div class="dp-feet" id="dpFeet"></div>
+      <h4 class="dp-h-prev">이렇게 찹니다 <span id="dpSum"></span></h4>
+      <div class="dp-preview" id="dpPreview"></div>
     </div>
     <div class="dp-foot">
       <em id="dpMsg"></em>
-      <button type="button" class="dp-ghost" id="dpClear">모두 지우기</button>
       <button type="button" class="dp-ghost" id="dpClose">닫기</button>
-      <button type="button" class="dp-save" id="dpSave">이 순서로 사용</button>
+      <button type="button" class="dp-save" id="dpSave">이대로 사용</button>
     </div>
   </div>
 </div>
@@ -3821,17 +3820,26 @@ const MODE_CFG={
   dollo_x:  {rank:false, isDrill:true,  label:'돌려차기 번갈아', kick:'dollo', foot:'alt'},
   yeop_x:   {rank:false, isDrill:true,  measureOnly:true, label:'옆차기 번갈아', kick:'yeop', foot:'alt'},
   dwi_x:    {rank:false, isDrill:true,  measureOnly:true, label:'뒤차기 번갈아', kick:'dwi',  foot:'alt'},
+
+  hu_r:     {rank:false, isDrill:true,  measureOnly:true, practice:true, label:'뒤후려차기 오른발', kick:'hu', foot:'right'},
+  hu_l:     {rank:false, isDrill:true,  measureOnly:true, practice:true, label:'뒤후려차기 왼발',   kick:'hu', foot:'left'},
+  hu_x:     {rank:false, isDrill:true,  measureOnly:true, practice:true, label:'뒤후려차기 번갈아', kick:'hu', foot:'alt'},
 };
+
+function isPracticeMode(m){ return MODE_CFG[m||currentMode]?.practice===true; }
+const PRACTICE_THANKS=['감사합니다!','고마워요!','좋은 기록 고마워요!','도와줘서 감사합니다!'];
+let practiceThanksI=0;
+function practiceThanks(){ return PRACTICE_THANKS[(practiceThanksI++)%PRACTICE_THANKS.length]; }
 
 function isMeasureOnlyMode(){ return MODE_CFG[currentMode]?.measureOnly===true; }
 
-const ALL_KICK_MODES=['apcha_r','apcha_l','dollo_r','dollo_l','yeop_r','yeop_l','dwi_r','dwi_l'];
+const ALL_KICK_MODES=['apcha_r','apcha_l','dollo_r','dollo_l','yeop_r','yeop_l','dwi_r','dwi_l','hu_r','hu_l'];
 
-const ALT_KICK_MODES=['apcha_x','dollo_x','yeop_x','dwi_x'];
+const ALT_KICK_MODES=['apcha_x','dollo_x','yeop_x','dwi_x','hu_x'];
 
 const EVERY_KICK_MODE=ALL_KICK_MODES.concat(ALT_KICK_MODES);
 
-const KICK_KINDS=['apcha','dollo','yeop','dwi'];
+const KICK_KINDS=['apcha','dollo','yeop','dwi','hu'];   
 
 const AUTODRILL_LS_KEY='akm_autodrill_v2';
 let drillKicks=['apcha','dollo'];   
@@ -3871,7 +3879,7 @@ function legacyDrillModes(){
 }
 
 const DRILL_SEQ_LS_KEY='akm_drillseq_v1';
-const DRILL_SEQ_MAX=8;
+const DRILL_SEQ_MAX=10;   
 let drillSeq=legacyDrillModes();
 function cleanDrillSeq(arr){
   const out=[];
@@ -5014,6 +5022,12 @@ function renderStats(){
       sparringTimeBox.style.display=running?'block':'none';
       valTime.textContent=running?Math.max(0,gameRemain):'—';
     }
+  } else if(isDrillMode() && isPracticeMode()){
+    
+    lblA.textContent='횟수'; valA.textContent=drillDone+'/'+drillTarget;
+    lblB.textContent='연습용'; valB.textContent=drillDone?'감사!':'—'; valB.style.color='#54ffad';
+    scoreGrade.style.display='block'; scoreGrade.textContent=drillDone?lastGrade:'점수 없이 기록을 모아요'; scoreGrade.style.color='#54ffad';
+    lblC.textContent='점수 없음'; valC.textContent='—';
   } else if(isDrillMode()){
     lblA.textContent='횟수'; valA.textContent=drillDone+'/'+drillTarget;
     lblB.textContent='이번 점수'; valB.textContent=(lastScore==null?'—':lastScore); valB.style.color=lastColor;
@@ -5081,6 +5095,8 @@ function modeTitleText(){
   if(currentMode==='yeop_l') return ['옆차기 왼발','몸을 옆으로 돌려 차기'];
   if(currentMode==='dwi_r')  return ['뒤차기 오른발','등을 보이며 뒤로 차기'];
   if(currentMode==='dwi_l')  return ['뒤차기 왼발','등을 보이며 뒤로 차기'];
+  if(currentMode==='hu_r')   return [autoPrefix+'뒤후려차기 오른발','연습용 · 점수 대신 기록을 모아요'];
+  if(currentMode==='hu_l')   return [autoPrefix+'뒤후려차기 왼발','연습용 · 점수 대신 기록을 모아요'];
   if(currentMode==='balloon') return ['격파 모드', diffCfg().label+' · '+(diffCfg().targetEmoji||'🎈')+' 타겟 격파'];
   return ['AI KICK MASTER','태권도 AI 발차기 훈련'];
 }
@@ -5352,6 +5368,7 @@ function scoreMeasureOnly(f,want){
   else if(want==='dwi' && dch!==null && dch<DWI_KNEE.HI*0.5) msg='무릎을 더 접었다 펴세요!';
   else               msg='더 높이 차보세요!';
 
+  if(want==='hu') msg=practiceThanks();   
   return {ok:true,score,reason:'measure_only',msg,
           hScore:+hScore.toFixed(3), rot:+rot.toFixed(3), factor:+factor.toFixed(3),
           kneeMarkGrade,   
@@ -5377,6 +5394,7 @@ const MEASURE_H_HARD={};
 
 function measureHFor(want){
   const t=(kickLevel==='easy') ? MEASURE_H : MEASURE_H_HARD;
+  if(want==='hu') return t.dwi || null;   
   return t[want] || null;
 }
 
@@ -5551,6 +5569,7 @@ function analyzeTrajShort(peakPctValue=null){
             hip:'허리를 더 돌려보세요!',
             rot:(want==='dwi')?'등을 더 보이며 차보세요!':'몸을 더 옆으로 돌려보세요!'}[worst]||'좋아요!';
 
+  if(want==='hu') msg=practiceThanks();   
   return {
     score, ok:true, msg, reason:'short_ok',
     
@@ -6369,13 +6388,15 @@ function onDrillKick(peak, traj){
   lastScore=result.score;
   lastGrade=result.msg;
   lastColor='#4caf50';
+  const practiceNow=isPracticeMode();   
   kickPilotPush(result.score,peak,lastKickFoot);
   hfKick(result,peak,hfPts);   
 
   sndSuccess();
   flashEdge(twoPlayerMode ? (active2pSlot===slot2p.c?'c':'h') : null);
   
-  popup(result.score+'점','#4caf50');
+  if(practiceNow){ lastScore=null; popup(result.msg,'#54ffad'); }
+  else popup(result.score+'점','#4caf50');
   if(!twoPlayerMode) renderStats();
 
   trajX=[]; trajY=[]; trajHipX=[]; trajTorso=[]; trajHipW=[]; trajKneeX=[]; trajKneeAngle=[]; trajHipVis=[]; trajKneeVis=[]; trajKneeAngle3D=[]; trajShoulderW=[]; trajFootAng=[]; trajFootAngVis=[]; trajKneeMark=[]; trajFootBlade=[]; kmPeakY=null; kmHitBefore=false; kneeMarkFlashArmed=false; trajActive=false; drillSide=0; resetPreRoll();
@@ -6423,23 +6444,25 @@ function finishAutoDrill(){
   setPlayingUi(false);
   const rows=AUTO_DRILL_SEQUENCE.map(mode=>{
     const r=autoDrillResults[mode] || {label:MODE_CFG[mode].label,avg:0};
-    return {label:r.label,avg:r.avg};
+    return {label:r.label,avg:r.avg,practice:isPracticeMode(mode)};
   });
-  const allScores=AUTO_DRILL_SEQUENCE.flatMap(mode=>(autoDrillResults[mode]?.scores||[]));
+  
+  const scoredModes=AUTO_DRILL_SEQUENCE.filter(mode=>!isPracticeMode(mode));
+  const allScores=scoredModes.flatMap(mode=>(autoDrillResults[mode]?.scores||[]));
   const totalAvg=avgOf(allScores)||0;
   drillResultIcon.textContent='훈련 완료';
   drillResultText.textContent='발차기 훈련 완료';
   drillResultText.style.color='#fff';
   drillResultSub.className='auto-result-summary';
 
-  drillResultSub.innerHTML='<div class="result-average">평균 '+totalAvg+'점</div>'+rows.map(r=>
-    '<div class="result-label">'+r.label+'</div><div class="result-score">'+r.avg+'점</div>'
+  drillResultSub.innerHTML=(scoredModes.length?'<div class="result-average">평균 '+totalAvg+'점</div>':'<div class="result-average">함께해 줘서 감사합니다!</div>')+rows.map(r=>
+    '<div class="result-label">'+r.label+'</div><div class="result-score">'+(r.practice?'<span class="result-thanks">감사합니다</span>':r.avg+'점')+'</div>'
   ).join('');
   drillResult.classList.add('auto-summary','final-result','show');
   confetti(totalAvg>=90);
   sndRecord();
   setStartBtn(false,'다시 시작');
-  setGrResult('발차기 훈련 완료 · 평균 '+totalAvg+'점');
+  setGrResult(scoredModes.length?'발차기 훈련 완료 · 평균 '+totalAvg+'점':'발차기 연습 완료 · 감사합니다');
 
   clearHudScores();
 }
@@ -6865,7 +6888,8 @@ window.startGame=()=>{
     apcha_r:'앞차기 오른발 — 위로 쭉 차올려요!', apcha_l:'앞차기 왼발 — 위로 쭉 차올려요!',
     dollo_r:'돌려차기 오른발 — 화살표 방향으로 차요!', dollo_l:'돌려차기 왼발 — 화살표 방향으로 차요!',
     yeop_r:'옆차기 오른발 — 몸을 옆으로 돌려서!', yeop_l:'옆차기 왼발 — 몸을 옆으로 돌려서!',
-    dwi_r:'뒤차기 오른발 — 등을 보이며 뒤로!', dwi_l:'뒤차기 왼발 — 등을 보이며 뒤로!'
+    dwi_r:'뒤차기 오른발 — 등을 보이며 뒤로!', dwi_l:'뒤차기 왼발 — 등을 보이며 뒤로!',
+    hu_r:'뒤후려차기 오른발 — 연습용이에요, 마음껏 차 보세요!', hu_l:'뒤후려차기 왼발 — 연습용이에요, 마음껏 차 보세요!'
   };
   runReadyCountdown(subTexts[startMode]||'',()=>{
     if(currentMode!==startMode) return;
@@ -7514,7 +7538,7 @@ window.setMode=(mode)=>{
 
 const KICK_BTN_SHORT={
   apcha_r:'앞R', apcha_l:'앞L', dollo_r:'돌R', dollo_l:'돌L',
-  yeop_r:'옆R',  yeop_l:'옆L',  dwi_r:'뒤R',  dwi_l:'뒤L'
+  yeop_r:'옆R',  yeop_l:'옆L',  dwi_r:'뒤R',  dwi_l:'뒤L',  hu_r:'뒤후R', hu_l:'뒤후L'
 };
 
 function syncAutoDrillSequence(){
@@ -7540,7 +7564,7 @@ function syncAutoDrillSequence(){
     updateSelectedKickButtons(); updateModeBadge(); renderStats();
   }
 }
-const KICK_KIND_LABEL={apcha:'앞', dollo:'돌려', yeop:'옆', dwi:'뒤'};
+const KICK_KIND_LABEL={apcha:'앞', dollo:'돌려', yeop:'옆', dwi:'뒤', hu:'뒤후'};
 const FOOT_LABEL={right:'오른발로', left:'왼발로', both:'양발로', alt:'번갈아'};
 
 function drillShort(m){ const b=document.getElementById('m_'+m); return b?b.textContent.trim():m; }
@@ -7562,35 +7586,50 @@ function applyDrillPickChange(){
   }
 }
 
-let drillDraft=null;
-const DRILL_PRESETS=[
-  {name:'앞·돌려 양발', seq:['apcha_r','apcha_l','dollo_r','dollo_l']},
-  {name:'네 가지 양발', seq:['apcha_r','apcha_l','dollo_r','dollo_l','yeop_r','yeop_l','dwi_r','dwi_l']},
-  {name:'네 가지 번갈아', seq:['apcha_x','dollo_x','yeop_x','dwi_x']},
-  {name:'앞→돌려 연결', seq:['apcha_r','dollo_r','apcha_l','dollo_l']}
+let drillDraft=null;   
+const DRILL_KIND_NAME={apcha:'앞차기', dollo:'돌려차기', yeop:'옆차기', dwi:'뒤차기', hu:'뒤후려차기'};
+const DRILL_FEET=[
+  ['rl','오른발 → 왼발','오른발을 다 차고 왼발'],
+  ['x','번갈아','오른·왼 한 번씩 바꿔 가며'],
+  ['r','오른발만',''],
+  ['l','왼발만','']
 ];
-const DRILL_FOOT_COLS=[['r','오른발'],['l','왼발'],['x','번갈아']];
-const DRILL_KIND_NAME={apcha:'앞차기', dollo:'돌려차기', yeop:'옆차기', dwi:'뒤차기'};
+
+function drillSeqFromDraft(d){
+  const out=[];
+  d.kinds.forEach(k=>{
+    if(d.foot==='rl'){ out.push(k+'_r', k+'_l'); }
+    else out.push(k+'_'+d.foot);
+  });
+  return cleanDrillSeq(out);
+}
+
+function drillDraftFromSeq(seq){
+  const kinds=[], feet=new Set();
+  seq.forEach(m=>{ const [k,f]=m.split('_'); if(!kinds.includes(k)) kinds.push(k); feet.add(f); });
+  let foot='rl';
+  if(feet.size===1){ const f=[...feet][0]; foot = f==='x'?'x':(f==='r'?'r':'l'); }
+  if(foot==='r'||foot==='l'){  }
+  return {kinds, foot};
+}
 function renderDrillPick(){
-  const d=drillDraft||[];
-  const pick=document.getElementById('dpPick'), order=document.getElementById('dpOrder');
-  if(!pick||!order) return;
-  pick.innerHTML=KICK_KINDS.map(k=>'<div class="dp-kind">'+DRILL_KIND_NAME[k]+'</div>'+DRILL_FOOT_COLS.map(([f,lab])=>{
-    const m=k+'_'+f, i=d.indexOf(m);
-    return '<button type="button" class="dp-chip'+(i>=0?' on':'')+'" data-dp-mode="'+m+'">'+(i>=0?'<b>'+(i+1)+'</b>':'')+lab+'</button>';
-  }).join('')).join('');
-  order.innerHTML=d.length?d.map((m,i)=>'<div class="dp-row"><b>'+(i+1)+'</b><span>'+(MODE_CFG[m]?.label||m)+'</span>'+
-      '<button type="button" data-dp-up="'+i+'" aria-label="위로"'+(i===0?' disabled':'')+'>↑</button>'+
-      '<button type="button" data-dp-down="'+i+'" aria-label="아래로"'+(i===d.length-1?' disabled':'')+'>↓</button>'+
-      '<button type="button" class="dp-x" data-dp-del="'+i+'" aria-label="빼기">✕</button></div>').join('')
-    :'<div class="dp-empty">왼쪽에서 발차기를 눌러 넣어 주세요</div>';
-  const sum=document.getElementById('dpSum'); if(sum) sum.textContent=d.length+' / '+DRILL_SEQ_MAX+'개';
-  const save=document.getElementById('dpSave'); if(save) save.disabled=!d.length;
-  const msg=document.getElementById('dpMsg'); if(msg) msg.textContent=d.length>=DRILL_SEQ_MAX?'8개까지 넣을 수 있습니다':'';
+  const d=drillDraft||{kinds:[],foot:'rl'};
+  const kinds=document.getElementById('dpKinds'), feet=document.getElementById('dpFeet'), prev=document.getElementById('dpPreview');
+  if(!kinds||!feet||!prev) return;
+  kinds.innerHTML=KICK_KINDS.map(k=>{
+    const i=d.kinds.indexOf(k);
+    return '<button type="button" class="dp-kind-btn'+(i>=0?' on':'')+'" data-dp-kind="'+k+'">'+(i>=0?'<b>'+(i+1)+'</b>':'')+DRILL_KIND_NAME[k]+(k==='hu'?'<small>연습용 · 점수 없음</small>':'')+'</button>';
+  }).join('');
+  feet.innerHTML=DRILL_FEET.map(([v,lab,sub])=>'<button type="button" class="dp-foot-btn'+(d.foot===v?' on':'')+'" data-dp-foot="'+v+'">'+lab+(sub?'<small>'+sub+'</small>':'')+'</button>').join('');
+  const seq=drillSeqFromDraft(d);
+  prev.innerHTML=seq.length?seq.map((m,i)=>'<span class="dp-pv"><b>'+(i+1)+'</b>'+(MODE_CFG[m]?.label||m)+'</span>').join('<i>→</i>')
+    :'<span class="dp-empty">위에서 발차기를 하나 이상 눌러 주세요</span>';
+  const sum=document.getElementById('dpSum'); if(sum) sum.textContent=seq.length?seq.length+'종목':'';
+  const save=document.getElementById('dpSave'); if(save) save.disabled=!seq.length;
 }
 window.openDrillPick=function(){
   if(running) return;
-  drillDraft=activeKickModes().slice();
+  drillDraft=drillDraftFromSeq(activeKickModes());
   renderDrillPick();
   const m=document.getElementById('drillPickModal'); if(m) m.hidden=false;
 };
@@ -7598,21 +7637,15 @@ window.closeDrillPick=function(){ const m=document.getElementById('drillPickModa
 (function initDrillPick(){
   const modal=document.getElementById('drillPickModal');
   if(!modal) return;
-  const pre=document.getElementById('dpPresets');
-  if(pre) pre.innerHTML=DRILL_PRESETS.map((p,i)=>'<button type="button" data-dp-preset="'+i+'">'+p.name+'</button>').join('');
   modal.addEventListener('click',e=>{
     if(!drillDraft) return;
     const b=e.target.closest('button'); if(!b){ if(e.target===modal) closeDrillPick(); return; }
     const d=drillDraft;
-    if(b.dataset.dpMode){ const m=b.dataset.dpMode, i=d.indexOf(m); if(i>=0) d.splice(i,1); else if(d.length<DRILL_SEQ_MAX) d.push(m); }
-    else if(b.dataset.dpUp){ const i=+b.dataset.dpUp; if(i>0) [d[i-1],d[i]]=[d[i],d[i-1]]; }
-    else if(b.dataset.dpDown){ const i=+b.dataset.dpDown; if(i<d.length-1) [d[i+1],d[i]]=[d[i],d[i+1]]; }
-    else if(b.dataset.dpDel){ d.splice(+b.dataset.dpDel,1); }
-    else if(b.dataset.dpPreset){ drillDraft=cleanDrillSeq(DRILL_PRESETS[+b.dataset.dpPreset].seq); }
-    else if(b.id==='dpClear'){ drillDraft=[]; }
+    if(b.dataset.dpKind){ const k=b.dataset.dpKind, i=d.kinds.indexOf(k); if(i>=0) d.kinds.splice(i,1); else d.kinds.push(k); }
+    else if(b.dataset.dpFoot){ d.foot=b.dataset.dpFoot; }
     else if(b.id==='dpClose'){ closeDrillPick(); return; }
     else if(b.id==='dpSave'){
-      const s=cleanDrillSeq(drillDraft); if(!s.length) return;
+      const s=drillSeqFromDraft(d); if(!s.length) return;
       if(running && isDrillMode()) stopGame();
       drillSeq=s; altFootReset(); closeDrillPick(); applyDrillPickChange(); return;
     }
@@ -8365,8 +8398,8 @@ function render2pScoreKick(key){
   const slot=slot2p[key];
   setP2Fields(key,{
     count:slot.drillDone, suffix:'/'+drillTarget,
-    label1:'이번', val1:(slot.lastScore==null?'—':slot.lastScore),
-    label2:'평균', val2:(avgOf(slot.drillScores)??'—'),
+    label1:'이번', val1:isPracticeMode()?(slot.drillDone?'감사!':'—'):(slot.lastScore==null?'—':slot.lastScore),
+    label2:isPracticeMode()?'연습용':'평균', val2:isPracticeMode()?'—':(avgOf(slot.drillScores)??'—'),
     label3:'', val3:''
   });
 }
@@ -8449,14 +8482,16 @@ const AUTO_FINAL={
   STAGE_HOLD_MS:2600,  
   GAP_MS:700           
 };
-function showP2AutoFinal(rows,cAvg,hAvg,winnerKey,reason){
+function showP2AutoFinal(rows,cAvg,hAvg,winnerKey,reason,scoredCount){
+  if(scoredCount==null) scoredCount=rows.length;
   running=false; setPlayingUi(false);
 
   const title = twoPlayerShowResult
     ? (winnerKey==null ? '종합 무승부' : (winnerKey==='c' ? '청 종합 우승' : '홍 종합 우승'))
     : '발차기 훈련 완료';
   render2pStatus(title);
-  setP2ResultContent('AUTO TRAINING · 종합 결과',title,'종합 평균',cAvg+'점','종합 평균',hAvg+'점',winnerKey,reason);
+  if(scoredCount) setP2ResultContent('AUTO TRAINING · 종합 결과',title,'종합 평균',cAvg+'점','종합 평균',hAvg+'점',winnerKey,reason);
+  else setP2ResultContent('발차기 연습 · 종합',twoPlayerShowResult?'연습 완료':title,'','감사합니다','','감사합니다',null,'함께해 줘서 감사합니다');   
 
   const bdEl=document.getElementById('p2ResultBreakdown');
   if(bdEl){
@@ -8464,12 +8499,13 @@ function showP2AutoFinal(rows,cAvg,hAvg,winnerKey,reason){
     let html='<div class="bd-head"></div><div class="bd-head c">청</div><div class="bd-head h">홍</div>';
     rows.forEach(r=>{
       
-      const cDim=(r.c<r.h)?' dim':'', hDim=(r.h<r.c)?' dim':'';
+      const num=typeof r.c==='number' && typeof r.h==='number';
+      const cDim=(num && r.c<r.h)?' dim':'', hDim=(num && r.h<r.c)?' dim':'';
       html+='<div class="bd-label">'+esc(r.label)+'</div>'+
             '<div class="bd-val c'+cDim+'">'+r.c+'</div>'+
             '<div class="bd-val h'+hDim+'">'+r.h+'</div>';
     });
-    html+='<div class="bd-total">4종목 평균 · 청 '+cAvg+'점 / 홍 '+hAvg+'점</div>';
+    if(scoredCount) html+='<div class="bd-total">'+scoredCount+'종목 평균 · 청 '+cAvg+'점 / 홍 '+hAvg+'점</div>';   
     bdEl.innerHTML=html;
     bdEl.classList.add('show');
   }
@@ -8484,10 +8520,13 @@ function showP2AutoFinal(rows,cAvg,hAvg,winnerKey,reason){
 }
 
 function showP2StageResult(stageLabel,cAvg,hAvg,winnerKey,onDone,isLast=false){
-  const title=twoPlayerShowResult
+  const practice=(cAvg==null && hAvg==null);   
+  const title=practice?'연습 완료':(twoPlayerShowResult
     ?(winnerKey==null?'무승부':winnerKey==='c'?'청 승리!':'홍 승리!')
-    :'종목 완료';
-  setP2ResultContent(stageLabel,title,'평균',cAvg+'점','평균',hAvg+'점',winnerKey,
+    :'종목 완료');
+  if(practice) setP2ResultContent(stageLabel,title,'','감사합니다','','감사합니다',null,
+    isLast?'마지막 종목입니다 · 잠시 후 종합 결과':'잠시 후 다음 종목으로 이동합니다');
+  else setP2ResultContent(stageLabel,title,'평균',cAvg+'점','평균',hAvg+'점',winnerKey,
     isLast?'마지막 종목입니다 · 잠시 후 종합 결과':'잠시 후 다음 종목으로 이동합니다');
   const actionRow=document.getElementById('p2ResultActions');
   if(actionRow) actionRow.style.display='none';
@@ -8541,9 +8580,10 @@ function check2pFinish(){
       };
     });
     const finishedLabel=MODE_CFG[currentMode].label;
-    const cStageAvg=c.autoResults[currentMode].avg;
-    const hStageAvg=h.autoResults[currentMode].avg;
-    const stageWinner=cStageAvg===hStageAvg?null:(cStageAvg>hStageAvg?'c':'h');
+    const stagePractice=isPracticeMode();   
+    const cStageAvg=stagePractice?null:c.autoResults[currentMode].avg;
+    const hStageAvg=stagePractice?null:h.autoResults[currentMode].avg;
+    const stageWinner=(stagePractice||cStageAvg===hStageAvg)?null:(cStageAvg>hStageAvg?'c':'h');
     if(autoDrillIndex<AUTO_DRILL_SEQUENCE.length-1){
       const nextIndex=autoDrillIndex+1;
       render2pStatus(finishedLabel+' 완료 · 다음 종목 준비');
@@ -8561,7 +8601,7 @@ function check2pFinish(){
       return;
     }
     const summary=slot=>{
-      const all=AUTO_DRILL_SEQUENCE.flatMap(mode=>slot.autoResults[mode]?.scores||[]);
+      const all=AUTO_DRILL_SEQUENCE.filter(mode=>!isPracticeMode(mode)).flatMap(mode=>slot.autoResults[mode]?.scores||[]);   
       const time=AUTO_DRILL_SEQUENCE.reduce((sum,mode)=>sum+(slot.autoResults[mode]?.finishMs||0),0);
       return {avg:avgOf(all)||0,time};
     };
@@ -8573,13 +8613,15 @@ function check2pFinish(){
 
     const rows=AUTO_DRILL_SEQUENCE.map(mode=>({
       label:(MODE_CFG[mode]?.label)||mode,   
-      c:(c.autoResults[mode]?.avg)||0,
-      h:(h.autoResults[mode]?.avg)||0
+      c:isPracticeMode(mode)?'감사':((c.autoResults[mode]?.avg)||0),
+      h:isPracticeMode(mode)?'감사':((h.autoResults[mode]?.avg)||0)
     }));
+    const scoredCount=AUTO_DRILL_SEQUENCE.filter(mode=>!isPracticeMode(mode)).length;
+    if(!scoredCount) winner=null;
     showP2StageResult(finishedLabel,cStageAvg,hStageAvg,stageWinner,()=>{
 
       setTimeout(()=>{
-        showP2AutoFinal(rows,cs.avg,hs.avg,winner,reason);
+        showP2AutoFinal(rows,cs.avg,hs.avg,winner,reason,scoredCount);
         auto2pTransitioning=false;
       },AUTO_FINAL.GAP_MS);
     },true);
@@ -10474,7 +10516,7 @@ const _AKM_CACHE_DAYS  = 7;
 const _AKM_TRIAL_CACHE_DAYS = 1;   
 const _AKM_FETCH_TIMEOUT_MS = 8 * 1000;   
 
-const _AKM_VERSION     = '3.5.8';   
+const _AKM_VERSION     = '3.5.9';   
 try{ window.__NL_VER = _AKM_VERSION; }catch(e){}   
 
 let _akmFailCount = 0;
@@ -11725,29 +11767,30 @@ html body.hud-v21.akm-ui #leftSettings.ls-side #drillPickPanel .dpp-label{font-s
 .dp-head{padding:20px 24px 10px}
 .dp-head h3{margin:0;font-size:22px;font-weight:900;color:#fff}
 .dp-head p{margin:5px 0 0;font-size:13px;color:var(--s-dim)}
-.dp-body{flex:1 1 auto;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;padding:6px 24px 10px;overflow:auto}
-.dp-col h4{display:flex;justify-content:space-between;align-items:baseline;margin:6px 0 8px;font-size:14px;font-weight:900;color:var(--s-txt)}
-.dp-col h4 span{font-family:var(--num);font-size:13px;color:#FFB27A}
-.dp-grid{display:grid;grid-template-columns:4.6em repeat(3,1fr);gap:4px;align-items:stretch}
-.dp-kind{display:flex;align-items:center;font-size:14px;font-weight:900;color:#fff}
-.dp-chip{position:relative;height:44px;border:0;border-bottom:3px solid transparent;background:var(--s-tile);color:rgba(255,255,255,.7);font-family:var(--kr);font-size:14px;font-weight:900;cursor:pointer}
-.dp-chip:hover{background:var(--s-tile-hi)}
-.dp-chip.on{background:rgba(255,106,26,.22);border-bottom-color:var(--orange);color:#fff}
-.dp-chip b{position:absolute;left:6px;top:4px;font-family:var(--num);font-size:12px;color:#FFB27A}
-.dp-h-pre{margin-top:16px !important}
-.dp-presets{display:grid;grid-template-columns:1fr 1fr;gap:4px}
-.dp-presets button{height:38px;border:0;background:var(--s-tile);color:var(--s-txt);font-family:var(--kr);font-size:13px;font-weight:800;cursor:pointer}
-.dp-presets button:hover{background:var(--s-tile-hi)}
-.dp-order{display:flex;flex-direction:column;gap:4px}
-.dp-row{display:grid;grid-template-columns:2em minmax(0,1fr) 40px 40px 40px;align-items:center;gap:4px;min-height:44px;padding-left:8px;background:var(--s-tile);border-left:5px solid var(--orange)}
-.dp-row b{font-family:var(--num);font-size:16px;color:#FFB27A}
-.dp-row span{font-size:15px;font-weight:900;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.dp-row button{height:44px;border:0;background:transparent;color:#fff;font-size:17px;font-weight:900;cursor:pointer}
-.dp-row button:disabled{opacity:.22;cursor:default}
-.dp-row .dp-x{color:#FF8C9A}
-.dp-empty{padding:26px 10px;text-align:center;font-size:14px;color:var(--s-dim);background:var(--s-tile)}
-.dp-note{margin-top:10px;font-size:12px;line-height:1.5;color:var(--s-dim)}
-.dp-note b{color:var(--s-txt)}
+.dp-box{width:min(680px,100%)}
+.dp-body{flex:1 1 auto;min-height:0;padding:4px 24px 12px;overflow:auto}
+.dp-body h4{display:flex;align-items:center;gap:8px;margin:14px 0 8px;font-size:15px;font-weight:900;color:#fff}
+.dp-body h4:first-child{margin-top:4px}
+.dp-body h4 span{font-size:12px;font-weight:700;color:var(--s-dim)}
+.dp-step{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--orange);color:#fff;font-family:var(--num);font-size:13px}
+.dp-kinds{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.dp-kind-btn small{display:block;margin-top:3px;font-size:10.5px;font-weight:700;color:var(--s-dim)}
+.dp-kind-btn.on small{color:#FFB27A}
+.dp-feet{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.dp-kind-btn,.dp-foot-btn{position:relative;min-height:56px;padding:6px 4px;border:0;border-bottom:3px solid transparent;background:var(--s-tile);color:rgba(255,255,255,.72);font-family:var(--kr);font-size:16px;font-weight:900;line-height:1.2;cursor:pointer}
+.dp-foot-btn{font-size:15px}
+.dp-foot-btn small{display:block;margin-top:3px;font-size:11px;font-weight:700;color:var(--s-dim)}
+.dp-kind-btn:hover,.dp-foot-btn:hover{background:var(--s-tile-hi)}
+.dp-kind-btn.on,.dp-foot-btn.on{background:rgba(255,106,26,.22);border-bottom-color:var(--orange);color:#fff}
+.dp-foot-btn.on small{color:#FFB27A}
+.dp-kind-btn b{position:absolute;left:7px;top:5px;font-family:var(--num);font-size:13px;color:#FFB27A}
+.dp-h-prev{margin-top:18px !important}
+.dp-h-prev span{font-family:var(--num);color:#FFB27A !important}
+.dp-preview{display:flex;flex-wrap:wrap;align-items:center;gap:6px 6px;padding:10px 12px;background:rgba(255,255,255,.04);border-left:5px solid var(--orange)}
+.dp-pv{font-size:14px;font-weight:800;color:#fff;white-space:nowrap}
+.dp-pv b{margin-right:4px;font-family:var(--num);font-size:12px;color:#FFB27A}
+.dp-preview i{font-style:normal;color:var(--s-dim)}
+.dp-empty{font-size:14px;color:var(--s-dim)}
 .dp-foot{display:flex;align-items:center;gap:8px;padding:12px 24px 18px;border-top:1px solid var(--s-line)}
 .dp-foot em{flex:1 1 auto;font-style:normal;font-size:12px;font-weight:800;color:#FFB27A}
 .dp-foot button{height:44px;padding:0 18px;border:0;border-radius:10px;font-family:var(--kr);font-size:14px;font-weight:900;cursor:pointer}
@@ -11757,12 +11800,13 @@ html body.hud-v21.akm-ui #leftSettings.ls-side #drillPickPanel .dpp-label{font-s
 @media (max-width:760px),(max-height:520px){
   .dp-box{border-radius:12px}
   .dp-head{padding:12px 16px 4px}.dp-head h3{font-size:18px}.dp-head p{font-size:12px}
-  .dp-body{gap:10px;padding:4px 16px 6px}
-  .dp-chip,.dp-row,.dp-row button{height:36px;min-height:36px}
-  .dp-presets button{height:32px}
+  .dp-body{padding:2px 16px 6px}
+  .dp-body h4{margin:8px 0 5px;font-size:14px}
+  .dp-kind-btn,.dp-foot-btn{min-height:42px;font-size:14px}
+  .dp-foot-btn small{display:none}
   .dp-foot{padding:8px 16px 10px}.dp-foot button{height:38px;padding:0 12px}
 }
-@media (max-width:620px){ .dp-body{grid-template-columns:1fr} }
+@media (max-width:620px){ .dp-kinds{grid-template-columns:repeat(3,1fr)} .dp-feet{grid-template-columns:repeat(2,1fr)} }
 
 html body #drillResult.show,html body #p2Result.show{
   inset:auto !important;left:50% !important;top:50% !important;transform:translate(-50%,-50%) !important;
@@ -11771,6 +11815,7 @@ html body #drillResult.show,html body #p2Result.show{
   background:rgba(16,13,12,.95) !important;border:1px solid rgba(255,106,26,.42) !important;
   box-shadow:0 24px 70px rgba(0,0,0,.6) !important}
 html body #drillResult.show.final-result,html body #p2Result.show{z-index:99960 !important;box-shadow:0 0 0 100vmax rgba(2,7,14,.74),0 24px 70px rgba(0,0,0,.6) !important}   
+html body #drillResult .result-thanks{color:#54ffad;font-size:.62em;letter-spacing:0}
 html body #drillResult.show:not(.final-result){width:auto !important;min-width:min(520px,calc(100vw - 32px)) !important}
 
 html body.hud-v21.akm-ui:not(.playing-ui):not(.ready-ui) #startBtn,html body.hud-v21.akm-ui:not(.playing-ui):not(.ready-ui) #startBtn2{color:var(--start) !important}
