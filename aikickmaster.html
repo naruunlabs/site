@@ -140,6 +140,10 @@
 <meta name="twitter:description" content="AI KICK MASTER 프로그램 실행 페이지입니다. 라이선스 키가 필요합니다.">
 <meta name="twitter:image" content="https://naruunlabs.kr/og-kickmaster.jpg">
 <link rel="manifest" href="manifest-kickmaster.json">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Noto+Sans+KR:wght@400;700;900&display=swap" media="print" onload="this.media='all'">
 <meta name="theme-color" content="#0B0B0D">
 <link rel="icon" href="icon-kickmaster.svg" type="image/svg+xml">
 <link rel="icon" href="icon-kickmaster-192.png" sizes="192x192" type="image/png">
@@ -147,6 +151,14 @@
 
 <style id="kick-test-refactored-css">
 
+:root{
+  
+  --kr:'Noto Sans KR',system-ui,-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+  --num:'Archivo','Noto Sans KR',system-ui,sans-serif;
+  --start:#51FF9D; --stop:#FF6578;
+  --u:max(5.5px,min(1vw,1.78vh));
+  --nl-col:min(max(220px,calc(var(--u)*19)),32vw);
+}
 :root{ --red:#E3172E; --red-dark:#B91426; --orange:#FF6A1A; --orange-soft:#FF8C42; --navy:#0B0B0D; --gold:#FF6A1A; --green:#2ecc71; --blue:#1288F8;
   
   --s-bg:#141110;       
@@ -159,7 +171,7 @@
 }
   *{box-sizing:border-box;margin:0;padding:0;}
   html,body{background:var(--navy);color:#fff;
-    font-family:'Gothic A1','Noto Sans KR',system-ui,sans-serif;}
+    font-family:var(--kr);}
   .stage{display:flex;width:100vw;height:100vh;}
 
   .cam-wrap{position:relative;flex:0 0 52%;background:#000;overflow:hidden;}
@@ -2982,7 +2994,7 @@ body.hud-v21.auto-drill-selected .mode-row.hud-kick-row .drill-btn.active{
   
   background: radial-gradient(circle at top, #241c17 0, var(--navy) 46%, #050505 100%);
   display: flex; align-items: center; justify-content: center;
-  font-family: 'Gothic A1','Noto Sans KR',system-ui,sans-serif;
+  font-family: var(--kr);
 }
 #loginScreen.hidden { display: none; }
 
@@ -3094,7 +3106,7 @@ body.hud-v21.auto-drill-selected .mode-row.hud-kick-row .drill-btn.active{
   border: 1px solid rgba(250,225,0,0.42);
   color: #FAE100; font-size: 12px; font-weight: 800;
   letter-spacing: -0.2px; pointer-events: none;
-  font-family: 'Gothic A1','Noto Sans KR',system-ui,sans-serif;
+  font-family: var(--kr);
 }
 #trialBadge.show { display: block; }
 @media (max-height: 700px) { #trialBadge { top: 4px; font-size: 11px; padding: 4px 11px; } }
@@ -3342,6 +3354,11 @@ body.akm-group-open.akm-group-running .stage>.panel>.mode-row *{visibility:hidde
     </div>
 
     <div id="leftSettings">
+    
+    <div id="drillPickPanel" aria-label="연습할 발차기">
+      <div class="dpp-label">발차기 · 이 순서로 찹니다</div>
+      <div class="dpp-row"><span id="drillPickSum">앞R → 앞L → 돌R → 돌L</span><button type="button" id="drillPickBtn" onclick="openDrillPick()">선택 ›</button></div>
+    </div>
     <div id="kickLevelPanel" class="difficulty-panel kick-level-panel" aria-label="발차기 판정 난이도 선택">
       <button type="button" class="diff-btn kick-level-btn active" data-kick-level="easy" onclick="setKickLevel('easy')">쉬움</button>
       <button type="button" class="diff-btn kick-level-btn" data-kick-level="hard" onclick="setKickLevel('hard')">어려움</button>
@@ -3548,40 +3565,11 @@ body.akm-group-open.akm-group-running .stage>.panel>.mode-row *{visibility:hidde
     <h3><span>설정</span> <button class="settings-close-btn" onclick="toggleHudSettings()">닫기</button></h3>
 
     <div class="settings-tabs">
-      <button type="button" class="settings-tab on" id="setTabBtn_train" onclick="switchSettingsTab('train')">훈련</button>
-      <button type="button" class="settings-tab"    id="setTabBtn_view"  onclick="switchSettingsTab('view')">화면·소리</button>
+      <button type="button" class="settings-tab on" id="setTabBtn_view"  onclick="switchSettingsTab('view')">화면·소리</button>
       <button type="button" class="settings-tab"    id="setTabBtn_dev"   onclick="switchSettingsTab('dev')">기기</button>
     </div>
 
-    <div class="settings-pane on" id="setPane_train">
-
-      <div class="settings-section">
-        <div class="settings-label">무엇을 <span id="autoDrillCount">앞·돌려를 양발로</span></div>
-        <div class="autodrill-grid">
-          <button type="button" class="autodrill-chip" data-kind="apcha" onclick="toggleDrillKick('apcha')">앞</button>
-          <button type="button" class="autodrill-chip" data-kind="dollo" onclick="toggleDrillKick('dollo')">돌려</button>
-          <button type="button" class="autodrill-chip" data-kind="yeop"  onclick="toggleDrillKick('yeop')">옆</button>
-          <button type="button" class="autodrill-chip" data-kind="dwi"   onclick="toggleDrillKick('dwi')">뒤</button>
-        </div>
-      </div>
-
-      <div class="settings-section">
-        <div class="settings-label">어느 발로</div>
-        <div class="autodrill-grid">
-          <button type="button" class="autodrill-chip" data-foot="right" onclick="setDrillFoot('right')">오른발</button>
-          <button type="button" class="autodrill-chip" data-foot="left"  onclick="setDrillFoot('left')">왼발</button>
-          <button type="button" class="autodrill-chip" data-foot="both"  onclick="setDrillFoot('both')">양발</button>
-          <button type="button" class="autodrill-chip" data-foot="alt"   onclick="setDrillFoot('alt')">번갈아</button>
-        </div>
-        <div class="settings-hint">
-          <b style="color:var(--s-txt);font-weight:500">양발</b>은 오른발을 다 하고 왼발로 넘어갑니다.
-          <b style="color:var(--s-txt);font-weight:500">번갈아</b>는 한 종목 안에서 오른발·왼발을 한 번씩 교대로 찹니다.
-        </div>
-      </div>
-
-    </div>
-
-    <div class="settings-pane" id="setPane_view">
+    <div class="settings-pane on" id="setPane_view">
 
       <div class="settings-section">
         <div class="settings-label">소리 <span id="volVal">70%</span></div>
@@ -3633,6 +3621,31 @@ body.akm-group-open.akm-group-running .stage>.panel>.mode-row *{visibility:hidde
       <div class="settings-hint">다음 실행 때 라이선스 키를 다시 넣어야 합니다.</div>
     </div>
 
+  </div>
+</div>
+
+<div id="drillPickModal" class="dp-modal" role="dialog" aria-modal="true" aria-labelledby="dpTitle" hidden>
+  <div class="dp-box">
+    <div class="dp-head"><h3 id="dpTitle">연습할 발차기 선택</h3><p>누른 순서대로 이어서 찹니다. 같은 발차기는 한 번씩, 8개까지.</p></div>
+    <div class="dp-body">
+      <div class="dp-col">
+        <h4>발차기 고르기</h4>
+        <div class="dp-grid" id="dpPick"></div>
+        <h4 class="dp-h-pre">한 번에 채우기</h4>
+        <div class="dp-presets" id="dpPresets"></div>
+      </div>
+      <div class="dp-col">
+        <h4>차는 순서 <span id="dpSum"></span></h4>
+        <div class="dp-order" id="dpOrder"></div>
+        <div class="dp-note"><b>번갈아</b>는 한 종목 안에서 오른발·왼발을 한 번씩 교대로 찹니다.</div>
+      </div>
+    </div>
+    <div class="dp-foot">
+      <em id="dpMsg"></em>
+      <button type="button" class="dp-ghost" id="dpClear">모두 지우기</button>
+      <button type="button" class="dp-ghost" id="dpClose">닫기</button>
+      <button type="button" class="dp-save" id="dpSave">이 순서로 사용</button>
+    </div>
   </div>
 </div>
 
@@ -3846,11 +3859,8 @@ let drillFoot='both';
     }
   }catch(e){}
 })();
-function saveDrillPick(){
-  try{ localStorage.setItem(AUTODRILL_LS_KEY, JSON.stringify({kicks:drillKicks, foot:drillFoot})); }catch(e){}
-}
 
-function autoDrillModes(){
+function legacyDrillModes(){
   const ks=KICK_KINDS.filter(k=>drillKicks.includes(k));
   if(!ks.length) return [];
   if(drillFoot==='alt')   return ks.map(k=>k+'_x');
@@ -3859,6 +3869,26 @@ function autoDrillModes(){
   const out=[]; ks.forEach(k=>{ out.push(k+'_r'); out.push(k+'_l'); });
   return out;
 }
+
+const DRILL_SEQ_LS_KEY='akm_drillseq_v1';
+const DRILL_SEQ_MAX=8;
+let drillSeq=legacyDrillModes();
+function cleanDrillSeq(arr){
+  const out=[];
+  (arr||[]).forEach(m=>{ if(EVERY_KICK_MODE.includes(m) && !out.includes(m) && out.length<DRILL_SEQ_MAX) out.push(m); });
+  return out;
+}
+(function loadDrillSeq(){
+  try{
+    const raw=localStorage.getItem(DRILL_SEQ_LS_KEY);
+    if(raw){ const s=cleanDrillSeq(JSON.parse(raw).seq); if(s.length) drillSeq=s; }
+  }catch(e){}
+  if(!drillSeq.length) drillSeq=['apcha_r','apcha_l','dollo_r','dollo_l'];
+})();
+function saveDrillPick(){
+  try{ localStorage.setItem(DRILL_SEQ_LS_KEY, JSON.stringify({seq:drillSeq})); }catch(e){}
+}
+function autoDrillModes(){ return drillSeq.slice(); }
 
 function activeKickModes(){ const a=autoDrillModes(); return a.length?a:[ALL_KICK_MODES[0]]; }
 function isDrillMode(){ return MODE_CFG[currentMode]?.isDrill===true; }
@@ -4900,7 +4930,8 @@ function initSound(){
   try{
     const v=parseFloat(localStorage.getItem('akm_snd_vol'));
     if(Number.isFinite(v) && v>=0 && v<=1) sndVolume=v;
-    sndMuted=localStorage.getItem('akm_snd_mute')==='1';
+    
+    sndMuted=false;
   }catch(e){}
   const r=document.getElementById('sndRange');
   if(r){
@@ -4908,11 +4939,6 @@ function initSound(){
     r.oninput=()=>{ sndVolume=r.value/100; if(sndMuted&&sndVolume>0) sndMuted=false; applySndVolume(); };
     
     r.onchange=()=>{ ensureAudio(); if(!sndMuted) sndImpact('body'); };
-  }
-  const v=document.getElementById('volVal');
-  if(v){
-    v.style.cursor='pointer'; v.style.userSelect='none';
-    v.onclick=()=>{ sndMuted=!sndMuted; applySndVolume(); if(!sndMuted){ ensureAudio(); sndImpact('light'); } };
   }
   applySndVolume();
 }
@@ -5921,7 +5947,7 @@ function drawGuideFootLabel(x,y,style){
   ctx.shadowBlur=9;
   ctx.lineWidth=6;
   ctx.strokeStyle='rgba(0,0,0,.72)';
-  ctx.font='900 34px Gothic A1, Noto Sans KR, sans-serif';
+  ctx.font='900 34px "Noto Sans KR", sans-serif';
   ctx.textAlign='center';
   const mirrored=camWrap.classList.contains('mirrored');
   if(mirrored){
@@ -6981,7 +7007,7 @@ window.toggleHudSettings=()=>{
   const modal = document.getElementById('settingsModal');
   const opening = !modal.classList.contains('show');
   modal.classList.toggle('show');
-  if(opening) switchSettingsTab('train');
+  if(opening) switchSettingsTab('view');
 };
 window.logoutLicense=()=>{
   if(!confirm('라이선스 로그아웃 하시겠습니까? 다음 실행 시 라이선스 키를 다시 입력해야 합니다.')) return;
@@ -7467,6 +7493,8 @@ window.setMode=(mode)=>{
   
   const levelPanel=document.getElementById('kickLevelPanel');
   if(levelPanel) levelPanel.style.setProperty('display',drillSelected?'flex':'none','important');
+  const pickPanel=document.getElementById('drillPickPanel');
+  if(pickPanel) pickPanel.style.display=drillSelected?'':'none';
   if(diffPanel) diffPanel.style.setProperty('display',(mode==='balloon')?'flex':'none','important');
   if(sparPanel) sparPanel.style.setProperty('display',(mode==='sparring')?'flex':'none','important');
   const all=activeKickModes().concat(['balloon','sparring']);
@@ -7493,14 +7521,7 @@ function syncAutoDrillSequence(){
   const use=activeKickModes();
   AUTO_DRILL_SEQUENCE=use.slice();
 
-  document.querySelectorAll('.autodrill-chip[data-kind]').forEach(btn=>{
-    btn.classList.toggle('on', drillKicks.includes(btn.dataset.kind));
-  });
-  document.querySelectorAll('.autodrill-chip[data-foot]').forEach(btn=>{
-    btn.classList.toggle('on', btn.dataset.foot===drillFoot);
-  });
-  
-  const cnt=document.getElementById('autoDrillCount');
+  const cnt=document.getElementById('drillPickSum');
   if(cnt) cnt.textContent=drillPickSentence();
 
   EVERY_KICK_MODE.forEach(m=>{
@@ -7509,6 +7530,9 @@ function syncAutoDrillSequence(){
     if(use.includes(m)) btn.style.removeProperty('display');
     else btn.style.setProperty('display','none','important');
   });
+  
+  const kickRow=document.getElementById('m_apcha_r')?.parentElement;
+  if(kickRow) use.forEach(m=>{ const b=document.getElementById('m_'+m); if(b) kickRow.appendChild(b); });
 
   if(MODE_CFG[currentMode]?.isDrill && !use.includes(currentMode)){
     currentMode=use[0];
@@ -7519,10 +7543,12 @@ function syncAutoDrillSequence(){
 const KICK_KIND_LABEL={apcha:'앞', dollo:'돌려', yeop:'옆', dwi:'뒤'};
 const FOOT_LABEL={right:'오른발로', left:'왼발로', both:'양발로', alt:'번갈아'};
 
+function drillShort(m){ const b=document.getElementById('m_'+m); return b?b.textContent.trim():m; }
+
 function drillPickSentence(){
-  const ks=KICK_KINDS.filter(k=>drillKicks.includes(k)).map(k=>KICK_KIND_LABEL[k]);
-  if(!ks.length) return '없음';
-  return ks.join('·')+'를 '+FOOT_LABEL[drillFoot];
+  const s=activeKickModes();
+  if(s.length<=4) return s.map(drillShort).join(' → ');
+  return s.slice(0,3).map(drillShort).join(' → ')+' … '+s.length+'개';
 }
 
 function applyDrillPickChange(){
@@ -7536,28 +7562,63 @@ function applyDrillPickChange(){
   }
 }
 
-window.toggleDrillKick=function(kind){
-  if(!KICK_KINDS.includes(kind)) return;
-  const on=drillKicks.includes(kind);
-
-  if(on && drillKicks.length<=1){
-    statusEl.style.opacity='1';
-    statusEl.textContent='발차기는 최소 하나는 남겨야 합니다.';
-    return;
-  }
-  if(running && isDrillMode()) stopGame();
-  drillKicks = on ? drillKicks.filter(k=>k!==kind) : drillKicks.concat([kind]);
-  applyDrillPickChange();
+let drillDraft=null;
+const DRILL_PRESETS=[
+  {name:'앞·돌려 양발', seq:['apcha_r','apcha_l','dollo_r','dollo_l']},
+  {name:'네 가지 양발', seq:['apcha_r','apcha_l','dollo_r','dollo_l','yeop_r','yeop_l','dwi_r','dwi_l']},
+  {name:'네 가지 번갈아', seq:['apcha_x','dollo_x','yeop_x','dwi_x']},
+  {name:'앞→돌려 연결', seq:['apcha_r','dollo_r','apcha_l','dollo_l']}
+];
+const DRILL_FOOT_COLS=[['r','오른발'],['l','왼발'],['x','번갈아']];
+const DRILL_KIND_NAME={apcha:'앞차기', dollo:'돌려차기', yeop:'옆차기', dwi:'뒤차기'};
+function renderDrillPick(){
+  const d=drillDraft||[];
+  const pick=document.getElementById('dpPick'), order=document.getElementById('dpOrder');
+  if(!pick||!order) return;
+  pick.innerHTML=KICK_KINDS.map(k=>'<div class="dp-kind">'+DRILL_KIND_NAME[k]+'</div>'+DRILL_FOOT_COLS.map(([f,lab])=>{
+    const m=k+'_'+f, i=d.indexOf(m);
+    return '<button type="button" class="dp-chip'+(i>=0?' on':'')+'" data-dp-mode="'+m+'">'+(i>=0?'<b>'+(i+1)+'</b>':'')+lab+'</button>';
+  }).join('')).join('');
+  order.innerHTML=d.length?d.map((m,i)=>'<div class="dp-row"><b>'+(i+1)+'</b><span>'+(MODE_CFG[m]?.label||m)+'</span>'+
+      '<button type="button" data-dp-up="'+i+'" aria-label="위로"'+(i===0?' disabled':'')+'>↑</button>'+
+      '<button type="button" data-dp-down="'+i+'" aria-label="아래로"'+(i===d.length-1?' disabled':'')+'>↓</button>'+
+      '<button type="button" class="dp-x" data-dp-del="'+i+'" aria-label="빼기">✕</button></div>').join('')
+    :'<div class="dp-empty">왼쪽에서 발차기를 눌러 넣어 주세요</div>';
+  const sum=document.getElementById('dpSum'); if(sum) sum.textContent=d.length+' / '+DRILL_SEQ_MAX+'개';
+  const save=document.getElementById('dpSave'); if(save) save.disabled=!d.length;
+  const msg=document.getElementById('dpMsg'); if(msg) msg.textContent=d.length>=DRILL_SEQ_MAX?'8개까지 넣을 수 있습니다':'';
+}
+window.openDrillPick=function(){
+  if(running) return;
+  drillDraft=activeKickModes().slice();
+  renderDrillPick();
+  const m=document.getElementById('drillPickModal'); if(m) m.hidden=false;
 };
-
-window.setDrillFoot=function(foot){
-  if(!['right','left','both','alt'].includes(foot)) return;
-  if(foot===drillFoot){ syncAutoDrillSequence(); return; }
-  if(running && isDrillMode()) stopGame();
-  drillFoot=foot;
-  altFootReset();
-  applyDrillPickChange();
-};
+window.closeDrillPick=function(){ const m=document.getElementById('drillPickModal'); if(m) m.hidden=true; drillDraft=null; };
+(function initDrillPick(){
+  const modal=document.getElementById('drillPickModal');
+  if(!modal) return;
+  const pre=document.getElementById('dpPresets');
+  if(pre) pre.innerHTML=DRILL_PRESETS.map((p,i)=>'<button type="button" data-dp-preset="'+i+'">'+p.name+'</button>').join('');
+  modal.addEventListener('click',e=>{
+    if(!drillDraft) return;
+    const b=e.target.closest('button'); if(!b){ if(e.target===modal) closeDrillPick(); return; }
+    const d=drillDraft;
+    if(b.dataset.dpMode){ const m=b.dataset.dpMode, i=d.indexOf(m); if(i>=0) d.splice(i,1); else if(d.length<DRILL_SEQ_MAX) d.push(m); }
+    else if(b.dataset.dpUp){ const i=+b.dataset.dpUp; if(i>0) [d[i-1],d[i]]=[d[i],d[i-1]]; }
+    else if(b.dataset.dpDown){ const i=+b.dataset.dpDown; if(i<d.length-1) [d[i+1],d[i]]=[d[i],d[i+1]]; }
+    else if(b.dataset.dpDel){ d.splice(+b.dataset.dpDel,1); }
+    else if(b.dataset.dpPreset){ drillDraft=cleanDrillSeq(DRILL_PRESETS[+b.dataset.dpPreset].seq); }
+    else if(b.id==='dpClear'){ drillDraft=[]; }
+    else if(b.id==='dpClose'){ closeDrillPick(); return; }
+    else if(b.id==='dpSave'){
+      const s=cleanDrillSeq(drillDraft); if(!s.length) return;
+      if(running && isDrillMode()) stopGame();
+      drillSeq=s; altFootReset(); closeDrillPick(); applyDrillPickChange(); return;
+    }
+    renderDrillPick();
+  });
+})();
 
 window.applyBetaVisibility=function(){
   const on=!!(window.akmIsBeta && window.akmIsBeta());
@@ -10091,7 +10152,7 @@ body.hud-v21.akm-ui.two-player-mode .p2-enemy-target{
   color:#e2bf70; text-shadow:0 2px 12px rgba(0,0,0,.9); margin-bottom:2px;
 }
 #p2ResultTitle{
-  font-family:"Arial Black","Noto Sans KR",Impact,sans-serif !important;
+  font-family:var(--num) !important;
   font-size:clamp(78px,14vw,184px) !important; font-weight:1000 !important;
   letter-spacing:-.075em !important; line-height:.9 !important; color:#f4f6f8 !important;
   text-shadow:0 7px 22px rgba(0,0,0,.98),0 1px 0 rgba(255,255,255,.45) !important;
@@ -10102,7 +10163,7 @@ body.hud-v21.akm-ui.two-player-mode .p2-enemy-target{
 #p2ResultScores{display:flex;align-items:center;justify-content:center;gap:clamp(24px,6vw,90px);width:min(760px,84vw)}
 .p2-result-side{display:grid;grid-template-columns:auto auto;align-items:baseline;justify-content:center;column-gap:12px;min-width:180px}
 .p2-result-side span{font-size:clamp(18px,2.2vw,30px);font-weight:1000;color:#d9e0e9}
-.p2-result-side b{font-family:"Arial Black",Impact,sans-serif;font-size:clamp(50px,7.6vw,98px);font-weight:1000;line-height:1;font-variant-numeric:tabular-nums}
+.p2-result-side b{font-family:var(--num);font-size:clamp(50px,7.6vw,98px);font-weight:1000;line-height:1;font-variant-numeric:tabular-nums}
 .p2-result-side small{grid-column:1/-1;font-size:13px;font-weight:900;letter-spacing:.08em;color:rgba(255,255,255,.52);margin-top:4px}
 .p2-result-c b{color:#438cff;text-shadow:0 3px 18px rgba(25,94,255,.55)}
 .p2-result-h b{color:#ef3e58;text-shadow:0 3px 18px rgba(255,48,79,.48)}
@@ -10124,7 +10185,7 @@ body.hud-v21.akm-ui.two-player-mode .p2-enemy-target{
 #p2ResultBreakdown .bd-head.h{color:rgba(255,110,133,.9)}
 #p2ResultBreakdown .bd-label{font-size:clamp(13px,1.5vw,17px);font-weight:900;color:rgba(255,255,255,.86);text-align:left}
 #p2ResultBreakdown .bd-val{
-  font-family:"Arial Black",Impact,sans-serif; font-size:clamp(16px,2vw,22px);
+  font-family:var(--num); font-size:clamp(16px,2vw,22px);
   font-weight:1000; font-variant-numeric:tabular-nums; text-align:right; min-width:64px;
 }
 #p2ResultBreakdown .bd-val.c{color:#7cb0ff}
@@ -10413,7 +10474,7 @@ const _AKM_CACHE_DAYS  = 7;
 const _AKM_TRIAL_CACHE_DAYS = 1;   
 const _AKM_FETCH_TIMEOUT_MS = 8 * 1000;   
 
-const _AKM_VERSION     = '3.5.7';   
+const _AKM_VERSION     = '3.5.8';   
 try{ window.__NL_VER = _AKM_VERSION; }catch(e){}   
 
 let _akmFailCount = 0;
@@ -10625,7 +10686,7 @@ function _akmShowAuthedUI(dojang_name, version){
   const authEl=document.getElementById('panelAuth');
   const verEl =document.getElementById('panelVersion');
   if(nameEl) nameEl.textContent=dojang_name || 'AI KICK MASTER';
-  if(authEl) authEl.textContent='✓ 정품 인증';
+  if(authEl) authEl.textContent='● 정품 인증됨';
 
   if(verEl)  verEl.textContent='v'+_AKM_VERSION;
   const lbName=document.getElementById('lbDojangName');
@@ -11606,6 +11667,114 @@ html.akm-portrait body.hud-v21.akm-ui #leftSettings{width:200px}
 #p2RotateHint small{display:block;font-size:clamp(14px,2.5vw,20px);font-weight:700;line-height:1.45}
 html.akm-portrait body.two-player-mode:not(.playing-ui):not(.ready-ui):not(.akm-group-open) #p2RotateHint{display:block}
 html.akm-portrait body.two-player-mode:not(.playing-ui):not(.ready-ui):not(.akm-group-open) #handNextPrompt{top:max(66%,672px) !important}
+
+html body.hud-v21.akm-ui{font-family:var(--kr)}
+html.akm-portrait{--nl-col:200px}   
+html body.hud-v21.akm-ui .stat-num,html body.hud-v21.akm-ui .dr-avg b,html body.hud-v21.akm-ui #popScore{font-family:var(--num) !important}
+
+html body.hud-v21.akm-ui .hud-settings-btn,html body.hud-v21.akm-ui .hud-lab-top{color:rgba(226,244,255,.86) !important}
+html body.hud-v21.akm-ui .title-auth{color:#2ecc71 !important;font-weight:900 !important}
+html body.hud-v21.akm-ui .title-version{color:rgba(234,244,241,.48) !important}
+
+html body.hud-v21.akm-ui .hud-drill-row,html body.hud-v21.akm-ui .hud-balloon-row,
+html body.hud-v21.akm-ui .hud-sparring-row,html body.hud-v21.akm-ui .hud-lab-row{width:var(--nl-col) !important}
+html body.hud-v21.akm-ui .hud-drill-row .game-btn,html body.hud-v21.akm-ui .hud-balloon-row .game-btn,
+html body.hud-v21.akm-ui .hud-sparring-row .game-btn,html body.hud-v21.akm-ui .hud-lab-row .game-btn{
+  width:100% !important;height:32px !important;min-height:32px !important;padding:0 0 0 11px !important;
+  border:0 !important;border-left:5px solid transparent !important;border-radius:0 !important;
+  background:linear-gradient(90deg,rgba(3,15,27,.52),rgba(3,15,27,0)) !important;box-shadow:none !important;
+  color:rgba(255,255,255,.62) !important;font-family:var(--kr) !important;font-size:14px !important;font-weight:900 !important;
+  text-align:left !important;text-shadow:0 2px 3px rgba(0,0,0,.95),0 0 14px rgba(0,0,0,.78) !important}
+html body.hud-v21.akm-ui .hud-drill-row .game-btn.active,html body.hud-v21.akm-ui .hud-balloon-row .game-btn.active,
+html body.hud-v21.akm-ui .hud-sparring-row .game-btn.active,html body.hud-v21.akm-ui .hud-lab-row .game-btn.active{
+  border-left-color:var(--orange) !important;color:#fff !important;
+  background:linear-gradient(90deg,rgba(255,255,255,.18),rgba(255,255,255,0)) !important}
+html body.hud-v21.akm-ui .hud-drill-row .game-btn::before,html body.hud-v21.akm-ui .hud-balloon-row .game-btn::before,
+html body.hud-v21.akm-ui .hud-sparring-row .game-btn::before,html body.hud-v21.akm-ui .hud-lab-row .game-btn::before,
+html body.hud-v21.akm-ui .hud-drill-row .game-btn::after,html body.hud-v21.akm-ui .hud-balloon-row .game-btn::after,
+html body.hud-v21.akm-ui .hud-sparring-row .game-btn::after,html body.hud-v21.akm-ui .hud-lab-row .game-btn::after{content:none !important;display:none !important}
+
+html body #p2PlayerToggle.show{display:grid !important;grid-template-columns:1fr 1fr !important;gap:3px !important;width:var(--nl-col) !important}
+html body #p2PlayerToggle.show::before{content:"인원";grid-column:1/-1;margin-bottom:2px;font-size:13px;font-weight:800;line-height:1.2;color:rgba(255,255,255,.72);text-shadow:0 1px 3px rgba(0,0,0,.8)}
+html body #p2PlayerToggle.show button{all:unset;box-sizing:border-box;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;
+  background:rgba(3,15,27,.38);border-bottom:3px solid transparent;color:rgba(255,255,255,.62);font-family:var(--kr);font-size:14px;font-weight:900;text-shadow:0 2px 3px rgba(0,0,0,.9)}
+html body #p2PlayerToggle.show button.active{background:rgba(255,106,26,.22);border-bottom-color:var(--orange);color:#fff}
+
+html body.hud-v21.akm-ui #leftSettings{width:var(--nl-col)}
+html body.hud-v21.akm-ui #leftSettings .difficulty-panel{gap:3px !important}
+html body.hud-v21.akm-ui #leftSettings .diff-btn{
+  height:36px !important;min-height:36px !important;border:0 !important;border-bottom:3px solid transparent !important;border-radius:0 !important;
+  background:rgba(3,15,27,.38) !important;color:rgba(255,255,255,.62) !important;font-family:var(--kr) !important;font-weight:900 !important;
+  text-shadow:0 2px 3px rgba(0,0,0,.9) !important}
+html body.hud-v21.akm-ui #leftSettings .diff-btn.active{background:rgba(255,106,26,.22) !important;border-bottom-color:var(--orange) !important;color:#fff !important}
+html body.hud-v21.akm-ui #leftSettings.ls-side .diff-btn{height:32px !important;min-height:32px !important}
+html body #p2PlayerToggle.show.ls-side button{height:32px}
+html body #p2PlayerToggle.show.ls-side::before{font-size:11px}
+
+#drillPickPanel{display:block}
+#drillPickPanel .dpp-label{margin-bottom:4px;font-size:13px;font-weight:800;line-height:1.2;color:rgba(255,255,255,.72);text-shadow:0 1px 3px rgba(0,0,0,.8)}
+#drillPickPanel .dpp-row{display:flex;align-items:center;gap:6px;min-height:36px;padding:0 0 0 10px;background:rgba(3,15,27,.38);border-bottom:3px solid var(--orange)}
+#drillPickPanel #drillPickSum{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13.5px;font-weight:900;color:#fff;text-shadow:0 2px 3px rgba(0,0,0,.9)}
+#drillPickPanel #drillPickBtn{flex:none;height:36px;padding:0 12px;border:0;background:rgba(255,106,26,.22);color:#FFB27A;font-family:var(--kr);font-size:13.5px;font-weight:900;cursor:pointer}
+html body.hud-v21.akm-ui #leftSettings.ls-side #drillPickPanel .dpp-row,html body.hud-v21.akm-ui #leftSettings.ls-side #drillPickPanel #drillPickBtn{min-height:32px;height:32px}
+html body.hud-v21.akm-ui #leftSettings.ls-side #drillPickPanel .dpp-label{font-size:11px;margin-bottom:2px}
+
+.dp-modal{position:fixed;inset:0;z-index:99985;display:flex;align-items:center;justify-content:center;padding:max(12px,2vh) 16px;background:rgba(0,0,0,.66);font-family:var(--kr)}
+.dp-modal[hidden]{display:none !important}
+.dp-box{width:min(940px,100%);max-height:100%;display:flex;flex-direction:column;overflow:hidden;background:var(--s-bg);color:var(--s-txt);border-radius:16px;box-shadow:0 24px 70px rgba(0,0,0,.6)}
+.dp-head{padding:20px 24px 10px}
+.dp-head h3{margin:0;font-size:22px;font-weight:900;color:#fff}
+.dp-head p{margin:5px 0 0;font-size:13px;color:var(--s-dim)}
+.dp-body{flex:1 1 auto;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;padding:6px 24px 10px;overflow:auto}
+.dp-col h4{display:flex;justify-content:space-between;align-items:baseline;margin:6px 0 8px;font-size:14px;font-weight:900;color:var(--s-txt)}
+.dp-col h4 span{font-family:var(--num);font-size:13px;color:#FFB27A}
+.dp-grid{display:grid;grid-template-columns:4.6em repeat(3,1fr);gap:4px;align-items:stretch}
+.dp-kind{display:flex;align-items:center;font-size:14px;font-weight:900;color:#fff}
+.dp-chip{position:relative;height:44px;border:0;border-bottom:3px solid transparent;background:var(--s-tile);color:rgba(255,255,255,.7);font-family:var(--kr);font-size:14px;font-weight:900;cursor:pointer}
+.dp-chip:hover{background:var(--s-tile-hi)}
+.dp-chip.on{background:rgba(255,106,26,.22);border-bottom-color:var(--orange);color:#fff}
+.dp-chip b{position:absolute;left:6px;top:4px;font-family:var(--num);font-size:12px;color:#FFB27A}
+.dp-h-pre{margin-top:16px !important}
+.dp-presets{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.dp-presets button{height:38px;border:0;background:var(--s-tile);color:var(--s-txt);font-family:var(--kr);font-size:13px;font-weight:800;cursor:pointer}
+.dp-presets button:hover{background:var(--s-tile-hi)}
+.dp-order{display:flex;flex-direction:column;gap:4px}
+.dp-row{display:grid;grid-template-columns:2em minmax(0,1fr) 40px 40px 40px;align-items:center;gap:4px;min-height:44px;padding-left:8px;background:var(--s-tile);border-left:5px solid var(--orange)}
+.dp-row b{font-family:var(--num);font-size:16px;color:#FFB27A}
+.dp-row span{font-size:15px;font-weight:900;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dp-row button{height:44px;border:0;background:transparent;color:#fff;font-size:17px;font-weight:900;cursor:pointer}
+.dp-row button:disabled{opacity:.22;cursor:default}
+.dp-row .dp-x{color:#FF8C9A}
+.dp-empty{padding:26px 10px;text-align:center;font-size:14px;color:var(--s-dim);background:var(--s-tile)}
+.dp-note{margin-top:10px;font-size:12px;line-height:1.5;color:var(--s-dim)}
+.dp-note b{color:var(--s-txt)}
+.dp-foot{display:flex;align-items:center;gap:8px;padding:12px 24px 18px;border-top:1px solid var(--s-line)}
+.dp-foot em{flex:1 1 auto;font-style:normal;font-size:12px;font-weight:800;color:#FFB27A}
+.dp-foot button{height:44px;padding:0 18px;border:0;border-radius:10px;font-family:var(--kr);font-size:14px;font-weight:900;cursor:pointer}
+.dp-ghost{background:var(--s-tile);color:var(--s-txt)}
+.dp-save{background:var(--orange);color:#fff}
+.dp-save:disabled{opacity:.4;cursor:default}
+@media (max-width:760px),(max-height:520px){
+  .dp-box{border-radius:12px}
+  .dp-head{padding:12px 16px 4px}.dp-head h3{font-size:18px}.dp-head p{font-size:12px}
+  .dp-body{gap:10px;padding:4px 16px 6px}
+  .dp-chip,.dp-row,.dp-row button{height:36px;min-height:36px}
+  .dp-presets button{height:32px}
+  .dp-foot{padding:8px 16px 10px}.dp-foot button{height:38px;padding:0 12px}
+}
+@media (max-width:620px){ .dp-body{grid-template-columns:1fr} }
+
+html body #drillResult.show,html body #p2Result.show{
+  inset:auto !important;left:50% !important;top:50% !important;transform:translate(-50%,-50%) !important;
+  width:min(900px,calc(100vw - 32px)) !important;max-width:none !important;height:auto !important;max-height:calc(100vh - 32px) !important;overflow-x:hidden !important;overflow-y:auto !important;
+  padding:26px 32px 24px !important;border-radius:20px !important;
+  background:rgba(16,13,12,.95) !important;border:1px solid rgba(255,106,26,.42) !important;
+  box-shadow:0 24px 70px rgba(0,0,0,.6) !important}
+html body #drillResult.show.final-result,html body #p2Result.show{z-index:99960 !important;box-shadow:0 0 0 100vmax rgba(2,7,14,.74),0 24px 70px rgba(0,0,0,.6) !important}   
+html body #drillResult.show:not(.final-result){width:auto !important;min-width:min(520px,calc(100vw - 32px)) !important}
+
+html body.hud-v21.akm-ui:not(.playing-ui):not(.ready-ui) #startBtn,html body.hud-v21.akm-ui:not(.playing-ui):not(.ready-ui) #startBtn2{color:var(--start) !important}
+html body.hud-v21.akm-ui.playing-ui #startBtn,html body.hud-v21.akm-ui.playing-ui #startBtn2{color:var(--stop) !important}
 </style>
 <script id="akm-left-settings">
 
@@ -11614,6 +11783,9 @@ html.akm-portrait body.two-player-mode:not(.playing-ui):not(.ready-ui):not(.akm-
   if(!box||!toggle) return;
   function shown(el){ return !!el && el.getClientRects().length>0 && getComputedStyle(el).display!=='none'; }
   function place(){
+    
+    toggle.classList.remove('ls-side');
+    ['top','left','width'].forEach(function(k){ toggle.style.removeProperty(k); });
     var r=toggle.getBoundingClientRect();
     if(!r.height || !shown(box)) return;
     var p=box.offsetParent?box.offsetParent.getBoundingClientRect():{top:0,left:0};
@@ -11621,21 +11793,28 @@ html.akm-portrait body.two-player-mode:not(.playing-ui):not(.ready-ui):not(.akm-
     box.style.top=(r.bottom-p.top+14)+'px';
     box.style.left=(r.left-p.left)+'px';
     var area=['drillCountArea','gameArea'].map(function(id){return document.getElementById(id);}).filter(shown)[0];
-    if(area && box.getBoundingClientRect().bottom+8>area.getBoundingClientRect().top){
+    var areaTop=area?area.getBoundingClientRect().top:Infinity;
+    if(area && box.getBoundingClientRect().bottom+8>areaTop){
       var m=document.querySelector('.hud-drill-row'), mr=m?m.getBoundingClientRect():r;
-      box.classList.add('ls-side');
-      box.style.top=(mr.top-p.top)+'px';
-      box.style.left=(Math.max(r.right,mr.right)-p.left+16)+'px';
+      var sideLeft=Math.max(r.right,mr.right)+16, sideW=190, sideTop=mr.top;
       
-      var br=box.getBoundingClientRect(), low=br.top;
       document.querySelectorAll('#p2Hud *').forEach(function(e){
         if(e.children.length || !e.textContent.trim() || !shown(e)) return;
         var c=getComputedStyle(e); if(c.visibility==='hidden' || +c.opacity===0) return;
         var q=e.getBoundingClientRect();
         var mid=(q.left+q.right)/2;   
-        if(q.height<160 && q.right>br.left && q.left<br.right && mid>br.left-60 && mid<br.right && q.bottom>low) low=q.bottom;
+        if(q.height<160 && q.right>sideLeft && q.left<sideLeft+sideW && mid>sideLeft-60 && mid<sideLeft+sideW && q.bottom>sideTop) sideTop=q.bottom+6;
       });
-      if(low>br.top) box.style.top=(low-p.top+6)+'px';
+      box.classList.add('ls-side');
+      box.style.top=(sideTop-p.top)+'px';
+      if(r.bottom+6>areaTop){
+        toggle.classList.add('ls-side');
+        toggle.style.setProperty('left',sideLeft+'px','important');
+        toggle.style.setProperty('top',sideTop+'px','important');
+        toggle.style.setProperty('width',sideW+'px','important');
+        box.style.top=(toggle.getBoundingClientRect().bottom-p.top+10)+'px';
+      }
+      box.style.left=(sideLeft-p.left)+'px';
     }
   }
   addEventListener('resize',function(){ place(); setTimeout(place,350); });   
