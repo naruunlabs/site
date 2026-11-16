@@ -579,6 +579,8 @@ body.jmp-lite-hud .jt-bars i{box-shadow:none}body.jmp-lite-hud .jt-wing{filter:n
 .m-range{width:100%;accent-color:var(--lime)}
 .m-div{margin:14px 0;border:0;border-top:1px solid rgba(45,212,191,.15)}
 .m-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.m-row.three{grid-template-columns:1fr 1fr 1fr}
+#devTypeRow .m-act.on{background:rgba(81,255,157,.22);color:#fff;box-shadow:inset 0 0 0 2px #51FF9D}
 .m-act{width:100%;padding:11px;border-radius:11px;background:rgba(45,212,191,.12);color:var(--teal-lit);font-size:14px;font-weight:900}
 .m-act.logout{background:rgba(227,23,46,.15);color:#ff8795}
 .m-act.home{background:rgba(255,255,255,.07);color:#fff}
@@ -1134,6 +1136,16 @@ body.jmp-group-list #optGroup,body.jmp-group-list #optBeat,body.jmp-group-list #
     <input class="m-range" type="range" id="volModal" min="0" max="100" value="100" aria-label="소리 크기">
 
     <hr class="m-div">
+    
+    <div class="m-label"><span>기기 종류</span><output id="devTypeOut">자동</output></div>
+    <div class="m-row three" id="devTypeRow">
+      <button class="m-act" type="button" data-dev="auto">자동</button>
+      <button class="m-act" type="button" data-dev="phone">폰</button>
+      <button class="m-act" type="button" data-dev="tablet">태블릿</button>
+    </div>
+    <div class="m-help">폰으로 고르면 앞카메라를 초당 30장으로 찍어 빠른 점프의 번짐을 줄입니다. 화면이 조금 어두워질 수 있어요.</div>
+
+    <hr class="m-div">
     <div class="m-row">
       <button class="m-act" id="flipBtn" type="button">카메라 전환</button>
       <button class="m-act" id="recalBtn2" type="button">기준 재설정</button>
@@ -1228,7 +1240,7 @@ body.jmp-group-list #optGroup,body.jmp-group-list #optBeat,body.jmp-group-list #
 
 <script type="module">
 
-const APP_VERSION = '3.10.7';   
+const APP_VERSION = '3.10.8';   
 try{ window.__NL_VER = APP_VERSION; }catch(e){}   
 
 const MP_VERSION  = '1.0.1';
@@ -2057,8 +2069,58 @@ async function openCamera(){
   jumpVideoAt=performance.now();jumpVideoTime=-1;
   for(const track of stream.getVideoTracks())track.addEventListener?.('ended',()=>{if(mode!=='group')holdJump('camera');},{once:true});
   video.classList.toggle('mirrored',facingMode==='user');
+  await camTune(stream);   
   await video.play();
   startFrameClock();   
+}
+
+const CAM_PHONE_FPS30 = true;
+const JMP_DEV_AUTO = (()=>{
+  let type='desktop', short=0;
+  try{
+    const ua=String(navigator.userAgent||''), touch=(navigator.maxTouchPoints||0)>0;
+    short=Math.round(Math.min(screen.width||0, screen.height||0));
+    if(/iPad/.test(ua) || (/Macintosh/.test(ua) && touch)) type='tablet';
+    else if(/iPhone|iPod/.test(ua)) type='phone';
+    else if(/Android/.test(ua)) type=/Mobile/.test(ua)?'phone':'tablet';
+    else if(touch) type= short && short<600 ? 'phone' : 'tablet';
+  }catch(e){}
+  return {type, short};
+})();
+
+const JMP_DEV = {type:JMP_DEV_AUTO.type, short:JMP_DEV_AUTO.short, set:'auto'};
+function jmpDevApply(v){
+  v=(v==='phone'||v==='tablet')?v:'auto';
+  JMP_DEV.set=v; JMP_DEV.type = v==='auto' ? JMP_DEV_AUTO.type : v;
+}
+try{ jmpDevApply(localStorage.getItem('jmp_devtype')||'auto'); }catch(e){}
+let camInfo=null, camRealHz=0, camRealN0=null, camRealT0=0;
+function camRealTick(now,meta){
+  const n=meta&&meta.presentedFrames; if(!Number.isFinite(n)) return;
+  if(camRealN0==null || n<camRealN0){ camRealN0=n; camRealT0=now; return; }
+  if(now-camRealT0>=2000){ camRealHz=(n-camRealN0)*1000/(now-camRealT0); camRealN0=n; camRealT0=now; }
+}
+async function camTune(st){
+  camInfo=null; camRealHz=0; camRealN0=null;
+  const tr=st && st.getVideoTracks && st.getVideoTracks()[0]; if(!tr) return;
+  let fix=null;
+  if(CAM_PHONE_FPS30 && JMP_DEV.type==='phone' && facingMode==='user' && tr.applyConstraints){
+    try{
+      const cap=tr.getCapabilities?tr.getCapabilities():{};
+      const max=cap.frameRate&&cap.frameRate.max;
+      
+      if(!max || max>=30){ await tr.applyConstraints({width:{ideal:1280},height:{ideal:720},frameRate:{min:30, ideal:30}}); fix='fps30'; }
+      else fix='fps30-불가';
+    }catch(e){ fix='fps30-거절'; }
+  }
+  try{
+    const g=tr.getSettings?tr.getSettings():{}, c=tr.getCapabilities?tr.getCapabilities():{};
+    camInfo={ facing:g.facingMode||facingMode, w:g.width||null, h:g.height||null,
+      fps:g.frameRate!=null?+(+g.frameRate).toFixed(1):null,
+      fps_min:c.frameRate&&c.frameRate.min!=null?+(+c.frameRate.min).toFixed(1):null,
+      fps_max:c.frameRate&&c.frameRate.max!=null?+(+c.frameRate.max).toFixed(1):null,
+      resize:g.resizeMode||null, exp:Array.isArray(c.exposureMode)?c.exposureMode.join('/'):null, fix };
+  }catch(e){ camInfo={facing:facingMode, fix}; }
 }
 function stopCamera(){
   if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; }
@@ -2198,6 +2260,7 @@ function startFrameClock(){
       if(Number.isFinite(ct) && ct<=now+5 && now-ct<400){ t=ct; src='촬영 시각'; }
       else if(Number.isFinite(pt) && pt<=now+5 && now-pt<400){ t=pt; }
       camMeta={t,at:now}; camTimeSrc=src;
+      try{ camRealTick(now,meta); }catch(e){}   
       try{ ropeFrame(t); }catch(e){}   
       camCnt++; if(now-camWin>=1000){ camHz=camCnt*1000/(now-camWin); camCnt=0; camWin=now; }
     }catch(e){}
@@ -5319,6 +5382,23 @@ $('flipBtn').addEventListener('click',async()=>{
   players.forEach(p=>p.engine.recalibrate());   
   closeSettings();
 });
+
+function devTypeRender(){
+  const names={phone:'폰',tablet:'태블릿',desktop:'PC'};
+  $('devTypeOut').textContent = JMP_DEV.set==='auto' ? ('자동 · '+(names[JMP_DEV_AUTO.type]||JMP_DEV_AUTO.type)) : names[JMP_DEV.type];
+  document.querySelectorAll('#devTypeRow [data-dev]').forEach(b=>b.classList.toggle('on', b.dataset.dev===JMP_DEV.set));
+}
+document.querySelectorAll('#devTypeRow [data-dev]').forEach(b=>b.addEventListener('click',async()=>{
+  if(running) return;
+  const before=JMP_DEV.type;
+  jmpDevApply(b.dataset.dev); store.set('jmp_devtype',JMP_DEV.set); devTypeRender();
+  if(JMP_DEV.type!==before && stream){
+    stopCamera();
+    try{ await ensureCamera(); }catch(e){ setLobbyError(cameraErrorText(e)); }
+    players.forEach(p=>p.engine.recalibrate());
+  }
+}));
+devTypeRender();
 $('homePageBtn').addEventListener('click',()=>{ location.href='./jumpmaster.html'; });
 $('logoutBtn').addEventListener('click',()=>{ _jmpClearCache(); location.reload(); });
 
@@ -5497,7 +5577,7 @@ async function _jmpVerifyWithServer(license_key){
   const timer = ac ? setTimeout(()=>{ try{ ac.abort(); }catch(e){} }, _JMP_FETCH_TIMEOUT_MS) : 0;
   try{
     const res=await fetch(_JMP_EDGE_URL,{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({license_key, device_id:_jmpGetOrCreateDeviceId()}), signal: ac?ac.signal:undefined});
+      body:JSON.stringify({license_key, device_id:_jmpGetOrCreateDeviceId(), device_type:(()=>{ try{ return JMP_DEV.type; }catch(e){ return null; } })()}), signal: ac?ac.signal:undefined});
     return await res.json();
   } finally { if(timer) clearTimeout(timer); }
 }
@@ -6026,6 +6106,7 @@ function labRoundFinished(m){
     signal:SIGNAL_JOINTS===4?'4pt':'hip2', time_src:camTimeSrc,
     cam_hz:labRound(camHz,1), infer_hz:labRound(inferHz,1), infer_px:inferPx||null,
     infer_ms:labRound(inferCost,1), delegate:(poseInfo.match(/GPU|CPU/)||[null])[0], pose_info:poseInfo||null,   // 2026-10-12
+    dev:JMP_DEV.type, dev_set:JMP_DEV.set, scr_short:JMP_DEV.short||null, cam:camInfo, cam_real_hz:labRound(camRealHz,1),   // 2026-11-16 폰/태블릿 · 카메라 설정 · 카메라가 실제로 보낸 장수
     players:players.map(p=>({
       pid:p.id??0, main:p.count, truth:null,
       guard:p.cg?p.cg.count:null, catches:p.cg?p.cg.catches:null, guard_cut:p.cg?p.cg.filtered:null,   // 2026-09-24 걸림 보정

@@ -4878,8 +4878,11 @@ function dhKnownIp(value) { return value && value !== 'unknown' ? value : ''; }
 function dhFact(label, value, code) {
   return `<div><span class="dh-label">${escapeHtml(label)}</span><${code?'code':'span'} class="dh-value">${escapeHtml(value || '기록 없음')}</${code?'code':'span'}></div>`;
 }
+
+function dhType(v) { return ({phone:'폰',tablet:'태블릿',desktop:'PC'})[v] || ''; }
 function dhDeviceName(device, number) {
-  return `기기 ${number}` + (device.os || device.browser ? ` · ${[device.os,device.browser].filter(Boolean).join(' / ')}` : ' · 환경 정보 없음');
+  const env=[dhType(device.device_type),device.os,device.browser].filter(Boolean);
+  return `기기 ${number}` + (env.length ? ` · ${env.join(' / ')}` : ' · 환경 정보 없음');
 }
 async function showDeviceHistory(key) {
   const seq = ++DEVICE_HISTORY_SEQ;
@@ -4947,7 +4950,7 @@ async function loadDeviceEvents(detail,seq,cursor) {
       const earlier=rows[i+1];
       const oldIp=earlier?earlier.ip:previous;
       const changed=dhKnownIp(r.ip)&&dhKnownIp(oldIp)&&r.ip!==oldIp;
-      return `<div class="dh-event"><time>${escapeHtml(dhTime(r.created_at))}</time><div>${changed?'<b class="dh-change">접속 IP 변경</b>':'<span>성공 인증</span>'}<code>${escapeHtml(dhKnownIp(r.ip)||'IP 기록 없음')}</code>${changed?`<span class="dh-label">이전 IP ${escapeHtml(oldIp)} · 기기 번호 유지</span>`:''}<span class="dh-label">${escapeHtml([r.os,r.browser].filter(Boolean).join(' · ')||'환경 정보 수집 전 또는 확인 불가')}</span></div></div>`;
+      return `<div class="dh-event"><time>${escapeHtml(dhTime(r.created_at))}</time><div>${changed?'<b class="dh-change">접속 IP 변경</b>':'<span>성공 인증</span>'}<code>${escapeHtml(dhKnownIp(r.ip)||'IP 기록 없음')}</code>${changed?`<span class="dh-label">이전 IP ${escapeHtml(oldIp)} · 기기 번호 유지</span>`:''}<span class="dh-label">${escapeHtml([dhType(r.device_type),r.os,r.browser].filter(Boolean).join(' · ')||'환경 정보 수집 전 또는 확인 불가')}</span></div></div>`;
     }).join('');
     target.insertAdjacentHTML('beforeend',markup);
     detail.dataset.loaded='1';
