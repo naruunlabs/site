@@ -1228,7 +1228,7 @@ body.jmp-group-list #optGroup,body.jmp-group-list #optBeat,body.jmp-group-list #
 
 <script type="module">
 
-const APP_VERSION = '3.10.5';   
+const APP_VERSION = '3.10.6';   
 try{ window.__NL_VER = APP_VERSION; }catch(e){}   
 
 const MP_VERSION  = '1.0.1';
@@ -1844,6 +1844,7 @@ function makePlayer(id){
   attachRawRecording(p);
   attachCatchGuard(p);   
   attachWristCheck(p);   
+  attachRopePass(p);     
   attachCountFix(p);     
   return p;
 }
@@ -2197,6 +2198,7 @@ function startFrameClock(){
       if(Number.isFinite(ct) && ct<=now+5 && now-ct<400){ t=ct; src='촬영 시각'; }
       else if(Number.isFinite(pt) && pt<=now+5 && now-pt<400){ t=pt; }
       camMeta={t,at:now}; camTimeSrc=src;
+      try{ ropeFrame(t); }catch(e){}   
       camCnt++; if(now-camWin>=1000){ camHz=camCnt*1000/(now-camWin); camCnt=0; camWin=now; }
     }catch(e){}
     video.requestVideoFrameCallback(cb);
@@ -2288,6 +2290,77 @@ function wcOnCount(p,ev,n){
 
   }
   W.count+=n; W.hist.push(p2p); if(W.hist.length>WCK.HIST) W.hist.shift();
+}
+
+const RPASS={ ON:true, IN:.41, OUT:.96, UP:1.37, DOWN:.11, DIFF:14, MAXN:9000,
+  SMOOTH_MS:50, LOC_MS:1500, LOC_Q:.90, PROM:.45, FLOOR:.25, PEAK_MS:667, MIN_GAP_MS:165, BOTH:.35, BOTH_MS:70 };
+let ropeCv=null, ropeCx=null;
+function attachRopePass(p){
+  const e=p.engine, oReset=e.resetCount;
+  e.resetCount=function(){ oReset(); ropeReset(p); };
+  ropeReset(p);
+}
+function ropeReset(p){ p.rp={buf:[],prev:null,roi:null,cx:null,floor:null,count:null}; }
+function ropeOn(){ return RPASS.ON && running && !stepRound && mode==='solo' && jmpIsLab() && players.length===1; }
+function ropeFrame(t){
+  if(!ropeOn()) return;
+  const p=players[0], R=p&&p.rp, lm=p&&p.lm;
+  if(!R || !lm || !p.seen || !lm[27] || !lm[28] || R.buf.length>=RPASS.MAXN) return;
+  const vw=video.videoWidth|0, vh=video.videoHeight|0; if(!vw||!vh) return;
+  const v=i=>lm[i]?.visibility??0;
+  if(v(11)<.3 || v(23)<.3) return;
+  const T=((lm[23].y+lm[24].y)/2-(lm[11].y+lm[12].y)/2)*vh; if(!(T>20)) return;
+  const ax=(lm[27].x+lm[28].x)/2*vw, ay=Math.max(lm[27].y,lm[28].y)*vh+T*.10;
+  R.cx = R.cx==null?ax:R.cx*.8+ax*.2;
+  R.floor = (R.floor==null||ay>R.floor)?ay:R.floor+(ay-R.floor)*.02;   
+  const w=Math.round(T*(RPASS.OUT-RPASS.IN)), h=Math.round(T*(RPASS.UP+RPASS.DOWN));
+  const y0=Math.round(R.floor-T*RPASS.UP), xl=Math.round(R.cx-T*RPASS.OUT), xr=Math.round(R.cx+T*RPASS.IN);
+  if(w<6||h<10||xl<0||y0<0||xr+w>vw||y0+h>vh){ R.prev=null; return; }
+  const roi=[xl,xr,y0,w,h];
+  if(!R.roi || roi.some((q,i)=>Math.abs(q-R.roi[i])>4)){ R.roi=roi; R.prev=null; }   
+  const [XL,XR,Y0,W,H]=R.roi;
+  if(!ropeCv){ ropeCv=document.createElement('canvas'); ropeCx=ropeCv.getContext('2d',{willReadFrequently:true,alpha:false}); }
+  if(ropeCv.width!==W*2 || ropeCv.height!==H){ ropeCv.width=W*2; ropeCv.height=H; R.prev=null; }
+  ropeCx.drawImage(video,XL,Y0,W,H,0,0,W,H);
+  ropeCx.drawImage(video,XR,Y0,W,H,W,0,W,H);
+  const px=ropeCx.getImageData(0,0,W*2,H).data, n=W*H*2, g=new Uint8Array(n);
+  for(let i=0,j=0;i<n;i++,j+=4) g[i]=(px[j]+px[j+1]+px[j+2])/3;
+  if(R.prev && R.prev.length===n){
+    let a=0,b=0;
+    for(let y=0;y<H;y++){ const r=y*W*2;
+      for(let x=0;x<W;x++){ if(Math.abs(g[r+x]-R.prev[r+x])>RPASS.DIFF) a++; if(Math.abs(g[r+W+x]-R.prev[r+W+x])>RPASS.DIFF) b++; } }
+    R.buf.push([+t.toFixed(1), +(a/(W*H)).toFixed(4), +(b/(W*H)).toFixed(4)]);
+  }
+  R.prev=g;
+}
+
+function ropeCount(buf){
+  const n=buf.length; if(n<20) return null;
+  const t=buf.map(q=>q[0]);
+  const sm=k=>{ const o=new Array(n); for(let i=0;i<n;i++){ let s=0,c=0; for(let j=i-1;j<=i+1;j++) if(j>=0&&j<n&&Math.abs(t[j]-t[i])<=RPASS.SMOOTH_MS){ s+=buf[j][k]; c++; } o[i]=s/c; } return o; };   
+  const L=sm(1), Rr=sm(2), S=L.map((x,i)=>x+Rr[i]);
+  const loc=a=>{ const o=new Array(n); let lo=0,hi=0;
+    for(let i=0;i<n;i++){ while(t[lo]<t[i]-RPASS.LOC_MS) lo++; while(hi<n && t[hi]<=t[i]+RPASS.LOC_MS) hi++;
+      const s=a.slice(lo,hi).sort((x,y)=>x-y); o[i]=s[Math.min(s.length-1,Math.floor((s.length-1)*RPASS.LOC_Q))]; } return o; };
+  const lS=loc(S), lL=loc(L), lR=loc(Rr);
+  const r=S.map((x,i)=>x/Math.max(lS[i],1e-4));
+  let pk=[];
+  for(let i=1;i<n-1;i++){
+    if(!(r[i]>r[i-1] && r[i]>=r[i+1])) continue;
+    let lm=r[i],k=i-1; while(k>=0 && r[k]<=r[i] && t[i]-t[k]<RPASS.PEAK_MS){ lm=Math.min(lm,r[k]); k--; }
+    let rm=r[i];  k=i+1; while(k<n  && r[k]<=r[i] && t[k]-t[i]<RPASS.PEAK_MS){ rm=Math.min(rm,r[k]); k++; }
+    if(r[i]-Math.max(lm,rm)<RPASS.PROM || S[i]<=RPASS.FLOOR*lS[i]) continue;
+    if(pk.length && t[i]-t[pk[pk.length-1]]<RPASS.MIN_GAP_MS){ if(r[i]>r[pk[pk.length-1]]) pk[pk.length-1]=i; }
+    else pk.push(i);
+  }
+  const near=(a,la,i)=>{ let m=0; for(let j=i;j>=0&&t[i]-t[j]<=RPASS.BOTH_MS;j--) m=Math.max(m,a[j]); for(let j=i;j<n&&t[j]-t[i]<=RPASS.BOTH_MS;j++) m=Math.max(m,a[j]); return m>RPASS.BOTH*la[i]; };
+  const both=pk.filter(i=>near(L,lL,i) && near(Rr,lR,i));
+  return {count:both.length, one:pk.length-both.length, hz:+((n-1)*1000/Math.max(1,t[n-1]-t[0])).toFixed(1)};
+}
+function ropeFinish(p){
+  const R=p&&p.rp; if(!R || R.count) return R&&R.count;
+  try{ R.count=ropeCount(R.buf); }catch(e){ R.count=null; }
+  return R.count;
 }
 function cgOnCount(p,ev,n){
   const C=p.cg; if(!C) return;
@@ -5821,6 +5894,8 @@ function labTick(now){
     const tag=ps.length>1?`P${i} `:'', per=p.engine.periodMs>0?p.engine.periodMs/1000:0;
     cmp += labCell(tag+'지금 방식', String(p.count));
     if(p.wc) cmp += labCell(tag+'손목 확인', String(p.wc.count)+(p.wc.cut?' (뺀 것 '+p.wc.cut+')':''));
+    if(p.rp && ps.length===1){ const b=p.rp.buf, hz=b.length>1?(b.length-1)*1000/Math.max(1,b[b.length-1][0]-b[0][0]):0;   
+      cmp += labCell(tag+'줄 통과', p.rp.count?String(p.rp.count.count):(b.length?'판 끝나면 셈 · '+labNum(hz,0,' 장/초'):'—'), b.length&&hz<20?'warn':''); }
     if(p.cg){ cmp += labCell(tag+'걸림 보정', p.cg.ready?String(p.cg.count):String(p.cg.count)+' (배우는 중)', p.cg.caught?'warn':''); cmp += labCell(tag+'걸림 감지', p.cg.catches+'회 · 뺀 것 '+p.cg.filtered); }
     cmp += labCell(tag+'한 박 표본 AI', per?labNum(inferHz*per,1):'—', per&&inferHz*per<4?'warn':'');
   });
@@ -5937,9 +6012,9 @@ let labRounds=[], labPending=null;
 try{ const v=JSON.parse(localStorage.getItem(JMP_LAB_ROUNDS_KEY)||'[]'); labRounds=Array.isArray(v)?v:[]; }catch(e){ labRounds=[]; }
 function labRoundsSave(){
   // 원신호는 최근 LAB_RAW_KEEP 판만 들고 있는다(저장 공간)
-  labRounds.forEach((r,i)=>{ if(i<labRounds.length-LAB_RAW_KEEP) r.players.forEach(q=>{ delete q.raw_ai; delete q.raw_fast; }); });
+  labRounds.forEach((r,i)=>{ if(i<labRounds.length-LAB_RAW_KEEP) r.players.forEach(q=>{ delete q.raw_ai; delete q.raw_fast; delete q.rope_raw; }); });
   try{ localStorage.setItem(JMP_LAB_ROUNDS_KEY, JSON.stringify(labRounds)); }
-  catch(e){ labRounds.forEach(r=>r.players.forEach(q=>{ delete q.raw_ai; delete q.raw_fast; }));
+  catch(e){ labRounds.forEach(r=>r.players.forEach(q=>{ delete q.raw_ai; delete q.raw_fast; delete q.rope_raw; }));
             try{ localStorage.setItem(JMP_LAB_ROUNDS_KEY, JSON.stringify(labRounds)); }catch(_){} }
 }
 function labRoundFinished(m){
@@ -5955,6 +6030,8 @@ function labRoundFinished(m){
       pid:p.id??0, main:p.count, truth:null,
       guard:p.cg?p.cg.count:null, catches:p.cg?p.cg.catches:null, guard_cut:p.cg?p.cg.filtered:null,   // 2026-09-24 걸림 보정
       wrist:p.wc?p.wc.count:null, wrist_cut:p.wc?p.wc.cut:null,   // 2026-10-12 손목 확인
+      ...(()=>{ const c=ropeFinish(p); return {rope:c?c.count:null, rope_one:c?c.one:null, rope_hz:c?c.hz:null,   // 2026-11-16 줄 통과(양쪽 띠 동시)
+        rope_raw:(labRecording&&p.rp&&p.rp.buf.length)?p.rp.buf.slice():null}; })(),
       coach:p.coach&&p.coach.tip?{k:p.coach.tip.k, ax:p.coach.tip.ax}:null,   // 2026-10-19 · 띄운 코칭(다음 판 개수로 효과 확인용)
       pre:p.jcr?p.jcr.raw:null, jcr_skip:p.jcr?p.jcr.skip:null, jcr_fill:p.jcr?p.jcr.fill:null, jcr_cut:p.jcr?p.jcr.cut:null,   // 2026-09-28 JCR 전 개수·걸림·채움
       src_add:p.jcr&&p.jcr.src?p.jcr.src.add:null,   // 2026-10-12 시작 6초 다시 세기로 더한 개수
@@ -6015,7 +6092,7 @@ function labRenderTruth(){
   const note='';
   if(!labPending){ box.innerHTML=note; }
   else{
-    const ins=labPending.players.map(q=>`<span>${labPending.players.length>1?(q.pid===0?'청':'홍')+' ':''}지금 ${q.main}${q.wrist!=null?' · 손목확인 '+q.wrist:''} → 실제</span>
+    const ins=labPending.players.map(q=>`<span>${labPending.players.length>1?(q.pid===0?'청':'홍')+' ':''}지금 ${q.main}${q.wrist!=null?' · 손목확인 '+q.wrist:''}${q.rope!=null?' · 줄통과 '+q.rope:''} → 실제</span>
       <input type="number" min="0" inputmode="numeric" data-pid="${q.pid}" placeholder="개수">`).join('');
     box.innerHTML=`<div class="lab-truth"><span>방금 판</span>${ins}<button class="m-act" id="labTruthSave" type="button">정답 저장</button><button class="m-act home" id="labTruthSkip" type="button">정답 없이 보관</button></div>`+note;
   }
@@ -6029,12 +6106,13 @@ function labRenderRounds(){
   const cell=e=>e==null?'—':`<span class="${Math.abs(e)<=2?'lab-err-good':(Math.abs(e)>=5?'lab-err-bad':'')}">${e>0?'+':''}${e}</span>`;
   let sM=0,nM=0,sG=0,nG=0;
   const rows=done.slice(-12).reverse().map(r=>r.players.filter(q=>q.truth!=null).map(q=>{
-    const eM=err(q.main,q.truth), eG=err(q.wrist,q.truth);
-    return `<tr><td>${esc(r.ts.slice(5,16).replace('T',' '))}</td><td>${r.mode==='duo'?(q.pid?'홍':'청'):'1인'}</td><td>${q.truth}</td><td>${q.main} (${cell(eM)})</td><td>${q.wrist==null?'—':q.wrist+' ('+cell(eG)+')'+(q.wrist_cut?' · 뺀 것 '+q.wrist_cut:'')}</td><td>${q.period_ms?Math.round(60000/q.period_ms):'—'}</td></tr>`;
+    const eM=err(q.main,q.truth), eG=err(q.wrist,q.truth), eR=err(q.rope,q.truth);
+    return `<tr><td>${esc(r.ts.slice(5,16).replace('T',' '))}</td><td>${r.mode==='duo'?(q.pid?'홍':'청'):'1인'}</td><td>${q.truth}</td><td>${q.main} (${cell(eM)})</td><td>${q.wrist==null?'—':q.wrist+' ('+cell(eG)+')'+(q.wrist_cut?' · 뺀 것 '+q.wrist_cut:'')}</td><td>${q.rope==null?'—':q.rope+' ('+cell(eR)+')'+(q.rope_hz?' · '+q.rope_hz+'장/초':'')}</td><td>${q.period_ms?Math.round(60000/q.period_ms):'—'}</td></tr>`;
   }).join('')).join('');
-  done.forEach(r=>r.players.forEach(q=>{ if(q.truth==null) return; sM+=Math.abs(q.main-q.truth); nM++; if(q.wrist!=null){ sG+=Math.abs(q.wrist-q.truth); nG++; } }));
-  box.innerHTML=`<table class="lab-tbl"><thead><tr><th>시각</th><th>누구</th><th>정답</th><th>지금 방식(오차)</th><th>손목확인(오차)</th><th>분당</th></tr></thead><tbody>${rows}</tbody></table>
-    <div class="lab-note">평균 오차 — 지금 방식 <b>${nM?(sM/nM).toFixed(1):'—'}개</b> (${nM}판) · 손목 확인 <b>${nG?(sG/nG).toFixed(1):'—'}개</b> (${nG}판)</div>`;
+  let sR=0,nR=0;
+  done.forEach(r=>r.players.forEach(q=>{ if(q.truth==null) return; sM+=Math.abs(q.main-q.truth); nM++; if(q.wrist!=null){ sG+=Math.abs(q.wrist-q.truth); nG++; } if(q.rope!=null){ sR+=Math.abs(q.rope-q.truth); nR++; } }));
+  box.innerHTML=`<table class="lab-tbl"><thead><tr><th>시각</th><th>누구</th><th>정답</th><th>지금 방식(오차)</th><th>손목확인(오차)</th><th>줄통과(오차)</th><th>분당</th></tr></thead><tbody>${rows}</tbody></table>
+    <div class="lab-note">평균 오차 — 지금 방식 <b>${nM?(sM/nM).toFixed(1):'—'}개</b> (${nM}판) · 손목 확인 <b>${nG?(sG/nG).toFixed(1):'—'}개</b> (${nG}판) · 줄 통과 <b>${nR?(sR/nR).toFixed(1):'—'}개</b> (${nR}판)</div>`;
 }
 $('labTruthBox')?.addEventListener('click',e=>{
   if(!jmpIsLab()||!labPending) return;
