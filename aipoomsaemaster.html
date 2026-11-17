@@ -597,7 +597,7 @@ body.group-running #groupLesson{display:block}
 <script id="psm-core">
 
 var PSM = (function(){
-  var VERSION = '1.2.9';   
+  var VERSION = '1.2.10';   
 
   var DEFAULT_CFG = {
     SMOOTH: 0.5,        
@@ -2866,6 +2866,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     var ok=false; try{ ok=hsCanStart(); }catch(e){ ok=false; }
     var now=performance.now();
     hnTick();
+    apObserve(lms, ok);   
     if(!ok){ hsWasBusy=true; hsArmed=false; hsClearSince=0; if(hsT0||hsEl) hsReset(); return; }
     if(hsWasBusy){ hsWasBusy=false; hsBlockUntil=now+HAND_START.COOLDOWN_MS; }
     var up=(lms||[]).some(hsRaised);
@@ -2885,6 +2886,81 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     }
   }
 
+  var ARM_PICK={ HOLD_MS:1000, CLEAR_MS:300, GAP_MS:350, SHOW_MS:1600, OUT:0.9, HIGH:0.75, LOW:0.9 };
+  var ap={dir:0, t0:0, lastOn:0, armed:true, clearSince:0, shownUntil:0}, apEl=null;
+  function apArmOut(lm, side){   
+    if(!lm || lm.length<17) return false;
+    var v=function(i){ return (lm[i] && lm[i].visibility!=null) ? lm[i].visibility : 1; };
+    var S=side>0?12:11, O=side>0?11:12, E=side>0?14:13, W=side>0?16:15;
+    if(v(S)<.5 || v(O)<.5 || v(W)<.5) return false;
+    var sw=Math.abs(lm[S].x-lm[O].x); if(sw<.03) return false;   
+    var out=Math.sign(lm[S].x-lm[O].x);                            
+    var dx=(lm[W].x-lm[S].x)*out, dy=lm[W].y-lm[S].y;
+    if(dx < sw*ARM_PICK.OUT) return false;                         
+    if(dy < -sw*ARM_PICK.HIGH || dy > sw*ARM_PICK.LOW) return false;   
+    if(v(E)>=.5 && (lm[E].x-lm[S].x)*out < sw*0.35) return false;  
+    return true;
+  }
+  function apKeys(){ return Object.keys(PSM.POOMSAE_NAME); }
+  function apShow(prog){
+    try{
+      if(!apEl){
+        holoCss();
+        var st=document.createElement('style'); st.id='armPickCss';
+        st.textContent='#armPick{top:21%}#armPick .h-frame{display:flex;align-items:center;gap:22px;padding:14px 30px 16px}'
+          +'#armPick .ap-side{position:relative;width:64px;height:64px;font-size:30px;font-weight:900;color:var(--holo);display:flex;align-items:center;justify-content:center;opacity:.55}'
+          +'#armPick .ap-side.on{opacity:1}#armPick .ap-side svg{position:absolute;inset:0;width:100%;height:100%}'
+          +'#armPick .ap-name{font-size:min(54px,8vw);font-weight:900;letter-spacing:.02em;min-width:5.5em}'
+          +'#armPick .ap-name small{display:block;font-size:min(20px,3.4vw);font-weight:700;color:#bff8ff;margin-top:2px}';
+        document.head.appendChild(st);
+        apEl=document.createElement('div'); apEl.id='armPick'; apEl.className='holo';
+        function side(k,ch){ return '<div class="ap-side" data-s="'+k+'"><svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="28" fill="none" stroke="rgba(111,242,255,.2)" stroke-width="4"/>'
+          +'<circle class="ap-arc" cx="32" cy="32" r="28" fill="none" stroke="#7ff5ff" stroke-width="4" stroke-linecap="round" stroke-dasharray="176" stroke-dashoffset="176" transform="rotate(-90 32 32)"/></svg>'+ch+'</div>'; }
+        apEl.innerHTML='<div class="h-tag">POOMSAE</div><div class="h-frame">'+side('L','◀')+'<div class="ap-name"></div>'+side('R','▶')+'</div>';
+        document.body.appendChild(apEl);
+      }
+      var name=PSM.POOMSAE_NAME[pref.poomsae]||'', moves=lastMove(PSM.KEYS[pref.poomsae]);
+      apEl.querySelector('.ap-name').innerHTML=esc(name)+'<small>'+moves+'동작 · 팔을 옆으로 뻗으면 바뀌어요</small>';
+      
+      var mir=pref.cam==='user', nextSide=mir?'R':'L';
+      Array.prototype.forEach.call(apEl.querySelectorAll('.ap-side'), function(el){
+        var isNext=el.dataset.s===nextSide, held=(ap.dir===1&&isNext)||(ap.dir===-1&&!isNext);
+        el.classList.toggle('on', held);
+        el.querySelector('.ap-arc').setAttribute('stroke-dashoffset', (176*(1-(held?Math.min(1,prog):0))).toFixed(1));
+      });
+      apEl.classList.add('on');
+    }catch(e){}
+  }
+  function apHide(){ if(apEl) apEl.classList.remove('on'); }
+  function apStep(d){
+    var ks=apKeys(), i=ks.indexOf(pref.poomsae); if(i<0) i=0;
+    var nk=ks[(i+d+ks.length)%ks.length], sel=$('selPoomsae');
+    if(sel.value!==nk){ sel.value=nk; sel.dispatchEvent(new Event('change')); }
+    beep(d>0?880:660, 120, 0.22);
+  }
+  function apObserve(lms, canStart){
+    var now=performance.now();
+    var ok=canStart && (pref.role==='master'||pref.role==='student'||pref.role==='pair') && !hsT0;
+    if(!ok){ ap.dir=0; ap.t0=0; ap.shownUntil=0; apHide(); return; }   
+    var d=0;
+    (lms||[]).some(function(lm){ var r=apArmOut(lm,1), l=apArmOut(lm,-1); if(r&&!l){ d=1; return true; } if(l&&!r){ d=-1; return true; } return false; });
+    if(!ap.armed){
+      if(!d){ if(!ap.clearSince) ap.clearSince=now; if(now-ap.clearSince>=ARM_PICK.CLEAR_MS) ap.armed=true; }
+      else ap.clearSince=0;
+    } else if(d){
+      if(d!==ap.dir){ ap.dir=d; ap.t0=now; }
+      ap.lastOn=now;
+    } else if(ap.dir && now-ap.lastOn>ARM_PICK.GAP_MS){ ap.dir=0; ap.t0=0; }
+    var p= ap.dir ? (now-ap.t0)/ARM_PICK.HOLD_MS : 0;
+    if(ap.dir && p>=1){
+      apStep(ap.dir); ap.dir=0; ap.t0=0; ap.armed=false; ap.clearSince=0; p=0;
+      ap.shownUntil=now+ARM_PICK.SHOW_MS;
+    }
+    if(ap.dir) ap.shownUntil=Math.max(ap.shownUntil, now+ARM_PICK.SHOW_MS);
+    if(now<ap.shownUntil) apShow(p); else apHide();
+  }
+  window.__psmArmPick={ armOut:apArmOut, step:apStep, state:ap };   
+
   var hn={phase:'off', timer:null}, hnEl=null, hnKind='', hnQuietUntil=0;
   function hnPrompt(on, kind){
     try{
@@ -2895,8 +2971,8 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
         document.body.appendChild(hnEl);
       }
       var two=peopleNow()===2;
-      if(on && kind && kind+two!==hnKind){
-        hnKind=kind+two;
+      if(on && kind && kind+two+pref.role!==hnKind){
+        hnKind=kind+two+pref.role;
         if(kind==='far' || kind==='side'){
           var fh=FRAME_HINT.TEXT[kind];
           hnEl.innerHTML='<div class="h-frame"><div class="h-tag">CHECK POSITION</div>'
@@ -2904,7 +2980,8 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
         }
         else hnEl.innerHTML='<div class="h-frame"><div class="h-tag">'+(kind==='next'?'NEXT PLAYER':'HAND SIGNAL')+'</div>'
           +'<div class="h-main" style="margin-top:6px">'+(kind==='next'?(two?'다음 선수들 입장':'다음 선수 입장'):(two?'두 사람 자리에 서기':'화면 앞에 서기'))+'</div>'
-          +'<div class="h-sub">'+(two?'한 사람이 ':'')+'한 손을 머리 위로 2초 들면 시작해요</div></div>';
+          +'<div class="h-sub">'+(two?'한 사람이 ':'')+'한 손을 머리 위로 2초 들면 시작해요</div>'
+          +((pref.role==='master'||pref.role==='student'||pref.role==='pair')?'<div class="h-sub">팔을 옆으로 1초 뻗으면 품새가 바뀌어요</div>':'')+'</div>';
       }
       hnEl.classList.toggle('on',!!on);
     }catch(e){}
