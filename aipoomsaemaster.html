@@ -597,7 +597,7 @@ body.group-running #groupLesson{display:block}
 <script id="psm-core">
 
 var PSM = (function(){
-  var VERSION = '1.3.1';   
+  var VERSION = '1.3.2';   
 
   var DEFAULT_CFG = {
     SMOOTH: 0.5,        
@@ -1303,7 +1303,8 @@ var PSM = (function(){
       dirOk=Math.abs(Math.atan2(Math.sin(bodyDelta),Math.cos(bodyDelta))*180/Math.PI)<=k.bodyYaw.tolerance;
     }
     
-    var techOk = noTech(k) ? dirOk : (cls.tech===k.tech || (!!TECH_OK[k.tech] && TECH_OK[k.tech].indexOf(cls.tech)>=0));
+    function techFits(t){ return !!t && (t===k.tech || (!!TECH_OK[k.tech] && TECH_OK[k.tech].indexOf(t)>=0)); }
+    var techOk = noTech(k) ? dirOk : (techFits(cls.tech) || techFits(cls.tailTech));   
 
     var ok={dir: dirOk, stance: STANCE_SEEN[k.stance] ? cls.stance===k.stance : null, tech: techOk};
     
@@ -1333,6 +1334,8 @@ var PSM = (function(){
     }
     return Math.max(gs[0],gs[1],gs[2],gs[3],gs[4]);
   }
+
+  var TAIL = { MIN_MS:1500, WIN_MS:600, SKIP_MS:200 };
   function makeDetector(cfg){
     var sm=null, wsm=null, prevT=0, tor=0, wtor=0, sp=0, stillSince=0, buf=[], cur=null, first=true;
     var hist=[], anchor=null, path=0, rej=[], rejAt=-1;
@@ -1343,7 +1346,11 @@ var PSM = (function(){
       var fs=[]; for(var i=0;i<cur.fr.length;i++){ if(cur.fr[i].t - cur.t0 <= cfg.AGG_MS) fs.push(cur.fr[i].f); }
       if(!fs.length) fs=cur.fr.map(function(o){ return o.f; });
       cur.agg=aggregate(fs); cur.cls=classify(cur.agg,cfg);
-      var done=cur; delete done.fr; cur=null; return done;
+      if(t - cur.t0 >= TAIL.MIN_MS && cur.tail){
+        var ts=[]; for(var q=0;q<cur.tail.length;q++){ var dt=t - cur.tail[q].t; if(dt>=TAIL.SKIP_MS && dt<=TAIL.SKIP_MS+TAIL.WIN_MS) ts.push(cur.tail[q].f); }
+        if(ts.length>=3){ var tc=classify(aggregate(ts),cfg); if(tc.tech!==cur.cls.tech) cur.cls.tailTech=tc.tech; }
+      }
+      var done=cur; delete done.fr; delete done.tail; cur=null; return done;
     }
     function push(t, f){
       if(!f) return null;
@@ -1366,7 +1373,11 @@ var PSM = (function(){
       var ev=null;
       if(cur){
         if(sp > cfg.MOVE_T){ var s=finalize(t); stops.push(s); ev={type:'end', stop:s}; stillSince=0; buf=[]; }
-        else { if(t - cur.t0 <= cfg.AGG_MS + 200) cur.fr.push({t:t,f:f}); }
+        else {
+          if(t - cur.t0 <= cfg.AGG_MS + 200) cur.fr.push({t:t,f:f});
+          var tl=cur.tail||(cur.tail=[]); tl.push({t:t,f:f});
+          while(tl.length && t - tl[0].t > TAIL.SKIP_MS + TAIL.WIN_MS + 300) tl.shift();
+        }
         return ev;
       }
       if(sp < cfg.STILL_T){
@@ -2676,6 +2687,7 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
   }
   function lastMove(key){ var i=key.length-1; while(i>0 && key[i].opt) i--; return i; }
   function onLiveEvent(k, ev){
+    if(live.phase==='perform' && ev.type==='end') return liveTailFix(k, ev.stop);
     if(live.phase!=='perform' || ev.type!=='stop') return;
     var cls=ev.stop.liveCls, p=live.ptr[k], key=KEY, last=lastMove(KEY);
     if(!cls || p>last) return;
@@ -2711,13 +2723,27 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
       txt='<b>'+key[took].n+'번</b> '+(jd.soft ? '방향 <span class="sf">△</span> '+esc(PSM.DIR_NAME[key[took].dir])+' <span class="dim">(몸을 덜 비틀어요)</span>' : mk(jd.ok.dir,'방향',shownDir(jd,cls,key[took])))+' · '+(jd.ok.stance===null ? '서기 <span class="dim">–</span>' : mk(jd.ok.stance,'서기',cls.stance))+' · '+mk(jd.ok.tech,'기술',shownTech(jd,cls,key[took]))+(took>from?' <span class="x">('+missText(key,from,took-1)+' 놓침)</span>':'');
       if(rec.role!=='master' && pref.feedback==='on') judgeBeep(k, jd.ok.dir&&jd.ok.tech);
       live.lastStop=performance.now();
+      ev.stop._lv={took:took, from:from};
     }
     live.last[k]=txt;
     live.events.push({k:k, t:ev.stop.t0, took:took, cls:cls});
   }
+
+  function liveTailFix(k, stop){
+    var lv=stop && stop._lv; if(!lv || !stop.cls || !stop.cls.tailTech || !stop.liveCls) return;
+    var key=KEY, i=lv.took; if(i<0 || !key[i] || live.marks[k][i]==='ok') return;
+    var dOk=(live.dirOk&&live.dirOk[k])||[];
+    var cls=Object.assign({}, stop.liveCls, {tailTech:stop.cls.tailTech});
+    var jd=PSM.judgeSoft(cls, key[i], i>0 ? key[i-1] : null, !!dOk[i-1]);
+    if(!jd.ok.tech) return;
+    live.marks[k][i]=moveMark(jd);
+    if(live.ptr[k]===i+1){
+      live.last[k]='<b>'+key[i].n+'번</b> '+(jd.soft ? '방향 <span class="sf">△</span> '+esc(PSM.DIR_NAME[key[i].dir]) : mk(jd.ok.dir,'방향',shownDir(jd,cls,key[i])))+' · '+(jd.ok.stance===null ? '서기 <span class="dim">–</span>' : mk(jd.ok.stance,'서기',cls.stance))+' · '+mk(true,'기술',key[i].tech)+(i>lv.from?' <span class="x">('+missText(key,lv.from,i-1)+' 놓침)</span>':'');
+    }
+  }
   function missText(key,a,b){ var o=[]; for(var i=a;i<=b;i++) o.push(key[i].n); return o.join('·')+'번'; }
   
-  function shownTech(jd,c,k){ return (jd.ok.tech && PSM.TECH_OK[k.tech]) ? k.tech : c.tech; }
+  function shownTech(jd,c,k){ return (jd.ok.tech && (PSM.TECH_OK[k.tech] || c.tailTech)) ? k.tech : c.tech; }   
   function shownDir(jd,c,k){ return PSM.DIR_NAME[jd.ok.dir ? k.dir : c.dir]; }
   function mk(ok,label,val){ return label+' <span class="'+(ok?'o':'x')+'">'+(ok?'○':'×')+'</span> '+esc(val); }
 
