@@ -17,7 +17,7 @@
 //    그러면 예전 캐시가 통째로 비워집니다.
 // =========================================================
 
-const CACHE_NAME = 'naruunlabs-2026-11-18-dragpick-kj';
+const CACHE_NAME = 'naruunlabs-2026-11-18-feedback';
 
 const APP_SHELL = [
   './',
@@ -95,6 +95,12 @@ self.addEventListener('fetch', event => {
   // 다른 사이트(CDN, 서버 API 등)는 서비스워커가 손대지 않는다.
   // 라이선스 인증 요청이 캐시되면 절대 안 되기 때문이다.
   if (url.origin !== self.location.origin) return;
+
+  // 고객별 설문 토큰이 포함된 주소를 기기 캐시에 남기지 않는다.
+  if (/^\/feedback(?:\.html)?\/?$/.test(url.pathname)) {
+    event.respondWith(fetch(event.request, {cache:'no-store', referrerPolicy:'no-referrer'}));
+    return;
+  }
 
   // 1) 페이지 이동 — 항상 최신을 받아온다
   if (event.request.mode === 'navigate') {

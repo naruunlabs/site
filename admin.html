@@ -636,6 +636,7 @@ table.cg tfoot td.num{text-align:right}
     <button class="tab-btn" onclick="switchTab('academy')">아카데미웹</button>
     <button class="tab-btn" onclick="switchTab('home')">홈페이지 관리</button>
     <button class="tab-btn" onclick="switchTab('errors')">오류 기록</button>
+    <button class="tab-btn" onclick="switchTab('feedback')">체험 고객 관리</button>
     
     <div class="sidebar-foot">
       <div class="sf-row"><span>자동 로그아웃</span><b id="sideExpiry">—</b></div>
@@ -831,6 +832,23 @@ table.cg tfoot td.num{text-align:right}
       <div class="cg-scroll"><table class="er-table"><thead><tr><th>마지막 발생</th><th>제품 · 버전</th><th>오류 내용</th><th>난 자리</th><th>도장</th><th>기기</th><th>횟수</th></tr></thead><tbody id="erBody"></tbody></table></div>
     </div>
     <div class="footer-note">같은 오류는 한 줄로 묶어 보여 줍니다 · 줄을 누르면 자세한 내용이 펼쳐집니다 · 줄 번호는 배포본(site 폴더) 기준 · 영상·학생 정보는 담지 않으며 30일 뒤 자동 삭제됩니다</div>
+  </div>
+
+  <div class="tab-content" id="tab-feedback">
+    <p>체험 후기 설문 안내: 2026년 11월 18일 공고 · 11월 25일 참여 시작. 고객에게는 11월 25일부터 안내해 주세요.</p>
+    <div class="tf-head"><h2>체험 고객 관리</h2><button type="button" class="cg-btn" onclick="loadTrialFeedback()">새로고침</button></div>
+    <p id="tfMessage" role="status"></p>
+    <div class="tf-filters">
+      <label>제품 <select id="tfProduct" onchange="renderTrialFeedback()"><option value="kick">AI KICK MASTER</option><option value="jump">AI JUMP MASTER</option><option value="poomsae">AI POOMSAE MASTER</option><option value="">전체 제품</option></select></label>
+      <label>대상 <select id="tfFilter" onchange="renderTrialFeedback()"><option value="ended">체험 종료</option><option value="all">전체 체험</option><option value="unanswered">미응답</option><option value="answered">응답 완료</option><option value="contact">상담 필요·구매 고려</option><option value="extra_trial">추가 체험 희망·검토</option></select></label>
+      <label>구매 의향 <select id="tfIntent" onchange="renderTrialFeedback()"><option value="">전체</option><option value="consider">구매 고려</option><option value="extra_trial">추가 체험 희망</option><option value="improved">개선 후 재고려</option><option value="no_plan">구매 계획 없음</option></select></label>
+      <label>고객 검색 <input id="tfSearch" type="search" placeholder="도장명·관장명·메모" oninput="renderTrialFeedback()"></label>
+    </div>
+    <div class="stats-row" id="tfStats"></div>
+    <p>통계는 선택한 제품의 저장 데이터 기준입니다. 고객 수는 고객·제품별로 중복을 제외하며, 응답률은 발송 완료한 설문 중 응답 비율입니다. 구매 전환은 체험 시작일 이후 동일 고객·제품의 정식 라이선스에 결제일과 양수 결제액이 확인된 경우만 집계합니다. 결제 기록이 없으면 전환 여부를 확인할 수 없습니다.</p>
+    <div id="tfBreakdown"></div><p id="tfCount"></p>
+    <div class="tf-table-wrap"><table><thead><tr><th>고객 · 제품 · 종류</th><th>체험 · 인증</th><th>발송 · 응답 · 링크</th><th>구매 고려 사항 · 의향 · 관리</th><th>후속 관리 · 메모</th></tr></thead><tbody id="tfRows"></tbody></table></div>
+    <p>추가 체험 희망은 설문 응답입니다. 라이선스 연장은 기존 라이선스 관리에서 별도로 처리해 주세요.</p>
   </div>
 
   <div class="tab-content" id="tab-home">
@@ -1217,7 +1235,7 @@ function adminAction(action,args){
 document.addEventListener('click',function(event){
   const button=event.target.closest('[data-admin-action]');
   if(!button || button.disabled)return;
-  const allowed={copyKeyOnly:copyKeyOnly,openEditModal:openEditModal,openMsgPicker:openMsgPicker,gotoLedger:gotoLedger,sendToLedger:sendToLedger,toggleActive:toggleActive,deleteLicense:deleteLicense,openOwnedLicense:openOwnedLicense,issueForDojang:issueForDojang,openIpRiskLicense:openIpRiskLicense,removeDeviceSlot:removeDeviceSlot,toggleCustSort:toggleCustSort,toggleNotes:toggleNotes,deleteCustomer:deleteCustomer,deleteNote:deleteNote,addNote:addNote,deleteAcademyProject:deleteAcademyProject,switchLicenseSubtab:switchLicenseSubtab,pickMsgKind:pickMsgKind,setTodayView:setTodayView,gotoCustomer:gotoCustomer,openConvert:openConvert,saveAdminTask:saveAdminTask,toggleErrorRow:toggleErrorRow,issueForCustomer:issueForCustomer,openCustomerInfo:openCustomerInfo,toggleCustLicenses:toggleCustLicenses,moveLicenseToCustomer:moveLicenseToCustomer};
+  const allowed={tfCopy:(...a)=>window.tfCopy(...a),tfReissue:(...a)=>window.tfReissue(...a),tfSent:(...a)=>window.tfSent(...a),tfDetail:(...a)=>window.tfDetail(...a),copyKeyOnly:copyKeyOnly,openEditModal:openEditModal,openMsgPicker:openMsgPicker,gotoLedger:gotoLedger,sendToLedger:sendToLedger,toggleActive:toggleActive,deleteLicense:deleteLicense,openOwnedLicense:openOwnedLicense,issueForDojang:issueForDojang,openIpRiskLicense:openIpRiskLicense,removeDeviceSlot:removeDeviceSlot,toggleCustSort:toggleCustSort,toggleNotes:toggleNotes,deleteCustomer:deleteCustomer,deleteNote:deleteNote,addNote:addNote,deleteAcademyProject:deleteAcademyProject,switchLicenseSubtab:switchLicenseSubtab,pickMsgKind:pickMsgKind,setTodayView:setTodayView,gotoCustomer:gotoCustomer,openConvert:openConvert,saveAdminTask:saveAdminTask,toggleErrorRow:toggleErrorRow,issueForCustomer:issueForCustomer,openCustomerInfo:openCustomerInfo,toggleCustLicenses:toggleCustLicenses,moveLicenseToCustomer:moveLicenseToCustomer};
   const fn=allowed[button.dataset.adminAction];
   if(typeof fn!=='function')return;
   let args;try{args=JSON.parse(button.dataset.adminArgs||'[]');}catch(_){return;}
@@ -1267,7 +1285,7 @@ function showToast(msg) {
 
 function switchTab(tab) {
   
-  const names=['license','customer','academy','home','errors'];
+  const names=['license','customer','academy','home','errors','feedback'];
   document.querySelectorAll('.tab-btn').forEach((b,i) => {
     b.classList.toggle('active', names[i]===tab);
     if(names[i]===tab) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current');
@@ -1280,6 +1298,7 @@ function switchTab(tab) {
   if (tab === 'academy') { loadCustomers().then(loadAcademyProjects); }
   if (tab === 'home') loadHomeFields();
   if (tab === 'errors') loadErrors();
+  if (tab === 'feedback') loadTrialFeedback();
 }
 
 const PAGE_TITLES = {
@@ -1287,7 +1306,8 @@ const PAGE_TITLES = {
   customer: ['고객 관리',   '고객 장부 · 판매 기록 · 상담 이력'],
   academy : ['아카데미웹',  '홈페이지 제작 고객 · 진행 · 일정 · 수금'],
   home    : ['홈페이지 관리', '사이트 카톡·전화 연락처'],
-  errors  : ['오류 기록',   '고객 기기에서 난 프로그램 오류']
+  errors  : ['오류 기록',   '고객 기기에서 난 프로그램 오류'],
+  feedback: ['체험 고객 관리', '체험 후기 · 설문 발송 기록 · 후속 상담']
 };
 function setPageTitle(tab) {
   const t = PAGE_TITLES[tab] || PAGE_TITLES.license;
@@ -5132,5 +5152,9 @@ table.cg tbody td{border-bottom-color:#edf1f6}
 }
 </style>
 
+<link rel="stylesheet" href="admin-feedback.css">
+<dialog class="tf-dialog" id="tfDetailDialog"><h3 id="tfDetailTitle"></h3><pre id="tfAnswer"></pre><input type="hidden" id="tfSaveId"><label>후속 관리 <select id="tfFollowup"><option value="pending">미확인</option><option value="contact">상담 필요</option><option value="extra_trial">추가 체험 검토</option><option value="done">관리 완료</option><option value="hold">보류</option></select></label><p><label for="tfMemo">관리자 메모 (최대 2,000자)</label></p><textarea id="tfMemo" maxlength="2000"></textarea><p id="tfSaveError" class="tf-error" role="alert"></p><button type="button" id="tfSaveButton" onclick="tfSave()">저장</button> <button type="button" onclick="document.getElementById('tfDetailDialog').close()">닫기</button></dialog>
+<dialog class="tf-dialog" id="tfCopyDialog"><h3>텍스트 복사</h3><p>자동 복사가 지원되지 않는 환경입니다. 아래 내용을 길게 누르거나 선택해서 복사해 주세요.</p><textarea id="tfCopyText" readonly aria-label="복사할 내용"></textarea><button type="button" onclick="document.getElementById('tfCopyDialog').close()">닫기</button></dialog>
+<script src="admin-feedback.js"></script>
 </body>
 </html>
