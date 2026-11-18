@@ -3831,7 +3831,26 @@ const MODE_CFG={
   hu_x:     {rank:false, isDrill:true,  measureOnly:true, practice:true, label:'뒤후려차기 번갈아', kick:'hu', foot:'alt'},
 };
 
-const HU_GATE={WAIST:50, TOP:90, BONUS_MAX:10};
+const HU_GATE={WAIST:50, TOP:90, BONUS_MAX:10, SWEEP_ON:true, SWEEP_MIN:0.3};
+function huSweepT(){
+  const T=(typeof trajTorsoRef==='function') ? trajTorsoRef() : null;
+  if(!(T>0) || trajX.length<3) return null;
+  const P=[];
+  for(let i=0;i<trajX.length;i++){
+    const x=trajX[i], y=trajY[i], hx=trajHipX[i];
+    if(Number.isFinite(x)&&Number.isFinite(y)&&Number.isFinite(hx)) P.push({x:(x-hx)/T, y});
+  }
+  if(P.length<3) return null;
+  let k=0; P.forEach((p,i)=>{ if(p.y<P[k].y) k=i; });   
+  const a=P[Math.max(0,k-2)], b=P[Math.min(P.length-1,k+2)];
+  return +(b.x-a.x).toFixed(2);
+}
+function huWrongFoot(sweep){
+  if(!HU_GATE.SWEEP_ON || !Number.isFinite(sweep)) return false;
+  const exp=(selectedFoot()==='right')?-1:1;
+  return sweep*exp < -HU_GATE.SWEEP_MIN;
+}
+function huWrongFootMsg(){ return (selectedFoot()==='right'?'오른발':'왼발')+'로 돌아서 차 보세요!'; }
 function escHtmlDr(t){ return String(t==null?'':t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }   
 function isPracticeMode(m){ return MODE_CFG[m||currentMode]?.practice===true; }
 const PRACTICE_THANKS=['감사합니다!','고마워요!','좋은 기록 고마워요!','도와줘서 감사합니다!'];
@@ -5330,6 +5349,8 @@ function scoreMeasureOnly(f,want){
   const huWaist = HU_GATE.WAIST - ((typeof lowFpsThreshRelief==='function')?lowFpsThreshRelief():0);
   if(want==='hu' && Number.isFinite(f.peakPct) && f.peakPct<huWaist)
     return {ok:false,score:null,reason:'low_hu',msg:'허리보다 높이 차 보세요!'};
+  if(want==='hu' && huWrongFoot(f.huSweep))   
+    return {ok:false,score:null,reason:'wrong_foot_hu',msg:huWrongFootMsg()};
 
   if(want==='yeop' && sw!==null && sw>MEASURE_GATE.YEOP_SW && !f.kneeMarkPre)
     
@@ -5597,6 +5618,10 @@ function analyzeTrajShort(peakPctValue=null){
   
   const huPk=(typeof peakPctValue==='number' && Number.isFinite(peakPctValue))?peakPctValue:null;
   let huBonus;
+  const huSw=(want==='hu')?huSweepT():null;   
+  if(want==='hu' && huWrongFoot(huSw))
+    return {score:null, ok:false, msg:huWrongFootMsg(), reason:'wrong_foot_hu', riseTFront,
+            diag:{riseTFront:+riseTFront.toFixed(3), peakPct:(huPk==null?null:Math.round(huPk)), huSweep:huSw, frames:trajX.length, want, kind:'short'}};
   if(want==='hu' && huPk!=null){
     if(huPk < HU_GATE.WAIST-lowFpsThreshRelief())
       return {score:null, ok:false, msg:'허리보다 높이 차 보세요!', reason:'low_hu', riseTFront,
@@ -5628,7 +5653,7 @@ function analyzeTrajShort(peakPctValue=null){
       kneeMarkGrade:(shortKneeMark?1:0),
       kneeMarkFrames:trajKneeMark.filter(v=>v===true).length,
       kneeMarkSeen:trajKneeMark.filter(v=>v!==null).length,
-      huBonus, otherPeakPct:(kickOtherPeak==null)?null:Math.round(kickOtherPeak), noseVisPeak:(kickNosePeak==null)?null:+(+kickNosePeak).toFixed(2),   
+      huBonus, huSweep:huSw, otherPeakPct:(kickOtherPeak==null)?null:Math.round(kickOtherPeak), noseVisPeak:(kickNosePeak==null)?null:+(+kickNosePeak).toFixed(2),   
       want:want||'', kind:'short'        
     }
   };
@@ -5874,7 +5899,8 @@ function analyzeTraj(peakPctValue=null){
     aspect:(video && video.videoWidth && video.videoHeight) ? video.videoWidth/video.videoHeight : null,
     kneeMarkPre, kneeMarkPost,  
     kneeMarkSeen:DIAG.kneeMarkSeen,   
-    peakPct:(typeof peakPctValue==='number' && Number.isFinite(peakPctValue))?peakPctValue:null   
+    peakPct:(typeof peakPctValue==='number' && Number.isFinite(peakPctValue))?peakPctValue:null,   
+    huSweep:(drillKickType()==='hu')?huSweepT():null   
   };
   const want=drillKickType();               
 
@@ -5890,6 +5916,7 @@ function analyzeTraj(peakPctValue=null){
   DIAG.otherPeakPct=(kickOtherPeak==null)?null:Math.round(kickOtherPeak);
   DIAG.noseVisPeak=(kickNosePeak==null)?null:+(+kickNosePeak).toFixed(2);
   if(r.huBonus!==undefined) DIAG.huBonus=r.huBonus;
+  if(feat.huSweep!=null) DIAG.huSweep=feat.huSweep;
 
   return {
     score:r.score, ok:r.ok, msg:r.msg, reason:r.reason, parts:r.parts||null,
@@ -6182,6 +6209,50 @@ const GUIDE_SHAPE={};
 const GUIDE_KNEE={};
 
 const GUIDE_YEOP_LIFT=1.00;
+
+function drawHuGuide(){
+  if(smHipY==null||smHipX==null||!running||!(smTorso>0)) return;
+  const W=canvas.width, H=canvas.height, Tp=smTorso*H;
+  const fs=guideFootStyle();
+  const dir=(selectedFoot()==='right')?-1:1;
+  const hx=smHipX*W, hy=smHipY*H;
+  const clampX=(x)=>Math.max(W*0.04,Math.min(W*0.96,x));
+  const topLift=(HU_GATE.TOP/100*1.6-0.8)+0.06;   
+  const S={x:clampX(hx-dir*1.15*Tp), y:hy-0.05*Tp};
+  const A={x:clampX(hx+dir*0.10*Tp), y:Math.max(H*0.05, hy-topLift*Tp)};
+  const E={x:clampX(hx+dir*1.25*Tp), y:hy-0.30*Tp};
+  const C={x:2*A.x-(S.x+E.x)/2, y:2*A.y-(S.y+E.y)/2};   
+  const q=(u)=>{ const m=1-u; return {x:m*m*S.x+2*m*u*C.x+u*u*E.x, y:m*m*S.y+2*m*u*C.y+u*u*E.y}; };
+  const curve=(w,col)=>{ ctx.strokeStyle=col; ctx.lineWidth=w; ctx.beginPath(); ctx.moveTo(S.x,S.y); ctx.quadraticCurveTo(C.x,C.y,E.x,E.y); ctx.stroke(); };
+  const chevron=(x,y,ang,sc,al)=>{ ctx.save(); ctx.translate(x,y); ctx.rotate(ang); ctx.globalAlpha=al;
+    ctx.strokeStyle='rgba('+fs.pale+',1)'; ctx.lineWidth=3*sc; ctx.shadowColor='rgba('+fs.rgb+',1)'; ctx.shadowBlur=12;
+    ctx.beginPath(); ctx.moveTo(-8*sc,-7*sc); ctx.lineTo(7*sc,0); ctx.lineTo(-8*sc,7*sc); ctx.stroke(); ctx.restore(); };
+  const t=(performance.now()%1500)/1500;
+  ctx.save(); ctx.lineCap='round'; ctx.lineJoin='round';
+  
+  ctx.setLineDash([12,10]); ctx.strokeStyle='rgba(84,255,173,0.55)'; ctx.lineWidth=3;
+  ctx.beginPath(); ctx.moveTo(clampX(hx-1.45*Tp),hy); ctx.lineTo(clampX(hx+1.45*Tp),hy); ctx.stroke();
+  ctx.setLineDash([]);
+  
+  curve(28,'rgba('+fs.rgb+',0.07)'); curve(12,'rgba('+fs.rgb+',0.16)'); curve(3,'rgba('+fs.pale+',0.26)');
+  [[t,10,.82],[(t+.38)%1,7,.45],[(t+.72)%1,5,.28]].forEach(([u,r,al])=>{ const c=q(u);
+    ctx.save(); ctx.shadowColor='rgba('+fs.rgb+',1)'; ctx.shadowBlur=18; ctx.fillStyle='rgba(255,255,255,'+al+')';
+    ctx.beginPath(); ctx.arc(c.x,c.y,r,0,Math.PI*2); ctx.fill(); ctx.restore(); });
+  [[(t+.2)%1,.9,.45],[(t+.58)%1,.7,.28]].forEach(([u,sc,al])=>{ const c=q(u), a=q(Math.max(0,u-.03)), b=q(Math.min(1,u+.03));
+    chevron(c.x,c.y,Math.atan2(b.y-a.y,b.x-a.x),sc,al); });
+  ctx.save(); ctx.shadowColor='rgba('+fs.rgb+',1)'; ctx.shadowBlur=18; ctx.strokeStyle='rgba('+fs.rgb+',0.56)'; ctx.lineWidth=4;
+  ctx.beginPath(); ctx.arc(E.x,E.y,22,0,Math.PI*2); ctx.stroke(); ctx.restore();
+  
+  const fy=Math.min(H*0.95, hy+1.55*Tp), rx=0.6*Tp, ry=0.17*Tp;
+  const a0=(dir>0)?Math.PI:0, a1=(dir>0)?0.12:Math.PI-0.12;   
+  ctx.strokeStyle='rgba('+fs.pale+',0.55)'; ctx.lineWidth=4;
+  ctx.beginPath(); ctx.ellipse(hx,fy,rx,ry,0,a0,a1,dir>0); ctx.stroke();
+  const ex=hx+rx*Math.cos(a1), ey=fy+ry*Math.sin(a1);
+  const sg=(dir>0)?-1:1;   
+  chevron(ex,ey,Math.atan2(sg*ry*Math.cos(a1), -sg*rx*Math.sin(a1)),1.1,0.8);
+  drawGuideFootLabel(S.x,S.y+42,fs);
+  ctx.restore();
+}
 
 function drawYeopDwiGuide(kind, m){
   if(smHipY==null||smHipX==null||!(smTorso>0)||!running) return;
@@ -9051,6 +9122,7 @@ function processPersonFrame(lm, wlm){
 
       if((isDrillMode() || (currentMode==='sparring' && sparringMode==='practice')) && drillKickType()==='yeop') drawYeopDwiGuide('yeop', m);
       if((isDrillMode() || (currentMode==='sparring' && sparringMode==='practice')) && drillKickType()==='dwi')  drawYeopDwiGuide('dwi', m);
+      if(isDrillMode() && drillKickType()==='hu') drawHuGuide();   
       if(!twoPlayerMode && currentMode==='sparring' && sparringMode==='live') updateAdaptiveSparringTarget();
       
       if(twoPlayerMode && currentMode==='sparring' && sparringMode==='live') updateAdaptiveSparringTarget2p();
@@ -10792,7 +10864,7 @@ const _AKM_CACHE_DAYS  = 7;
 const _AKM_TRIAL_CACHE_DAYS = 1;   
 const _AKM_FETCH_TIMEOUT_MS = 8 * 1000;   
 
-const _AKM_VERSION     = '3.5.12';   
+const _AKM_VERSION     = '3.5.13';   
 try{ window.__NL_VER = _AKM_VERSION; }catch(e){}   
 
 let _akmFailCount = 0;
