@@ -3407,9 +3407,9 @@ body.akm-group-open.akm-group-running .stage>.panel>.mode-row *{visibility:hidde
         <label>목표 횟수</label>
         
         <select id="drillCountSel">
-          <option value="4">4회</option>
+          <option value="4" selected>4회</option>
           <option value="6">6회</option>
-          <option value="8" selected>8회</option>
+          <option value="8">8회</option>
         </select>
       </div>
       
@@ -3831,6 +3831,8 @@ const MODE_CFG={
   hu_x:     {rank:false, isDrill:true,  measureOnly:true, practice:true, label:'뒤후려차기 번갈아', kick:'hu', foot:'alt'},
 };
 
+const HU_GATE={WAIST:50, TOP:90, BONUS_MAX:10};
+function escHtmlDr(t){ return String(t==null?'':t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }   
 function isPracticeMode(m){ return MODE_CFG[m||currentMode]?.practice===true; }
 const PRACTICE_THANKS=['감사합니다!','고마워요!','좋은 기록 고마워요!','도와줘서 감사합니다!'];
 let practiceThanksI=0;
@@ -3949,6 +3951,7 @@ const facingMode='user';
 let stream=null;
 let threshPct=50;
 let kicking=false, peakPct=0, aboveFrames=0, belowFrames=0;
+let kickOtherPeak=null, kickNosePeak=null;   
 
 const ABOVE_MS=35, BELOW_MS=70, RESET_PCT=16;
 const MIN_FOOT_SPEED=0.0012; 
@@ -4242,8 +4245,8 @@ function shoulderRatioNow(m){
   return Math.max(0, Math.min(1.5, m.shoulderW/base));
 }
 
-let drillTarget=parseInt(drillCountSel.value)||8, drillDone=0, drillScores=[], drillResultTimer=null;   
-drillCountSel.addEventListener('change',()=>{ if(running) return; drillTarget=parseInt(drillCountSel.value)||8; renderStats(); });
+let drillTarget=parseInt(drillCountSel.value)||4, drillDone=0, drillScores=[], drillResultTimer=null;   
+drillCountSel.addEventListener('change',()=>{ if(running) return; drillTarget=parseInt(drillCountSel.value)||4; renderStats(); });
 
 let AUTO_DRILL_SEQUENCE=autoDrillModes();
 let autoDrillIndex=0;
@@ -5323,6 +5326,10 @@ function scoreMeasureOnly(f,want){
     return {ok:false,score:null,reason:'track_bad',msg:'잘 안 보였어요. 다시 한 번!'};
 
   const sw = Number.isFinite(f.shoulderWRatio) ? f.shoulderWRatio : null;
+  
+  const huWaist = HU_GATE.WAIST - ((typeof lowFpsThreshRelief==='function')?lowFpsThreshRelief():0);
+  if(want==='hu' && Number.isFinite(f.peakPct) && f.peakPct<huWaist)
+    return {ok:false,score:null,reason:'low_hu',msg:'허리보다 높이 차 보세요!'};
 
   if(want==='yeop' && sw!==null && sw>MEASURE_GATE.YEOP_SW && !f.kneeMarkPre)
     
@@ -5365,7 +5372,13 @@ function scoreMeasureOnly(f,want){
     hfK=kScore;
     factor *= (1 - DWI_KNEE.PENALTY*(1-kScore));
   }
-  const score=Math.max(P.BASE,Math.min(100,Math.round(P.BASE+P.SPAN*hScore*factor)));
+  let score=Math.max(P.BASE,Math.min(100,Math.round(P.BASE+P.SPAN*hScore*factor)));
+  
+  let huBonus;
+  if(want==='hu' && Number.isFinite(f.peakPct)){
+    huBonus=Math.round(HU_GATE.BONUS_MAX*c01((f.peakPct-HU_GATE.WAIST)/(HU_GATE.TOP-HU_GATE.WAIST)));
+    score=Math.min(100,score+huBonus);
+  }
 
   let msg;
   if(score>=95)      msg=(want==='dwi')?'완벽한 뒤차기!':'완벽한 옆차기!';
@@ -5380,7 +5393,7 @@ function scoreMeasureOnly(f,want){
   else               msg='더 높이 차보세요!';
 
   if(want==='hu') msg=practiceThanks();   
-  return {ok:true,score,reason:'measure_only',msg,
+  return {ok:true,score,reason:'measure_only',msg,huBonus,
           hScore:+hScore.toFixed(3), rot:+rot.toFixed(3), factor:+factor.toFixed(3),
           kneeMarkGrade,   
 
@@ -5581,8 +5594,18 @@ function analyzeTrajShort(peakPctValue=null){
             rot:(want==='dwi')?'등을 더 보이며 차보세요!':'몸을 더 옆으로 돌려보세요!'}[worst]||'좋아요!';
 
   if(want==='hu') msg=practiceThanks();   
+  
+  const huPk=(typeof peakPctValue==='number' && Number.isFinite(peakPctValue))?peakPctValue:null;
+  let huBonus;
+  if(want==='hu' && huPk!=null){
+    if(huPk < HU_GATE.WAIST-lowFpsThreshRelief())
+      return {score:null, ok:false, msg:'허리보다 높이 차 보세요!', reason:'low_hu', riseTFront,
+              diag:{riseTFront:+riseTFront.toFixed(3), peakPct:Math.round(huPk), frames:trajX.length, want, kind:'short',
+                    otherPeakPct:(kickOtherPeak==null)?null:Math.round(kickOtherPeak), noseVisPeak:(kickNosePeak==null)?null:+(+kickNosePeak).toFixed(2)}};
+    huBonus=Math.round(HU_GATE.BONUS_MAX*c01((huPk-HU_GATE.WAIST)/(HU_GATE.TOP-HU_GATE.WAIST)));
+  }
   return {
-    score, ok:true, msg, reason:'short_ok',
+    score:(huBonus?Math.min(100,score+huBonus):score), ok:true, msg, reason:'short_ok',
     
     parts: want==='yeop' ? {kind:'yeop', h:hScore, rot, c:cScore, mark:shortKneeMark?.5:null}
          : want==='dwi'  ? {kind:'dwi', h:hScore, rot, k:(kneeChamber3D==null?.5:c01((kneeChamber3D-DWI_KNEE.LO)/(DWI_KNEE.HI-DWI_KNEE.LO)))} : null,
@@ -5605,6 +5628,7 @@ function analyzeTrajShort(peakPctValue=null){
       kneeMarkGrade:(shortKneeMark?1:0),
       kneeMarkFrames:trajKneeMark.filter(v=>v===true).length,
       kneeMarkSeen:trajKneeMark.filter(v=>v!==null).length,
+      huBonus, otherPeakPct:(kickOtherPeak==null)?null:Math.round(kickOtherPeak), noseVisPeak:(kickNosePeak==null)?null:+(+kickNosePeak).toFixed(2),   
       want:want||'', kind:'short'        
     }
   };
@@ -5849,7 +5873,8 @@ function analyzeTraj(peakPctValue=null){
     
     aspect:(video && video.videoWidth && video.videoHeight) ? video.videoWidth/video.videoHeight : null,
     kneeMarkPre, kneeMarkPost,  
-    kneeMarkSeen:DIAG.kneeMarkSeen   
+    kneeMarkSeen:DIAG.kneeMarkSeen,   
+    peakPct:(typeof peakPctValue==='number' && Number.isFinite(peakPctValue))?peakPctValue:null   
   };
   const want=drillKickType();               
 
@@ -5861,6 +5886,10 @@ function analyzeTraj(peakPctValue=null){
   if(r.kindLenient) DIAG.kindLenient=true;
 
   if(r.kneeMarkGrade!==undefined) DIAG.kneeMarkGrade=r.kneeMarkGrade;
+  
+  DIAG.otherPeakPct=(kickOtherPeak==null)?null:Math.round(kickOtherPeak);
+  DIAG.noseVisPeak=(kickNosePeak==null)?null:+(+kickNosePeak).toFixed(2);
+  if(r.huBonus!==undefined) DIAG.huBonus=r.huBonus;
 
   return {
     score:r.score, ok:r.ok, msg:r.msg, reason:r.reason, parts:r.parts||null,
@@ -6433,7 +6462,8 @@ function finishAutoDrillStage(){
     const nextIndex=autoDrillIndex+1;
     const nextMode=AUTO_DRILL_SEQUENCE[nextIndex];
     drillResultIcon.textContent='완료';
-    drillResultText.textContent=MODE_CFG[finishedMode].label+' 완료';
+
+    drillResultText.innerHTML='<span class="dr-name">'+escHtmlDr(MODE_CFG[finishedMode].label)+'</span> <span class="dr-done">완료</span>';
     drillResultText.style.color='#54ffad';
     drillResultSub.className='';
     drillResultSub.textContent='다음 동작 · '+MODE_CFG[nextMode].label;
@@ -7794,6 +7824,7 @@ function runKick(pct,m=null){
       if(strong || now-aboveFrames>=ABOVE_MS){
 
         kicking=true; peakPct=pct; belowFrames=0; trajActive=true; kickCutN=null;
+        kickOtherPeak=(m && Number.isFinite(m.otherPct))?m.otherPct:null; kickNosePeak=m?(m.noseVis??null):null;   
 
         kickTopFootY = m ? m.footY : null;
         kickRefTorso = m ? ((smTorso!=null && smTorso>0) ? smTorso : m.torso) : null;
@@ -7821,6 +7852,10 @@ function runKick(pct,m=null){
       }
     }
   } else {
+    if(m){   
+      if(Number.isFinite(m.otherPct)) kickOtherPeak=(kickOtherPeak==null)?m.otherPct:Math.max(kickOtherPeak,m.otherPct);
+      if(pct>peakPct) kickNosePeak=m.noseVis??null;
+    }
     peakPct=Math.max(peakPct,pct);
     
     if(m && Number.isFinite(m.footY) && (kickTopFootY==null || m.footY<kickTopFootY)) kickTopFootY=m.footY;
@@ -7942,6 +7977,8 @@ function computeMetrics(lm,wlm=null){
       const other = (m.side==='left') ? R : L;
       m.otherFootY   = other ? other.footY : null;
       m.otherFootVis = other ? (other.visibility??0) : 0;
+      m.otherPct     = other ? other.pct : null;   
+      m.noseVis      = lm[0]?.visibility ?? null;    
     }
     return m;
   };
@@ -10755,7 +10792,7 @@ const _AKM_CACHE_DAYS  = 7;
 const _AKM_TRIAL_CACHE_DAYS = 1;   
 const _AKM_FETCH_TIMEOUT_MS = 8 * 1000;   
 
-const _AKM_VERSION     = '3.5.11';   
+const _AKM_VERSION     = '3.5.12';   
 try{ window.__NL_VER = _AKM_VERSION; }catch(e){}   
 
 let _akmFailCount = 0;
@@ -12064,6 +12101,9 @@ html body #drillResult.show:not(.final-result){width:auto !important;min-width:m
 
 html body.hud-v21.akm-ui:not(.playing-ui):not(.ready-ui) #startBtn,html body.hud-v21.akm-ui:not(.playing-ui):not(.ready-ui) #startBtn2{color:var(--start) !important}
 html body.hud-v21.akm-ui.playing-ui #startBtn,html body.hud-v21.akm-ui.playing-ui #startBtn2{color:var(--stop) !important}
+
+#drillResultText .dr-name{display:inline-block;word-break:keep-all;overflow-wrap:normal}
+#drillResultText .dr-done{display:inline-block;white-space:nowrap}
 </style>
 <script id="akm-left-settings">
 
