@@ -314,4 +314,5 @@ body.p-poomsae{--c:#F5B829;--c2:#FFD166;--dark:#0B0F1A}
  const io=new IntersectionObserver(es=>es.forEach(e=>{const v=e.target;if(e.isIntersecting){if(v.dataset.src&&!v.src)v.src=v.dataset.src;if(!reduced && !v.parentElement.querySelector('[data-stopped="1"]'))v.play().catch(()=>{});}else v.pause();}),{threshold:.15});
  document.querySelectorAll('video[data-preview]').forEach(v=>{if(reduced)v.removeAttribute('autoplay');io.observe(v);});
  const f=document.querySelector('iframe[data-robot]');if(f){f.addEventListener('load',()=>{const r=f.contentWindow.__robot;if(r){r.sound(false);r.view('back');r.guidance(false);r.rate(1.2);r.loop(1,7);r.playLoop();}});new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting&&!f.src)f.src=f.dataset.src;}),{rootMargin:'100px'}).observe(f);}
-})();</script></body></html>
+})();</script><script src="nl-visit.js" defer></script>
+</body></html>
