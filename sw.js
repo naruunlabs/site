@@ -17,7 +17,7 @@
 //    그러면 예전 캐시가 통째로 비워집니다.
 // =========================================================
 
-const CACHE_NAME = 'naruunlabs-2026-11-20-video-soft-edges';
+const CACHE_NAME = 'naruunlabs-2026-11-20-no-hero-summary';
 
 const APP_SHELL = [
   './',
