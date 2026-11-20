@@ -381,7 +381,7 @@ p{margin:0}
 
 /* index hero · 2026-11-20: approved panorama + direct product entrances */
 .home-hero{background:#07182E;color:#C9D2E3;padding:0 0 56px}
-.home-art{position:relative;width:min(1440px,100%,calc((100svh - 248px)*2.4));margin:0 auto}
+.home-art{position:relative;width:min(1440px,100%,calc((100svh - 340px)*2.4));margin:0 auto}
 .home-panorama{display:block;width:100%;height:auto;
   -webkit-mask-image:linear-gradient(90deg,transparent,#000 2.5%,#000 97.5%,transparent),linear-gradient(180deg,transparent,#000 1.5%,#000 95.5%,transparent);
   -webkit-mask-composite:source-in;
@@ -400,27 +400,27 @@ p{margin:0}
 .home-entry-hint{margin:0 0 12px;color:#fff;font-size:20px;font-weight:800;line-height:1.45}
 .home-entry-hint strong{color:#7DE3D2;font-weight:900;white-space:nowrap}
 .home-entry-hint span{margin-left:8px;color:#AABBD1;font-size:13px;font-weight:500}
-.home-links{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
-.home-link{display:grid;gap:3px;padding:15px 18px;border:1px solid #8CA9CC50;border-top:3px solid var(--entry-color);border-radius:14px;background:#FFFFFF07;transition:background .2s,border-color .2s,transform .2s}
-.home-link-name{display:flex;align-items:center;justify-content:space-between;gap:8px;color:#fff;font-size:19px;font-weight:850;line-height:1.4}
-.home-link-name>span{color:var(--entry-color);font-size:21px}
-.home-link-desc{color:#B9C9DD;font-size:12.5px}
-.home-link-cta{margin-top:7px;color:var(--entry-color);font-size:12.5px;font-weight:800}
-.home-link:focus-visible{outline-color:#fff;outline-offset:4px}
-.home-catalog-heading{width:var(--wrap);margin:58px auto 0;padding-top:36px;border-top:1px solid #FFFFFF18}
-.home-catalog-heading .kicker{color:#85B8FF}
-.home-catalog-heading h2{margin:10px 0;color:#fff;font-size:clamp(23px,2.8vw,34px)}
-.home-catalog-heading p{color:#AABBD1;font-size:14px}
+.home-products{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.home-product{display:flex;flex-direction:column;gap:12px;min-width:0;padding:19px 20px;border:1px solid #354158;border-radius:20px;background:#172136}
+.home-product h3{color:#fff;font-size:20px;font-weight:850;line-height:1.35}
+.home-product-copy{min-height:45px;color:#CAD4E5;font-size:12.5px;line-height:1.65}
+.home-product-copy span{display:block;margin-top:3px;color:#AAB9D0;font-size:11.5px}
+.home-product-price{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 7px;margin-top:auto;color:#fff;line-height:1.4}
+.home-product-price b{font-size:21px;font-weight:850;letter-spacing:-.035em;font-variant-numeric:tabular-nums}
+.home-product-price>span{color:#AAB9D0;font-size:11.5px}
+.home-product-cta{display:flex;align-items:center;justify-content:center;gap:9px;min-height:42px;padding:9px 12px;border-radius:999px;background:var(--entry-color);color:#0C1729;font-size:13px;font-weight:850;line-height:1.4;transition:filter .18s,transform .18s}
+.home-product-cta span{font-size:17px;line-height:1}
+.home-product-cta:focus-visible{outline-color:#fff;outline-offset:4px}
+.home-product-meta{margin-top:12px;color:#AAB9D0;font-size:12px}
+.home-accuracy{margin-top:8px;color:#93A3B8;font-size:12px;line-height:1.7}
 @media (hover:hover){
   .home-hit:hover{border-color:#FFFFFF45;background:#FFFFFF07}
   .home-hit:hover span{opacity:1}
-  .home-link:hover{transform:translateY(-3px);border-color:var(--entry-color);background:#FFFFFF0F}
+  .home-product-cta:hover{filter:brightness(1.08);transform:translateY(-2px)}
 }
 @media (max-width:900px){
   .home-art{width:100%}
-  .home-link{padding:12px}
-  .home-link-name{font-size:16px}
-  .home-link-desc,.home-link-cta{font-size:11.5px}
+  .home-products{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media (max-width:680px){
   .home-copy{position:static;width:var(--wrap);height:auto;overflow:visible;clip-path:none;white-space:normal;margin:20px auto 24px}
@@ -430,41 +430,22 @@ p{margin:0}
   .home-copy .lead{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
   .home-entry-hint{font-size:19px;margin-bottom:10px}
   .home-entry-hint span{display:none}
-  .home-links{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-  .home-link{padding:12px 13px}
-  .home-link-name{font-size:16px}
+  .home-products{gap:10px}
+  .home-product{padding:15px 14px;gap:10px;border-radius:18px}
+  .home-product h3{font-size:16px}
+  .home-product-copy{min-height:59px;font-size:11.5px}
+  .home-product-copy span{font-size:11px}
+  .home-product-price b{font-size:18px}
+  .home-product-price>span{font-size:11px}
+  .home-product-cta{min-height:40px;padding:9px 8px;font-size:12px}
   .home-hit{padding:2px;border-radius:5px}
   .home-hit span{font-size:9px;padding:3px 6px}
-  .home-catalog-heading{margin-top:36px;padding-top:28px}
 }
 @media (max-width:360px){
-  .home-link{padding:10px}
-  .home-link-name{font-size:14px;gap:4px}
-  .home-link-name>span{font-size:17px}
-  .home-link-desc,.home-link-cta{font-size:10.5px}
+  .home-product{padding:13px 11px}
+  .home-product h3{font-size:14px}
 }
-@media (prefers-reduced-motion:reduce){.home-hit,.home-hit span,.home-link{transition:none}}
-.doors{position:relative;z-index:1;width:var(--wrap);margin:44px auto 0;display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
-.door{position:relative;display:grid;gap:14px;align-content:start;padding:26px 24px 22px;border-radius:20px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);overflow:hidden;transition:border-color .25s,transform .25s,background .25s}
-.door::before{content:"";position:absolute;inset:auto -30% -60% auto;width:240px;height:240px;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--dc) 45%,transparent),transparent 70%);opacity:.5;transition:opacity .25s}
-.door:hover,.door.lit{border-color:color-mix(in srgb,var(--dc) 70%,transparent);background:rgba(255,255,255,.06)}
-.door:hover{transform:translateY(-3px)}
-.door.lit::before,.door:hover::before{opacity:1}
-.door .dk{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:12px;letter-spacing:.14em;color:#9AA6BD}
-.door .dk i{font-style:normal;display:grid;place-items:center;width:26px;height:26px;border-radius:8px;background:var(--dc);color:#fff;font-weight:700}
-.door img{height:44px;width:auto;max-width:100%}
-.door h2{font-size:22px;color:#fff;letter-spacing:-.04em}
-.door p{font-size:14.5px;color:#9AA6BD;line-height:1.65}
-.door .ft2{display:flex;justify-content:space-between;align-items:center;gap:10px;padding-top:12px;border-top:1px solid rgba(255,255,255,.08);font-size:13.5px}
-.door .ft2 b{color:#fff;font-variant-numeric:tabular-nums}
-.door .ft2 span{color:var(--dc);font-weight:800;filter:brightness(1.35)}
-.web-row{position:relative;z-index:1;width:var(--wrap);margin:14px auto 0;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 20px;padding:20px 24px;border-radius:18px;
-  background:linear-gradient(90deg,rgba(18,136,248,.14),rgba(18,136,248,.04));border:1px solid rgba(18,136,248,.3);color:#C9D2E3}
-.web-row b{color:#fff;font-size:17px}
-.web-row img{width:240px;height:auto;display:block;flex:0 0 auto}
-.web-row .meta{font-size:14px;color:#9AA6BD}
-.web-row .go{font-weight:800;color:#7FB2FF}
-@media (max-width:900px){ .doors{grid-template-columns:1fr} }
+@media (prefers-reduced-motion:reduce){.home-hit,.home-hit span,.home-product-cta{transition:none}}
 
 .field{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
 .field article{padding:28px 26px;border-radius:18px;border:1px solid var(--line);background:#fff;display:grid;gap:10px;align-content:start}
@@ -611,10 +592,6 @@ p{margin:0}
 
 /* 2026-10-19 · 품새(P) 칸이 이제 링크 — 금색 위 흰 글자는 안 보여서 진한 글자 (품새 소개 페이지 안 규칙과 같게) */
 .switch a[href="/poomsaemaster"] i{color:#2A1C00}
-/* 2026-10-19 · 메인 제품 카드 4장(킥·점프·스트·품새): 넓은 화면 4칸 · 중간 2칸 · 폰 1칸 */
-.doors{grid-template-columns:repeat(3,1fr)}
-@media (max-width:1180px){ .doors{grid-template-columns:repeat(2,1fr)} }
-@media (max-width:900px){ .doors{grid-template-columns:1fr} }
 
 /* 2026-10-19 · 상담 = 카카오 노란 버튼(모든 페이지 같은 색) · 프로그램 실행 = 그 제품색 (완수님: 폰에서 상담이 안 보이고 카메라 체험만 눈에 띈다)
    아이콘은 카카오 로고가 아닌 일반 말풍선(상표 걱정 없음). 첫 화면은 상담이 앞, 카메라 체험은 테두리 버튼으로 뒤. */
