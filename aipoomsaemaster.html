@@ -597,7 +597,7 @@ body.group-running #groupLesson{display:block}
 <script id="psm-core">
 
 var PSM = (function(){
-  var VERSION = '1.3.3';   
+  var VERSION = '1.3.4';   
 
   var DEFAULT_CFG = {
     SMOOTH: 0.5,        
@@ -2163,9 +2163,14 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     T:[[-.95,-.98,-1.5,-.98],[.95,-.98,1.5,-.98]],
     HIPS:[[-.8,-.55,-.32,-.12],[.8,-.55,.32,-.12]],
     PRAY:[[-.5,-1.62,-.06,-2.12],[.5,-1.62,.06,-2.12]],
-    GUARD:[[-.62,-.5,-.26,-1.15],[.62,-.5,.26,-1.15]]
+    GUARD:[[-.62,-.5,-.26,-1.15],[.62,-.5,.26,-1.15]],
+    STAR:[[-.82,-1.33,-1.24,-1.68],[.82,-1.33,1.24,-1.68]],   
+    DOWN:[[-.82,-.63,-1.24,-.28],[.82,-.63,1.24,-.28]],       
+    GOAL:[[-.95,-.98,-.95,-1.55],[.95,-.98,.95,-1.55]]        
   };
-  var WL={ STAND:[[-.3,.95,-.4,1.9],[.3,.95,.4,1.9]], WIDE:[[-.8,.85,-1.25,1.65],[.8,.85,1.25,1.65]], HORSE:[[-.72,.5,-.74,1.35],[.72,.5,.74,1.35]] };
+  var WL={ STAND:[[-.3,.95,-.4,1.9],[.3,.95,.4,1.9]], WIDE:[[-.8,.85,-1.25,1.65],[.8,.85,1.25,1.65]], HORSE:[[-.72,.5,-.74,1.35],[.72,.5,.74,1.35]],
+           LUNGE:[[-.95,.45,-.97,1.3],[.95,.45,.97,1.3]],   
+           SIDE:[[-.91,.52,-1.65,1.03],[.91,.52,1.65,1.03]] };   
   var WALL_KINDS={
     stretch:{label:'스트레칭', cycle:14, gap:3, judgeMs:1000, ratio:0.6, speedup:false, moves:[
       {name:'만세',              arms:WA.UP},
@@ -2174,7 +2179,14 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
       {name:'오른쪽 옆구리 늘리기',  arms:[[-.5,-1.65,.15,-2.1],WA.HIPS[1]]},
       {name:'다리 벌리고 손 허리',  arms:WA.HIPS, legs:WL.WIDE},
       {name:'나무 자세 (왼쪽)',    arms:WA.PRAY, legs:[[-.75,.5,-.02,.88],WL.STAND[1]]},
-      {name:'나무 자세 (오른쪽)',   arms:WA.PRAY, legs:[WL.STAND[0],[.75,.5,.02,.88]]}
+      {name:'나무 자세 (오른쪽)',   arms:WA.PRAY, legs:[WL.STAND[0],[.75,.5,.02,.88]]},
+      
+      {name:'별 모양',            arms:WA.STAR, legs:WL.WIDE},
+      {name:'대각선 (왼팔 위)',     arms:[WA.STAR[0],WA.DOWN[1]]},
+      {name:'대각선 (오른팔 위)',    arms:[WA.DOWN[0],WA.STAR[1]]},
+      {name:'골대 팔',            arms:WA.GOAL},
+      {name:'옆 런지 (왼쪽 무릎)',   arms:WA.T, legs:[WL.LUNGE[0],[.83,.65,1.49,1.3]]},
+      {name:'옆 런지 (오른쪽 무릎)',  arms:WA.T, legs:[[-.83,.65,-1.49,1.3],WL.LUNGE[1]]}
     ]},
     basic:{label:'기본동작', cycle:10, gap:2, judgeMs:600, ratio:0.5, speedup:true, moves:WALL.MOVES},
     hard:{label:'고난도', cycle:10, gap:2, judgeMs:600, ratio:0.5, speedup:true, moves:[
@@ -2183,7 +2195,12 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
       {name:'주춤서기 얼굴막기 (왼팔)',  arms:[[-.88,-1.55,.34,-1.9],[.78,-.34,.44,-.02]], legs:WL.HORSE},
       {name:'주춤서기 얼굴막기 (오른팔)', arms:[[-.78,-.34,-.44,-.02],[.88,-1.55,-.34,-1.9]], legs:WL.HORSE},
       {name:'학다리 (왼쪽 무릎)',    arms:WA.T, legs:[[-.62,-.04,-.56,.72],WL.STAND[1]]},
-      {name:'학다리 (오른쪽 무릎)',   arms:WA.T, legs:[WL.STAND[0],[.62,-.04,.56,.72]]}
+      {name:'학다리 (오른쪽 무릎)',   arms:WA.T, legs:[WL.STAND[0],[.62,-.04,.56,.72]]},
+      
+      {name:'주춤서기 팔 벌리기',     arms:WA.T,  legs:WL.HORSE},
+      {name:'주춤서기 만세',        arms:WA.UP, legs:WL.HORSE},
+      {name:'한 다리 별 (왼쪽 다리)',  arms:WA.STAR, legs:[WL.SIDE[0],WL.STAND[1]]},
+      {name:'한 다리 별 (오른쪽 다리)', arms:WA.STAR, legs:[WL.STAND[0],WL.SIDE[1]]}
     ]}
   };
   function wallKind(){ return WALL_KINDS[pref.wallKind] || WALL_KINDS.basic; }
@@ -2501,8 +2518,8 @@ if(typeof module!=='undefined' && module.exports) module.exports=PSM;
     var el=$('wallTip'); if(!el) return;
     var kindKey=WALL_KINDS[pref.wallKind]?pref.wallKind:'basic', beats=wallTravelBeats(kindKey,pref.wallApproach,1), bpm=WALL.BPM[pref.wallSpeed]||120;
     el.innerHTML='벽 접근 <b>'+beats+'박 · '+(beats*60/bpm).toFixed(2)+'초</b> (음악 '+bpm+' BPM). 벽에 뚫린 <b>모양</b>대로 서 있으면 <b>통과</b>, 아니면 <b>쿵!</b><br>'
-      +(pref.wallKind==='stretch' ? '스트레칭 · 천천히 오고, 그 자세로 <b>1초 버티면</b> 통과 (만세 · 팔 벌리기 · 옆구리 · 다리 벌리고 손 허리 · 나무 자세)'
-       : pref.wallKind==='hard' ? '고난도 · 옆차기 자세 · 주춤서기 얼굴막기 · 학다리 — 다리 모양까지 봅니다'
+      +(pref.wallKind==='stretch' ? '스트레칭 · 천천히 오고, 그 자세로 <b>1초 버티면</b> 통과 (만세 · 팔 벌리기 · 별 · 대각선 · 골대 팔 · 옆구리 · 다리 벌리고 손 허리 · 옆 런지 · 나무 자세)'
+       : pref.wallKind==='hard' ? '고난도 · 옆차기 자세 · 주춤서기(얼굴막기 · 팔 벌리기 · 만세) · 학다리 · 한 다리 별 — 다리 모양까지 봅니다'
        : '기본동작 · 기본준비 · 아래막기 · 지르기 · 안막기 · 얼굴막기')
       +(pref.wallPlayers==='duo' ? '<br><b>2인 대결</b> · 청은 화면 왼쪽, 홍은 오른쪽. 벽에 구멍이 두 개 뚫려 오고 각자 판정 — 많이 통과한 쪽이 이깁니다' : '')
       +'<br>카메라 <b>정면 3~4m</b>에서 전신이 보이게 서세요. '+(kindKey==='stretch'||beats===2?'선택한 접근 속도를 끝까지 유지합니다.':'뒤 절반은 1박 짧아집니다 (최소 2박).');
