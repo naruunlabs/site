@@ -641,3 +641,7 @@ p{margin:0}
 }
 .switch .sw-x{font-style:normal}
 @media (max-width:400px){ .hd-in:has(> .hd-home) .switch .sw-x{display:none} }   /* 좁은 폰: '홈페이지 제작' → '홈페이지' */
+/* 2026-11-24 메인 머리 [체험 신청][상담] — 폰에서는 짧게(머리가 두 줄로 커지지 않게) */
+@media (max-width:520px){ .p-brand .hd-act .hd-long{display:none} }
+/* 2026-11-24 글 안의 체험 신청 링크는 링크로 보이게 */
+a[href^="/trial"]:not(.btn){color:var(--ink);font-weight:700;text-decoration:underline;text-underline-offset:3px}
