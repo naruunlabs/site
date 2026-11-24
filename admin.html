@@ -618,8 +618,8 @@ table.cg tfoot td.num{text-align:right}
 
   <div class="top-bar">
     <div class="top-title">
-      <h1 id="pageTitle">라이선스 관리</h1>
-      <span id="pageSub">발급·수정·기기 관리</span>
+      <h1 id="pageTitle">할 일</h1>
+      <span id="pageSub">챙길 일 · 숫자 · 최근 일</span>
     </div>
     <div class="top-actions">
       <button class="btn-sm-act btn-ghost" onclick="downloadBackup()" title="라이선스·고객 장부·상담 이력·아카데미웹을 한 파일로 받습니다 (읽기만 합니다)">백업 받기</button>
@@ -631,13 +631,15 @@ table.cg tfoot td.num{text-align:right}
 
   <div class="tab-bar">
     <div class="sidebar-brand"><img class="sidebar-company-logo" src="naruunlabs_logo.svg" alt="NARUUN LABS"><span>Powered by Google MediaPipe</span></div>
-    <button class="tab-btn active" aria-current="page" onclick="switchTab('license')">라이선스 관리</button>
-    <button class="tab-btn" onclick="switchTab('customer')">고객 관리</button>
-    <button class="tab-btn" onclick="switchTab('academy')">아카데미웹</button>
-    <button class="tab-btn" onclick="switchTab('home')">홈페이지 관리</button>
-    <button class="tab-btn" onclick="switchTab('errors')">오류 기록</button>
-    <button class="tab-btn" onclick="switchTab('feedback')">체험 고객 관리</button>
-    <button class="tab-btn" onclick="switchTab('visits')">방문자</button>
+    
+    <button class="tab-btn active" aria-current="page" data-tab="todo" onclick="switchTab('todo')"><span class="nl-ic" data-nl-ic="todo"></span>할 일<span class="nl-cnt" id="nlNavTodo" hidden></span></button>
+    <button class="tab-btn" data-tab="clients" onclick="switchTab('clients')"><span class="nl-ic" data-nl-ic="users"></span>고객 관리</button>
+    <button class="tab-btn" data-tab="academy" onclick="switchTab('academy')"><span class="nl-ic" data-nl-ic="globe"></span>아카데미웹</button>
+    <button class="tab-btn" data-tab="home" onclick="switchTab('home')"><span class="nl-ic" data-nl-ic="pen"></span>홈페이지 관리</button>
+    <button class="tab-btn" data-tab="logs" onclick="switchTab('visits')"><span class="nl-ic" data-nl-ic="chart"></span>기록</button>
+    <div class="nl-side-sep">예전 화면</div>
+    <button class="tab-btn nl-old" data-tab="license" onclick="switchTab('license')"><span class="nl-ic" data-nl-ic="list"></span>라이선스 목록</button>
+    <button class="tab-btn nl-old" data-tab="customer" onclick="switchTab('customer')"><span class="nl-ic" data-nl-ic="table"></span>고객 장부 표</button>
     
     <div class="sidebar-foot">
       <div class="sf-row"><span>자동 로그아웃</span><b id="sideExpiry">—</b></div>
@@ -645,7 +647,46 @@ table.cg tfoot td.num{text-align:right}
     </div>
   </div>
 
-  <div class="tab-content active" id="tab-license">
+  <div class="tab-content active" id="tab-todo">
+    <div class="nl-stats" id="nlStats"></div>
+    <div class="nl-todo-grid">
+      <div class="nl-card">
+        <div class="nl-sec-h"><h2>챙길 일</h2><span class="c" id="nlTodoCnt"></span><span style="flex:1"></span><button type="button" class="nl-btn sm pri" onclick="nlOpenIssue(null,'','old')">+ 라이선스 발급</button></div>
+        <div class="nl-views" id="nlTodoViews"></div>
+        <div id="nlTodoList"><div class="nl-empty">불러오는 중…</div></div>
+      </div>
+      <div class="nl-card">
+        <div class="nl-sec-h"><h2>최근 일</h2><span class="nl-mut" style="font-size:12px">최근 7일</span></div>
+        <ul class="nl-feed" id="nlFeed"></ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-content" id="tab-clients">
+    <div class="nl-tools">
+      <div class="nl-seg" id="nlViewSeg"><button type="button" data-v="dojang" class="on">도장별</button><button type="button" data-v="lic">라이선스별</button></div>
+      <input type="search" id="nlQ" placeholder="도장명 · 관장님 · 전화 · 키 · 메모 검색" aria-label="검색">
+      <select id="nlBranch" aria-label="고객 소속"></select>
+      <select id="nlSort" aria-label="정렬"></select>
+      <button type="button" class="nl-btn" onclick="exportCustomersCsv()" title="고객 장부를 엑셀용 CSV 로 받습니다">장부 엑셀</button>
+      <button type="button" class="nl-btn" onclick="exportLicensesCsv()" title="라이선스 목록을 엑셀용 CSV 로 받습니다">라이선스 엑셀</button>
+      <button type="button" class="nl-btn" onclick="nlOpenIssue(null,'','new')">+ 새 도장</button>
+      <button type="button" class="nl-btn pri" onclick="nlOpenIssue(null,'','old')">+ 라이선스 발급</button>
+    </div>
+    <div class="nl-chips" id="nlChips"></div>
+    <div class="nl-card">
+      <div class="nl-count" id="nlCount"></div>
+      <div class="nl-table-wrap"><table class="nl-t"><thead id="nlHead"></thead><tbody id="nlBody"></tbody></table></div>
+    </div>
+  </div>
+
+  <div class="nl-logs-nav" id="nlLogsNav" hidden>
+    <button type="button" data-t="visits" onclick="switchTab('visits')">방문자</button>
+    <button type="button" data-t="errors" onclick="switchTab('errors')">오류 기록</button>
+    <button type="button" data-t="feedback" onclick="switchTab('feedback')">체험 설문</button>
+  </div>
+
+  <div class="tab-content" id="tab-license">
     
     <div class="today-box" id="todayBox">
       <div class="today-head">
@@ -1323,15 +1364,19 @@ function showToast(msg) {
 }
 
 function switchTab(tab) {
-  
-  const names=['license','customer','academy','home','errors','feedback','visits'];
-  document.querySelectorAll('.tab-btn').forEach((b,i) => {
-    b.classList.toggle('active', names[i]===tab);
-    if(names[i]===tab) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current');
+
+  const TAB_GROUP = { visits:'logs', errors:'logs', feedback:'logs' };
+  const btnTab = TAB_GROUP[tab] || tab;
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    const on = b.dataset.tab === btnTab;
+    b.classList.toggle('active', on);
+    if (on) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current');
   });
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
   document.getElementById('tab-'+tab).classList.add('active');
   setPageTitle(tab);
+  if (window.nlOnTab) window.nlOnTab(tab);
+  if (tab === 'todo' || tab === 'clients') { loadLicenses(); loadCustomers(); }
   if (tab === 'license') loadLicenses();
   if (tab === 'customer') loadCustomers();
   if (tab === 'academy') { loadCustomers().then(loadAcademyProjects); }
@@ -1342,8 +1387,10 @@ function switchTab(tab) {
 }
 
 const PAGE_TITLES = {
-  license : ['라이선스 관리', '발급 · 수정 · 기기 관리'],
-  customer: ['고객 관리',   '고객 장부 · 판매 기록 · 상담 이력'],
+  todo    : ['할 일',       '챙길 일 · 숫자 · 최근 일'],
+  clients : ['고객 관리',   '도장 한 줄에 제품·단계·후속 연락 · 줄을 누르면 자세히'],
+  license : ['라이선스 목록 (예전 화면)', '발급 · 수정 · 기기 관리'],
+  customer: ['고객 장부 표 (예전 화면)', '고객 장부 · 판매 기록 · 상담 이력'],
   academy : ['아카데미웹',  '홈페이지 제작 고객 · 진행 · 일정 · 수금'],
   home    : ['홈페이지 관리', '사이트 카톡·전화 연락처'],
   errors  : ['오류 기록',   '고객 기기에서 난 프로그램 오류'],
@@ -1351,7 +1398,7 @@ const PAGE_TITLES = {
   visits  : ['방문자',      '나른랩스 사이트 페이지별 방문자 수']
 };
 function setPageTitle(tab) {
-  const t = PAGE_TITLES[tab] || PAGE_TITLES.license;
+  const t = PAGE_TITLES[tab] || PAGE_TITLES.todo;
   const a = document.getElementById('pageTitle'), b = document.getElementById('pageSub');
   if (a) a.textContent = t[0];
   if (b) b.textContent = t[1];
@@ -3812,7 +3859,8 @@ if (savedToken) {
   document.getElementById('loginWrap').classList.add('hidden');
   document.getElementById('dashboard').classList.add('show');
   loadLicenses();
-  setTimeout(loadAdminTasks, 0);
+
+  document.addEventListener('DOMContentLoaded', () => loadAdminTasks());
   loadHomeFields();
   loadCustomers();
   loadAcademyProjects();
@@ -5199,5 +5247,65 @@ table.cg tbody td{border-bottom-color:#edf1f6}
 <script src="admin-feedback.js"></script>
 <link rel="stylesheet" href="admin-visits.css">
 <script src="admin-visits.js"></script>
+<link rel="stylesheet" href="admin-clients.css">
+<div class="nl-shade" id="nlShade"></div>
+<aside class="nl-drawer" id="nlDrawer" aria-hidden="true" aria-label="도장 자세히">
+  <div class="nl-d-head">
+    <div class="nl-d-top"><h3 id="nlDName"></h3><span id="nlDStage"></span><button type="button" class="nl-d-x" onclick="nlCloseDrawer()" aria-label="닫기">×</button></div>
+    <div class="nl-d-who" id="nlDWho"></div>
+    <div class="nl-d-quick" id="nlDQuick"></div>
+  </div>
+  <div class="nl-d-tabs" id="nlDTabs"></div>
+  <div class="nl-d-body" id="nlDBody"></div>
+</aside>
+<div class="nl-modal" id="nlIssue" role="dialog" aria-modal="true" aria-labelledby="nlIssueTitle">
+  <div class="nl-mbox">
+    <h3 id="nlIssueTitle">라이선스 발급</h3>
+    <div class="nl-mstep">1. 어느 도장인가요</div>
+    <div class="nl-seg" id="nlIMode"><button type="button" data-m="old" class="on">이미 있는 도장</button><button type="button" data-m="new">새 도장</button></div>
+    <div id="nlIOld" style="margin-top:10px">
+      <input type="search" class="nl-in" id="nlIq" placeholder="도장명 · 관장님 · 전화번호로 찾기" aria-label="도장 찾기">
+      <div class="nl-hits" id="nlIHits" hidden></div>
+      <div id="nlIPicked"></div>
+    </div>
+    <div id="nlINew" hidden style="margin-top:10px">
+      <div class="nl-form">
+        <label class="full"><span>도장명 *</span><input class="nl-in" id="nlNName" autocomplete="off"></label>
+        <label><span>관장님 성함</span><input class="nl-in" id="nlNOwner" autocomplete="off"></label>
+        <label><span>연락처</span><input class="nl-in" id="nlNPhone" type="tel" placeholder="010-0000-0000" autocomplete="off"></label>
+        <label><span>시 / 도</span><select class="nl-in" id="nlNSido"></select></label>
+        <label><span>시군구 · 읍면동</span><input class="nl-in" id="nlNSigungu" autocomplete="off"></label>
+        <label><span>어떻게 알게 되셨나</span><select class="nl-in" id="nlNSource"></select></label>
+        <label><span>소개해준 곳</span><input class="nl-in" id="nlNRef" autocomplete="off"></label>
+        <label><span>고객 소속</span><select class="nl-in" id="nlNBranch"></select></label>
+        <label><span>관원수</span><input class="nl-in" id="nlNStudents" type="number" min="0"></label>
+        <label class="full"><span>메모</span><textarea class="nl-in" id="nlNMemo" rows="2"></textarea></label>
+      </div>
+    </div>
+    <div class="nl-mstep">2. 종류</div>
+    <div class="nl-ichoice" id="nlIType">
+      <label><input type="radio" name="nlIType" value="trial" checked>체험 3일</label>
+      <label><input type="radio" name="nlIType" value="lifetime">정식</label>
+    </div>
+    <div class="nl-mstep">3. 제품 <span class="nl-mut" style="font-weight:500">여러 개 고르면 한 번에 발급합니다</span></div>
+    <div class="nl-ichoice" id="nlIProd"></div>
+    <div class="nl-pay" id="nlIPay" hidden>
+      <div id="nlIPayRows"></div>
+      <div class="nl-pay-more">
+        <label><span>판매일</span><input type="date" class="nl-in" id="nlIPayDate"></label>
+        <label><span>결제수단</span><select class="nl-in" id="nlIPayMethod"><option value="">— 고르기 —</option><option>계좌이체</option><option>카드</option><option>현금</option></select></label>
+        <label class="chk"><input type="checkbox" id="nlITax">세금계산서 발행</label>
+        <label style="grid-column:1/-1"><span>할인 이유</span><input class="nl-in" id="nlIReason" placeholder="예: 세트 할인 · 지도관 회원가"></label>
+      </div>
+    </div>
+    <div class="nl-merr" id="nlIErr"></div>
+    <div class="nl-mfoot">
+      <button type="button" class="nl-btn" onclick="nlCloseIssue()">취소</button>
+      <button type="button" class="nl-btn" id="nlIGoCopy" onclick="nlDoIssue(true)">발급 + 카톡 안내 복사</button>
+      <button type="button" class="nl-btn pri" id="nlIGo" onclick="nlDoIssue(false)">발급</button>
+    </div>
+  </div>
+</div>
+<script src="admin-clients.js"></script>
 </body>
 </html>
