@@ -645,3 +645,10 @@ p{margin:0}
 @media (max-width:520px){ .p-brand .hd-act .hd-long{display:none} }
 /* 2026-11-24 글 안의 체험 신청 링크는 링크로 보이게 */
 a[href^="/trial"]:not(.btn){color:var(--ink);font-weight:700;text-decoration:underline;text-underline-offset:3px}
+/* 2026-11-24 킥·품새·점프 머리 [실행][체험 신청][카톡 상담] — 폭이 줄면 글자를 줄여 넘치지 않게 */
+@media (max-width:1180px){ .hd-act .hd-trial .run-l,.hd-act .hd-run .run-l{display:none} }
+@media (max-width:960px){ .hd-act .btn{padding:0 12px} }
+@media (min-width:681px) and (max-width:800px){ .hd-act .hd-trial .t-s{display:none} }
+@media (min-width:681px) and (max-width:720px){ .hd-act .hd-trial{display:none} }
+@media (max-width:600px){ .hd-act .hd-trial .t-s{display:none} .hd-act .btn{padding:0 10px} }
+@media (min-width:681px) and (max-width:780px){ .p-poomsae .hd-act .hd-trial{display:none} }   /* 품새 머리는 더 넓다 */
