@@ -17,8 +17,8 @@ var VS_PAGES = [
   ['brandguide', '브랜드 가이드', '/brandguide']
 ];
 var VS_SOURCES = {
-  direct: '직접·카톡 등', naver: '네이버', blog: '블로그', google: '구글', daum: '다음',
-  kakao: '카카오', instagram: '인스타그램', youtube: '유튜브', facebook: '페이스북', threads: '스레드', other: '기타 사이트'
+  direct: '직접(주소·QR 등)', naver: '네이버', blog: '블로그', google: '구글', daum: '다음',
+  kakao: '카톡', instagram: '인스타그램', youtube: '유튜브', facebook: '페이스북', threads: '스레드', other: '기타 사이트'
 };
 
 function vsEsc(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }

@@ -51,6 +51,14 @@
         else if (/(^|\.)threads\.(net|com)$/.test(rh)) src = 'threads';   // 2026-11-25
         else src = 'other';
       }
+    } else {
+      /* 2026-11-25 · 앱 안 브라우저는 리퍼러를 안 보내는 일이 많다(특히 카톡).
+         기기 안에서 '어느 앱 안인가'만 보고 경로를 고른다 · 브라우저 정보는 보내지 않는다. */
+      var ua = navigator.userAgent || '';
+      if (/KAKAOTALK/i.test(ua)) src = 'kakao';
+      else if (/Instagram/.test(ua)) src = 'instagram';
+      else if (/FBAN|FBAV|FB_IAB/.test(ua)) src = 'facebook';
+      else if (/Barcelona/.test(ua)) src = 'threads';
     }
 
     fetch(EDGE, {
