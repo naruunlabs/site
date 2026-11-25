@@ -93,15 +93,23 @@ function renderSiteVisits() {
   document.getElementById('vsChartMax').textContent = '가장 많은 날 ' + vsNum(peak) + '명';
 
   /* sources */
-  var src = {};
-  VS_DATA.sources.forEach(function (r) { if (r.day >= since) src[r.source] = (src[r.source] || 0) + (Number(r.visitors) || 0); });
-  var srcList = Object.keys(src).map(function (k) { return { k: k, n: src[k] }; }).sort(function (a, b) { return b.n - a.n; });
+  /* 2026-11-25 · 페이지별 표처럼 오늘·어제 칸을 함께 보인다 (같은 site_visit_source 하루치) */
+  var src = {}, srcDay = {};
+  VS_DATA.sources.forEach(function (r) {
+    var n = Number(r.visitors) || 0;
+    if (r.day >= since) src[r.source] = (src[r.source] || 0) + n;
+    if (r.day === today || r.day === yday) { srcDay[r.source + '|' + r.day] = (srcDay[r.source + '|' + r.day] || 0) + n; if (!(r.source in src)) src[r.source] = 0; }
+  });
+  var srcList = Object.keys(src).map(function (k) { return { k: k, n: src[k], t: srcDay[k + '|' + today] || 0, y: srcDay[k + '|' + yday] || 0 }; })
+    .sort(function (a, b) { return b.n - a.n || b.t - a.t; });
   var srcTotal = srcList.reduce(function (a, s) { return a + s.n; }, 0);
   document.getElementById('vsSrcBody').innerHTML = srcList.length ? srcList.map(function (s) {
     var pct = srcTotal ? 100 * s.n / srcTotal : 0;
-    return '<tr><td class="vs-name"><b>' + vsEsc(VS_SOURCES[s.k] || s.k) + '</b></td><td class="vs-n vs-strong">' + vsNum(s.n) + '</td>' +
+    return '<tr><td class="vs-name"><b>' + vsEsc(VS_SOURCES[s.k] || s.k) + '</b></td>' +
+      '<td class="vs-n" data-label="오늘">' + vsNum(s.t) + '</td><td class="vs-n" data-label="어제">' + vsNum(s.y) + '</td>' +
+      '<td class="vs-n vs-strong" data-label="방문자">' + vsNum(s.n) + '</td>' +
       '<td class="vs-n">' + pct.toFixed(0) + '%</td><td class="vs-bar-cell"><div class="vs-bar"><i style="width:' + pct.toFixed(1) + '%"></i></div></td></tr>';
-  }).join('') : '<tr><td colspan="4" class="vs-empty">아직 기록이 없습니다</td></tr>';
+  }).join('') : '<tr><td colspan="6" class="vs-empty">아직 기록이 없습니다</td></tr>';
 
   var empty = !rows.length;
   document.getElementById('vsEmpty').style.display = empty ? '' : 'none';

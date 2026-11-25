@@ -47,3 +47,5 @@
   #tab-visits .vs-col em{display:none}
   #tab-visits .vs-msg{margin-left:0;width:100%}
 }
+#vsSrcBody td.vs-name b{word-break:keep-all}  /* 2026-11-25 오늘·어제 칸이 늘어 경로 이름이 한 글자씩 꺾이던 것 */
+@media (max-width:1400px){#vsSrcBody td.vs-bar-cell,table:has(#vsSrcBody) th.vs-hide-m{display:none}}  /* 같은 날 · 오늘·어제 칸 때문에 좁은 화면에서 막대가 카드 밖으로 나가던 것 */
