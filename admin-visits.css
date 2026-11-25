@@ -54,3 +54,14 @@
 #tab-visits .vs-grid th:first-child{width:30%}
 #tab-visits .vs-grid th.vs-n{width:11%}
 @media (max-width:1400px){#tab-visits .vs-grid th:first-child{width:36%}#tab-visits .vs-grid th.vs-n{width:16%}}
+/* 2026-11-25 몇 시에 어디서 왔나 */
+#tab-visits .vs-hours{margin-bottom:14px}
+#tab-visits .vs-hours-wrap{overflow-x:auto}
+#tab-visits .vs-hours table{min-width:520px}
+#tab-visits .vs-hours td.vs-heat{transition:none;border-left:2px solid #fff}
+#tab-visits .vs-hours td.vs-peak{font-weight:800;color:#071C49}
+#tab-visits .vs-hours td.vs-heat.vs-peak[style*="color:#fff"]{color:#fff}
+#tab-visits .vs-hours td.vs-name b{white-space:nowrap}
+#tab-visits .vs-hours table{table-layout:fixed}
+#tab-visits .vs-hours th:first-child{width:118px}
+#tab-visits .vs-hours th{white-space:normal;word-break:keep-all;line-height:1.3}

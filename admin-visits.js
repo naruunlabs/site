@@ -1,7 +1,7 @@
 /* Admin "visitors" tab (2026-11-19). Uses the existing admin session (edgeCall).
    Data: clever-worker GET_SITE_VISITS -> site_visit_daily / site_visit_source (supabase/32).
    Visitors = devices counted once per page per day. Views = every page load. */
-var VS_DATA = { daily: [], sources: [] };
+var VS_DATA = { daily: [], sources: [], hours: [] };
 var VS_LOADED_DAYS = 0;
 var VS_PAGES = [
   ['index', '메인', '/'],
@@ -32,7 +32,7 @@ async function loadSiteVisits(force) {
   msg.textContent = '불러오는 중…';
   try {
     var r = await edgeCall('GET_SITE_VISITS', { days: days }) || {};
-    VS_DATA = { daily: r.daily || [], sources: r.sources || [] };
+    VS_DATA = { daily: r.daily || [], sources: r.sources || [], hours: r.hours || [] };
     VS_LOADED_DAYS = days;
     msg.textContent = '마지막 불러오기 ' + new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
     renderSiteVisits();
@@ -111,6 +111,51 @@ function renderSiteVisits() {
       '<td class="vs-n">' + pct.toFixed(0) + '%</td><td class="vs-bar-cell"><div class="vs-bar"><i style="width:' + pct.toFixed(1) + '%"></i></div></td></tr>';
   }).join('') : '<tr><td colspan="6" class="vs-empty">아직 기록이 없습니다</td></tr>';
 
+  renderSourceHours(since);
+
   var empty = !rows.length;
   document.getElementById('vsEmpty').style.display = empty ? '' : 'none';
+}
+
+/* 2026-11-25 · 몇 시에 어디서 왔나 (site_visit_source_hour · supabase/34 · 11-25 부터 쌓임)
+   줄 = 3시간 단위 시간대(새벽 0~6시는 한 줄), 칸 = 많이 온 경로 6개 + 그 외 + 합계.
+   칸 색이 진할수록 그 경로에서 그 시간대에 많이 온 것. 경로마다 가장 많은 시간대는 굵게. */
+var VS_BANDS = [[0, 6, '새벽 0~6시'], [6, 9, '아침 6~9시'], [9, 12, '오전 9~12시'], [12, 15, '낮 12~3시'],
+  [15, 18, '오후 3~6시'], [18, 21, '저녁 6~9시'], [21, 24, '밤 9~12시']];
+function renderSourceHours(since) {
+  var head = document.getElementById('vsHourHead'), body = document.getElementById('vsHourBody');
+  if (!head || !body) return;
+  var hrs = (VS_DATA.hours || []).filter(function (r) { return r.day >= since; });
+  var tot = {};
+  hrs.forEach(function (r) { tot[r.source] = (tot[r.source] || 0) + (Number(r.visitors) || 0); });
+  var keys = Object.keys(tot).sort(function (a, b) { return tot[b] - tot[a]; });
+  var cols = keys.slice(0, 6), rest = keys.length > 6;
+  var colOf = function (src) { return cols.indexOf(src) >= 0 ? src : '_rest'; };
+  if (rest) cols = cols.concat('_rest');
+  if (!hrs.length) {
+    head.innerHTML = '<tr><th>시간대</th><th class="vs-n">합계</th></tr>';
+    body.innerHTML = '<tr><td colspan="2" class="vs-empty">아직 기록이 없습니다 · 2026-11-25 부터 쌓입니다</td></tr>';
+    return;
+  }
+  var cell = {}, bandSum = VS_BANDS.map(function () { return 0; });
+  hrs.forEach(function (r) {
+    var h = Number(r.hour), n = Number(r.visitors) || 0;
+    var b = VS_BANDS.findIndex(function (x) { return h >= x[0] && h < x[1]; });
+    if (b < 0) return;
+    var k = b + '|' + colOf(r.source);
+    cell[k] = (cell[k] || 0) + n; bandSum[b] += n;
+  });
+  var colMax = {};
+  cols.forEach(function (c) { colMax[c] = Math.max.apply(null, VS_BANDS.map(function (x, b) { return cell[b + '|' + c] || 0; })); });
+  var allMax = Math.max.apply(null, bandSum);
+  var label = function (c) { return c === '_rest' ? '그 외' : (VS_SOURCES[c] || c); };
+  head.innerHTML = '<tr><th>시간대</th>' + cols.map(function (c) { return '<th class="vs-n">' + vsEsc(label(c)) + '</th>'; }).join('') + '<th class="vs-n">합계</th></tr>';
+  body.innerHTML = VS_BANDS.map(function (x, b) {
+    return '<tr><td class="vs-name"><b>' + x[2] + '</b></td>' + cols.map(function (c) {
+      var n = cell[b + '|' + c] || 0, m = colMax[c] || 0;
+      var a = m ? (0.06 + 0.5 * n / m) : 0;
+      return '<td class="vs-n vs-heat' + (n && n === m ? ' vs-peak' : '') + '" data-label="' + vsEsc(label(c)) + '"' +
+        (n ? ' style="background:rgba(7,87,216,' + a.toFixed(2) + ')' + (a > 0.4 ? ';color:#fff' : '') + '"' : '') + '>' + (n ? vsNum(n) : '·') + '</td>';
+    }).join('') + '<td class="vs-n vs-strong' + (bandSum[b] && bandSum[b] === allMax ? ' vs-peak' : '') + '">' + vsNum(bandSum[b]) + '</td></tr>';
+  }).join('');
 }
