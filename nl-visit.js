@@ -48,6 +48,7 @@
         else if (/instagram\.com$/.test(rh)) src = 'instagram';
         else if (/youtube\.com$|youtu\.be$/.test(rh)) src = 'youtube';
         else if (/facebook\.com$|fb\.com$/.test(rh)) src = 'facebook';
+        else if (/(^|\.)threads\.(net|com)$/.test(rh)) src = 'threads';   // 2026-11-25
         else src = 'other';
       }
     }
