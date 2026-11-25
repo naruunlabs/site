@@ -244,3 +244,15 @@ textarea.nl-in{height:auto;padding:8px 10px;resize:vertical}
   .nl-mbox{padding:18px 16px}
   .nl-modal{padding:16px 10px}
 }
+
+/* 아카데미웹 (2026-11-25 · 고객 관리와 같은 모양) */
+.nl-link{color:#0757D8;text-decoration:none;font-size:12.5px;word-break:break-all}
+.nl-link:hover{text-decoration:underline}
+.nl-lic.nl-focus{border-color:#9DBCF0;box-shadow:0 0 0 3px rgba(7,87,216,.08)}
+.nl-lic .nl-form{margin:10px 0 12px}
+.nl-mi-sel{display:block;padding:6px 10px 8px;font-size:12px;color:#667085}
+.nl-mi-sel>span{display:block;margin-bottom:4px}
+.nl-mi-sel select{width:100%;min-width:200px}
+#awBody td.nl-nm select{display:block;margin-top:4px;max-width:220px}
+.nl-more-l>div{left:0;right:auto;bottom:34px;top:auto}
+#awBody td:nth-child(3),#awBody td:nth-child(4),#awBody td:nth-child(6){white-space:nowrap}

@@ -298,20 +298,23 @@ async function linkOrphan(id){
 let nlOpenId = null, dtab = 'lic', notesCache = {}, tfLoaded = false;
 const DTABS = [['lic','라이선스'],['info','기본 정보'],['sale','판매'],['log','상담 · 설문'],['aw','아카데미웹']];
 
+function awCount(c){ return ((typeof ACADEMY_PROJECTS !== 'undefined' ? ACADEMY_PROJECTS : []) || []).filter(p => p.customer_id === c.id).length; }
 function curClient(){ return nlOpenId ? (CUSTOMERS || []).find(c => c.id === nlOpenId) || null : null; }
 function openClient(id, tab){
+  if (tab !== 'aw') awFocus = null;
   nlOpenId = id; dtab = tab || 'lic';
   renderDrawer(true);
   $('nlDrawer').classList.add('on'); $('nlShade').classList.add('on');
   $('nlDrawer').setAttribute('aria-hidden', 'false');
-  document.querySelectorAll('#nlBody tr').forEach(tr => tr.classList.toggle('nl-sel', tr.dataset.id === id));
+  document.querySelectorAll('#nlBody tr, #awBody tr').forEach(tr => tr.classList.toggle('nl-sel', tr.dataset.id === id));
   if (dtab === 'log') loadNotesFor(id);
 }
 function closeDrawer(){
   nlOpenId = null;
   $('nlDrawer').classList.remove('on'); $('nlShade').classList.remove('on');
   $('nlDrawer').setAttribute('aria-hidden', 'true');
-  document.querySelectorAll('#nlBody tr.nl-sel').forEach(tr => tr.classList.remove('nl-sel'));
+  document.querySelectorAll('#nlBody tr.nl-sel, #awBody tr.nl-sel').forEach(tr => tr.classList.remove('nl-sel'));
+  awFocus = null;
 }
 function setDtab(t){ dtab = t; renderDrawer(true); if (t === 'log' && nlOpenId) loadNotesFor(nlOpenId); }
 function openLicense(id){ openOwnedLicense(id); }
@@ -336,7 +339,7 @@ function renderDrawer(force){
     + (best ? act('msg', [best.id], '카톡 문구') : '')
     + act('setDtab', ['log'], '상담 기록')
     + act('issueFor', [c.id, ''], '+ 라이선스 발급');
-  $('nlDTabs').innerHTML = DTABS.map(([k,t]) => `<button type="button" class="${dtab===k?'on':''}" data-nl-act="setDtab" data-nl-args="${esc(JSON.stringify([k]))}">${t}${k==='lic' ? ` <span>${ls.length}</span>` : ''}</button>`).join('');
+  $('nlDTabs').innerHTML = DTABS.map(([k,t]) => `<button type="button" class="${dtab===k?'on':''}" data-nl-act="setDtab" data-nl-args="${esc(JSON.stringify([k]))}">${t}${k==='lic' ? ` <span>${ls.length}</span>` : k==='aw' && awCount(c) ? ` <span>${awCount(c)}</span>` : ''}</button>`).join('');
   const body = $('nlDBody');
   if (dtab === 'lic') body.innerHTML = drawerLicenses(c, ls);
   else if (dtab === 'info') body.innerHTML = drawerInfo(c);
@@ -483,15 +486,154 @@ async function delNote(noteId, custId){
   catch (e) { showToast('삭제 실패: ' + e.message); }
 }
 
+/* ── 아카데미웹 (2026-11-25 · 고객 관리와 같은 모양) ──
+   진행 상태 9가지를 다섯 묶음 색으로 보인다: 상담·견적(연회색) · 제작 중(파랑) · 확인 중(주황) · 공개 완료(초록) · 취소(짙은 회색).
+   한 줄 = 제작 건 하나 · 누르면 그 도장의 상세 창 '아카데미웹' 칸이 열리고 거기서 고친다. */
+const AW_GROUP = {
+  talk:   { t:'상담 · 견적', c:'#CFD7E3',          bg:'#F1F4F8',             fg:'#667085' },
+  build:  { t:'제작 중',     c:'var(--st-trial)',  bg:'var(--st-trial-bg)' },
+  review: { t:'확인 중',     c:'var(--st-soon)',   bg:'var(--st-soon-bg)' },
+  done:   { t:'공개 완료',   c:'var(--st-live)',   bg:'var(--st-live-bg)' },
+  cancel: { t:'취소',        c:'#6B7A90',          bg:'var(--st-off-bg)' }
+};
+const AW_OF = { inquiry:'talk', quoted:'talk', contracted:'build', materials:'build', building:'build', review:'review', launched:'done', maintenance:'done', cancelled:'cancel' };
+const awList = () => ((typeof ACADEMY_PROJECTS !== 'undefined' ? ACADEMY_PROJECTS : []) || []);
+const awGroup = p => AW_GROUP[AW_OF[p.status] || 'talk'];
+const awLabel = s => (ACADEMY_STATUS.find(x => x[0] === s) || [s, s || '-'])[1];
+const awBadge = p => { const G = awGroup(p); return `<span class="nl-badge" style="background:${G.bg};color:${G.fg || G.c}">${esc(awLabel(p.status))}</span>`; };
+const awCust = p => (CUSTOMERS || []).find(x => x.id === p.customer_id) || null;
+const safeUrl = u => /^https?:\/\//i.test(String(u || '').trim()) ? String(u).trim() : '';
+const awDue = p => typeof academyDue === 'function' && academyDue(p);
+let awFilt = 'all', awFocus = null;
+
+function renderAcademy(){
+  const tb = $('awBody'); if (!tb) return;
+  const P = awList();
+  const inG = g => p => (AW_OF[p.status] || 'talk') === g;
+  const paidSum = P.reduce((a,p) => a + (Number(p.paid_amount) || 0), 0);
+
+  /* 숫자 카드 (누르면 아래 목록이 그 묶음만) */
+  const cards = [
+    ['all',    '전체 제작 건',     P.length, 'var(--admin-title,#182b49)'],
+    ['build',  '제작 진행 중',     P.filter(inG('build')).length, AW_GROUP.build.c],
+    ['review', '확인 기다리는 곳', P.filter(inG('review')).length, AW_GROUP.review.c],
+    ['due',    '오늘 연락할 곳',   P.filter(awDue).length, ST_COLOR('expired')],
+    ['',       '누적 수금',        won(paidSum), 'var(--admin-title,#182b49)']
+  ];
+  $('awStats').innerHTML = cards.map(([f,t,n,c]) => f
+    ? `<button type="button" class="nl-stat" data-nl-act="awFilt" data-nl-args="${esc(JSON.stringify([f]))}"><div class="n" style="color:${c}">${esc(n)}</div><div class="l">${esc(t)}</div></button>`
+    : `<div class="nl-stat"><div class="n" style="color:${c}">${esc(n)}</div><div class="l">${esc(t)}</div></div>`).join('');
+
+  /* 묶음 칩 */
+  const F = ['all','due','talk','build','review','done','cancel'];
+  $('awChips').innerHTML = F.map(k => {
+    const mark = k === 'due' ? '<i class="nl-udot"></i>' : AW_GROUP[k] ? `<i class="nl-bar" style="background:${AW_GROUP[k].c}"></i>` : '';
+    const t = k === 'all' ? '전체' : k === 'due' ? '오늘 연락' : AW_GROUP[k].t;
+    return `<button type="button" class="nl-chip${awFilt===k?' on':''}" data-nl-act="awFilt" data-nl-args="${esc(JSON.stringify([k]))}">${mark}${esc(t)}</button>`;
+  }).join('');
+
+  /* 목록 */
+  const q = String(($('awSearch') || {}).value || '').trim().toLowerCase(), qd = digits(q);
+  const how = ($('awSort') || {}).value || 'next';
+  const rows = P.filter(p => {
+    const c = awCust(p) || {};
+    if (q) {
+      const hay = [c.dojang_name, c.owner_name, c.phone, p.domain, p.site_url, p.next_action, p.memo].filter(Boolean).join(' ').toLowerCase();
+      if (!hay.includes(q) && !(qd.length >= 3 && digits(c.phone).includes(qd))) return false;
+    }
+    if (awFilt === 'all') return true;
+    if (awFilt === 'due') return awDue(p);
+    return inG(awFilt)(p);
+  });
+  const nameOf = p => String((awCust(p) || {}).dojang_name || '');
+  const late = p => ['done','cancel'].includes(AW_OF[p.status]) ? 1 : 0;
+  rows.sort((a,b) => {
+    if (how === 'name') return nameOf(a).localeCompare(nameOf(b), 'ko');
+    if (how === 'created') return String(b.created_at||'').localeCompare(String(a.created_at||''));
+    if (late(a) !== late(b)) return late(a) - late(b);
+    if (how === 'due') return String(a.due_at||'9999').localeCompare(String(b.due_at||'9999'));
+    if (awDue(a) !== awDue(b)) return awDue(a) ? -1 : 1;
+    return String(a.next_action_at||'9999').localeCompare(String(b.next_action_at||'9999'));
+  });
+
+  $('awCount').innerHTML = `<span>제작 ${rows.length}건${rows.length !== P.length ? ` (전체 ${P.length}건)` : ''} · 줄을 누르면 오른쪽에 자세히 열립니다</span><span class="nl-legend">${['talk','build','review','done','cancel'].map(k => `<span><i class="nl-bar" style="background:${AW_GROUP[k].c}"></i>${AW_GROUP[k].t}</span>`).join('')}<span><i class="nl-udot"></i>오늘 연락</span></span>`;
+  const custOpts = '<option value="">— 도장 고르기 —</option>' + (CUSTOMERS || []).map(c => `<option value="${esc(c.id)}">${esc(c.dojang_name || '')}${c.owner_name ? ' · ' + esc(c.owner_name) : ''}</option>`).join('');
+  tb.innerHTML = rows.map(p => {
+    const c = awCust(p), G = awGroup(p), due = awDue(p);
+    const quote = Number(p.quoted_amount) || 0, paid = Number(p.paid_amount) || 0;
+    const url = safeUrl(p.site_url);
+    let when = '<span class="nl-mut">-</span>';
+    if (p.launched_at) when = `<span class="nl-mut">공개</span> ${esc(ymdText(p.launched_at).slice(2))}`;
+    else if (p.due_at) {
+      const n = daysAgo(p.due_at);
+      when = esc(ymdText(p.due_at).slice(2)) + (n === null ? '' : n <= 0 ? ` <span class="nl-mut">D-${-n}</span>` : ` <span class="nl-due">${n}일 지남</span>`);
+    }
+    const o3d = p.option_3d && p.option_3d !== 'none' ? esc((ACADEMY_3D.find(x => x[0] === p.option_3d) || [0, p.option_3d])[1]) : '<span class="nl-mut">-</span>';
+    const name = c
+      ? `${due ? '<i class="nl-udot" title="오늘 연락할 곳"></i>' : ''}${esc(c.dojang_name || '')}<small>${esc([c.owner_name, c.phone].filter(Boolean).join(' · '))}</small>`
+      : `<span class="nl-mut">고객 미지정</span><select class="nl-in" data-id="${esc(p.id)}" data-f="customer_id" onchange="saveAcademyCell(this)" aria-label="도장 연결">${custOpts}</select>`;
+    const site = [p.domain ? esc(p.domain) : '', url ? `<a class="nl-link" href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(url.replace(/^https?:\/\//i, '').replace(/\/$/, ''))}</a>` : ''].filter(Boolean).join('<br>');
+    return `<tr data-id="${esc(c ? c.id : '')}"${c ? ` class="${nlOpenId === c.id ? 'nl-sel' : ''}" data-nl-row="${esc(JSON.stringify(['awOpen',[p.id]]))}"` : ''}>
+      <td class="nl-nm" style="--bar:${G.c}">${name}</td>
+      <td>${awBadge(p)}</td>
+      <td>${paid || quote ? `<b>${won(paid)}</b>${quote ? ` <span class="nl-mut">/ ${won(quote)}</span>` : ''}` : '<span class="nl-mut">-</span>'}</td>
+      <td>${when}</td>
+      <td class="nl-hide-m">${site || '<span class="nl-mut">-</span>'}</td>
+      <td class="nl-hide-m">${o3d}</td>
+      <td class="nl-c-next${p.next_action ? '' : ' nl-hide-m'}">${p.next_action ? `<span class="${due ? 'nl-due' : ''}">${esc(p.next_action)}</span> <span class="nl-mut">${esc(ymdText(p.next_action_at).slice(5))}</span>` : '<span class="nl-mut">-</span>'}</td>
+    </tr>`;
+  }).join('') || `<tr><td colspan="7" class="nl-empty-row">${P.length ? '조건에 맞는 제작 건이 없습니다.' : '아직 제작 건이 없습니다. 오른쪽 위 [+ 제작 건 추가]를 눌러 보세요.'}</td></tr>`;
+}
+function awOpen(id){
+  const p = awList().find(x => x.id === id);
+  const c = p && awCust(p); if (!c) return;
+  awFocus = id; openClient(c.id, 'aw');
+  const card = [...document.querySelectorAll('#nlDBody [data-aw]')].find(e => e.dataset.aw === String(id));
+  if (card && card.scrollIntoView) card.scrollIntoView({ block:'nearest' });
+}
+function awField(p, f, label, opt){
+  opt = opt || {};
+  const v = p[f] == null ? '' : String(p[f]);
+  const at = `data-id="${esc(p.id)}" data-f="${f}" onchange="saveAcademyCell(this)" class="nl-in" aria-label="${esc(label)}"`;
+  let input;
+  if (opt.sel) input = `<select ${at}>${opt.sel.map(([ov, ot]) => `<option value="${esc(ov)}"${ov === v ? ' selected' : ''}>${esc(ot)}</option>`).join('')}</select>`;
+  else if (opt.area) input = `<textarea rows="3" ${at}>${esc(v)}</textarea>`;
+  else input = `<input type="${opt.type || 'text'}" value="${esc(v)}"${opt.type === 'number' ? ' min="0" step="1000"' : ''}${opt.ph ? ` placeholder="${esc(opt.ph)}"` : ''} ${at}>`;
+  return opt.bare ? input : `<label class="${opt.full ? 'full' : ''}"><span>${esc(label)}</span>${input}</label>`;
+}
 function drawerAcademy(c){
-  const list = (ACADEMY_PROJECTS || []).filter(p => p.customer_id === c.id);
-  const label = s => (ACADEMY_STATUS.find(x => x[0] === s) || [s, s])[1];
-  return (list.length ? list.map(p => `<div class="nl-lic" style="--bar:var(--st-trial)">
-      <div class="nl-lic-h"><b>홈페이지 제작</b><span class="nl-badge" style="background:var(--st-trial-bg);color:var(--st-trial)">${esc(label(p.status))}</span></div>
-      <div class="nl-lic-g"><div><small>견적</small><b>${p.quoted_amount != null ? won(p.quoted_amount) : '-'}</b></div><div><small>받은 금액</small><b>${p.paid_amount != null ? won(p.paid_amount) : '-'}</b></div><div><small>공개 예정</small><b>${esc(ymdText(p.due_at))}</b></div></div>
-      <div class="nl-mut">${p.domain ? '도메인 ' + esc(p.domain) + ' · ' : ''}${p.next_action ? '다음 할 일: ' + esc(p.next_action) : ''}</div>
-    </div>`).join('') : '<div class="nl-empty">아카데미웹 제작 건이 없습니다.</div>')
-    + `<div class="nl-lic-a" style="margin-top:10px">${list.length ? act('gotoAcademy', [c.id], '아카데미웹 화면에서 보기') : ''}${act('addAcademy', [c.id], '+ 제작 건 추가')}</div>`;
+  const list = awList().filter(p => p.customer_id === c.id);
+  const custSel = (CUSTOMERS || []).map(x => [x.id, (x.dojang_name || '') + (x.owner_name ? ' · ' + x.owner_name : '')]);
+  const cards = list.map(p => {
+    const G = awGroup(p), quote = Number(p.quoted_amount) || 0, paid = Number(p.paid_amount) || 0, url = safeUrl(p.site_url);
+    return `<div class="nl-lic${awFocus === p.id ? ' nl-focus' : ''}" data-aw="${esc(p.id)}" style="--bar:${G.c}">
+      <div class="nl-lic-h"><b>홈페이지 제작</b>${awBadge(p)}<span class="nl-mut nl-right">${quote ? (paid >= quote ? '다 받음' : `남은 돈 ${won(quote - paid)}`) : ''}</span></div>
+      <div class="nl-form">
+        ${awField(p, 'status', '진행 상태', { sel: ACADEMY_STATUS })}
+        ${awField(p, 'option_3d', '3D 옵션', { sel: ACADEMY_3D })}
+        ${awField(p, 'quoted_amount', '견적 금액', { type:'number' })}
+        ${awField(p, 'paid_amount', '받은 금액', { type:'number' })}
+        ${awField(p, 'started_at', '시작일', { type:'date' })}
+        ${awField(p, 'due_at', '공개 예정일', { type:'date' })}
+        ${awField(p, 'launched_at', '공개일', { type:'date' })}
+        ${awField(p, 'domain', '도메인', { ph:'예) sampletkd.com' })}
+        ${awField(p, 'site_url', '홈페이지 주소', { type:'url', ph:'https://', full:true })}
+        ${awField(p, 'next_action', '다음 할 일', { ph:'예) 사진 자료 받기' })}
+        ${awField(p, 'next_action_at', '연락 예정일', { type:'date' })}
+        ${awField(p, 'memo', '메모', { area:true, full:true })}
+      </div>
+      <div class="nl-lic-a">
+        ${url ? `<a class="nl-btn sm" href="${esc(url)}" target="_blank" rel="noopener noreferrer">홈페이지 열기</a>` : ''}
+        <details class="nl-more nl-more-l"><summary>더보기</summary><div>
+          <label class="nl-mi-sel"><span>다른 도장으로 옮기기</span>${awField(p, 'customer_id', '옮길 도장', { sel: custSel, bare:true })}</label>
+          ${act('awDel', [p.id], '이 제작 건 삭제', 'nl-mi warn')}
+        </div></details>
+      </div>
+    </div>`;
+  }).join('');
+  return (cards || '<div class="nl-empty">아카데미웹 제작 건이 없습니다.</div>')
+    + `<div class="nl-lic-a" style="margin-top:10px">${act('addAcademy', [c.id], '+ 제작 건 추가')}${list.length ? act('gotoAcademy', [c.id], '아카데미웹 목록에서 보기') : ''}</div>
+    <div class="nl-note">칸을 벗어나면 바로 저장됩니다. 도장명·전화 같은 고객 정보는 '기본 정보' 칸에서 고칩니다.</div>`;
 }
 async function addAcademy(id){
   await openAcademyAddModal();
@@ -500,7 +642,7 @@ async function addAcademy(id){
 }
 function gotoAcademy(id){
   const c = (CUSTOMERS || []).find(x => x.id === id);
-  closeDrawer(); switchTab('academy');
+  closeDrawer(); awFilt = 'all'; switchTab('academy');
   const s = $('awSearch'); if (s && c) { s.value = c.dojang_name || ''; renderAcademyProjects(); }
 }
 async function delClient(id){
@@ -669,6 +811,7 @@ const ACTIONS = {
   todoView: v => { todoView = v; renderTodo(); },
   task: (k, d) => saveAdminTask(k, d),
   statFilter, setView, filt: f => { filt = f; renderClients(); }, prod: p => { prodF = p; renderClients(); },
+  awFilt: f => { awFilt = f; renderAcademy(); }, awOpen, awDel: id => deleteAcademyProject(id),
   openClient, openLicense, setDtab, linkOrphan, addNote, delNote, addAcademy, gotoAcademy, delClient,
   openConvert: id => openConvert(id),
   msg: (id, kind) => { const l = (LICENSES || []).find(x => String(x.id) === String(id)); if (l) openMsgPicker(enc(l), kind); },
@@ -711,6 +854,7 @@ function refresh(){
     pending = false;
     try { renderTodo(); } catch (e) { console.error(e); }
     try { if ($('tab-clients') && $('tab-clients').classList.contains('active')) renderClients(); } catch (e) { console.error(e); }
+    try { if ($('tab-academy') && $('tab-academy').classList.contains('active')) renderAcademy(); } catch (e) { console.error(e); }
     try { if (nlOpenId) renderDrawer(false); } catch (e) { console.error(e); }
   }, 0);
 }
@@ -731,9 +875,10 @@ function onTab(tab){
       nav.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.t === tab));
     }
   }
-  if (tab !== 'clients' && tab !== 'todo') closeDrawer();
+  if (!['clients','todo','academy'].includes(tab)) closeDrawer();
   if (tab === 'todo') renderTodo();
   if (tab === 'clients') renderClients();
+  if (tab === 'academy') renderAcademy();
 }
 
 /* 사이드바 선 아이콘 */
@@ -775,5 +920,6 @@ window.nlCloseDrawer = closeDrawer;
 window.nlOpenClient = openClient;
 window.nlRenderClients = renderClients;
 window.nlRenderTodo = renderTodo;
+window.nlRenderAcademy = renderAcademy;
 refresh();
 })();
