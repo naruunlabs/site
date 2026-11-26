@@ -164,7 +164,9 @@ function renderSourceHours(since) {
   var label = function (c) { return c === '_rest' ? '그 외' : (VS_SOURCES[c] || c); };
   head.innerHTML = '<tr><th>시간대</th>' + cols.map(function (c) { return '<th class="vs-n">' + vsEsc(label(c)) + '</th>'; }).join('') + '<th class="vs-n">합계</th></tr>';
   body.innerHTML = VS_BANDS.map(function (x, b) {
-    return '<tr><td class="vs-name"><b>' + x[2] + '</b></td>' + cols.map(function (c) {
+    /* 2026-11-26 · '새벽'·'낮' 글자 수와 시간 길이가 달라 줄 끝이 들쭉날쭉 → 낱말은 왼쪽 칸, 시간은 오른쪽 정렬 칸 */
+    var nm = x[2].split(' ');
+    return '<tr><td class="vs-name vs-band"><b><span>' + nm[0] + '</span><span>' + nm[1] + '</span></b></td>' + cols.map(function (c) {
       var n = cell[b + '|' + c] || 0, m = colMax[c] || 0;
       var a = m ? (0.06 + 0.5 * n / m) : 0;
       return '<td class="vs-n vs-heat' + (n && n === m ? ' vs-peak' : '') + '" data-label="' + vsEsc(label(c)) + '"' +
