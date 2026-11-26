@@ -122,10 +122,22 @@ function renderSiteVisits() {
    칸 색이 진할수록 그 경로에서 그 시간대에 많이 온 것. 경로마다 가장 많은 시간대는 굵게. */
 var VS_BANDS = [[0, 6, '새벽 0~6시'], [6, 9, '아침 6~9시'], [9, 12, '오전 9~12시'], [12, 15, '낮 12~3시'],
   [15, 18, '오후 3~6시'], [18, 21, '저녁 6~9시'], [21, 24, '밤 9~12시']];
+/* 2026-11-26 · 오늘 / 어제 / 기간 전체 고르기 (기본 = 기간 전체). 자료는 이미 날짜별로 받아 와 있어 다시 부르지 않는다. */
+var VS_HOUR_MODE = 'all', VS_HOUR_SINCE = '';
+function setHourMode(m) {
+  VS_HOUR_MODE = m;
+  document.querySelectorAll('#vsHourSeg button').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-h') === m); });
+  renderSourceHours(VS_HOUR_SINCE);
+}
 function renderSourceHours(since) {
   var head = document.getElementById('vsHourHead'), body = document.getElementById('vsHourBody');
   if (!head || !body) return;
-  var hrs = (VS_DATA.hours || []).filter(function (r) { return r.day >= since; });
+  VS_HOUR_SINCE = since;
+  var today = vsDay(0), yday = vsDay(1);
+  var pick = VS_HOUR_MODE === 'today' ? function (r) { return r.day === today; }
+    : VS_HOUR_MODE === 'yday' ? function (r) { return r.day === yday; }
+    : function (r) { return r.day >= since; };
+  var hrs = (VS_DATA.hours || []).filter(pick);
   var tot = {};
   hrs.forEach(function (r) { tot[r.source] = (tot[r.source] || 0) + (Number(r.visitors) || 0); });
   var keys = Object.keys(tot).sort(function (a, b) { return tot[b] - tot[a]; });
@@ -134,7 +146,8 @@ function renderSourceHours(since) {
   if (rest) cols = cols.concat('_rest');
   if (!hrs.length) {
     head.innerHTML = '<tr><th>시간대</th><th class="vs-n">합계</th></tr>';
-    body.innerHTML = '<tr><td colspan="2" class="vs-empty">아직 기록이 없습니다 · 2026-11-25 부터 쌓입니다</td></tr>';
+    var none = VS_HOUR_MODE === 'today' ? '오늘은 아직 기록이 없습니다' : VS_HOUR_MODE === 'yday' ? '어제는 기록이 없습니다' : '아직 기록이 없습니다 · 2026-11-25 부터 쌓입니다';
+    body.innerHTML = '<tr><td colspan="2" class="vs-empty">' + none + '</td></tr>';
     return;
   }
   var cell = {}, bandSum = VS_BANDS.map(function () { return 0; });

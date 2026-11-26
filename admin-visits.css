@@ -65,3 +65,10 @@
 #tab-visits .vs-hours table{table-layout:fixed}
 #tab-visits .vs-hours th:first-child{width:118px}
 #tab-visits .vs-hours th{white-space:normal;word-break:keep-all;line-height:1.3}
+/* 2026-11-26 시간대 표 · 오늘/어제/기간 고르기 (작은 버튼 묶음) */
+#tab-visits .vs-seg{margin-left:auto;display:inline-flex;border:1px solid #cad4df;border-radius:9px;overflow:hidden;background:#fff}
+#tab-visits .vs-seg button{border:0;background:none;padding:6px 12px;font:inherit;font-size:12px;font-weight:700;color:#475467;cursor:pointer;white-space:nowrap}
+#tab-visits .vs-seg button+button{border-left:1px solid #cad4df}
+#tab-visits .vs-seg button:hover{background:#F5F8FC}
+#tab-visits .vs-seg button.on{background:#0757D8;color:#fff}
+#tab-visits .vs-hint{font-size:11.5px;color:#98A2B3;margin:8px 2px 0;line-height:1.5}
