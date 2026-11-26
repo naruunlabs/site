@@ -172,5 +172,10 @@ function renderSourceHours(since) {
       return '<td class="vs-n vs-heat' + (n && n === m ? ' vs-peak' : '') + '" data-label="' + vsEsc(label(c)) + '"' +
         (n ? ' style="background:rgba(7,87,216,' + a.toFixed(2) + ')' + (a > 0.4 ? ';color:#fff' : '') + '"' : '') + '>' + (n ? vsNum(n) : '·') + '</td>';
     }).join('') + '<td class="vs-n vs-strong' + (bandSum[b] && bandSum[b] === allMax ? ' vs-peak' : '') + '">' + vsNum(bandSum[b]) + '</td></tr>';
-  }).join('');
+  }).join('') +
+    /* 2026-11-26 · 맨 아래 합계 줄 = 경로마다 세로로 더한 값 (오른쪽 끝 = 전체 합계) */
+    '<tr class="vs-total"><td class="vs-name"><b>합계</b></td>' + cols.map(function (c) {
+      var t = VS_BANDS.reduce(function (a, x, b) { return a + (cell[b + '|' + c] || 0); }, 0);
+      return '<td class="vs-n vs-strong" data-label="' + vsEsc(label(c)) + '">' + vsNum(t) + '</td>';
+    }).join('') + '<td class="vs-n vs-strong">' + vsNum(bandSum.reduce(function (a, n) { return a + n; }, 0)) + '</td></tr>';
 }

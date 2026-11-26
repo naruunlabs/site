@@ -77,3 +77,5 @@
 #tab-visits .vs-hours td.vs-band b span{display:block;font-size:inherit;color:inherit;margin:0}  /* td.vs-name span(회색 작은 글씨) 규칙을 끈다 */
 #tab-visits .vs-hours td.vs-band b span:first-child{width:2.2em;flex:none}
 #tab-visits .vs-hours td.vs-band b span:last-child{width:4.4em;flex:none;text-align:right;font-variant-numeric:tabular-nums}
+/* 2026-11-26 시간대 표 맨 아래 합계 줄 (경로별 세로 합계) */
+#tab-visits .vs-hours tr.vs-total td{background:#F7FAFE;border-top:2px solid #D5DEEA;border-bottom:0;color:#071C49;font-weight:800}
