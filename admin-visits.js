@@ -122,8 +122,8 @@ function renderSiteVisits() {
    칸 색이 진할수록 그 경로에서 그 시간대에 많이 온 것. 경로마다 가장 많은 시간대는 굵게. */
 var VS_BANDS = [[0, 6, '새벽 0~6시'], [6, 9, '아침 6~9시'], [9, 12, '오전 9~12시'], [12, 15, '낮 12~3시'],
   [15, 18, '오후 3~6시'], [18, 21, '저녁 6~9시'], [21, 24, '밤 9~12시']];
-/* 2026-11-26 · 오늘 / 어제 / 기간 전체 고르기 (기본 = 기간 전체). 자료는 이미 날짜별로 받아 와 있어 다시 부르지 않는다. */
-var VS_HOUR_MODE = 'all', VS_HOUR_SINCE = '';
+/* 2026-11-26 · 오늘 / 어제 / 기간 전체 고르기 (기본 = 오늘 · 11-26 완수님). 자료는 이미 날짜별로 받아 와 있어 다시 부르지 않는다. */
+var VS_HOUR_MODE = 'today', VS_HOUR_SINCE = '';
 function setHourMode(m) {
   VS_HOUR_MODE = m;
   document.querySelectorAll('#vsHourSeg button').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-h') === m); });
